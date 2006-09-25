@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# $RCSfile: run,v $
+# $Revision: 1.1 $
+# $Date: 2006/01/18 17:18:35 $
+#
+# This is a helper file to start a realtime process. This file is copied
+# to the compile directory (Matlab's current working directory). The
+# model is then started by simply typing ./run in that directory
+#
+# Copyright (c), 2006 Richard Hacker
+# License: GPL
+
+/usr/realtime/bin/rtai-load $@

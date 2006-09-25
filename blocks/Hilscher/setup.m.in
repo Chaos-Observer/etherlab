@@ -1,0 +1,6 @@
+function setup()
+
+disp(['Precompiling functions in ' pwd]);
+mex -I@prefix@/include cif_pd_in.c
+mex -I@prefix@/include cif_pd_out.c
+return

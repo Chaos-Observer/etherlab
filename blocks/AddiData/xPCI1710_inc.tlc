@@ -1,0 +1,133 @@
+%implements "xPCI1710_inc" "C"
+
+%%
+%% Hardware Driver for the Incremental Counter Mode of Addi-Data's APCI1710
+%% Timer card.
+%% 
+%% This TLC Implements the necessary IO Functions to communicate
+%% with the hardware
+%%
+%% Copyright (C) 2006
+%% Richard Hacker
+%% IgH Essen GmbH
+%% 
+%% License: GPL
+
+%include "xPCI1710.tlc"
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function BlockTypeSetup( block, system ) void
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  %<Init_xPCI1710(block, system)>
+%endfunction
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function BlockInstanceSetup( block, system ) void
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  %assign CardIdx = Init_xPCI_Card(block, system)
+
+  %% Place the CardStruct variable name in the block for easy access
+  %addtorecord block CardStruct system.xPCI1710.Card[CardIdx].CardStruct
+%endfunction
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function Start(block, system) Output
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  /* %<Type> Block: %<Name> 
+   * Register PCI1710_INC
+   */
+  {
+     uint_T mode[] = {%<Mode>, %<Mode>};
+     uint_T hysteresis[] = {0,0};
+     if (!%<LibGetRTModelErrorStatus()> && 
+         xPCI1710_open_inc(%<CardStruct>, %<Module>, %<Width>, \
+                        mode, NULL, hysteresis, \
+                        &%<LibBlockPWork(PrivData,"","",0)>)) {
+        %<LibSetRTModelErrorStatus("\"Failed to initialise xPCI1710_INC\"")>;
+     %if Preset
+       %<LibBlockIWork(PresetState,"","",0)> = 0;
+       %if Width != 1
+         %<LibBlockIWork(PresetState,"","",1)> = 0;
+       %endif
+     %endif
+     }
+  }
+
+%endfunction
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function Terminate(block, system) Output
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  /* %<Type> Block: %<Name> 
+   * Deregister PCI1710_INC
+   */
+  xPCI1710_close_inc(%<LibBlockPWork(PrivData,"","",0)>);
+%endfunction
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function Outputs( block, system ) Output
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  /* %<Type> Block: %<Name> 
+   */
+  %%
+  %if Preset
+    %if Width == 1
+        if (!%<LibBlockIWork(PresetState,"","",0)> && 
+                %<LibBlockInputSignal(1,"","",0)>) {
+            %<LibBlockIWork(PresetState,"","",0)> = 1;
+
+            xPCI1710_Write32BitCounterValue( \
+                %<LibBlockPWork(PrivData,"","",0)>, \
+                (long)%<LibBlockInputSignal(0,"","",0)>);
+        } else if (%<LibBlockIWork(PresetState,"","",0)> && 
+                !%<LibBlockInputSignal(1,"","",0)>) {
+            %<LibBlockIWork(PresetState,"","",0)> = 0;
+        }
+    %else
+
+      %assign rollVars = ["U", "<iwork>/PresetState"]
+      %assign x = 0
+      %roll sigIdx = RollRegions, lcv= RollThreshold, block, ...
+                "Roller", rollVars
+        if (!%<LibBlockIWork(PresetState,"",lcv,sigIdx)> && ...
+                %<LibBlockInputSignal(1,"",lcv,sigIdx)>) {
+            %<LibBlockIWork(PresetState,"",lcv,sigIdx)> = 1;
+
+            xPCI1710_Write16BitCounterValue( \
+                %<LibBlockPWork(PrivData,"",lcv,sigIdx)>, ... 
+                (short)%<LibBlockInputSignal(0,"",lcv,sigIdx)>, ...
+                %<x>);
+        } else if (%<LibBlockIWork(PresetState,"",lcv,sigIdx)> && 
+                !%<LibBlockInputSignal(1,"",lcv,sigIdx)>) {
+            %<LibBlockIWork(PresetState,"",lcv,sigIdx)> = 0;
+        }
+        %assign x = x + 1
+      %endroll
+    %endif
+  %endif
+  %%
+  { 
+    %if Width == 1
+      int32_T tmp;
+
+      if (xPCI1710_Read32BitCounterValue( \
+                  %<LibBlockPWork(PrivData,"","",0)>, &tmp));
+      %<LibBlockOutputSignal(0,"","",0)> = tmp;
+
+    %else
+      int16_T tmp[2];
+
+      if (xPCI1710_Read16BitCounterValue( \
+                  %<LibBlockPWork(PrivData,"","",0)>, tmp))
+                  ;
+      %<LibBlockOutputSignal(0,"","",0)> = tmp[0];
+      %<LibBlockOutputSignal(0,"","",1)> = tmp[1];
+    %endif
+  }
+%endfunction

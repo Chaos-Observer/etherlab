@@ -1,0 +1,782 @@
+Library {
+  Name			  "etherlab_lib"
+  Version		  6.4
+  MdlSubVersion		  0
+  SavedCharacterEncoding  "ISO-8859-1"
+  LibraryType		  "BlockLibrary"
+  SaveDefaultBlockParams  on
+  SampleTimeColors	  off
+  LibraryLinkDisplay	  "all"
+  WideLines		  off
+  ShowLineDimensions	  off
+  ShowPortDataTypes	  off
+  ShowLoopsOnError	  on
+  IgnoreBidirectionalLines off
+  ShowStorageClass	  off
+  ShowTestPointIcons	  on
+  ShowViewerIcons	  on
+  SortedOrder		  off
+  ExecutionContextIcon	  off
+  ShowLinearizationAnnotations on
+  ScopeRefreshTime	  0.035000
+  OverrideScopeRefreshTime on
+  DisableAllScopes	  off
+  BlockNameDataTip	  off
+  BlockParametersDataTip  off
+  BlockDescriptionStringDataTip	off
+  ToolBar		  on
+  StatusBar		  on
+  BrowserShowLibraryLinks off
+  BrowserLookUnderMasks	  off
+  Created		  "Tue Dec 27 14:12:39 2005"
+  Creator		  "rich"
+  UpdateHistory		  "UpdateHistoryNever"
+  ModifiedByFormat	  "%<Auto>"
+  LastModifiedBy	  "rich"
+  ModifiedDateFormat	  "%<Auto>"
+  LastModifiedDate	  "Wed Sep 20 11:34:30 2006"
+  ModelVersionFormat	  "1.%<AutoIncrement:215>"
+  ConfigurationManager	  "rcs"
+  LinearizationMsg	  "none"
+  Profile		  off
+  ParamWorkspaceSource	  "MATLABWorkspace"
+  CovSaveName		  "covdata"
+  CovMetricSettings	  "dw"
+  CovNameIncrementing	  off
+  CovHtmlReporting	  on
+  covSaveCumulativeToWorkspaceVar on
+  CovSaveSingleToWorkspaceVar on
+  CovCumulativeReport	  off
+  CovReportOnPause	  on
+  ExtModeBatchMode	  off
+  ExtModeEnableFloating	  on
+  ExtModeTrigType	  "manual"
+  ExtModeTrigMode	  "normal"
+  ExtModeTrigPort	  "1"
+  ExtModeTrigElement	  "any"
+  ExtModeTrigDuration	  1000
+  ExtModeTrigDurationFloating "auto"
+  ExtModeTrigHoldOff	  0
+  ExtModeTrigDelay	  0
+  ExtModeTrigDirection	  "rising"
+  ExtModeTrigLevel	  0
+  ExtModeArchiveMode	  "off"
+  ExtModeAutoIncOneShot	  off
+  ExtModeIncDirWhenArm	  off
+  ExtModeAddSuffixToVar	  off
+  ExtModeWriteAllDataToWs off
+  ExtModeArmWhenConnect	  on
+  ExtModeSkipDownloadWhenConnect off
+  ExtModeLogAll		  on
+  ExtModeAutoUpdateStatusClock off
+  ProdHWDeviceType	  "32-bit Generic"
+  ShowModelReferenceBlockVersion off
+  ShowModelReferenceBlockIO off
+  BlockDefaults {
+    Orientation		    "right"
+    ForegroundColor	    "black"
+    BackgroundColor	    "white"
+    DropShadow		    off
+    NamePlacement	    "normal"
+    FontName		    "Bitstream Charter"
+    FontSize		    10
+    FontWeight		    "normal"
+    FontAngle		    "normal"
+    ShowName		    on
+  }
+  BlockParameterDefaults {
+    Block {
+      BlockType		      "S-Function"
+      FunctionName	      "system"
+      SFunctionModules	      "''"
+      PortCounts	      "[]"
+    }
+    Block {
+      BlockType		      SubSystem
+      ShowPortLabels	      on
+      Permissions	      "ReadWrite"
+      PermitHierarchicalResolution "All"
+      TreatAsAtomicUnit	      off
+      SystemSampleTime	      "-1"
+      RTWFcnNameOpts	      "Auto"
+      RTWFileNameOpts	      "Auto"
+      RTWMemSecFuncInitTerm   "Inherit from model"
+      RTWMemSecFuncExecute    "Inherit from model"
+      RTWMemSecDataConstants  "Inherit from model"
+      RTWMemSecDataInternal   "Inherit from model"
+      RTWMemSecDataParameters "Inherit from model"
+      SimViewingDevice	      off
+      DataTypeOverride	      "UseLocalSettings"
+      MinMaxOverflowLogging   "UseLocalSettings"
+    }
+    Block {
+      BlockType		      Terminator
+    }
+  }
+  AnnotationDefaults {
+    HorizontalAlignment	    "center"
+    VerticalAlignment	    "middle"
+    ForegroundColor	    "black"
+    BackgroundColor	    "white"
+    DropShadow		    off
+    FontName		    "Bitstream Charter"
+    FontSize		    10
+    FontWeight		    "normal"
+    FontAngle		    "normal"
+  }
+  LineDefaults {
+    FontName		    "Bitstream Charter"
+    FontSize		    9
+    FontWeight		    "normal"
+    FontAngle		    "normal"
+  }
+  System {
+    Name		    "etherlab_lib"
+    Location		    [466, 204, 958, 415]
+    Open		    on
+    ModelBrowserVisibility  off
+    ModelBrowserWidth	    200
+    ScreenColor		    "white"
+    PaperOrientation	    "landscape"
+    PaperPositionMode	    "auto"
+    PaperType		    "usletter"
+    PaperUnits		    "inches"
+    TiledPaperMargins	    [0.500000, 0.500000, 0.500000, 0.500000]
+    TiledPageScale	    1
+    ShowPageBoundaries	    off
+    ZoomFactor		    "100"
+    ReportName		    "simulink-default.rpt"
+    Block {
+      BlockType		      SubSystem
+      Name		      "EtherCAT"
+      Ports		      []
+      Position		      [295, 39, 366, 100]
+      MinAlgLoopOccurrences   off
+      RTWSystemCode	      "Auto"
+      FunctionWithSeparateData off
+      MaskHideContents	      off
+      System {
+	Name			"EtherCAT"
+	Location		[500, 441, 785, 748]
+	Open			off
+	ModelBrowserVisibility	off
+	ModelBrowserWidth	200
+	ScreenColor		"white"
+	PaperOrientation	"landscape"
+	PaperPositionMode	"auto"
+	PaperType		"A4"
+	PaperUnits		"centimeters"
+	TiledPaperMargins	[0.500000, 0.500000, 0.500000, 0.500000]
+	TiledPageScale		1
+	ShowPageBoundaries	off
+	ZoomFactor		"100"
+	Block {
+	  BlockType		  "S-Function"
+	  Name			  "AIN_0"
+	  Ports			  [0, 1]
+	  Position		  [25, 85, 105, 125]
+	  BackgroundColor	  "yellow"
+	  FunctionName		  "el31xx"
+	  Parameters		  "master,index,model,output_type,scale,offset"
+",dtype,status,filter,omega,tsample"
+	  MaskType		  "EL31xx"
+	  MaskDescription	  "Beckhoff 2,4,8-Channel 16-Bit Analog Input"
+"\n\nOutput Type:\n  1-Bypte output: one bit coded input\n  Vector output: Out"
+"put vector is <Channels> wide\n  Separate outputs: have <Channels> number of "
+"outputs\n\nInput Gain/Offset:\n  Specify a possible Gain and Offset for the i"
+"nput signal"
+	  MaskHelp		  "This block generically implements the Ether"
+"CAT 16-Bit Analog Input Terminal for various models.\n<p/>\nThe following Ter"
+"minals are supported:\n<center>\n<table width=\"80%\">\n<tr><td>EL3102,4,8</t"
+"d><td>-10..10V Voltage Input</td></tr>\n<tr><td>EL3112,4   </td><td>0..20mA C"
+"urrent Input</td></tr>\n<tr><td>EL3122,4   </td><td>4..20mA Current Input</td"
+"></tr>\n<tr><td>EL3142,4,8</td><td>0..20mA Current Input</td></tr>\n<tr><td>E"
+"L3152,4,8</td><td>4..20mA Current Input</td></tr>\n<tr><td>EL3162,4,8</td><td"
+">0..10V Voltage Input</td></tr>\n</table>\n</center>\n<p/>\nChoose and set th"
+"e following options:\n<h4>Master:</h4>\nSet the EtherCAT Master of this termi"
+"nal.\n\n<h4>Slave Index:</h4>\nSet the EtherCAT slave index. Following addres"
+"s formats are allowed:\n<ol>\n<li> Absolute addressing: a number <<b><tt>n</t"
+"t></b>> representing the (zero based) absolute index. <b><tt>n</tt></b> is ty"
+"pically larger than 0 because the first coupler has that address.\n\n<li> Fie"
+"ld addressing: Has the form <<b><tt>f:n</tt></b>> where <b><tt>f</tt></b> is "
+"the (zero based) EtherCAT coupler field and \n<b><tt>n</tt></b> is the termin"
+"al offset in that field. Take note that <b><tt>n</tt></b> is also greater tha"
+"n 0.\n\n<li> SSId addressing: the Secondary Slave Addressing has the form <<b"
+"><tt>#s:n</tt></b>> where <b><tt>s</tt></b> is the Secondary Slave Id of the "
+"EtherCAT coupler and <b><tt>n</tt></b> is the offset in that field. The SSId "
+"has to be preprogrammed into the coupler with other service tools.\n</ol>\n\n"
+"<h4>Device Model:</h4>\nChoose the model at the Indexed position of the maste"
+"r.\n\n<h4>Output Type:</h4>\n<ul>\n<li>Choose <b>Vector Output</b> to have a "
+"single output as a vector\nwith a size corresponding to the channel count of "
+"the terminal. This mode also allows a status output port to be displayed. <br"
+"/>\n<li>Choose <b>Separate Outputs</b> to have one output for every channel."
+"\n</ul>\n<h4>Output Full Scale</h4>\nWhen <b>Output Data Type</b> is set to <"
+"b>Double with scale and offset</b>, the block's output value at full scale te"
+"rminal input can be set here.\n\n<h4>Output Offset</h4>\nWhen <b>Output Data "
+"Type</b> is set to <b>Double with scale and offset</b>, the blocks output at "
+"zero terminal input can be set here. Note that the Full Scale above is also i"
+"ncreased by this amount. Note furthermore that this corresponds to the minimu"
+"m input for terminals such as 4..20mA.\n\n<h4>Output Data Type</h4>\nChoose t"
+"he block's output data type for the output signal. Available are:\n<ul>\n<li>"
+"<b><tt>Raw</tt></b> outputting the internal raw value as <tt>int16_T</tt> or "
+"<tt>uint16_T</tt> as appropriate\n<li><b><tt>Double</tt></b> outputting 0..10"
+", -10..10, 0..0.02 and 0.004..0.02 depending on the Model as appropriate\n<li"
+"><b><tt>Double with scale and offset</tt></b>, allowing the output to be scal"
+"ed with an offset.\n</ul>\n\n<p>\nChoosing <b>Status Output</b> provides a po"
+"rt of type <tt>uint8_T</tt> where the status is presented. This is only enabl"
+"ed when <b>Vector Output</b> is selected. Terminal input over- and underrange"
+" can be detected using this output. See the terminal's documentation.\n\n<h4>"
+"Output Filter</h4>\nWhen not in <b>Raw</b> mode, the <b>Output Filter</b> che"
+"ckbox becomes available, allowing the use of an internal low pass filter. Ent"
+"er the <b>LPF Time Constant</b> for the filter in the field below.\n<br>For c"
+"ontinuous sample time systems (0 in Sample Time), the filter is also continuo"
+"us. Discrete samples systems (Sample Time > 0) uses an equivalent discrete lo"
+"w pass filter with a similar time constant.\n\n<p>\nSet the <b>Sample Time</b"
+"> for the block. <tt>0</tt> is continuous sample time (runs at the model's ba"
+"se rate). Setting <tt>-1</tt> will try to set the time using back propagation"
+".\n"
+	  MaskPromptString	  "Master|Slave Index|Device Model |Output Typ"
+"e |Output Full Scale|Output Offset|Output Data Type|Status Output|Output Filt"
+"er|LPF Time Constant (sec)|Sample Time (-1 inherited)"
+	  MaskStyleString	  "edit,edit,popup(EL3102|EL3104|EL3108|EL3112"
+"|EL3114|EL3122|EL3124|EL3142|EL3144|EL3148|EL3152|EL3154|EL3158|EL3162|EL3164"
+"|EL3168),popup(Vector Output|Separate Outputs),edit,edit,popup(Raw bits|Doubl"
+"e|Double with scale and offset),checkbox,checkbox,edit,edit"
+	  MaskTunableValueString  "off,off,off,off,on,on,off,off,off,off,off"
+	  MaskCallbackString	  "|||el31xx_check('output_type');\n|||el31xx_"
+"check('dtype');||el31xx_check('filter');||"
+	  MaskEnableString	  "on,on,on,on,off,off,on,on,on,off,on"
+	  MaskVisibilityString	  "on,on,on,on,on,on,on,on,on,on,on"
+	  MaskToolTipString	  "on,on,on,on,on,on,on,on,on,on,on"
+	  MaskVarAliasString	  ",,,,,,,,,,"
+	  MaskVariables		  "master=@1;index=&2;model=&3;output_type=@4;"
+"scale=@5;offset=@6;dtype=@7;status=@8;filter=@9;tau=@10;tsample=@11;"
+	  MaskInitialization	  "f = {'±10V','0..20mA',...\n    '4..20mA',' "
+"','0..20mA',...\n    '4..20mA','10V',' ',' ',' '};\nfunc = char(f(str2num(mod"
+"el(5))+1));\nomega = 1/tau;\n"
+	  MaskDisplay		  "fprintf(...\n    '%s\\n%s AIn\\nM:%i Idx:%s"
+"',...\n    model,...\n    func,...\n    master,...\n    index)\n\nport_label("
+"'output',1,'S')\n"
+	  MaskIconFrame		  on
+	  MaskIconOpaque	  on
+	  MaskIconRotate	  "none"
+	  MaskIconUnits		  "autoscale"
+	  MaskValueString	  "0|0|EL3102|Vector Output|1|0|Double|off|off"
+"|0.1|0"
+	  MaskTabNameString	  ",,,,,,,,,,"
+	}
+	Block {
+	  BlockType		  "S-Function"
+	  Name			  "AOUT_0"
+	  Ports			  [1]
+	  Position		  [180, 85, 260, 125]
+	  BackgroundColor	  "yellow"
+	  FunctionName		  "el41xx"
+	  Parameters		  "master,index,model,input_type,status,tsampl"
+"e"
+	  MaskType		  "EL31xx"
+	  MaskDescription	  "Beckhoff 2,4,8-Channel 16-Bit Analog Output"
+"\n\nInput Type:\n  1-Bypte input: one bit coded input\n  Vector input: Input "
+"vector is <Channels> wide\n  Separate inputs: have <Channels> number of input"
+"s\n"
+	  MaskHelp		  "This block generically implements the Ether"
+"CAT 16-Bit Analog Input Terminal for various models.\n<p/>\nThe block input i"
+"s generally a <tt>double</tt> corresponding the the terminal's capability. Th"
+"us a 4..20mA terminal expects values in the range [0.004..0.02). If a digital"
+" input is required, only <tt>uint16</tt> or <tt>int16</tt> is accepted, depen"
+"ding on whether the the terminal is bipolar or not.\n<p/>\nExceeding the inpu"
+"t range simply saturates the terminal's output.\n<p/>\nThe following Terminal"
+"s are supported:\n<center>\n<table width=\"80%\">\n<tr><td>EL4102,4,8</td><td"
+">0..10V Voltage Output</td></tr>\n<tr><td>EL4112,4,8</td><td>0..20mA Current "
+"Output</td></tr>\n<tr><td>EL4122,4,8</td><td>4..20mA Current Output</td></tr>"
+"\n<tr><td>EL4132,4,8</td><td>-10..10V Voltage Output</td></tr>\n</table>\n</c"
+"enter>\n<p/>\nChoose and set the following options:\n<h4>Master:</h4>\nSet th"
+"e EtherCAT Master of this terminal.\n\n<h4>Slave Index:</h4>\nSet the EtherCA"
+"T slave index. Following address formats are allowed:\n<ol>\n<li> Absolute ad"
+"dressing: a number <<b><tt>n</tt></b>> representing the (zero based) absolute"
+" index. <b><tt>n</tt></b> is typically larger than 0 because the first couple"
+"r has that address.\n\n<li> Field addressing: Has the form <<b><tt>f:n</tt></"
+"b>> where <b><tt>f</tt></b> is the (zero based) EtherCAT coupler field and \n"
+"<b><tt>n</tt></b> is the terminal offset in that field. Take note that <b><tt"
+">n</tt></b> is also greater than 0.\n\n<li> SSId addressing: the Secondary Sl"
+"ave Addressing has the form <<b><tt>#s:n</tt></b>> where <b><tt>s</tt></b> is"
+" the Secondary Slave Id of the EtherCAT coupler and <b><tt>n</tt></b> is the "
+"offset in that field. The SSId has to be preprogrammed into the coupler with "
+"other service tools.\n</ol>\n\n<h4>Device Model:</h4>\nChoose the device at t"
+"he Indexed position of the master.\n\n<h4>Input Type:</h4>\n<ul>\n<li>Choose "
+"<b>Vector Input</b> to have a single input as a vector\nwith a size correspon"
+"ding to the channel count of the terminal. This mode also allows a control in"
+"put and a status output port to be displayed.\n<li>Choose <b>Separate Inputs<"
+"/b> to have one input for every channel.\n</ul>\n\n<p>\nChoosing <b>Status Ou"
+"tput</b> provides a port of type <tt>uint8_T</tt> where the status is present"
+"ed. This is only enabled when <b>Vector Output</b> is selected. Note: at the "
+"time of writing (1.2.2006) the terminals do not have a status output, and hen"
+"ce this option is disabled!\n\n<p>\nSet the <b>Sample Time</b> for the block."
+" <tt>0</tt> is continuous sample time (runs at the model's base rate). Settin"
+"g <tt>-1</tt> will try to set the time using back propagation.\n"
+	  MaskPromptString	  "Master|Slave Index|Device Model |Input Type"
+" |Status Output|Sample Time (-1 inherited)"
+	  MaskStyleString	  "edit,edit,popup(EL4102|EL4104|EL4108|EL4112"
+"|EL4114|EL4118|EL4122|EL4124|EL4128|EL4132|EL4134|EL4138),popup(Vector Input|"
+"Separate Inputs),checkbox,edit"
+	  MaskTunableValueString  "off,off,off,off,off,off"
+	  MaskCallbackString	  "|||el41xx_check('input_type');\n||"
+	  MaskEnableString	  "on,on,on,on,off,on"
+	  MaskVisibilityString	  "on,on,on,on,on,on"
+	  MaskToolTipString	  "on,on,on,on,on,on"
+	  MaskVarAliasString	  ",,,,,"
+	  MaskVariables		  "master=@1;index=&2;model=&3;input_type=@4;s"
+"tatus=@5;tsample=@6;"
+	  MaskInitialization	  "f = {'10V','4..20mA', ...\n    '0..20mA','±"
+"10V'};\nfunc = char(f(str2num(model(5))+1));\n"
+	  MaskDisplay		  "fprintf(...\n    '%s\\n%s AOut\\nM:%i Idx:%"
+"s',...\n    model,...\n    func,...\n    master,...\n    index)\n\nport_label"
+"('input',1,'D')\n"
+	  MaskIconFrame		  on
+	  MaskIconOpaque	  on
+	  MaskIconRotate	  "none"
+	  MaskIconUnits		  "autoscale"
+	  MaskValueString	  "0|3|EL4102|Vector Input|off|-1"
+	  MaskTabNameString	  ",,,,,"
+	}
+	Block {
+	  BlockType		  "S-Function"
+	  Name			  "DIN_0"
+	  Ports			  [0, 1]
+	  Position		  [30, 29, 100, 61]
+	  BackgroundColor	  "yellow"
+	  FunctionName		  "el10xx"
+	  Parameters		  "master,index,device,output_type,dtype,tsamp"
+"le"
+	  MaskType		  "EL10xx"
+	  MaskDescription	  "Beckhoff EtherCAT Digital Input\nEL1002,4,8"
+":	3ms filter\nEL1012,4,8:	10us filter\n\nOutput Type:\n  1-Bypt"
+"e output: one bit coded output\n  Vector output: Output vector is <Channels> "
+"wide\n  Separate outputs: have <Channels> number of outputs"
+	  MaskHelp		  "This block implements the Beckhoff's EtherC"
+"AT series of Digital Input Terminals.\n<p/>\nChoose or set the following opti"
+"ons:\n<h4>Master:</h4>\nSet the EtherCAT Master number that this terminal is "
+"connected to.\n\n<h4>Slave Index:</h4>\nSet the EtherCAT slave index. Followi"
+"ng address formats are allowed:\n<ol>\n<li> Absolute addressing: a number <<b"
+"><tt>n</tt></b>> representing the (zero based) absolute index. <b><tt>n</tt><"
+"/b> is typically larger than 0 because the first coupler has that address.\n"
+"\n<li> Field addressing: Has the form <<b><tt>f:n</tt></b>> where <b><tt>f</t"
+"t></b> is the (zero based) EtherCAT coupler field and \n<b><tt>n</tt></b> is "
+"the terminal offset in that field. Take note that <b><tt>n</tt></b> is also g"
+"reater than 0.\n\n<li> SSId addressing: the Secondary Slave Addressing has th"
+"e form <<b><tt>#s:n</tt></b>> where <b><tt>s</tt></b> is the Secondary Slave "
+"Id of the EtherCAT coupler and <b><tt>n</tt></b> is the offset in that field."
+" The SSId has to be preprogrammed into the coupler with other service tools."
+"\n</ol>\n\n<h4> Device Model</h4>\nSelect the model that is used. This sets t"
+"he number of outputs of this block.\n\n<h4>Output Type</h4>\nThe block output"
+" type corresponding to the terminal inputs can be one of the following:\n<ul>"
+"\n<li><b>1-Byte Output</b>: This sets one output where each digital input to "
+"the terminal occupies one bit.\n<li><b>Vector Output</b>: This sets one outpu"
+"t vector with a width equal to the number of digital inputs to the terminal. "
+"\n<li><b>Separate Outputs</b>: This sets the number of outputs corresponding "
+"to the digital inputs to the terminal. \n</ul>\n\n<h4>Output Data Type</h4>\n"
+"Select the output data type that is required.\n\n<h4>Sample Time</h4>\nSelect"
+" the correct sample time. Setting this to 0 makes for a sample time at the mo"
+"del's base rate. If another block can set the sample time, choose -1 for inhe"
+"rited sample time."
+	  MaskPromptString	  "Master|Slave Index|Device Model|Output Type"
+"|Output Data Type|Sample Time (-1 inherited)"
+	  MaskStyleString	  "edit,edit,popup(EL1002|EL1004|EL1008|EL1012"
+"|EL1014|EL1018),popup(1-Byte Output|Vector Output|Separate Outputs),popup(int"
+"8|uint8|int16|uint16|int32|uint32|boolean|real|real32|Inherited via back prop"
+"agation),edit"
+	  MaskTunableValueString  "off,off,off,off,off,off"
+	  MaskCallbackString	  "|||||"
+	  MaskEnableString	  "on,on,on,on,on,on"
+	  MaskVisibilityString	  "on,on,on,on,on,on"
+	  MaskToolTipString	  "on,on,on,on,on,on"
+	  MaskVarAliasString	  ",,,,,"
+	  MaskVariables		  "master=@1;index=&2;device=&3;output_type=@4"
+";dtype=@5;tsample=@6;"
+	  MaskDisplay		  "fprintf('%s DIn\\nM:%i Idx:%s',\ndevice,mas"
+"ter,index);"
+	  MaskIconFrame		  on
+	  MaskIconOpaque	  on
+	  MaskIconRotate	  "none"
+	  MaskIconUnits		  "autoscale"
+	  MaskValueString	  "0|0|EL1004|Vector Output|boolean|0"
+	  MaskTabNameString	  ",,,,,"
+	}
+	Block {
+	  BlockType		  "S-Function"
+	  Name			  "DOUT_0"
+	  Ports			  [1]
+	  Position		  [185, 34, 255, 66]
+	  BackgroundColor	  "yellow"
+	  FunctionName		  "el20xx"
+	  Parameters		  "master,index,device,input_type,status,tsamp"
+"le"
+	  MaskType		  "EL20xx"
+	  MaskDescription	  "Beckhoff EtherCAT Digital Output\nEL2002,4:"
+"	24V 0.5A\nEL2032:		24V 2A, Optional Status (with Vector"
+" Input)\n\nInput Type:\n  1-Bypte input: one bit coded input\n  Vector input:"
+" Input vector is <Channels> wide\n  Separate inputs: have <Channels> number o"
+"f inputs"
+	  MaskHelp		  "This block implements the Beckhoff's EtherC"
+"AT series of Digital Output Terminals.\n<p/>\nChoose or set the following opt"
+"ions:\n<h4>Master:</h4>\nSet the EtherCAT Master number that this terminal is"
+" connected to.\n\n<h4>Slave Index:</h4>\nSet the EtherCAT slave index. Follow"
+"ing address formats are allowed:\n<ol>\n<li> Absolute addressing: a number <<"
+"b><tt>n</tt></b>> representing the (zero based) absolute index. <b><tt>n</tt>"
+"</b> is typically larger than 0 because the first coupler has that address.\n"
+"\n<li> Field addressing: Has the form <<b><tt>f:n</tt></b>> where <b><tt>f</t"
+"t></b> is the (zero based) EtherCAT coupler field and \n<b><tt>n</tt></b> is "
+"the terminal offset in that field. Take note that <b><tt>n</tt></b> is also g"
+"reater than 0.\n\n<li> SSId addressing: the Secondary Slave Addressing has th"
+"e form <<b><tt>#s:n</tt></b>> where <b><tt>s</tt></b> is the Secondary Slave "
+"Id of the EtherCAT coupler and <b><tt>n</tt></b> is the offset in that field."
+" The SSId has to be preprogrammed into the coupler with other service tools."
+"\n</ol>\n\n<h4> Device Model</h4>\nSelect the model that is used. This sets t"
+"he maximum number of inputs of this block. Having fewer inputs is allowed.<br"
+">\n Some models have an optional status byte. These have the <b>Status Output"
+"</b> below enabled.\n\n<h4>Input Type</h4>\nThe input type can be one of the "
+"following:\n<ul>\n<li><b>1-Byte Input</b>: This sets one block input bit code"
+"d corresponding to the digital output of the terminal.\n<li><b>Vector Input</"
+"b>: This sets one input vector where each element corresponds to a digital ou"
+"tput of the terminal.\n<li><b>Separate Inputs</b>: This sets the number of bl"
+"ock inputs corresponding to the digital output count of the terminal. \n</ul>"
+"\n\n<h4>Status Output</h4>\nSome models have a status bit to monitor the atta"
+"ched hardware. Check this box to make it available as a block output in simul"
+"ink. This option is not available if <b>Separate Inputs</b> is selected.\n\n<"
+"h4>Sample Time</h4>\nSelect the correct sample time. Setting this to 0 makes "
+"for a sample time at the model's base rate. If another block can set the samp"
+"le time, choose -1 for inherited sample time."
+	  MaskPromptString	  "Master|Slave Index|Device Model |Input Type"
+" |Status Output |Sample Time (-1 inherited)"
+	  MaskStyleString	  "edit,edit,popup(EL2002|EL2004|EL2032),popup"
+"(1-Byte Input|Vector Input|Separate Inputs),checkbox,edit"
+	  MaskTunableValueString  "off,off,off,off,off,off"
+	  MaskCallbackString	  "||el2xxx_check('device');|el2xxx_check('inp"
+"ut_type');||"
+	  MaskEnableString	  "on,on,on,on,off,on"
+	  MaskVisibilityString	  "on,on,on,on,on,on"
+	  MaskToolTipString	  "on,on,on,on,on,on"
+	  MaskVarAliasString	  ",,,,,"
+	  MaskVariables		  "master=@1;index=&2;device=&3;input_type=@4;"
+"status=@5;tsample=@6;"
+	  MaskDisplay		  "fprintf('%s DOut\\nM:%i Idx:%s',\ndevice,ma"
+"ster,index);"
+	  MaskIconFrame		  on
+	  MaskIconOpaque	  on
+	  MaskIconRotate	  "none"
+	  MaskIconUnits		  "autoscale"
+	  MaskValueString	  "0|0|EL2004|Vector Input|off|-1"
+	  MaskTabNameString	  ",,,,,"
+	}
+	Block {
+	  BlockType		  "S-Function"
+	  Name			  "INC_0"
+	  Ports			  [0, 1]
+	  Position		  [25, 230, 105, 270]
+	  BackgroundColor	  "yellow"
+	  FunctionName		  "el5101"
+	  Parameters		  "master,index,scale,offset,dtype,status,filt"
+"er,omega,tsample"
+	  MaskType		  "EL5101"
+	  MaskDescription	  "Beckhoff EtherCAT Incremental Encoder Input"
+	  MaskHelp		  "This block implements the EtherCAT Incremen"
+"tal Encoder Input Terminal EL5101.\n\nThe first output is data, the second op"
+"tional output is a Status Byte. Various options affect the behaviour of the t"
+"erminal and the block's output:\n\n<h4>Master:</h4>\nSet the EtherCAT Master "
+"of this terminal.\n\n<h4>Slave Index:</h4>\nSet the EtherCAT slave index. Fol"
+"lowing address formats are allowed:\n<ol>\n<li> Absolute addressing: a number"
+" <<b><tt>n</tt></b>> representing the (zero based) absolute index. <b><tt>n</"
+"tt></b> is typically larger than 0 because the first coupler has that address"
+".\n\n<li> Field addressing: Has the form <<b><tt>f:n</tt></b>> where <b><tt>f"
+"</tt></b> is the (zero based) EtherCAT coupler field and \n<b><tt>n</tt></b> "
+"is the terminal offset in that field. Take note that <b><tt>n</tt></b> is als"
+"o greater than 0.\n\n<li> SSId addressing: the Secondary Slave Addressing has"
+" the form <<b><tt>#s:n</tt></b>> where <b><tt>s</tt></b> is the Secondary Sla"
+"ve Id of the EtherCAT coupler and <b><tt>n</tt></b> is the offset in that fie"
+"ld. The SSId has to be preprogrammed into the coupler with other service tool"
+"s.\n</ol>\n\n<h4>Output Full Scale</h4>\nWhen <b>Output Data Type</b> is set "
+"to <b>Double with scale and offset</b>, the block's output value at full scal"
+"e terminal input can be set here. This value  directly affects the output des"
+"pite a possible output LPF filter.\n\n<h4>Output Offset</h4>\nWhen <b>Output "
+"Data Type</b> is set to <b>Double with scale and offset</b>, the blocks outpu"
+"t at zero terminal input can be set here. Note that the Full Scale above is a"
+"lso increased by this amount. This value  directly affects the output despite"
+" a possible output LPF filter.\n\n<h4>Output Data Type</h4>\nChoose the block"
+"'s output data type for the output signal. Available are:\n<ul>\n<li><b><tt>R"
+"aw</tt></b> outputting the internal raw value as <tt>uint32_T</tt> as appropr"
+"iate\n<li><b><tt>Double</tt></b> outputting 0..1 corresponding to the Full Sc"
+"ale. Full Scale is affected by the Frame Type, SSI Frame Size and Data Length"
+". Refer to manufactuer's documentation.\n<li><b><tt>Double with scale and off"
+"set</tt></b>, allowing the output to be scaled with an offset.\n</ul>\n\n<p> "
+"\nChoosing <b>Status Output</b> provides a port of type <tt>uint8_T</tt> wher"
+"e the status is presented. Refer to manufacturors documentation for the used "
+"coding.\n This is only enabled when <b>Vector Output</b> is selected. \n\n<h4"
+">Output Filter</h4>\nWhen not in <b>Raw</b> mode, the <b>Output Filter</b> ch"
+"eckbox becomes available, allowing the use of an internal low pass filter. En"
+"ter the <b>LPF Time Constant</b> for the filter in the field below.\n<br>For "
+"continuous sample time systems (0 in Sample Time), the filter is also continu"
+"ous. Discrete samples systems (Sample Time > 0) uses an equivalent discrete l"
+"ow pass filter with a similar time constant.\n\n<p>\nSet the <b>Sample Time</"
+"b> for the block. <tt>0</tt> is continuous sample time (runs at the model's b"
+"ase rate). Setting <tt>-1</tt> will try to set the time using back propagatio"
+"n.\n"
+	  MaskPromptString	  "Master|Slave Index|Output Full Scale|Output"
+" Offset|Output Data Type|Status Output|Output Filter|LPF Time Constant (sec)|"
+"Sample Time (-1 inherited)"
+	  MaskStyleString	  "edit,edit,edit,edit,popup(Raw bits|Double|D"
+"ouble with scale and offset),checkbox,checkbox,edit,edit"
+	  MaskTunableValueString  "off,off,on,on,off,off,off,on,off"
+	  MaskCallbackString	  "||||el5101_check('dtype');||el5101_check('f"
+"ilter');||"
+	  MaskEnableString	  "on,on,off,off,on,off,on,off,on"
+	  MaskVisibilityString	  "on,on,on,on,on,on,on,on,on"
+	  MaskToolTipString	  "on,on,on,on,on,on,on,on,on"
+	  MaskVarAliasString	  ",,,,,,,,"
+	  MaskVariables		  "master=@1;index=&2;scale=@3;offset=@4;dtype"
+"=@5;status=@6;filter=@7;tau=@8;tsample=@9;"
+	  MaskInitialization	  "omega=1/tau;"
+	  MaskDisplay		  "fprintf(...\n    'EL5101\\nIncr.-Enc. Input"
+"\\nM:%i Idx:%s',...\n    master,...\n    index)\n"
+	  MaskIconFrame		  on
+	  MaskIconOpaque	  on
+	  MaskIconRotate	  "none"
+	  MaskIconUnits		  "autoscale"
+	  MaskValueString	  "0|0|1|0|Double|off|off|0.1|0"
+	  MaskTabNameString	  ",,,,,,,,"
+	}
+	Block {
+	  BlockType		  "S-Function"
+	  Name			  "SSI_0"
+	  Ports			  [0, 1]
+	  Position		  [25, 160, 105, 200]
+	  BackgroundColor	  "yellow"
+	  FunctionName		  "el5001"
+	  Parameters		  "master,index,scale,offset,dtype,code,baud,f"
+"rame,size,length,frame_error,inhibit,inh_time,status,filter,omega,tsample"
+	  MaskType		  "EL5001"
+	  MaskDescription	  "Beckhoff EtherCAT SSI Input"
+	  MaskHelp		  "This block implements the EtherCAT SSI Inpu"
+"t Terminal EL5001.\n\nThe first output is data, the second optional output is"
+" a Status Byte. Various options affect the behaviour of the terminal and the "
+"block's output:\n\n<h4>Master:</h4>\nSet the EtherCAT Master of this terminal"
+".\n\n<h4>Slave Index:</h4>\nSet the EtherCAT slave index. Following address f"
+"ormats are allowed:\n<ol>\n<li> Absolute addressing: a number <<b><tt>n</tt><"
+"/b>> representing the (zero based) absolute index. <b><tt>n</tt></b> is typic"
+"ally larger than 0 because the first coupler has that address.\n\n<li> Field "
+"addressing: Has the form <<b><tt>f:n</tt></b>> where <b><tt>f</tt></b> is the"
+" (zero based) EtherCAT coupler field and \n<b><tt>n</tt></b> is the terminal "
+"offset in that field. Take note that <b><tt>n</tt></b> is also greater than 0"
+".\n\n<li> SSId addressing: the Secondary Slave Addressing has the form <<b><t"
+"t>#s:n</tt></b>> where <b><tt>s</tt></b> is the Secondary Slave Id of the Eth"
+"erCAT coupler and <b><tt>n</tt></b> is the offset in that field. The SSId has"
+" to be preprogrammed into the coupler with other service tools.\n</ol>\n\n<h4"
+">Output Full Scale</h4>\nWhen <b>Output Data Type</b> is set to <b>Double wit"
+"h scale and offset</b>, the block's output value at full scale terminal input"
+" can be set here. This value  directly affects the output despite a possible "
+"output LPF filter.\n\n<h4>Output Offset</h4>\nWhen <b>Output Data Type</b> is"
+" set to <b>Double with scale and offset</b>, the blocks output at zero termin"
+"al input can be set here. Note that the Full Scale above is also increased by"
+" this amount. This value  directly affects the output despite a possible outp"
+"ut LPF filter.\n\n<h4>Output Data Type</h4>\nChoose the block's output data t"
+"ype for the output signal. Available are:\n<ul>\n<li><b><tt>Raw</tt></b> outp"
+"utting the internal raw value as <tt>uint32_T</tt> as appropriate\n<li><b><tt"
+">Double</tt></b> outputting 0..1 corresponding to the Full Scale. Full Scale "
+"is affected by the Frame Type, SSI Frame Size and Data Length. Refer to manuf"
+"actuer's documentation.\n<li><b><tt>Double with scale and offset</tt></b>, al"
+"lowing the output to be scaled with an offset.\n</ul>\n\n<p>\nFor <b>SSI Code"
+"</b>, <b>Baudrate</b>, <b>Frame Type</b>, <b>SSI Frame Size</b>, <b>Data Leng"
+"th</b>, <b>Disable Frame Error</b>, <b>Enable Inhibit Time</b> and <b>Min Inh"
+"ibit Time</b>, refer to manufacturer's documentation.\n<p> \nChoosing <b>Stat"
+"us Output</b> provides a port of type <tt>uint8_T</tt> where the status is pr"
+"esented. Refer to manufacturors documentation for the used coding.\n This is "
+"only enabled when <b>Vector Output</b> is selected. \n\n<h4>Output Filter</h4"
+">\nWhen not in <b>Raw</b> mode, the <b>Output Filter</b> checkbox becomes ava"
+"ilable, allowing the use of an internal low pass filter. Enter the <b>LPF Tim"
+"e Constant</b> for the filter in the field below.\n<br>For continuous sample "
+"time systems (0 in Sample Time), the filter is also continuous. Discrete samp"
+"les systems (Sample Time > 0) uses an equivalent discrete low pass filter wit"
+"h a similar time constant.\n\n<p>\nSet the <b>Sample Time</b> for the block. "
+"<tt>0</tt> is continuous sample time (runs at the model's base rate). Setting"
+" <tt>-1</tt> will try to set the time using back propagation.\n"
+	  MaskPromptString	  "Master|Slave Index|Output Full Scale|Output"
+" Offset|Output Data Type|SSI Code |Baudrate |Frame Type |SSI Frame Size |Data"
+" Length |Disable Frame Error|Enable Inhibit Time|Min Inhibit Time [us] (1..65"
+"535)|Status Output|Output Filter|LPF Time Constant (sec)|Sample Time (-1 inhe"
+"rited)"
+	  MaskStyleString	  "edit,edit,edit,edit,popup(Raw bits|Double|D"
+"ouble with scale and offset),popup(Binary|Gray),popup(1250k|1000k|500k|250k|1"
+"25k),popup(Multiturn (25 bits)|Singleturn (13 bits)|Variable (set size in Fra"
+"me Size)),popup(1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|2"
+"4|25|26|27|28|29|30|31|32),popup(1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18"
+"|19|20|21|22|23|24|25|26|27|28|29|30|31|32),checkbox,checkbox,edit,checkbox,c"
+"heckbox,edit,edit"
+	  MaskTunableValueString  "off,off,on,on,off,off,off,off,off,off,off,o"
+"ff,off,off,off,on,off"
+	  MaskCallbackString	  "||||el5001_check('dtype');|||el5001_check('"
+"frame');||||el5001_check('inhibit');|el5001_check('inh_time');||el5001_check("
+"'filter');||"
+	  MaskEnableString	  "on,on,off,off,on,on,on,on,off,on,on,on,off,"
+"on,on,off,on"
+	  MaskVisibilityString	  "on,on,on,on,on,on,on,on,on,on,on,on,on,on,o"
+"n,on,on"
+	  MaskToolTipString	  "on,on,on,on,on,on,on,on,on,on,on,on,on,on,o"
+"n,on,on"
+	  MaskVarAliasString	  ",,,,,,,,,,,,,,,,"
+	  MaskVariables		  "master=@1;index=&2;scale=@3;offset=@4;dtype"
+"=@5;code=@6;baud=@7;frame=@8;size=@9;length=@10;frame_error=@11;inhibit=@12;i"
+"nh_time=@13;status=@14;filter=@15;tau=@16;tsample=@17;"
+	  MaskInitialization	  "omega=1/tau;"
+	  MaskDisplay		  "fprintf(...\n    'EL5001\\nSSI Input\\nM:%i"
+" Idx:%s',...\n    master,...\n    index)\n"
+	  MaskIconFrame		  on
+	  MaskIconOpaque	  on
+	  MaskIconRotate	  "none"
+	  MaskIconUnits		  "autoscale"
+	  MaskValueString	  "0|0|1|0|Double|Binary|1250k|Multiturn (25 b"
+"its)|25|24|off|off|1|off|off|0.1|0"
+	  MaskTabNameString	  ",,,,,,,,,,,,,,,,"
+	}
+      }
+    }
+    Block {
+      BlockType		      SubSystem
+      Name		      "Task Info"
+      Ports		      []
+      Position		      [106, 45, 209, 85]
+      BackgroundColor	      "lightBlue"
+      AttributesFormatString  "NEVER DELETE"
+      OpenFcn		      "model=bdroot;     \ntry               \n  rtwbu"
+"ild(model);\ncatch             \n  error(lasterr); \nend               \n    "
+"              "
+      FontName		      "Arial"
+      FontSize		      12
+      FontWeight	      "bold"
+      MinAlgLoopOccurrences   off
+      RTWSystemCode	      "Auto"
+      FunctionWithSeparateData off
+      MaskHideContents	      off
+      MaskDisplay	      "disp(['Generate Code\\n',...\n	  '(doubl"
+"e-click)'])"
+      MaskIconFrame	      on
+      MaskIconOpaque	      on
+      MaskIconRotate	      "none"
+      MaskIconUnits	      "autoscale"
+      System {
+	Name			"Task Info"
+	Location		[1035, 582, 1395, 915]
+	Open			off
+	ModelBrowserVisibility	off
+	ModelBrowserWidth	200
+	ScreenColor		"white"
+	PaperOrientation	"landscape"
+	PaperPositionMode	"auto"
+	PaperType		"usletter"
+	PaperUnits		"inches"
+	TiledPaperMargins	[0.500000, 0.500000, 0.500000, 0.500000]
+	TiledPageScale		1
+	ShowPageBoundaries	off
+	ZoomFactor		"100"
+	Block {
+	  BlockType		  "S-Function"
+	  Name			  "TaskInfo"
+	  Ports			  [0, 4]
+	  Position		  [65, 48, 125, 187]
+	  FunctionName		  "taskinfo"
+	  Parameters		  "Ts"
+	  MaskPromptString	  "Sample Time"
+	  MaskStyleString	  "edit"
+	  MaskTunableValueString  "on"
+	  MaskEnableString	  "on"
+	  MaskVisibilityString	  "on"
+	  MaskToolTipString	  "on"
+	  MaskVariables		  "Ts=@1;"
+	  MaskIconFrame		  on
+	  MaskIconOpaque	  on
+	  MaskIconRotate	  "none"
+	  MaskIconUnits		  "autoscale"
+	  MaskValueString	  "str2num(get_param(bdroot,'FixedStep'))"
+	  Port {
+	    PortNumber		    1
+	    Name		    "__time__"
+	    RTWStorageClass	    "Auto"
+	    DataLoggingNameMode	    "SignalName"
+	  }
+	  Port {
+	    PortNumber		    2
+	    Name		    "__exec_time__"
+	    RTWStorageClass	    "Auto"
+	    DataLoggingNameMode	    "SignalName"
+	  }
+	  Port {
+	    PortNumber		    3
+	    Name		    "__Ts__"
+	    RTWStorageClass	    "Auto"
+	    DataLoggingNameMode	    "SignalName"
+	  }
+	  Port {
+	    PortNumber		    4
+	    Name		    "__overrun__"
+	    RTWStorageClass	    "Auto"
+	    DataLoggingNameMode	    "SignalName"
+	  }
+	}
+	Block {
+	  BlockType		  Terminator
+	  Name			  "Terminator"
+	  Position		  [215, 55, 235, 75]
+	  ShowName		  off
+	}
+	Block {
+	  BlockType		  Terminator
+	  Name			  "Terminator1"
+	  Position		  [215, 90, 235, 110]
+	  ShowName		  off
+	}
+	Block {
+	  BlockType		  Terminator
+	  Name			  "Terminator2"
+	  Position		  [215, 125, 235, 145]
+	  ShowName		  off
+	}
+	Block {
+	  BlockType		  Terminator
+	  Name			  "Terminator3"
+	  Position		  [215, 160, 235, 180]
+	  ShowName		  off
+	}
+	Line {
+	  Name			  "__overrun__"
+	  Labels		  [0, 0]
+	  SrcBlock		  "TaskInfo"
+	  SrcPort		  4
+	  DstBlock		  "Terminator3"
+	  DstPort		  1
+	}
+	Line {
+	  Name			  "__Ts__"
+	  Labels		  [0, 0]
+	  SrcBlock		  "TaskInfo"
+	  SrcPort		  3
+	  DstBlock		  "Terminator2"
+	  DstPort		  1
+	}
+	Line {
+	  Name			  "__exec_time__"
+	  Labels		  [0, 0]
+	  SrcBlock		  "TaskInfo"
+	  SrcPort		  2
+	  DstBlock		  "Terminator1"
+	  DstPort		  1
+	}
+	Line {
+	  Name			  "__time__"
+	  Labels		  [0, 0]
+	  SrcBlock		  "TaskInfo"
+	  SrcPort		  1
+	  DstBlock		  "Terminator"
+	  DstPort		  1
+	}
+      }
+    }
+  }
+}

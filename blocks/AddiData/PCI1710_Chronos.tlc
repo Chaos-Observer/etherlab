@@ -1,0 +1,83 @@
+%implements "el10xx" "C"
+
+%%
+%% Hardware Driver for Beckhoff's EtherCAT Digital Input Terminal
+%% series EL10xx
+%% 
+%% This TLC Implements the necessary IO Functions to communicate
+%% with the EtherCAT Driver enabling the usage of a digital input
+%% terminal.
+%%
+%% Copyright (C) 2006
+%% Richard Hacker
+%% IgH Essen GmbH
+%% 
+%% License: GPL
+
+%include "EtherCAT.tlc"
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function BlockTypeSetup( block, system ) void
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  %<InitEtherCAT(block, system)>
+%endfunction
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function BlockInstanceSetup( block, system ) void
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  %assign MasterIdx = InitEtherCATMaster(block, system)
+  %assign DomainIdx = InitEtherCATDomain(block, system, MasterIdx)
+  %<InitEtherCATSlave( block, system, MasterIdx, DomainIdx)>
+%endfunction
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function Start(block, system) Output
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  /* %<Type> Block: %<Name> 
+   * Registering digital input with EtherCAT Driver
+   */
+  %<RegisterEtherCATSlave(block, system, DeviceModel, \
+      LibBlockPWork(InputByte,"","",0), "InputValue", 1)>
+%endfunction
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function Outputs( block, system ) Output
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  /* %<Type> Block: %<Name> 
+   */
+  %%
+  %switch OpType
+    %case 1
+      %% Byte Input Case: the input value is placed directly
+      %% into the memory location affecting the outputs
+      %<LibBlockOutputSignal(0,"","",0)> = 
+        *(uint8_T *)%<LibBlockPWork(InputByte,"","",0)>;
+      %break
+      %%
+    %case 2
+      %% Input Vector Case: each input of the vector is tested
+      %% for truth and the corresponding output bit is then set
+      %foreach idx = ChanNum
+        %<LibBlockOutputSignal(0,"","",idx)> = 
+                *(uint8_T *)%<LibBlockPWork(InputByte,"","",0)> & 1<<%<idx>
+                ? 1 : 0;
+      %endforeach
+      %break
+      %%
+    %case 3
+      %% Separate Inputs Case: each input of the block is tested
+      %% for truth and the corresponding output bit is then set
+      %foreach idx = ChanNum
+        %<LibBlockOutputSignal(idx,"","",0)> = 
+                *(uint8_T *)%<LibBlockPWork(InputByte,"","",0)> & 1<<%<idx>
+                ? 1 : 0;
+      %endforeach
+      %break
+      %%
+  %endswitch
+%endfunction

@@ -1,0 +1,346 @@
+diff -ur APCI-1710_LINUX_DRIVER_MODULE/addidata_type.h x/addidata_type.h
+--- APCI-1710_LINUX_DRIVER_MODULE/addidata_type.h	2004-07-01 11:43:04.000000000 +0200
++++ APCI-1710_LINUX_DRIVER_MODULE/addidata_type.h	2006-06-16 11:41:08.000000000 +0200
+@@ -49,4 +49,4 @@
+ #define MAKEWORD(H,L)	(USHORT) ((L) | ((H) << 8))
+ #define LOWORD(W)	(USHORT) ((W) & 0xFFFF)
+ #define HIWORD(W)	(USHORT) (((W) >> 16) & 0xFFFF)
+-#define MAKEDWORD(H,L)	(UINT) ((L) | ((H) << 16))
+\ No newline at end of file
++#define MAKEDWORD(H,L)	(UINT) ((L) | ((H) << 16))
+diff -ur APCI-1710_LINUX_DRIVER_MODULE/apci1710.c x/apci1710.c
+--- APCI-1710_LINUX_DRIVER_MODULE/apci1710.c	2004-08-05 17:18:00.000000000 +0200
++++ APCI-1710_LINUX_DRIVER_MODULE/apci1710.c	2006-06-16 11:22:26.000000000 +0200
+@@ -98,19 +98,9 @@
+ 
+ #include "apci1710.h"
+ 
+-#include <linux/fs.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+-#include <asm/io.h>
+-#include <asm/system.h>
+-#include <asm/uaccess.h>
+-#include <asm/bitops.h>
+-#include <linux/sched.h>
+-#include <linux/tqueue.h>
+-#include <linux/interrupt.h>
+-#include <linux/kernel.h>
+ #include <linux/delay.h>
+-#include <linux/mm.h>
+ 
+ 
+ str_APCI1710_DriverStruct s_APCI1710_DriverStruct; 
+@@ -215,7 +205,7 @@
+ 		 /* Test the timing unity */
+ 		 /*************************/
+ 
+-		 if ((b_TimingUnit >= 0) && (b_TimingUnit <= 2))
++		 if (b_TimingUnit <= 2)
+ 		    {
+ 		    /**********************************/
+ 		    /* Test the base timing selection */
+@@ -579,7 +569,7 @@
+ 	      /* Test the ETM selection */
+ 	      /**************************/
+ 
+-	      if (b_ETM >= 0 && b_ETM <= 1)
++	      if (b_ETM <= 1)
+ 		 {
+ 		 /**************************/
+ 		 /* Get ETM initialisation */
+@@ -840,7 +830,7 @@
+ 	      /* Test the ETM selection */
+ 	      /**************************/
+ 
+-	      if (b_ETM >= 0 && b_ETM <= 1)
++	      if (b_ETM <= 1)
+ 		 {
+ 		 /**************************/
+ 		 /* Get ETM initialisation */
+@@ -1047,7 +1037,7 @@
+ 	      /* Test the ETM selection */
+ 	      /**************************/
+ 
+-	      if (b_ETM >= 0 && b_ETM <= 1)
++	      if (b_ETM <= 1)
+ 		 {
+ 		 /**************************/
+ 		 /* Get ETM initialisation */
+@@ -1215,7 +1205,7 @@
+ 	      /* Test the ETM selection */
+ 	      /**************************/
+ 
+-	      if (b_ETM >= 0 && b_ETM <= 1)
++	      if (b_ETM <= 1)
+ 		 {
+ 		 /**************************/
+ 		 /* Get ETM initialisation */
+@@ -1449,7 +1439,7 @@
+ 	      /* Test the ETM selection */
+ 	      /**************************/
+ 
+-	      if (b_ETM >= 0 && b_ETM <= 1)
++	      if (b_ETM <= 1)
+ 		 {
+ 		 /**************************/
+ 		 /* Get ETM initialisation */
+@@ -1746,7 +1736,7 @@
+ 	      /* Test the ETM selection */
+ 	      /**************************/
+ 
+-	      if (b_ETM >= 0 && b_ETM <= 1)
++	      if (b_ETM <= 1)
+ 		 {
+ 		 /**************************/
+ 		 /* Get ETM initialisation */
+@@ -2034,7 +2024,7 @@
+ 	      /* Test the chronometer mode */
+ 	      /*****************************/
+ 
+-	      if (b_ChronoMode >= 0 && b_ChronoMode <= 7)
++	      if (b_ChronoMode <= 7)
+ 		 {
+ 		 /**************************/
+ 		 /* Test the PCI bus clock */
+@@ -2048,7 +2038,7 @@
+ 		    /* Test the timing unity */
+ 		    /*************************/
+ 
+-		    if ((b_TimingUnit >= 0) && (b_TimingUnit <= 4))
++		    if (b_TimingUnit <= 4)
+ 		       {
+ 		       /**********************************/
+ 		       /* Test the base timing selection */
+@@ -2170,7 +2160,7 @@
+ 					   /*****************************/
+ 
+ 					   //*pul_RealTimingInterval = (ULONG) (ul_TimerValue / (1.0 * (double) b_PCIInputClock));
+-					   pul_RealTimingInterval = (ULONG) (ul_TimerValue / (1 * b_PCIInputClock));
++					   *pul_RealTimingInterval = (ULONG) (ul_TimerValue / (1 * b_PCIInputClock));
+ 					   //d_RealTimingInterval = (double) ul_TimerValue / ((double) 1.0 * (double) b_PCIInputClock);
+                                            /* 
+ 					   if ((double) ((double) ul_TimerValue / (1.0 * (double) b_PCIInputClock)) >= (double) ((double) *pul_RealTimingInterval + 0.5))
+@@ -2932,7 +2922,6 @@
+ 	{
+  	INT i_ReturnValue = 0;
+ 	DWORD dw_Status;
+-        BYTE b_ModuleConfiguration = 0;
+ 
+         /*******************************************************/
+         /* Gets the pointer to the board information structure */
+@@ -2961,7 +2950,7 @@
+ 	   /* Test if chronometer */
+ 	   /***********************/
+ 
+-            if (b_ModuleConfiguration == APCI1710_CHRONOMETER)
++            if (BoardInformation -> dw_MolduleConfiguration [b_ModuleNumber] == APCI1710_CHRONOMETER)
+ 	      {
+ 	      /***********************************/
+ 	      /* Test if chronometer initialised */
+@@ -3131,7 +3120,6 @@
+ 	INT    i_ReturnValue = 0;
+ 	DWORD dw_Status;
+ 	DWORD dw_TimeOut = 0;
+-        BYTE b_ModuleConfiguration = 0;
+ 
+         /*******************************************************/
+         /* Gets the pointer to the board information structure */
+@@ -3160,7 +3148,7 @@
+ 	   /* Test if chronometer */
+ 	   /***********************/
+ 
+-            if (b_ModuleConfiguration == APCI1710_CHRONOMETER)
++            if (BoardInformation -> dw_MolduleConfiguration [b_ModuleNumber] == APCI1710_CHRONOMETER)
+ 
+ 	      {
+ 	      /***********************************/
+@@ -3472,7 +3460,7 @@
+ 		 /* Test the digital output channel */
+ 		 /***********************************/
+ 
+-		 if ((b_OutputChannel >= 0) && (b_OutputChannel <= 2))
++		 if (b_OutputChannel <= 2)
+ 		    {
+ 		    outl   (1,
+ 			    BoardInformation ->
+@@ -3600,7 +3588,7 @@
+ 		 /* Test the digital output channel */
+ 		 /***********************************/
+ 
+-		 if ((b_OutputChannel >= 0) && (b_OutputChannel <= 2))
++		 if (b_OutputChannel <= 2)
+ 		    {
+ 		    outl   (0,
+ 			    BoardInformation ->
+@@ -3732,7 +3720,7 @@
+ 		 /* Test the digital input channel */
+ 		 /**********************************/
+ 
+-		 if ((b_InputChannel >= 0) && (b_InputChannel <= 2))
++		 if (b_InputChannel <= 2)
+ 		    {
+ 			dw_Status = inl (BoardInformation -> s_BaseInformation.
+ 		                         ui_BaseAddress[2] + 12 +
+@@ -6984,7 +6972,7 @@
+ 	  /* Test the PWM selection */
+ 	  /**************************/
+ 
+-	  if (b_PWM >= 0 && b_PWM <= 1)
++	  if (b_PWM <= 1)
+ 	    {
+ 	      /******************/
+ 	      /* Test the clock */
+@@ -6998,7 +6986,7 @@
+ 		  /* Test the timing unit */
+ 		  /************************/
+ 
+-		  if ((b_TimingUnit >= 0) && (b_TimingUnit <= 4))
++		  if (b_TimingUnit <= 4)
+ 		    {
+ 		      /*********************************/
+ 		      /* Test the low timing selection */
+@@ -7552,7 +7540,7 @@
+ 	  /* Test the PWM selection */
+ 	  /**************************/
+ 
+-	  if (b_PWM >= 0 && b_PWM <= 1)
++	  if (b_PWM <= 1)
+ 	    {
+ 	      /***************************/
+ 	      /* Test if PWM initialised */
+@@ -7576,7 +7564,7 @@
+ 		  /* Test the timing unit */
+ 		  /************************/
+ 
+-		  if ((b_TimingUnit >= 0) && (b_TimingUnit <= 4))
++		  if (b_TimingUnit <= 4)
+ 		    {
+ 		      /*********************************/
+ 		      /* Test the low timing selection */
+@@ -8130,7 +8118,7 @@
+ 	  /* Test the PWM selection */
+ 	  /**************************/
+ 
+-	  if (b_PWM >= 0 && b_PWM <= 1)
++	  if (b_PWM <= 1)
+ 	    {
+ 	      /***************************/
+ 	      /* Test if PWM initialised */
+@@ -8147,25 +8135,25 @@
+ 		  /* Test the start level selection */
+ 		  /**********************************/
+ 
+-		  if (b_StartLevel >= 0 && b_StartLevel <= 1)
++		  if (b_StartLevel <= 1)
+ 		    {
+ 		      /**********************/
+ 		      /* Test the stop mode */
+ 		      /**********************/
+ 
+-		      if (b_StopMode >= 0 && b_StopMode <= 1)
++		      if (b_StopMode <= 1)
+ 			{
+ 			  /***********************/
+ 			  /* Test the stop level */
+ 			  /***********************/
+ 
+-			  if (b_StopLevel >= 0 && b_StopLevel <= 2)
++			  if (b_StopLevel <= 2)
+ 			    {
+ 			      /*****************************/
+ 			      /* Test the extern gate mode */
+ 			      /*****************************/
+ 
+-			      if (b_ExternGate >= 0 && b_ExternGate <= 1)
++			      if (b_ExternGate <= 1)
+ 				{
+ 				  /*****************************/
+ 				  /* Test the interrupt action */
+@@ -8412,7 +8400,7 @@
+ 	  /* Test the PWM selection */
+ 	  /**************************/
+ 
+-	  if (b_PWM >= 0 && b_PWM <= 1)
++	  if (b_PWM <= 1)
+ 	    {
+ 	      /***************************/
+ 	      /* Test if PWM initialised */
+@@ -8633,7 +8621,7 @@
+ 	  /* Test the PWM selection */
+ 	  /**************************/
+ 
+-	  if (b_PWM >= 0 && b_PWM <= 1)
++	  if (b_PWM <= 1)
+ 	    {
+ 	      /***************************/
+ 	      /* Test if PWM initialised */
+@@ -8823,7 +8811,7 @@
+ 	  /* Test the PWM selection */
+ 	  /**************************/
+ 
+-	  if (b_PWM >= 0 && b_PWM <= 1)
++	  if (b_PWM <= 1)
+ 	    {
+ 	      /***************************/
+ 	      /* Test if PWM initialised */
+@@ -8921,12 +8909,6 @@
+   s_APCI1710_DriverStruct.b_NumberOfBoard = 0;
+ 
+ 
+-  if(!pci_present())
+-    {
+-      printk("<1> NO PCI BUS;\n");
+-    }      
+-  else
+-    {
+       //Filling str_PCI_Information stucture
+       while ((pPCILinuxStruct = pci_find_device (APCI1710_BOARD_VENDOR_ID, 
+ 						 APCI1710_BOARD_DEVICE_ID, 
+@@ -8967,7 +8949,6 @@
+ 	  v_APCI1710_ReadAllModuleConfiguration (s_APCI1710_DriverStruct.b_NumberOfBoard-1);	  
+ 		
+ 	}
+-    }
+     
+   return (s_APCI1710_DriverStruct.b_NumberOfBoard);	
+ }
+diff -ur APCI-1710_LINUX_DRIVER_MODULE/Makefile x/Makefile
+--- APCI-1710_LINUX_DRIVER_MODULE/Makefile	2004-07-01 11:23:44.000000000 +0200
++++ APCI-1710_LINUX_DRIVER_MODULE/Makefile	2006-06-16 11:38:50.000000000 +0200
+@@ -1,26 +1,12 @@
+-# ----- COMPILER DEFINITION SECTION -----
+-CC=gcc
+-LD=ld
++ifneq ($(KERNELRELEASE),)
++# kbuild part of makefile
+ 
+-# Set the default flags to compile module
+-CFLAGS  = -D__KERNEL__ -DMODULE -I /usr/src/linux/include
+-CFLAGS += -Wall -Wstrict-prototypes -Wno-trigraphs -O2 
++obj-m           := apci1710.o
+ 
+-%o: %c
+-	$(CC) $(CFLAGS) -c -o $@ $<
+-	
+-all: module 
+-	
+-module: .bin/apci1710_module.o .bin/apci1710.o
+-	$(LD) -r .bin/apci1710_module.o  .bin/apci1710.o -o apci1710_module.o
++else # ($(KERNELRELEASE),)
++
++all:
++	$(MAKE) -C $(KERNEL_DIR) M=`pwd` _module_`pwd`
+ 
+-.bin/apci1710_module.o:  apci1710_module.c
+-	$(CC) $(CFLAGS) -c $< -o $@
++endif # ($(KERNELRELEASE),)
+ 	
+-.bin/apci1710.o: apci1710.c 
+-	$(CC) $(CFLAGS) -c $< -o $@
+-		
+-clean:
+-	rm -f *.o apci1710_module
+-	rm -f .bin/*.o
+-	
+\ No newline at end of file

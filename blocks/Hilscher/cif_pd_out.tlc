@@ -1,0 +1,169 @@
+%implements "cif_pd_out" "C"
+
+%%
+%% Hardware Driver for Beckhoff's EtherCAT Profibus Process Data Output
+%% CIF-80PB
+%% 
+%% This TLC Implements the necessary IO Functions to send process data
+%%
+%% Copyright (C) 2006
+%% Richard Hacker
+%% IgH Essen GmbH
+%% 
+%% License: GPL
+
+%include "CIF_PB.tlc"
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function BlockTypeSetup( block, system ) void
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  %<InitCIF(block, system)>
+%endfunction
+
+    
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function BlockInstanceSetup( block, system ) void
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  %<InitCIFCard(block, system)>
+%endfunction
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function Start(block, system) Output
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  /* %<Type> Block: %<Name> 
+   * Registering digital input with CIF Driver
+   */
+  %assign Width = %<LibBlockInputSignalWidth(0)>
+  %switch OutputDataFormat
+    %case 1
+    %case 2
+    %case 3
+    %case 4
+    %case 5
+    %case 6
+    %case 7
+    %case 8
+    %assign bytes = ((OutputDataFormat - 1) + Width)/8 + 1
+    %break
+    %%
+    %case 9
+    %case 10
+    %assign bytes = Width
+    %break
+    %%
+    %case 11
+    %case 12
+    %assign bytes = 2*Width
+    %break
+    %%
+    %case 13
+    %case 14
+    %assign bytes = 4*Width
+    %break
+    %%
+  %endswitch
+  if (!%<LibGetRTModelErrorStatus()> && 
+        !(%<LibBlockPWork(OutputAddr,"","",0)> = 
+           cif_register_send_addr( ... 
+           %<system.CIF_PB.Card[block.CIF_CardIdx].CIF_CardStruct>, ...
+           %<Addr>, %<bytes>))) {
+        %<LibSetRTModelErrorStatus("\"EtherCAT slave register failed\"")>;
+  }
+%endfunction
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function Outputs( block, system ) Output
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  /* %<Type> Block: %<Name> 
+   */
+  %%
+  %% Separate cases where binary bits are toggled from word
+  %% orientated ones
+  %assign Width = %<LibBlockInputSignalWidth(0)>
+  %if OutputDataFormat >= 1 && OutputDataFormat < 9
+    {
+        struct {
+                unsigned int bit0 : 1;
+                unsigned int bit1 : 1;
+                unsigned int bit2 : 1;
+                unsigned int bit3 : 1;
+                unsigned int bit4 : 1;
+                unsigned int bit5 : 1;
+                unsigned int bit6 : 1;
+                unsigned int bit7 : 1;
+        } *bits;
+      %%
+      %assign bitoffset = OutputDataFormat-1
+      %foreach idx = Width
+        %if idx == 0 || (idx + bitoffset) % 8 == 0
+          bits = (typeof(bits))%<LibBlockPWork(OutputAddr,"","",0)> ...
+                 + %<(bitoffset+idx)/8>;
+        %endif
+        bits->bit%<(bitoffset+idx)%8> = ...
+        %<LibBlockInputSignal(0,"","",idx)> ? 1 : 0; 
+      %endforeach
+    }
+  %else
+      %switch OutputDataFormat
+      %case 9
+        %assign dtype = "int8_T"
+        %assign d_width = 1
+        %assign block.Swap = 0
+        %break
+      %%
+      %case 10
+        %assign dtype = "uint8_T"
+        %assign d_width = 1
+        %assign block.Swap = 0
+        %break
+      %%
+      %case 11
+        %assign dtype = "int16_T"
+        %assign d_width = 2
+        %break
+      %%
+      %case 12
+        %assign dtype = "uint16_T"
+        %assign d_width = 2
+        %break
+      %%
+      %case 13
+        %assign dtype = "int32_T"
+        %assign d_width = 4
+        %break
+      %%
+      %case 14
+        %assign dtype = "uint32_T"
+        %assign d_width = 4
+        %break
+        %%
+      %endswitch
+      %%
+      %if Swap
+        {
+          uint8_T tmp[%<d_width>];
+          uint8_T *p;
+      %endif
+      %foreach idx = Width
+          %if Swap
+
+            *(%<dtype> *)tmp = %<LibBlockInputSignal(0,"","",idx)>;
+            p = (uint8_T *)&((%<dtype> *)%<LibBlockPWork(OutputAddr,"","",0)>)[%<idx>];
+            %foreach j = d_width
+                p[%<j>] = tmp[%<d_width-1-j>];
+            %endforeach
+          %else
+             ((%<dtype> *)%<LibBlockPWork(OutputAddr,"","",0)>)[%<idx>] = ...
+                 %<LibBlockInputSignal(0,"","",idx)>;
+          %endif
+      %endforeach
+      %if Swap
+        }
+      %endif
+  %endif
+  %%
+%endfunction

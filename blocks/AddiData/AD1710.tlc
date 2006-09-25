@@ -1,0 +1,39 @@
+%%
+%% Generic Routines to handle AddiData 1710
+%% 
+%% Copyright (C) 2006
+%% Richard Hacker
+%% IgH Essen GmbH
+%% 
+%% License: GPL
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function InitAD1710( block, system) void
+%% This function checks whether the AD1710 system has been called once
+%% before already, which is demonstrated by the existance of variable 
+%% system.ad1710. If not, include C-header file for ad1710, 
+%% and declare a variable where the slave's data structure is placed 
+%% by ad1710 when registering the slaves during mdlStart()
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  %if !EXISTS(system.ad1710)
+    %trace "Initializing AD1710 Interface"
+    %addtorecord system ad1710 { ...
+                Initialised 1 ...
+                }
+
+    %% EtherCAT header
+    %<LibAddToCommonIncludes("addi_data/apci1710.h")>
+
+    %openfile buf
+    if (i_APCI1710_SearchAllAPCI1710() == 0) {
+      %<LibSetRTModelErrorStatus("\"No AddiData APCI1710 boards found\"")>
+    }
+
+    %closefile buf
+    %<LibMdlStartCustomCode(buf, "execution")>
+
+  %endif
+%endfunction
+

@@ -1,0 +1,390 @@
+2006-09-23      Richard Hacker (lerich_at_gmx.net)
+	* etherlab_rtw-0.3.tar.gz: Released Revision 0.3
+
+	This revision had a major name change: from rtai_rtw to 
+	etherlab_rtw. Many file names have changed due to this.
+
+	* rtai/: directory name changed to etherlab/
+	* etherlab/rtai_config.m: to etherlab/etherlab_config.m
+	* etherlab/setup_rtai.m.in: to etherlab/setup_etherlab.m.in
+		- added EXPERIMENTAL variable
+	* etherlab/rtai.tlc: to etherlab/etherlab.tlc
+		- Cleaned up unnecessary old comments
+	* etherlab/rtai_tools.mk.in: to etherlab/etherlab_tools.mk.in
+		- updated USER_INCLUDES
+	* etherlab/rtai_postprocess.m: to etherlab/etherlab_postprocess.m
+	* etherlab/rtai_kmod.tmf.in: to etherlab/etherlab_kmod.tmf.in
+		- updated SYS_TARGET_FILE
+		- updated to use the new file names
+	* src/kernel/rtai_wrapper.c: to src/kernel/mdl_wrapper.c
+		- new header files
+	* src/kernel/rtai_wrapper.h: to src/kernel/mdl_wrapper.h
+	* src/kernel/Makefile.am: updated file names
+	* src/kernel/rtai_reg_mdl.c: new include file
+	* src/include/rt_module.h: to src/include/rt_kernel.h
+		- Note: this is tricky: there was a file previously
+		  called rt_kernel.h (in tools/rt_kernel)
+		- new include files
+	* src/include/rtai_taskinfo.h: to src/include/mdl_taskinfo.h
+	* src/include/Makefile.am: new file names
+	* src/buddy/rtai_buddy_data.c: to ???
+	* src/buddy/Makefile.am: new files
+	* tools/rt_kernel/Kbuild.in: added $DEFS to CFLAGS
+	* tools/rt_kernel/rt_module.h: tools/rt_kernel/rt_main.h
+	* tools/rt_kernel/rt_fio.c:
+		- added config.h
+		- new includes
+		- cleaned up
+	* tools/rt_kernel/Makefile.am: new files
+	* tools/rt_kernel/rt_main.c:
+		- added config.h
+		- new includes
+		- cleaned up
+	* tools/rt_kernel/rt_module.c: to tools/rt_kernel/rt_main.c
+	* tools/buddy/Makefile.am: new files
+	* tools/buddy/buddy_main.c: 
+		- changed /dev/rtw to /dev/etl
+	* tools/buddy/rtp_io.c: cleaned up bug checking for ENOSPC 
+	  instead of -1 for return value of ioctl()
+	* tools/scripts/Makefile.am, tools/scripts/etherlab.in: new script
+	  to start etherlab
+	* tools/Makefile.am: included new scripts/ subdir
+	* config.h.in: removed generated file from svn
+	* configure.ac: Added new enable switches
+		--enable-debug: Hmmm
+		--enable-experimental: include experimental features and 
+		  hardware
+	* TODO: new things ...
+	* lib/Makefile.am: new names
+	* blocks/EtherCAT/Kbuild.in: updated EXTRA_CFLAGS
+	* blocks/EtherCAT/setup.m.in: added experimental features
+	* blocks/EtherCAT/Makefile.am: added experimental features
+	* blocks/EtherCAT/ek1120_in.c: moved to blocks/EtherCAT/bk1120_in.c
+	* blocks/taskinfo.tlc: new includes
+	* blocks/Makefile.am: new file name
+
+
+2006-09-14      Richard Hacker (lerich_at_gmx.net)
+	Released Revision 2.1
+	* src/kernel/rtai_wrapper.c (mdl_get_sample_time_multiplier): Cleared
+	  a nasty bug due to the repeated use of MODEL().
+
+
+2006-09-12.3    Richard Hacker (lerich_at_gmx.net)
+	* blocks/test_var.m: New
+
+	* blocks/Makefile.am: added blocks/test_var.m to distribution
+
+	* blocks/AddiData/setup.m.in: added mex of xPCI1710_etm.c
+
+2006-09-12.2    Richard Hacker (lerich_at_gmx.net)
+	Added missing files:
+	* tools/buddy/msrio_lib
+	* blocks/Hilscher/CIF_PB.tlc
+	* blocks/Hilscher/cif_pd_out.c
+	* blocks/Hilscher/cif_pd_out.tlc
+
+	* rtai/rtai_kmod.tmf.in: 
+		- Changed -DMT to -DMULTITASKING in CPP_REQ_DEFINES
+		- modified MODEL_SRCS to conditionally compile <mdl>_data.c 
+		  if it exists.
+
+
+
+2006-09-12      Richard Hacker (lerich_at_gmx.net)
+	This is the revision for Rel 0.2
+	Primarily many new features:
+		- Multithreading support
+		- Addi Data inputs for xPCI1710 ETM, INC (DIGIN not tested)
+		- Hilscher Profibus CIF80DPM
+
+	* src/kernel/rtai_wrapper.c: Added Multitasking
+	(rt_OneStep*): Return value now returns a pointer to an error msg.
+	(rt_OneStepMain): New function for fastest Multithread rate
+	(rt_OneStepTid): New function for other Multithread rates
+	(mdl_set_error_msg): New function to set an error externally
+	(mdl_takephoto): Updated to use new variables
+	(mdl_get_sample_time_multiplier): New function returning the ratio 
+	of a specific tid compared to the fastest rate
+	(mdl_start): Revised completely. Returns char* to error msg.
+
+	* src/kernel/rtai_fio.h: Removed; it was already included in 
+		src/include
+
+	* src/kernel/rtai_wrapper.h: Updated structs to use more meaningful
+	names
+	(struct rtw_model): Was 'struct mdl_task'
+		base_period: Was base_rate
+		sample_period: New. Period of photographing calc vector.
+		buffer_time: New. The holding time of the photos.
+		errmsg: Deleted
+		numst: New. Number of model sample times.
+		get_sample_time_multiplier: Function pointer that returns
+			the desired rate to base_rate ratio.
+		downsample_cnt: Renamed from downsample
+		downsample: Renamed from downsample_start
+		model_tid: Renamed from tid
+		rt_OneStep: Deleted in favour of ...
+		rt_OneStepMain: New
+		rt_OneStepTid: New
+		set_error_msg: Function pointer that sets an error msg in the
+			model
+
+	* src/kernel/rtai_reg_mdl.c: Updated to reflect changes in structs
+		src/kernel/rtai_wrapper.h
+		Added new module parameter: buffer_time
+	(mod_init): All the module parameter overriding is done here now.
+
+	* src/kernel/Makefile.am: Removed deleted rtai_fio.h from dist_*_DATA
+
+	* src/include/rt_module.h (register_rtw_model): Changed definition
+
+	* src/include/Makefile.am: Added get_string.h to dist_*_DATA
+
+	* src/include/get_string.h: New file to facilitate passing of strings
+	to Simulink SFunctions from block dialog.
+
+	* src/include/fio_ioctl.h: Updated ioctl commands to in favor of a
+	better terminology
+	Changed #defines
+
+	* src/buddy/model_reg.c (reg_params): Now conditionally included when
+	rtP is defined
+	(model_init): Conditionally register rtP
+
+	* rtai_rtw-0.1.2.tar.gz: New Release
+
+	* rtai/rtai_kmod.tmf.in: Deleted obsolete parameter MSR_DIR and
+	updated GCC command
+
+	* rtai/rtai_tools.mk: Removed from svn - is now a generated file
+
+	* rtai/Makefile.am: Removed generated files from distribution
+
+	* rtai/rtai_tools.mk.in: Now dynamically substituted with paths
+	defined in configure
+
+	* tools/rt_manager/Kbuild.in: Extended EXTRA_CFLAGS
+
+	* tools/rt_manager/rt_fio.c: Updated to reflect new struct definitions
+	in tools/rt_manager/rt_kernel.h
+	(rtp_release): Using new algorithm for the photo buffer implementation
+	(rtp_ioctl): case RTP_CREATE_BLOCKIO_BUF: New calculation for photo 
+	buffer; Implementation of a new cyclic buffer implementation
+	(rtp_make_photo): New buffer implementation; Triggering of the RTAI
+	Linux Service Request now here - it is a file op.
+	(ctl_ioctl): in case CTL_SET_PARAM, check whether there is an rtP
+	at all.
+	(rtp_fio_clear): free Linux Service Request here
+	(rtp_fio_init): setup Linux Service Request here
+
+	* tools/rt_manager/rt_kernel.h: Tidied up code and renamed structures
+	using more relevant names.
+	(struct rt_task): Structure keeping data for every model task
+	(struct rt_mdl): Added model_id, pointer to the RealTime Workshop
+	model (rtw_model), and an undefined array thread - a list of type
+	struct rt_task that keeps data for every rtai_thread.
+
+	* tools/rt_manager/rt_module.c: 
+		- Large changes to make multithreading available. 
+		- Minor changes using new data structures from
+		  tools/rt_manager/rt_kernel.h
+	(mdl_main_thread): 
+		- Now using get_cycles() instead of rt_get_time()
+		- Moved setting Linux Service Request to 
+		  rt_fio.c:rtp_make_photo
+		- Updated overrun detection and reporting
+	(mdl_sec_thread): New. Multithreading models use this function for
+	all subrates
+	(free_rtw_model): Updated
+		- Support deleting multithreaded models
+		- Made the "wait for buddy release" more robust. Now not only
+		  checking whether buddy is there, but also whether the photo
+		  buffer is full as an exit condition.
+	(register_rtw_model): Updated for multithreading
+		- Made more robust - check for structure size and revisions
+		  rejecting if not compatible. 
+		- Added a test thread; activated with #define TEST_THREAD -
+		  this starts two threads to check whether RTAI works.
+		  Prints out a line every second or so.
+	(mod_init): Moved rt_request_srq to rt_fio.c
+
+	* tools/buddy/msrio_lib-6.0/*: Added msr library to this package - 
+	previously it was a separate package.
+
+	* tools/buddy/Makefile.am: Added msr library to _SOURCES and changed
+	compile rules to include it.
+
+	* tools/buddy/rtp_io.c: Tidied up code, changed commands to reflect
+	new names in header files.
+	(start_model):
+		- rtB_buflen is now supplied by kernel - not user
+		- changed searching for .so file to include CWD
+
+	* tools/buddy/net_io.c: msr.h now called msr_lists.h
+
+	* configure.ac: 
+		- New release
+		- Removed obsolete command line arguments for ethercat-dir,
+		  msr-dir
+		- Added new output files
+
+	* TODO: Updated
+
+	* lib/Makefile.am: Removed obsolete apci1710.o
+
+	* Makefile.am: 
+		- Added rtai/setup_rtai.m.in to EXTRA_DIST
+		- Simplified dist_rtai_DATA to rtai_DATA
+
+	* blocks/EtherCAT/EtherCAT.tlc: 
+		- Updated to reflect changes in EtherCAT Library
+		- Now supports EtherCAT's async calls
+		- Introduced EOE support - not finished yet
+
+	* blocks/EtherCAT/el2xxx_check.m: Updated function call
+
+	* blocks/EtherCAT/el5001.tlc: Updated due to EtherCAT changes
+
+	* blocks/EtherCAT/ethercat_ss_funcs.h: Removed getString() into
+	a separate file
+
+	* blocks/EtherCAT/el5101.c: Removed defunct references to el5001.c
+	from which it was copied.
+
+	* blocks/EtherCAT/el5101.tlc: Updated due to EtherCAT changes
+
+	* blocks/EtherCAT/setup.m: Removed in favor of setup.m.in
+
+	* blocks/EtherCAT/el5101_check.m: Updated function name
+
+	* blocks/EtherCAT/setup.m.in: Dynamic file now generates setup.m
+	during configure
+
+	* blocks/EtherCAT/el*.tlc: Updated due to EtherCAT changes; General
+	tidying up
+
+	* blocks/EtherCAT/el*.c: Updated due to EtherCAT changes; General
+	tidying up
+
+	* blocks/EtherCAT/Makefile.am: 
+		- Changed to reflect file changes
+		- Simplified nodist_ethercat_DATA to ethercat_DATA
+		- Removed setup.m.in from EXTRA_DIST
+
+	* blocks/EtherCAT/el*_check.m: New function names
+
+	* blocks/rtai_lib.mdl:
+		- New blocks: Addi Data, Raise/Catch (implementation still
+		  incomplete), Hilscher Profibus
+
+	* blocks/Hilscher/*: New support for Hilscher Profibus CIF80
+		- New incomplete
+
+	* blocks/Hilscher/Makefile.am:
+		- Removed generated files from distribution
+		- Simplified nodist_cif_pb_DATA to cif_pb_DATA
+
+	* blocks/Hilscher/cif_pd_in.c:
+	(getString): Removed and included get_string.h instead
+
+	* blocks/AddiData/setup.m
+	* blocks/Hilscher/setup.m: Deleted
+
+	* blocks/AddiData/xPCI1710_etm.tlc
+	* blocks/AddiData/xPCI1710_etm.c
+	* blocks/AddiData/xPCI1710.h
+	* blocks/AddiData/setup.m.in
+	* blocks/AddiData/xPCI1710.tlc
+	* blocks/AddiData/xPCI1710_inc.tlc
+	* blocks/AddiData/xPCI1710_inc.c: New
+
+
+2006-07-31      Richard Hacker (lerich_at_gmx.net)
+	This revision primarily marks the introduction of so_path which is 
+	a module parameter to tell the buddy where to find its variable 
+	description file.
+
+	* src/kernel/rtai_wrapper.h: Added so_path to mdl_struct
+
+	* src/kernel/rtai_reg_mdl.c: Added global module parameters to pass
+	so_file to module when loading.
+
+	* src/include/fio_ioctl.h: Introduced new IOCTL to enable buddy to
+	read so_path
+
+	* rtai/rtai.tlc: Introduced a variable to turn on verbose building.
+
+	* rtai/rtai_kmod.tmf.in: New variables for downsampling and verbose
+	builds.
+
+	* tools/rt_manager/rt_fio.c (ctl_ioctl): Implemented new ioctl() to 
+	get so_path
+
+	* tools/buddy/rtp_io.c (start_mdl): Path to .so file now comes
+	from module
+
+	* blocks/rtai_lib.mdl: New library
+
+	* blocks/Hilscher/cif_pd_in.tlc (Outputs): Bit testing now definately
+	returns a single bit and not only truth
+
+2006-07-25      Richard Hacker (lerich_at_gmx.net)
+	* src/kernel/rtai_wrapper.h (struct mdl_task): Fixed return value
+	of field take_photo().
+
+2006-07-20      Richard Hacker (lerich_at_gmx.net)
+	* src/kernel/rtai_wrapper.h:  Changed declaration of mdl_start()
+	(struct mdl_task): Added downsampling management variables
+	(tick_override): changed to tick for simplicity
+	overwriting of tick_override and stack_size options to rtai_reg_mdl.c
+	Added new parameter "downsample"
+
+	* src/kernel/rtai_wrapper.c: Added new global parameter "downsample"
+	(mdl_start):  Changed declaration
+	(mdl_start): Added code to override Module Parameters set in RTW
+	with load-time 
+	(mdl_start), (mdl_takephoto): Added code for downsampling.
+
+
+	* src/kernel/rtai_reg_mdl.c: updated and changed global module 
+	parameter declarations
+	(mdl_takephoto): Added
+	(downsample): New parameter
+	(mod_init): Added code for overriding model configuration options
+
+	* rtai/rtai.tlc: Added new option "downsample"
+
+	* rtai/rtai_kmod.tmf.in: Removed ./run script from $PRODUCT
+	Removed ecrt_support library. Must be added later again.
+
+	* rtai/rtai_tools.mk: Changed include path
+
+	* rtai/setup_rtai.m.in: Added commands to add path and setup
+	Hilscher subdir.
+
+	* tools/rt_manager/Makefile.am: improved clean-local rule
+
+	* tools/rt_manager/rt_kernel.h: tidied up spacing
+
+	* tools/rt_manager/rt_module.c (global): Changed comments
+	(mdl_thread): Introduced a counter for better overrun reporting.
+	(mdl_thread): Changed time statistics to use rtai's rt_get_time() 
+	instead of the kernel's get_time() function.
+	(mdl_thread): Changed mechanism of making process snapshots 
+	(register_rtw_model): Tidied up paramter 'signal' in call to
+	rt_task_init() to reflect that it is a function and not an int.
+
+	* configure.ac: Fixed bug in call to AC_PREFIX_DEFAULT
+
+	* blocks/EtherCAT/el20xx.c: Revision change
+
+	* blocks/EtherCAT/el41xx.c: Revision change
+
+	* blocks/rtai_lib.mdl: Various updates to implement new Hilscher HW
+
+	* blocks/Hilscher/Makefile.am: Updated filenames.
+
+	* blocks/Hilscher/cif_pd_out.tlc:
+	* blocks/Hilscher/cif_pd_in.tlc: Work in progress
+

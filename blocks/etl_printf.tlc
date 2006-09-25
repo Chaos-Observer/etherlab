@@ -1,0 +1,17 @@
+%implements "rtai_printf" "C"
+
+%function InitializeConditions( block, system) Output
+  /* %<Type> Block: %<Name> */
+  %assign rollVars = [ "iwork" ]
+  %roll sigIdx = RollRegions, lcv = RollThreshold, block, "Roller", rollVars
+    %<LibBlockIWork(0,"",lcv,sigIdx)> = 0;
+  %endroll
+%endfunction
+
+
+%function Update( block, system ) Output
+
+  /* %<Type> Block: %<Name> 
+   */
+  printf("%<FormatStr>");
+%endfunction

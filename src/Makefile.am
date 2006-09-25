@@ -1,0 +1,1 @@
+SUBDIRS = include buddy kernel

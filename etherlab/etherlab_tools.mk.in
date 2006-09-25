@@ -1,0 +1,31 @@
+#
+# Tools file included by the main Makefile for compiler specific options.
+# When selecting a new compiler, it *should* be sufficient to only change
+# this file and get the thing to work again.
+#
+# Copyright (c) 2006, Richard Hacker
+# License: GPL
+
+OPT_OPTS = -O -ffloat-store -fno-common
+OPT_OPTS = -Wall -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing -fno-common -ffreestanding -O2 -fomit-frame-pointer -pipe -mpreferred-stack-boundary=2 -fno-unit-at-a-time -march=i686 -mtune=pentium3 -mhard-float -ffast-math
+ifneq ($(DEBUG),)
+CODE_DEBUG = -g
+endif
+ANSI_OPTS        = -std=gnu99
+ANSI_OPTS        = -std=gnu99 -pedantic
+CC               = gcc
+LD               = ld
+LDFLAGS		 =
+USER_INCLUDES    = -I@ETHERLAB_DIR@/include -I$(ETHERLAB_DIR)/include -I$(ETHERLAB_DIR)/src/kernel 
+
+# These definitions are used by targets that have the WARN_ON_GLNX option
+GCC_WARN_OPTS     := -pedantic -Wall -Wwrite-strings \
+			-Wstrict-prototypes -Wnested-externs -Wpointer-arith
+GCC_WARN_OPTS     := -Wall -W -Wwrite-strings -Winline -Wstrict-prototypes \
+                     -Wnested-externs -Wpointer-arith -Wcast-align
+
+GCC_WARN_OPTS_MAX := -pedantic -Wall -Wshadow \
+			-Wcast-qual -Wwrite-strings -Wstrict-prototypes \
+			-Wnested-externs -Wpointer-arith
+GCC_WARN_OPTS_MAX := $(GCC_WARN_OPTS) -Wshadow -Wcast-qual
+

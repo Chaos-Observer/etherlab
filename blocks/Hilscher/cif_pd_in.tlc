@@ -1,0 +1,152 @@
+%implements "cif_pd_in" "C"
+
+%%
+%% Hardware Driver for Beckhoff's EtherCAT Profibus Process Data Input
+%% CIF-80PB
+%% 
+%% This TLC Implements the necessary IO Functions to get process data
+%%
+%% Copyright (C) 2006
+%% Richard Hacker
+%% IgH Essen GmbH
+%% 
+%% License: GPL
+
+%include "CIF_PB.tlc"
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function BlockTypeSetup( block, system ) void
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  %<InitCIF(block, system)>
+%endfunction
+
+    
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function BlockInstanceSetup( block, system ) void
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  %<InitCIFCard(block, system)>
+%endfunction
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function Start(block, system) Output
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  /* %<Type> Block: %<Name> 
+   * Registering digital input with CIF Driver
+   */
+  %switch InputDataFormat
+    %case 1
+    %case 2
+    %case 3
+    %case 4
+    %case 5
+    %case 6
+    %case 7
+    %case 8
+    %assign bytes = ((InputDataFormat - 1) + Width)/8 + 1
+    %break
+    %%
+    %case 9
+    %case 10
+    %assign bytes = Width
+    %break
+    %%
+    %case 11
+    %case 12
+    %assign bytes = 2*Width
+    %break
+    %%
+    %case 13
+    %case 14
+    %assign bytes = 4*Width
+    %break
+    %%
+  %endswitch
+  if (!%<LibGetRTModelErrorStatus()> && 
+        !(%<LibBlockPWork(InputAddr,"","",0)> = 
+           cif_register_recv_addr( ... 
+           %<system.CIF_PB.Card[block.CIF_CardIdx].CIF_CardStruct>, ...
+           %<Addr>, %<bytes>))) {
+        %<LibSetRTModelErrorStatus("\"EtherCAT slave register failed\"")>;
+  }
+%endfunction
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function Outputs( block, system ) Output
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  /* %<Type> Block: %<Name> 
+   */
+  %%
+  %% Input Vector Case: each input of the vector is tested
+  %% for truth and the corresponding output bit is then set
+  %if InputDataFormat >= 1 && InputDataFormat < 9
+      %assign bitoffset = InputDataFormat-1
+      %foreach idx = Width
+        %<LibBlockOutputSignal(0,"","",idx)> = 
+               ((uint8_T *)%<LibBlockPWork(InputAddr,"","",0)>)...
+                 [%<(bitoffset+idx)/8>] & %<1<<(bitoffset+idx)%8> ? 1 : 0;
+      %endforeach
+  %else
+      %switch InputDataFormat
+        %case 9
+        %assign dtype = "int8_T"
+        %assign d_width = 1
+        %assign block.Swap = 0
+        %break
+        %%
+        %case 10
+        %assign dtype = "uint8_T"
+        %assign d_width = 1
+        %assign block.Swap = 0
+        %break
+        %%
+        %case 11
+        %assign dtype = "int16_T"
+        %assign d_width = 2
+        %break
+        %%
+        %case 12
+        %assign dtype = "uint16_T"
+        %assign d_width = 2
+        %break
+        %%
+        %case 13
+        %assign dtype = "int32_T"
+        %assign d_width = 4
+        %break
+        %%
+        %case 14
+        %assign dtype = "uint32_T"
+        %assign d_width = 4
+        %break
+        %%
+      %endswitch
+      %%
+      %if Swap
+        {
+          uint8_T tmp[%<d_width>];
+          uint8_T *p;
+      %endif
+      %foreach idx = Width
+          %if Swap
+
+              p = (uint8_T *)...
+                &((%<dtype> *)%<LibBlockPWork(InputAddr,"","",0)>)[%<idx>];
+              %foreach idx = d_width
+                tmp[%<idx>] = p[%<d_width - idx - 1>];
+              %endforeach
+              %<LibBlockOutputSignal(0,"","",idx)> = *(%<dtype> *)tmp;
+          %else
+              %<LibBlockOutputSignal(0,"","",idx)> = 
+                ((%<dtype> *)%<LibBlockPWork(InputAddr,"","",0)>)[%<idx>];
+          %endif
+      %endforeach
+      %if Swap
+        }
+      %endif
+  %endif
+  %%
+%endfunction
