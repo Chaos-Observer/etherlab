@@ -38,7 +38,7 @@
 %endfunction
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%function GetEtherCATMasterIdx(system)
+%function GetEtherCATMasterIdx(system, MasterId)
 %% Find the record index for master %<MasterId>
 %% Return: MasterIdx : index in system.EtherCAT.Master if found
 %%         -1: not found
@@ -57,7 +57,7 @@
 %endfunction
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%function InitEtherCATMaster( block, system)
+%function InitEtherCATMaster( block, system, MasterId)
 %% Make sure the master gets registered and deregistered
 %% and the slaves are activated before starting
 %% Return: MasterIdx : index in system.EtherCAT.Master 
@@ -66,7 +66,7 @@
   %assign model_c = LibGetModelDotCFile()
 
   %with system.EtherCAT
-    %assign MasterIdx = GetEtherCATMasterIdx(system)
+    %assign MasterIdx = GetEtherCATMasterIdx(system, MasterId)
     %if MasterIdx != -1
       %return MasterIdx
     %endif
@@ -126,9 +126,11 @@
       /* Grab EtherCAT Master %<MasterId> */
       if ((%<MasterStruct> = ecrt_request_master(%<MasterId>)) == NULL) {
           %<LibSetRTModelErrorStatus("\"EtherCAT Master %<MasterId> initialise failed\"")>;
+          return;
       }
 %%      if ((%<MasterSuppStruct> = register_ec_master(%<MasterId>)) == NULL) {
 %%          %<LibSetRTModelErrorStatus("\"Registering EtherCAT Master %<MasterId> failed\"")>;
+%%          return;
 %%      }
       %closefile buf
       %<LibMdlStartCustomCode(buf,"execution")>
@@ -137,9 +139,9 @@
       %openfile buf
   
       /* Activate Slaves on EtherCAT Master %<MasterId> */
-      if (!%<LibGetRTModelErrorStatus()> && \
-        ecrt_master_activate(%<MasterStruct>)) {
+      if ( ecrt_master_activate(%<MasterStruct>)) {
           %<LibSetRTModelErrorStatus("\"Activating EtherCAT Slaves on Master %<MasterId> failed\"")>;
+          return;
       }
 
       ecrt_master_prepare(%<MasterStruct>);
@@ -258,14 +260,14 @@
     %openfile buf
 
     /* Register Domain with EtherCAT Master for Sample Time [%<Ts>] */
-    if (!%<LibGetRTModelErrorStatus()> \
-        && !(%<Domain[DomainIdx].Struct> = \
+    if ( !(%<Domain[DomainIdx].Struct> = \
                 ecrt_master_create_domain(%<MasterStruct>)) \
 %%        && !(%<Domain[DomainIdx].SuppStruct> = \
 %%                register_ec_domain(%<MasterSuppStruct>, \
 %%                %<CAST("Number",Ts*1000000)>)) \
                 ) {
       %<LibSetRTModelErrorStatus("\"EtherCAT Domain registration failed\"")>;
+      return;
     }
     %closefile buf
     %<LibMdlStartCustomCode(buf,"execution")>
@@ -276,7 +278,8 @@
 %endfunction
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%function InitEtherCATSlave( block, system, MasterIdx, DomainIdx) void
+%function InitEtherCATSlave( block, system, MasterIdx, DomainIdx, ...
+        SlaveAddr) void
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   %assign MasterId = system.EtherCAT.Master[MasterIdx].Id
 
@@ -320,10 +323,23 @@
 %function RegisterEtherCATSlave( block, system, DeviceModel, ...
         DataPtr) Output
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  if (!%<LibGetRTModelErrorStatus()> && 
-        !(%<system.EtherCAT.SlaveStruct> = ecrt_domain_register_pdo( 
+  if ( !(%<system.EtherCAT.SlaveStruct> = ecrt_domain_register_pdo( 
            %<block.EtherCAT.DomainStruct>, "%<block.EtherCAT.SlaveAddr>", \
            %<DeviceModel>, &%<DataPtr>))) {
         %<LibSetRTModelErrorStatus("\"EtherCAT slave register failed\"")>;
+        return;
+  }
+%endfunction
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function RegisterEtherCATSlaveAddrRange( block, system, DeviceModel, ...
+        RdWr, ImageOffset, ImageLength, DataPtr) Output
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  if ( !(%<system.EtherCAT.SlaveStruct> = ecrt_domain_register_pdo_range( 
+           %<block.EtherCAT.DomainStruct>, "%<block.EtherCAT.SlaveAddr>", \
+           %<DeviceModel>, %<ImageOffset>, %<ImageLength>, %<RdWr>, \
+           &%<DataPtr>))) {
+        %<LibSetRTModelErrorStatus("\"EtherCAT slave register failed\"")>;
+        return;
   }
 %endfunction

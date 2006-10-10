@@ -24,9 +24,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %function BlockInstanceSetup( block, system ) void
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  %assign MasterIdx = InitEtherCATMaster(block, system)
+  %assign MasterIdx = InitEtherCATMaster(block, system, MasterId)
   %assign DomainIdx = InitEtherCATDomain(block, system, MasterIdx)
-  %<InitEtherCATSlave( block, system, MasterIdx, DomainIdx)>
+  %<InitEtherCATSlave( block, system, MasterIdx, DomainIdx, SlaveAddr)>
 
   %openfile buf
 

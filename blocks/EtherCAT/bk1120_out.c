@@ -11,7 +11,7 @@
  */
 
 
-#define S_FUNCTION_NAME  bk1120_in
+#define S_FUNCTION_NAME  bk1120_out
 #define S_FUNCTION_LEVEL 2
 
 #include "simstruc.h"
@@ -20,12 +20,10 @@
 #define MASTER     ((uint_T)mxGetScalar(ssGetSFcnParam(S,0)))
 #define SLAVE                          (ssGetSFcnParam(S,1))
 #define KBUS_OFFSET ((uint_T)mxGetScalar(ssGetSFcnParam(S,2)))
-#define IP_TYPE    ((uint_T)mxGetScalar(ssGetSFcnParam(S,3)))
-#define WIDTH      ((uint_T)mxGetScalar(ssGetSFcnParam(S,4)))
-#define SWAP       ((uint_T)mxGetScalar(ssGetSFcnParam(S,5)))
-#define OP_TYPE    ((uint_T)mxGetScalar(ssGetSFcnParam(S,6)))
-#define TSAMPLE            (mxGetScalar(ssGetSFcnParam(S,7)))
-#define PARAM_COUNT                                      8
+#define OP_TYPE    ((uint_T)mxGetScalar(ssGetSFcnParam(S,3)))
+#define SWAP       ((uint_T)mxGetScalar(ssGetSFcnParam(S,4)))
+#define TSAMPLE            (mxGetScalar(ssGetSFcnParam(S,5)))
+#define PARAM_COUNT                                      6
 
 /*====================*
  * S-function methods *
@@ -53,45 +51,23 @@ static void mdlInitializeSizes(SimStruct *S)
     /*
      * Set Inputs
      */
-    if (!ssSetNumInputPorts(S,0)) return;
+    if (!ssSetNumInputPorts(S,1)) return;
+    ssSetInputPortWidth(S, 0, DYNAMICALLY_SIZED);
+    ssSetInputPortDataType(S, 0, DYNAMICALLY_TYPED);
+    ssSetInputPortDirectFeedThrough(S, 0, 1);
+    ssSetInputPortRequiredContiguous(S,0,0);
 
     /*
      * Set Outputs
      */
-    if (!ssSetNumOutputPorts(S, 1)) return;
-    ssSetOutputPortWidth(   S, 0, WIDTH);
-    switch (OP_TYPE) {
-        case 1: 
-            {
-                uint_T dataType[] = {  0, /*i Dummy, DTYPE starts at 1 */
-                    SS_BOOLEAN, SS_BOOLEAN, SS_BOOLEAN, SS_BOOLEAN, 
-                    SS_BOOLEAN, SS_BOOLEAN, SS_BOOLEAN, SS_BOOLEAN, 
-                    SS_INT8, SS_UINT8, 
-                    SS_INT16, SS_UINT16,
-                    SS_INT32, SS_UINT32, 
-                };
-                ssSetOutputPortDataType(S, 0, dataType[IP_TYPE]);
-                break;
-            }
-        case 2:
-            ssSetOutputPortDataType(S, 0, SS_DOUBLE);
-            break;
-        case 3:
-            ssSetOutputPortDataType(S, 0, SS_SINGLE);
-            break;
-        case 4:
-            ssSetOutputPortDataType(S, 0, DYNAMICALLY_TYPED);
-            break;
-        default:
-            ssSetErrorStatus(S,"Invalid Output Data type selected.");
-    }
+    if (!ssSetNumOutputPorts(S, 0)) return;
 
     ssSetNumSampleTimes(S, 1);
     ssSetNumContStates(S, 0);
     ssSetNumDiscStates(S, 0);
     ssSetNumRWork(S, 0);
     ssSetNumIWork(S, 0);
-    ssSetNumPWork(S, 1);  /* Used in RTW to store input byte address */
+    ssSetNumPWork(S, 1);  /* Used in RTW to store output byte address */
     ssSetNumModes(S, 0);
     ssSetNumNonsampledZCs(S, 0);
 
@@ -138,10 +114,8 @@ static void mdlRTW(SimStruct *S)
     int32_T master = MASTER;
     const char *addr = getString(S,SLAVE);
     int32_T image_offset = KBUS_OFFSET;
-    int32_T ip_type = IP_TYPE;
-    int32_T width   = WIDTH;
-    int32_T swap    = SWAP;
     int32_T op_type = OP_TYPE;
+    int32_T swap    = SWAP;
 
     if (!ssWriteRTWScalarParam(S, "MasterId", &master, SS_INT32))
         return;
@@ -149,15 +123,11 @@ static void mdlRTW(SimStruct *S)
         return;
     if (!ssWriteRTWScalarParam(S, "ImageOffset", &image_offset, SS_INT32))
         return;
-    if (!ssWriteRTWScalarParam(S, "InputDataFormat", &ip_type, SS_INT32))
-        return;
-    if (!ssWriteRTWScalarParam(S, "Width", &width, SS_INT32))
+    if (!ssWriteRTWScalarParam(S, "OutputDataFormat", &op_type, SS_INT32))
         return;
     if (!ssWriteRTWScalarParam(S, "Swap", &swap, SS_INT32))
         return;
-    if (!ssWriteRTWScalarParam(S, "OutputDataFormat", &op_type, SS_INT32))
-        return;
-    if (!ssWriteRTWWorkVect(S, "PWork", 1, "InputAddr", 1))
+    if (!ssWriteRTWWorkVect(S, "PWork", 1, "OutputAddr", 1))
         return;
 
 }

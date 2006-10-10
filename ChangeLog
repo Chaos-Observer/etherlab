@@ -1,3 +1,38 @@
+2006-10-10      Richard Hacker (lerich_at_gmx.net)
+	* etherlab_rtw-0.3.1.tar.gz: Released Revision 0.3.1
+
+	* tools/rt_kernel/Makefile.am: Removed NOT_SRC_BUILD case; Changed
+	  make call to use @abs_builddir@
+	* configure.ac: cleaned up; Removed NOT_SRC_BUILD conditional.
+	* blocks/EtherCAT/EtherCAT.tlc: Removed various unnecessary checks of 
+	  LibGetRTModelErrorStatus and return from the function call 
+	  immediately when an error occurs during EtherCAT initialisation.
+	  (GetEtherCATMasterIdx, InitEtherCATSlave, RegisterEtherCATSlave): 
+	  	Changed function call parameters.
+	  (RegisterEtherCATSlaveAddrRange): New function call to register
+	    arbitrary EtherCAT memory ranges.
+	* blocks/EtherCAT/el5001.tlc, blocks/EtherCAT/el5101.tlc,
+	  blocks/EtherCAT/el10xx.tlc, blocks/EtherCAT/el20xx.tlc,
+	  blocks/EtherCAT/el31xx.tlc, blocks/EtherCAT/el41xx.tlc: Updated due 
+	  	to new TLC function calls in blocks/EtherCAT/EtherCAT.tlc
+	* blocks/EtherCAT/setup.m.in: additionally mex bk1120_in.c and 
+	   bk1120_out.c
+	* blocks/EtherCAT/bk1120_in.c,  blocks/EtherCAT/bk1120_in.tlc,
+	  blocks/EtherCAT/bk1120_out.c, blocks/EtherCAT/bk1120_out.tlc: New
+	  	files to support E-Bus to K-Bus converters
+	* blocks/EtherCAT/Makefile.am: 
+		- Added bk1120_in.c, bk1120_in.tlc, bk1120_out.c,
+		  bk1120_out.tlc to normal install now
+		- Removed superfluous reference to NOT_SRC_BUILD
+		- Changed kernel make call to use @abs_builddir@
+	* blocks/Hilscher/cif_pd_in.tlc blocks/Hilscher/cif_pd_out.tlc: 
+		Updated incorrect comments
+	* blocks/etherlab_lib_exp.mdl (EtherCAT): Updated "KBus In" and 
+		"KBus Out"
+	* blocks/etherlab_lib.mdl (EtherCAT): Added "KBus In" and "KBus Out"
+		to non experimental distribution
+	  
+
 2006-09-23      Richard Hacker (lerich_at_gmx.net)
 	* etherlab_rtw-0.3.tar.gz: Released Revision 0.3
 

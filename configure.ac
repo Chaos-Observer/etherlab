@@ -3,9 +3,9 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT([etherlab_rtw], [0.3], [lerich@gmx.net])
+AC_INIT([etherlab_rtw], [0.3.1], [lerich@gmx.net])
 AC_CONFIG_AUX_DIR(config)
-AM_INIT_AUTOMAKE([-Wall])
+AM_INIT_AUTOMAKE([-Wall -Werror])
 AC_CONFIG_SRCDIR([config.h.in])
 AC_CONFIG_HEADERS([config.h])
 ETHERLAB_DIR=/opt/etherlab
@@ -59,7 +59,7 @@ dnl Allow experimental stuff  for development
 AC_ARG_ENABLE([debug],
     AS_HELP_STRING(
         [--enable-debug],
-        [Enable to show more messages]),
+        [Enable to show more kernel messages]),
     [ case "${enableval}" in
         yes) debug=1
                 AC_DEFINE([DEBUG], [1],
@@ -70,15 +70,12 @@ AC_ARG_ENABLE([debug],
     [ debug=0 ]
 )
 
-# Check whether we are building in a separate build tree
-AM_CONDITIONAL(NOT_SRC_BUILD,[ test "${srcdir}" != "" ])
-
 # Checks for programs
 AC_PROG_CC
 AC_PROG_RANLIB
 AC_PROG_INSTALL
-AC_PATH_PROG(TAC, tac)
-AC_PATH_PROG(XARGS, xargs)
+#AC_PATH_PROG(TAC, tac)
+#AC_PATH_PROG(XARGS, xargs)
 
 # Checks for libraries
 AC_CHECK_LIB([dl],[dlopen],[:],[
@@ -87,7 +84,18 @@ AC_CHECK_LIB([dl],[dlopen],[:],[
 
 # Checks for header files
 AC_HEADER_STDC
-AC_CHECK_HEADERS([arpa/inet.h fcntl.h limits.h netinet/in.h stdint.h stdlib.h string.h sys/ioctl.h sys/socket.h unistd.h])
+AC_CHECK_HEADERS([ \
+        arpa/inet.h \
+        fcntl.h  \
+        limits.h \
+        netinet/in.h  \
+        stdint.h  \
+        stdlib.h  \
+        string.h  \
+        sys/ioctl.h  \
+        sys/socket.h  \
+        unistd.h \
+])
 
 # Checks for typedefs, structures and compiler characteristics
 AC_C_CONST

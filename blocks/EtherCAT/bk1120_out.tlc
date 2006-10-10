@@ -1,8 +1,7 @@
-%implements "cif_pd_out" "C"
+%implements "bk1120_out" "C"
 
 %%
-%% Hardware Driver for Hilscher's Profibus Process Data Output
-%% CIF-80PB
+%% Hardware Driver for Beckhoff's EtherCAT to K-Bus converter KL1120
 %% 
 %% This TLC Implements the necessary IO Functions to send process data
 %%
@@ -12,29 +11,28 @@
 %% 
 %% License: GPL
 
-%include "CIF_PB.tlc"
+%include "EtherCAT.tlc"
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %function BlockTypeSetup( block, system ) void
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  %<InitCIF(block, system)>
+  %<InitEtherCAT(block, system)>
 %endfunction
 
     
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %function BlockInstanceSetup( block, system ) void
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  %<InitCIFCard(block, system)>
+  %assign MasterIdx = InitEtherCATMaster(block, system, MasterId)
+  %assign DomainIdx = InitEtherCATDomain(block, system, MasterIdx)
+  %<InitEtherCATSlave( block, system, MasterIdx, DomainIdx, SlaveAddr)>
 %endfunction
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %function Start(block, system) Output
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-  /* %<Type> Block: %<Name> 
-   * Registering digital input with CIF Driver
-   */
+  %%
   %assign Width = %<LibBlockInputSignalWidth(0)>
   %switch OutputDataFormat
     %case 1
@@ -64,13 +62,12 @@
     %break
     %%
   %endswitch
-  if (!%<LibGetRTModelErrorStatus()> && 
-        !(%<LibBlockPWork(OutputAddr,"","",0)> = 
-           cif_register_send_addr( ... 
-           %<system.CIF_PB.Card[block.CIF_CardIdx].CIF_CardStruct>, ...
-           %<Addr>, %<bytes>))) {
-        %<LibSetRTModelErrorStatus("\"EtherCAT slave register failed\"")>;
-  }
+
+  /* %<Type> Block: %<Name> 
+   * Registering digital output with Master
+   */
+  %<RegisterEtherCATSlaveAddrRange(block, system, "BK1120", \
+        "OUTPUT", ImageOffset, bytes, LibBlockPWork(OutputAddr,"","",0))>
 %endfunction
 
 
@@ -104,7 +101,7 @@
                  + %<(bitoffset+idx)/8>;
         %endif
         bits->bit%<(bitoffset+idx)%8> = ...
-        %<LibBlockInputSignal(0,"","",idx)> ? 1 : 0; 
+        %<LibBlockInputSignal(0,"","",idx)> != 0;
       %endforeach
     }
   %else
