@@ -64,12 +64,12 @@
     %break
     %%
   %endswitch
-  if (!%<LibGetRTModelErrorStatus()> && 
-        !(%<LibBlockPWork(OutputAddr,"","",0)> = 
+  if ( !(%<LibBlockPWork(OutputAddr,"","",0)> = 
            cif_register_send_addr( ... 
            %<system.CIF_PB.Card[block.CIF_CardIdx].CIF_CardStruct>, ...
            %<Addr>, %<bytes>))) {
         %<LibSetRTModelErrorStatus("\"EtherCAT slave register failed\"")>;
+        return;
   }
 %endfunction
 

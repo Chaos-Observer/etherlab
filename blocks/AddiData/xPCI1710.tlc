@@ -92,9 +92,10 @@
       %openfile buf
   
       /* Grab xPCI1710 Card %<CardId> */
-      %<CardStruct> = xPCI1710_lock_card("%<CardId>", NULL,NULL);
+      %<CardStruct> = xPCI1710_open_card("%<CardId>");
       if (!%<CardStruct>) {
           %<LibSetRTModelErrorStatus("\"xPCI1710 Card %<CardId> initialise failed\"")>;
+          return;
       }
       %closefile buf
       %<LibMdlStartCustomCode(buf,"execution")>
@@ -103,7 +104,7 @@
 
       /* Release xPCI1710 Card %<CardId> */
       if (%<CardStruct>) {
-        xPCI1710_unlock_card(%<CardStruct>);
+        xPCI1710_close_card(%<CardStruct>);
       }
       %closefile buf
       %<LibMdlTerminateCustomCode(buf,"trailer")>

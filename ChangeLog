@@ -1,3 +1,16 @@
+2006-10-16      Richard Hacker (lerich_at_gmx.net)
+	* blocks/Hilscher/CIF_PB.tlc (InitCIFCard): Improved comments
+	and return immediately after an open failure.
+	* blocks/Hilscher/cif_pd_out.tlc
+	 blocks/Hilscher/cif_pd_in.tlc (Start): Removed unnecessary 
+	check of LibGetRTModelErrorStatus(), and return immediately after
+	registration failure.
+	* blocks/AddiData/xPCI1710.tlc (Init_xPCI_Card): Updated calls to
+	xPCI1710_open_card (was xPCI1710_lock_card) and 
+	xPCI1710_close_card (was xPCI1710_unlock_card) due to changes
+	in the interface
+
+	  
 2006-10-10      Richard Hacker (lerich_at_gmx.net)
 	* etherlab_rtw-0.3.1.tar.gz: Released Revision 0.3.1
 

@@ -92,7 +92,7 @@
 
       %openfile buf
 
-      /* Exchange IO for CIF Card %<CIF_CardId> */
+      /* %<Name>: Exchange IO for CIF Card %<CIF_CardId> */
       cif_exchange_io(%<CIF_CardStruct>);
       %closefile buf
       %<LibSystemOutputCustomCode(system,buf,"trailer")>
@@ -100,16 +100,17 @@
       %% Insert code to request the CIF Card at the start of mdlStart()
       %openfile buf
   
-      /* Grab CIF Card %<CIF_CardId> */
+      /* %<Name>: Grab CIF Card %<CIF_CardId> */
       if (cif_open_card("%<CIF_CardId>", &%<CIF_CardStruct>)) {
           %<LibSetRTModelErrorStatus("\"CIF Card %<CIF_CardId> initialise failed\"")>;
+          return;
       }
       %closefile buf
       %<LibMdlStartCustomCode(buf,"execution")>
 
       %openfile buf
 
-      /* Release CIF Card %<CIF_CardId> */
+      /* %<Name>: Release CIF Card %<CIF_CardId> */
       if (%<CIF_CardStruct>) {
         cif_close_card(%<CIF_CardStruct>);
       }
