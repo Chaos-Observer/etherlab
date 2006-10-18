@@ -34,8 +34,8 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "rich"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Tue Oct 10 18:30:39 2006"
-  ModelVersionFormat	  "1.%<AutoIncrement:216>"
+  LastModifiedDate	  "Thu Oct 19 00:11:08 2006"
+  ModelVersionFormat	  "1.%<AutoIncrement:217>"
   ConfigurationManager	  "rcs"
   LinearizationMsg	  "none"
   Profile		  off
@@ -132,8 +132,8 @@ Library {
   }
   System {
     Name		    "etherlab_lib"
-    Location		    [466, 204, 958, 415]
-    Open		    off
+    Location		    [470, 230, 962, 441]
+    Open		    on
     ModelBrowserVisibility  off
     ModelBrowserWidth	    200
     ScreenColor		    "white"
@@ -157,7 +157,7 @@ Library {
       MaskHideContents	      off
       System {
 	Name			"EtherCAT"
-	Location		[1104, 54, 1396, 434]
+	Location		[1103, 80, 1395, 460]
 	Open			on
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
@@ -548,7 +548,7 @@ Library {
 	  BlockType		  "S-Function"
 	  Name			  "K-Bus In"
 	  Ports			  [0, 1]
-	  Position		  [25, 299, 105, 341]
+	  Position		  [25, 294, 105, 336]
 	  BackgroundColor	  "yellow"
 	  FunctionName		  "bk1120_in"
 	  Parameters		  "master,slave,kbus_offset,ip_type,width,swap"
@@ -583,8 +583,8 @@ Library {
 	  MaskInitialization	  "types = char(...\n    'Bit0', 'Bit1', 'Bit2"
 "', ...\n    'Bit3', 'Bit4', 'Bit5', ...\n    'Bit6', 'Bit7', ...\n    'int8_T"
 "', 'uint8_T', ...\n    'int16_T', 'uint16_T', ...\n    'int32_T', 'uint32_T')"
-";\nfunc = types(ip_type+1,:);\n"
-	  MaskDisplay		  "fprintf(...\n    'KL1120\\n%s In\\nM:%i Idx"
+";\nfunc = strtrim(types(ip_type,:));\n"
+	  MaskDisplay		  "fprintf(...\n    'BK1120\\n%s In\\nM:%i Idx"
 ":%s',...\n    func,...\n    master,...\n    slave);"
 	  MaskSelfModifiable	  on
 	  MaskIconFrame		  on
@@ -598,7 +598,7 @@ Library {
 	  BlockType		  "S-Function"
 	  Name			  "K-Bus Out"
 	  Ports			  [1]
-	  Position		  [180, 299, 260, 341]
+	  Position		  [180, 294, 260, 336]
 	  BackgroundColor	  "yellow"
 	  FunctionName		  "bk1120_out"
 	  Parameters		  "master,slave,kbus_offset,op_type,swap,tsamp"
@@ -630,15 +630,15 @@ Library {
 	  MaskInitialization	  "types = char(...\n    'Bit0', 'Bit1', 'Bit2"
 "', ...\n    'Bit3', 'Bit4', 'Bit5', ...\n    'Bit6', 'Bit7', ...\n    'int8_T"
 "', 'uint8_T', ...\n    'int16_T', 'uint16_T', ...\n    'int32_T', 'uint32_T')"
-";\nfunc = types(op_type+1,:);\n"
-	  MaskDisplay		  "fprintf(...\n    'KL1120\\n%s Out\\nM:%i Id"
+";\nfunc = strtrim(types(op_type,:));\n"
+	  MaskDisplay		  "fprintf(...\n    'BK1120\\n%s Out\\nM:%i Id"
 "x:%s',...\n    func,...\n    master,...\n    slave);"
 	  MaskSelfModifiable	  on
 	  MaskIconFrame		  on
 	  MaskIconOpaque	  on
 	  MaskIconRotate	  "none"
 	  MaskIconUnits		  "autoscale"
-	  MaskValueString	  "0|1|0|int16_T|off|-1"
+	  MaskValueString	  "0|1|0|Bit0|off|-1"
 	  MaskTabNameString	  ",,,,,"
 	}
 	Block {

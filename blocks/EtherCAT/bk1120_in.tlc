@@ -65,8 +65,9 @@
   /* %<Type> Block: %<Name> 
    * Registering digital input with Master
    */
-  %<RegisterEtherCATSlaveAddrRange(block, system, "BK1120", \
-        "INPUT", ImageOffset, bytes, LibBlockPWork(InputAddr,"","",0))>
+  %<RegisterEtherCATSlaveAddrRange(block, system, "Beckhoff_BK1120", \
+        "EC_DIR_INPUT", ImageOffset, bytes, \
+        LibBlockPWork(InputAddr,"","",0))>
 %endfunction
 
 

@@ -1,5 +1,5 @@
 Library {
-  Name			  "rtai_lib"
+  Name			  "etherlab_lib_exp"
   Version		  6.4
   MdlSubVersion		  0
   SavedCharacterEncoding  "ISO-8859-1"
@@ -34,8 +34,8 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "rich"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Tue Sep 19 18:23:08 2006"
-  ModelVersionFormat	  "1.%<AutoIncrement:219>"
+  LastModifiedDate	  "Thu Oct 19 00:09:59 2006"
+  ModelVersionFormat	  "1.%<AutoIncrement:221>"
   ConfigurationManager	  "rcs"
   LinearizationMsg	  "none"
   Profile		  off
@@ -158,8 +158,8 @@ Library {
     FontAngle		    "normal"
   }
   System {
-    Name		    "rtai_lib"
-    Location		    [800, 389, 1395, 782]
+    Name		    "etherlab_lib_exp"
+    Location		    [800, 415, 1395, 808]
     Open		    on
     ModelBrowserVisibility  off
     ModelBrowserWidth	    200
@@ -375,8 +375,8 @@ Library {
       MaskHideContents	      off
       System {
 	Name			"EtherCAT"
-	Location		[898, 184, 1395, 552]
-	Open			off
+	Location		[898, 210, 1395, 578]
+	Open			on
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
 	ScreenColor		"white"
@@ -766,11 +766,11 @@ Library {
 	  BlockType		  "S-Function"
 	  Name			  "K-Bus In"
 	  Ports			  [0, 1]
-	  Position		  [25, 259, 105, 301]
+	  Position		  [25, 279, 105, 321]
 	  BackgroundColor	  "yellow"
-	  FunctionName		  "ek1120_in"
-	  Parameters		  "master,index,offset,ip_type,width,swap,op_t"
-"ype,tsample"
+	  FunctionName		  "bk1120_in"
+	  Parameters		  "master,slave,kbus_offset,ip_type,width,swap"
+",op_type,tsample"
 	  MaskType		  "K-Bus Input"
 	  MaskDescription	  "Beckhoff EK1110 K-Bus to EtherCAT Converter"
 " Input"
@@ -792,25 +792,72 @@ Library {
 	  MaskTunableValueString  "off,off,off,off,off,off,off,off,off,off,off"
 	  MaskCallbackString	  "||||||||||"
 	  MaskEnableString	  "on,on,on,on,on,on,on,on,on,on,on"
-	  MaskVisibilityString	  "on,on,on,on,on,on,on,on,on,on,on"
+	  MaskVisibilityString	  "on,on,on,on,on,on,on,off,off,off,on"
 	  MaskToolTipString	  "on,on,on,on,on,on,on,on,on,on,on"
 	  MaskVarAliasString	  ",,,,,,,,,,"
-	  MaskVariables		  "master=@1;index=&2;kbus_offset=@3;ip_type=@"
+	  MaskVariables		  "master=@1;slave=&2;kbus_offset=@3;ip_type=@"
 "4;swap=@5;width=@6;op_type=@7;scale_and_offset=@8;full_scale=@9;offset=@10;ts"
 "ample=@11;"
 	  MaskInitialization	  "types = char(...\n    'Bit0', 'Bit1', 'Bit2"
 "', ...\n    'Bit3', 'Bit4', 'Bit5', ...\n    'Bit6', 'Bit7', ...\n    'int8_T"
 "', 'uint8_T', ...\n    'int16_T', 'uint16_T', ...\n    'int32_T', 'uint32_T')"
-";\nfunc = types(ip_type+1,:);\n"
-	  MaskDisplay		  "fprintf(...\n    'KL1120\\n%s In\\nM:%i Idx"
-":%s',...\n    func,...\n    master,...\n    index);"
+";\nfunc = strtrim(types(ip_type,:));\n"
+	  MaskDisplay		  "fprintf(...\n    'BK1120\\n%s In\\nM:%i Idx"
+":%s',...\n    func,...\n    master,...\n    slave);"
 	  MaskSelfModifiable	  on
 	  MaskIconFrame		  on
 	  MaskIconOpaque	  on
 	  MaskIconRotate	  "none"
 	  MaskIconUnits		  "autoscale"
-	  MaskValueString	  "01:0E|120|0|int16_T|off|1|double|0|0|0|0"
+	  MaskValueString	  "0|1|0|int16_T|off|1|Same as Input|0|0|0|0"
 	  MaskTabNameString	  ",,,,,,,,,,"
+	}
+	Block {
+	  BlockType		  "S-Function"
+	  Name			  "K-Bus Out"
+	  Ports			  [1]
+	  Position		  [180, 279, 260, 321]
+	  BackgroundColor	  "yellow"
+	  FunctionName		  "bk1120_out"
+	  Parameters		  "master,slave,kbus_offset,op_type,swap,tsamp"
+"le"
+	  MaskType		  "K-Bus Output"
+	  MaskDescription	  "Beckhoff EK1110 K-Bus to EtherCAT Converter"
+" Output"
+	  MaskHelp		  "This block provides an interface to the K-B"
+"us outging process image for the EK1120 Coupler.\n<p>\nChoose and set the fol"
+"lowing options:\n<h4>Master:</h4>\nSet the EtherCAT Master of this terminal."
+"\n\n<h4>Slave Index:</h4>\nSet the EtherCAT slave index. Following address fo"
+"rmats are allowed:\n<ol>\n<li> Absolute addressing: a number <<b><tt>n</tt></"
+"b>> representing the (zero based) absolute index. <b><tt>n</tt></b> is typica"
+"lly larger than 0 because the first coupler has that address.\n\n<h4>Slave In"
+"dex:</h4>\n "
+	  MaskPromptString	  "Master|Slave Index|K-Bus Address Offset|Act"
+"uator Data Type|Swap Output Bytes|Sample Time (-1 inherited)"
+	  MaskStyleString	  "edit,edit,edit,popup(Bit0|Bit1|Bit2|Bit3|Bi"
+"t4|Bit5|Bit6 |Bit7|int8_T|uint8_T|int16_T|uint16_T|int32_T|uint32_T),checkbox"
+",edit"
+	  MaskTunableValueString  "off,off,off,off,off,off"
+	  MaskCallbackString	  "|||||"
+	  MaskEnableString	  "on,on,on,on,on,on"
+	  MaskVisibilityString	  "on,on,on,on,on,on"
+	  MaskToolTipString	  "on,on,on,on,on,on"
+	  MaskVarAliasString	  ",,,,,"
+	  MaskVariables		  "master=@1;slave=&2;kbus_offset=@3;op_type=@"
+"4;swap=@5;tsample=@6;"
+	  MaskInitialization	  "types = char(...\n    'Bit0', 'Bit1', 'Bit2"
+"', ...\n    'Bit3', 'Bit4', 'Bit5', ...\n    'Bit6', 'Bit7', ...\n    'int8_T"
+"', 'uint8_T', ...\n    'int16_T', 'uint16_T', ...\n    'int32_T', 'uint32_T')"
+";\nfunc = strtrim(types(op_type,:));\n"
+	  MaskDisplay		  "fprintf(...\n    'BK1120\\n%s Out\\nM:%i Id"
+"x:%s',...\n    func,...\n    master,...\n    slave);"
+	  MaskSelfModifiable	  on
+	  MaskIconFrame		  on
+	  MaskIconOpaque	  on
+	  MaskIconRotate	  "none"
+	  MaskIconUnits		  "autoscale"
+	  MaskValueString	  "0|1|0|Bit0|off|-1"
+	  MaskTabNameString	  ",,,,,"
 	}
 	Block {
 	  BlockType		  "S-Function"
@@ -904,43 +951,6 @@ Library {
 "its)|25|24|off|off|1|off|off|0.1|0"
 	  MaskTabNameString	  ",,,,,,,,,,,,,,,,"
 	}
-	Block {
-	  BlockType		  "S-Function"
-	  Name			  "k-Bus Out"
-	  Ports			  [1]
-	  Position		  [315, 180, 385, 220]
-	  BackgroundColor	  "yellow"
-	  FunctionName		  "cif_pd_out"
-	  Parameters		  "device,addr,op_type,swap,tsample"
-	  MaskType		  "Profibus Input"
-	  MaskDescription	  "Hilscher CIF-80PB Profibus Output"
-	  MaskHelp		  "This block provides an interface to the Pro"
-"fibus outgoing process image for the Hilscher CIF-80PB Card.\n<p>\nSupply the"
-" following information:<br>\n<b>PCI Device</b>: Either supply the address in "
-"PCI-Addressing format <em>bus:slot</em> (hexadecimal format), or the (decimal"
-") position as cards are detected "
-	  MaskPromptString	  "PCI Device|Address|Actuator Data Type|Swap "
-"Input Bytes|Sample Time (-1 inherited)"
-	  MaskStyleString	  "edit,edit,popup(Bit0|Bit1|Bit2|Bit3|Bit4|Bi"
-"t5|Bit6 |Bit7|int8_T|uint8_T|int16_T|uint16_T|int32_T|uint32_T),checkbox,edit"
-	  MaskTunableValueString  "off,off,off,off,off"
-	  MaskCallbackString	  "||||"
-	  MaskEnableString	  "on,on,on,on,on"
-	  MaskVisibilityString	  "on,on,on,on,on"
-	  MaskToolTipString	  "on,on,on,on,on"
-	  MaskVarAliasString	  ",,,,"
-	  MaskVariables		  "device=&1;addr=@2;op_type=@3;swap=@4;tsampl"
-"e=@5;"
-	  MaskInitialization	  "device = test_var(device);"
-	  MaskDisplay		  "fprintf('CIF-80PB\\nPCI: %s\\nAddr:%i',\nde"
-"vice,addr);"
-	  MaskIconFrame		  on
-	  MaskIconOpaque	  on
-	  MaskIconRotate	  "none"
-	  MaskIconUnits		  "autoscale"
-	  MaskValueString	  "01:0E|120|int8_T|off|-1"
-	  MaskTabNameString	  ",,,,"
-	}
       }
     }
     Block {
@@ -954,7 +964,7 @@ Library {
       MaskHideContents	      off
       System {
 	Name			"Hilscher"
-	Location		[12, 417, 360, 666]
+	Location		[16, 443, 364, 692]
 	Open			off
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200

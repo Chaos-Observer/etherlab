@@ -66,8 +66,9 @@
   /* %<Type> Block: %<Name> 
    * Registering digital output with Master
    */
-  %<RegisterEtherCATSlaveAddrRange(block, system, "BK1120", \
-        "OUTPUT", ImageOffset, bytes, LibBlockPWork(OutputAddr,"","",0))>
+  %<RegisterEtherCATSlaveAddrRange(block, system, "Beckhoff_BK1120", \
+        "EC_DIR_OUTPUT", ImageOffset, bytes, \
+        LibBlockPWork(OutputAddr,"","",0))>
 %endfunction
 
 

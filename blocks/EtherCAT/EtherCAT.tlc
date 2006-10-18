@@ -337,7 +337,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   if ( !(%<system.EtherCAT.SlaveStruct> = ecrt_domain_register_pdo_range( 
            %<block.EtherCAT.DomainStruct>, "%<block.EtherCAT.SlaveAddr>", \
-           %<DeviceModel>, %<ImageOffset>, %<ImageLength>, %<RdWr>, \
+           %<DeviceModel>, %<RdWr>, %<ImageOffset>, %<ImageLength>, \
            &%<DataPtr>))) {
         %<LibSetRTModelErrorStatus("\"EtherCAT slave register failed\"")>;
         return;
