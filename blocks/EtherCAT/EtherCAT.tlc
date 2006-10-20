@@ -247,9 +247,9 @@
     %endif
 %%        ethercat_support_lock_master(%<MasterSuppStruct>);
         ecrt_domain_process(%<Domain[DomainIdx].Struct>);
-        if (ecrt_domain_state(%<Domain[DomainIdx].Struct>)) {
-            %<LibSetRTModelErrorStatus("\"EtherCAT exchange IO failed\"")>;
-        }
+%%        if (ecrt_domain_state(%<Domain[DomainIdx].Struct>)) {
+%%            %<LibSetRTModelErrorStatus("\"EtherCAT exchange IO failed\"")>;
+%%        }
 %%        ethercat_support_unlock_master(%<MasterSuppStruct>);
     %if Ts != Tf
       }

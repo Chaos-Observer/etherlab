@@ -27,8 +27,23 @@
   %assign MasterIdx = InitEtherCATMaster(block, system, MasterId)
   %assign DomainIdx = InitEtherCATDomain(block, system, MasterIdx)
   %<InitEtherCATSlave( block, system, MasterIdx, DomainIdx, SlaveAddr)>
+%endfunction
 
-  %openfile buf
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function Start(block, system) Output
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  /* %<Type> Block: %<Name> 
+   * Registering analog input with EtherCAT Driver
+   */
+  %<RegisterEtherCATSlave(block, system, "Beckhoff_EL5001_Value", \
+      LibBlockPWork(SSI_Long,"","",0))>
+  %if StatusOp
+    %<RegisterEtherCATSlave(block, system, "Beckhoff_EL5001_Status", \
+        LibBlockPWork(StatusByte,"","",0))>
+  %endif
+  %<LibBlockPWork(SlavePtr,"","",0)> = %<system.EtherCAT.SlaveStruct>;
 
   /* %<Type> Block: %<Name> 
    * Configure SSI Slave:
@@ -72,25 +87,6 @@
            0x406B,0,%<InhibitTime>))) {
       %<LibSetRTModelErrorStatus("\"Init of SSI %<MasterId>:%<SlaveAddr> failed\"")>;
     }
-  %closefile buf
-  %<LibMdlStartCustomCode(buf,"trailer")>
-%endfunction
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%function Start(block, system) Output
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-  /* %<Type> Block: %<Name> 
-   * Registering analog input with EtherCAT Driver
-   */
-  %<RegisterEtherCATSlave(block, system, "Beckhoff_EL5001_Value", \
-      LibBlockPWork(SSI_Long,"","",0))>
-  %if StatusOp
-    %<RegisterEtherCATSlave(block, system, "Beckhoff_EL5001_Status", \
-        LibBlockPWork(StatusByte,"","",0))>
-  %endif
-  %<LibBlockPWork(SlavePtr,"","",0)> = %<system.EtherCAT.SlaveStruct>;
 %endfunction
 
 
