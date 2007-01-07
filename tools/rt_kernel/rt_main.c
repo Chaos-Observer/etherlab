@@ -43,6 +43,8 @@
 
 /* Kernel header files */
 #include <linux/module.h>
+#include <linux/kthread.h>
+#include <linux/delay.h>
 
 /* RTAI headers */
 #include <rtai_sched.h>
@@ -51,43 +53,14 @@
 /* Local headers */
 #include "rt_kernel.h"          /* Public functions exported by manager */
 #include "rt_main.h"            /* Private to kernel */
-#include "fio_ioctl.h"          /* MAX_MODEL_NAME_LEN */
 
-struct rt_manager rt_manager;
+struct rt_kernel rt_kernel;
 
 unsigned long basetick = 0;        /**< Basic tick in microseconds; 
                                     * default 1000us
                                     * All RT Models must have a tick rate 
                                     * that is an integer multiple of this. */
 module_param(basetick,ulong,S_IRUGO);
-
-/**
- * Structure to pass world time (UTC) to Real-Time Tasks
- *
- * The current time (struct timeval) is placed in tv periodically. flag is then
- * set to all ones.  Each individual Real-Time Task then has the opportunity 
- * to read this value if its bit is set in flag, resetting this bit at 
- * the same time to mark that it was read. This eliminates the need to compare
- * the whole tv structure to see whether the time changed.
- */
-static struct {
-    struct timeval tv;          /** Current world time */
-    unsigned long flag;         /** Every process can mark whether it read the
-                                  * current time by using a bit out of this
-                                  * register */
-
-    /* Private data for the task */
-    SEM time_sem;               /* Protection for this struct */
-    struct timer_list task;
-    unsigned int run;           /* True if this task is running */
-    unsigned long period;       /* jiffy time delay between calls */
-
-    unsigned int seq_count;
-
-    wait_queue_head_t time_q;
-} get_time = {
-    .period = HZ/10,
-};
 
 /*
  *   Initialize the stack with a recognizable pattern, one that will
@@ -127,77 +100,122 @@ static int rt_task_stack_check(RT_TASK * task, int pattern)
     return unused;
 }
 
-/** Function: get_time_task
- * Arguments: data - private data for this task. Not needed here
+/** Function: rt_kernel_helper
  *
- * This separate task fetches the current World Time as known by the kernel
- * and passes it on to the model.
+ * This separate task thread runs in parallel to the real time tasks and
+ * has the following tasks:
+ *   - periodically get the real world time
+ *   - wake up the buddy if the real time processes have produced data for the 
+ *     buddy
  */
-static void get_time_task(unsigned long _unused_data)
+int rt_kernel_helper(void *_unused_data)
 {
     struct timeval current_time;
 
-    /* Do the expensive operation in standard kernel time */
-    do_gettimeofday(&current_time);
+    do {
+        /* Do the expensive operation in standard kernel time */
+        do_gettimeofday(&current_time);
 
-    /* Inform RTAI processes that there is a new time */
-    rt_sem_wait(&get_time.time_sem);
-    get_time.tv = current_time;
-    get_time.flag = ~0UL;
-    rt_sem_signal(&get_time.time_sem);
+        /* Inform RTAI processes that there is a new time */
+        rt_sem_wait(&rt_kernel.time.lock);
+        rt_kernel.time.tv = current_time;
+        rt_sem_signal(&rt_kernel.time.lock);
+        set_bit(0,&rt_kernel.time.flag);
 
-    get_time.seq_count++;
-    wake_up_interruptible(&get_time.time_q);
+        /* Check the availability of data */
+        rtp_data_avail_handler();
 
-    /* Put myself back onto the queue */
-    get_time.task.expires += get_time.period;
-    //pr_info("get_time\n");
+        /* Hang up for a while */
+        msleep(1000/HELPER_CALL_RATE);
 
-    if (get_time.run)
-        add_timer(&get_time.task);
+    } while(!kthread_should_stop());
 
-    return;
+    return 0;
 }
 
-/** 
- * Return the time placed in get_time.tv as a float. A semaphore guarantees
- * a valid read.
- */
-inline double get_float_time(void) 
+/* Initialise the internal time keeper observer */
+void init_time(void)
 {
-    double time;
+    clear_bit(0, &rt_kernel.time.flag);
 
-    rt_sem_wait(&get_time.time_sem);
-    time = (double)get_time.tv.tv_sec + get_time.tv.tv_usec*1.0e-6;
-    rt_sem_signal(&get_time.time_sem);
+    rt_kernel.time.i = 1.0;
+    rt_kernel.time.base_step = rt_kernel.base_period/1.0e6;
+    rt_kernel.time.u = rt_kernel.time.base_step;
 
-    return time;
+    rt_kernel.time.value = 
+        (double)rt_kernel.time.tv.tv_sec + rt_kernel.time.tv.tv_usec*1.0e-6;
+}
+
+/* This function gets called at the fastest sampling rate and is an 
+ * observer interpolating the time between the samples of real world time
+ * provided by rt_kernel_helper().
+ * It is a second order feedback system:
+ *
+ *                            +-----+   p                          
+ *                         +--> K_p +-----+                        
+ *   T     +   +-----+  e  |  +-----+     |  u  +-----+  value     
+ *  --------X--> ZOH +-----+              @-----> 1/s +----+--     
+ *         -|  +-----+     | +-------+    |     +-----+    |       
+ *          |              +-> K_i/s +----+                |       
+ *          |                +-------+  i                  |       
+ *          |                                              |       
+ *          |                                              |       
+ *          +----------------------------------------------+       
+ */
+void update_time(void)
+{
+/* Define PI controller for tracking the real world time. Arbitrarily
+ * choose the controller to have a response of HELPER_CALL_RATE/50.
+ * This makes for a reasonably smooth increase in time
+ */
+#define K_P (2*0.707*6.28*HELPER_CALL_RATE/50)
+#define K_I (6.28*HELPER_CALL_RATE/50)*(6.28*HELPER_CALL_RATE/50)
+    double e, p;
+
+    /* Check whether a new time sample has arrived. This happens at a 
+     * rate of HELPER_CALL_RATE.  */
+    if (test_and_clear_bit(0, &rt_kernel.time.flag)) {
+        /* Time error between Real World time and time observer */
+        e = (double)rt_kernel.time.tv.tv_sec + 
+            rt_kernel.time.tv.tv_usec*1.0e-6 - rt_kernel.time.value;
+
+        /* Proportional part */
+        p = K_P*e;
+
+        /* Integration part */
+        rt_kernel.time.i += K_I/HELPER_CALL_RATE*e;
+
+        /* Input to the time integrator */
+        rt_kernel.time.u = (p + rt_kernel.time.i)*rt_kernel.time.base_step;
+    }
+
+    /* Here is the time integrator, called once at the fastest sampling
+     * rate */
+    rt_sem_wait(&rt_kernel.time.lock);
+    rt_kernel.time.value += rt_kernel.time.u;
+    rt_sem_signal(&rt_kernel.time.lock);
 }
 
 /** Function: mdl_main_thread
- * arguments: long model_id: RTW-Manager Task Id for this task
+ * arguments: long priv_data: Pointer to the mdl_task
  *
- * This is the fastest thread of the model. It differs from mdl_sec_thread
+ * This is the fastest task of the model. It differs from mdl_sec_thread
  * in that it has to take care of parameter transfer and world time.
  */
 static void mdl_main_thread(long priv_data)
 {
-    struct rt_task *rt_task = (struct rt_task *)priv_data;
-    struct rt_mdl *rt_mdl = rt_task->rt_mdl;
-    struct rtw_model *rtw_model = rt_mdl->rtw_model;
+    struct mdl_task *mdl_task = (struct mdl_task *)priv_data;
+    struct model *model = mdl_task->model;
+    const struct rtw_model *rtw_model = model->rtw_model;
     unsigned int overrun = 0;
     unsigned long counter = 0;
     const char *errmsg;
     cycles_t rt_start = get_cycles(), rt_end, rt_prevstart;
+    unsigned int cpu_mhz;
 
-    /* Set the world time for the first time. There is a bit of a race
-     * condition here, since hopefully get_time has not been called
-     * in the meantime */
-    if (test_and_clear_bit(rt_mdl->model_id, &get_time.flag)) {
-        rtw_model->init_time(get_float_time());
-    } else {
-        rt_printk("Initialise the clock first!\n");
-        return;
+    if (mdl_task->master) {
+        /* This task is the master time keeper. Initialise the clock */
+        init_time();
     }
 
     while (1) {
@@ -206,74 +224,95 @@ static void mdl_main_thread(long priv_data)
         rt_start = get_cycles();
 
         /* Check for new parameters */
-        if (rtw_model->new_rtP) {
-                rt_sem_wait(&rt_mdl->io_rtP_sem);
+        if (model->new_rtP) {
+                rt_sem_wait(&model->rtP_sem);
                 rt_printk("Got new parameter set\n");
                 memcpy(rtw_model->mdl_rtP, rtw_model->pend_rtP,
                                 rtw_model->rtP_size);
-                rtw_model->new_rtP = 0;
-                rt_sem_signal(&rt_mdl->io_rtP_sem);
-        }
-
-        /* Check whether a new timestamp arrived */
-        if ( test_and_clear_bit(rt_mdl->model_id, &get_time.flag)) {
-            rtw_model->set_time(get_float_time());
+                model->new_rtP = 0;
+                rt_sem_signal(&model->rtP_sem);
         }
 
         /* Do one calculation step of the model */
-        if ((errmsg = rtw_model->rt_OneStepMain()))
+        mdl_task->stats->time = rt_kernel.time.value;
+        if ((errmsg = rtw_model->rt_OneStepMain(mdl_task->stats->time)))
             break;
 
         /* Send a copy of rtB to the buddy process */
-        if (rtw_model->take_photo()) {
-            rtp_make_photo(rt_mdl);
+        if (!--model->photo_sample) {
+            rtp_make_photo(model);
+            model->photo_sample = rtw_model->downsample;
         }
 
         /* Calculate and report execution statistics */
         rt_end = get_cycles();
-        rtw_model->exec_stats(
-                ((double)(rt_end-rt_start))/cpu_khz/1000,
-                ((double)(rt_start-rt_prevstart))/cpu_khz/1000,
-                overrun
-                );
+        mdl_task->stats->time = rt_kernel.time.value;
+        cpu_mhz = cpu_khz/1000;  // cpu_khz is not constant
+        mdl_task->stats->exec_time = 
+            ((unsigned int)(rt_end - rt_start))/cpu_mhz;
+        mdl_task->stats->time_step = 
+            ((unsigned int)(rt_start - rt_prevstart))/cpu_mhz;
+        mdl_task->stats->overrun = overrun;
 
         /* Wait until next call */
         if (rt_task_wait_period()) {
-            pr_info("Model overrun on main thread ... "
-                    "tick %lu took %luus, allowed are %luus\n",
-                    counter,
-                    (unsigned long)(get_cycles() - rt_prevstart)/(cpu_khz/1000),
-                    rt_task->period);
-            if (++overrun == rtw_model->max_overrun) {
+            if (overrun++) {
+                pr_info(".");
+            } else {
+                pr_info("Model overrun on main task ... "
+                        "tick %lu took %luus, allowed are %luus ",
+                        counter,
+                        (unsigned long)(get_cycles() - 
+                                        rt_start)/(cpu_khz/1000),
+                        mdl_task->period);
+            }
+
+            if (overrun == rtw_model->max_overrun) {
                 errmsg = "Too many overruns";
                 rtw_model->set_error_msg("Abort");
                 break;
             }
         } else {
             if (overrun)
-                overrun--;
+                if (!--overrun)
+                    pr_info("\n");
+        }
+
+        if (mdl_task->master) {
+            update_time();
         }
     }
-    rt_printk("Model %s main thread aborted. Error message:\n\t%s\n", 
+    rt_printk("Model %s main task aborted. Error message:\n\t%s\n", 
             rtw_model->modelName, errmsg);
+
+    /* If this task is not the master, it can end here */
+    if (!mdl_task->master)
+        return;
+
+    /* Master task has to continue to keep the time ticking... */
+    while (1) {
+        update_time();
+        rt_task_wait_period();
+    }
 }
 
 /** Function: mdl_sec_thread
- * arguments: long model_id: RTW-Manager Task Id for this task
+ * arguments: long model_id: RT-Kernel Task Id for this task
  *
  * This calls secondary model threads running more slowly than the main
- * thread.
+ * task.
  */
 static void mdl_sec_thread(long priv_data)
 {
-    struct rt_task *rt_task = (struct rt_task *)priv_data;
-    struct rt_mdl *rt_mdl = rt_task->rt_mdl;
-    unsigned int mdl_tid = rt_task->mdl_tid;
-    struct rtw_model *rtw_model = rt_mdl->rtw_model;
+    struct mdl_task *mdl_task = (struct mdl_task *)priv_data;
+    struct model *model = mdl_task->model;
+    unsigned int mdl_tid = mdl_task->mdl_tid;
+    const struct rtw_model *rtw_model = model->rtw_model;
     unsigned int overrun = 0;
     unsigned long counter = 0;
     const char *errmsg;
     cycles_t rt_start = get_cycles(), rt_end, rt_prevstart;
+    unsigned int cpu_mhz;
 
     while (1) {
         counter++;
@@ -281,21 +320,19 @@ static void mdl_sec_thread(long priv_data)
         rt_start = get_cycles();
 
         /* Do one calculation step of the model */
-        if ((errmsg = rtw_model->rt_OneStepTid(mdl_tid)))
+        mdl_task->stats->time = rt_kernel.time.value;
+        if ((errmsg = rtw_model->rt_OneStepTid(mdl_tid, 
+                        mdl_task->stats->time)))
             break;
 
         /* Calculate and report execution statistics */
         rt_end = get_cycles();
-/*
- * FIXME: make exec_stats for subtasks
-        rtw_model->exec_stats(
-                mdl_tid,
-                ((double)(rt_end-rt_start))/cpu_khz/1000,
-                ((double)(rt_start-rt_prevstart))/cpu_khz/1000,
-                overrun
-                );
-*/
-
+        cpu_mhz = cpu_khz/1000;  // cpu_khz is not constant
+        mdl_task->stats->exec_time = 
+            ((unsigned int)(rt_end - rt_start))/cpu_mhz;
+        mdl_task->stats->time_step = 
+            ((unsigned int)(rt_start - rt_prevstart))/cpu_mhz;
+        mdl_task->stats->overrun = overrun;
 
         /* Wait until next call */
         if (rt_task_wait_period()) {
@@ -303,8 +340,8 @@ static void mdl_sec_thread(long priv_data)
                     "tick %lu took %luus, allowed are %luus\n",
                     mdl_tid,
                     counter,
-                    (unsigned long)(get_cycles() - rt_prevstart)/(cpu_khz/1000),
-                    rt_task->period);
+                    (unsigned long)(get_cycles() - rt_start)/(cpu_khz/1000),
+                    mdl_task->period);
             if (++overrun == rtw_model->max_overrun) {
                 errmsg = "Too many overruns";
                 rtw_model->set_error_msg("Abort");
@@ -321,64 +358,47 @@ static void mdl_sec_thread(long priv_data)
 
 void free_rtw_model(int model_id)
 {
-    struct rt_mdl *rt_mdl = rt_manager.rt_mdl[model_id];
+    struct model *model = rt_kernel.model[model_id];
     unsigned int i;
 
-    down(&rt_manager.sem);
-    if (!test_and_set_bit(rt_mdl->model_id, &rt_manager.stopped_models)) {
-        for (i = 0; i < rt_mdl->rtw_model->numst; i++) {
-            rt_task_suspend(&rt_mdl->thread[i].rtai_thread);
-            printk("Unused stack memory: %i\n", 
-                rt_task_stack_check(&rt_mdl->thread[i].rtai_thread,STACK_MAGIC));
 
-            rt_task_delete(&rt_mdl->thread[i].rtai_thread);
-        }
+    clear_bit(model->id, &rt_kernel.loaded_models);
+    rtp_fio_clear_mdl(model);
 
-        if (!(rt_manager.loaded_models ^ rt_manager.stopped_models)) {
-            /* Last process to be removed */
-            rt_manager.base_period = 0;
-            stop_rt_timer();
-            pr_info("Stopped RT Timer\n");
-        }
-        rtp_fio_clear_mdl(rt_mdl);
+    down(&rt_kernel.lock);
+    for (i = 0; i < model->rtw_model->numst; i++) {
+        rt_task_suspend(&model->task[i].rtai_thread);
+        printk("Unused stack memory: %i\n", 
+            rt_task_stack_check(&model->task[i].rtai_thread,STACK_MAGIC));
+
+        rt_task_delete(&model->task[i].rtai_thread);
     }
 
-    /* If the buddy is alive, give it a chance to clean up */
-    if (rt_mdl->buddy_there && rt_mdl->wp) {
-        rt_manager.notify_buddy = 1;
-        
-        up(&rt_manager.sem);
-
-        wake_up_interruptible(&rt_manager.event_q);
-
-        /* I hope it's ok to use data_q here. Signalling over this queue
-         * was stopped above */
-        do {
-        } while (wait_event_interruptible(rt_mdl->data_q, 
-                    !(rt_mdl->buddy_there && rt_mdl->wp)));
-
-        down(&rt_manager.sem);
+    if (!rt_kernel.loaded_models) {
+        /* Last process to be removed */
+        rt_kernel.base_period = 0;
+        stop_rt_timer();
+        pr_info("Stopped RT Timer\n");
     }
 
-    clear_bit(rt_mdl->model_id, &rt_manager.loaded_models);
-    clear_bit(rt_mdl->model_id, &rt_manager.stopped_models);
-    kfree(rt_mdl);
-    up(&rt_manager.sem);
+    kfree(model);
+
+    up(&rt_kernel.lock);
 
     return;
 }
 
-int register_rtw_model(struct rtw_model *rtw_model,
+int register_rtw_model(const struct rtw_model *rtw_model,
         size_t struct_len,
-        char *revision_str)
+        const char *revision_str,
+        struct module *owner)
 {
     unsigned int i;
     unsigned int model_id;
     unsigned int multiplier;
     RTIME now;
     int err = -1;
-    struct rt_mdl *rt_mdl;
-    unsigned int get_time_seq;
+    struct model *model;
 
     if ((struct_len != sizeof(struct rtw_model))
             || strcmp(revision_str, REVISION)) {
@@ -400,63 +420,58 @@ int register_rtw_model(struct rtw_model *rtw_model,
 
     /* If the ticker is already running, check that the base rates are
      * compatible */
-    if (rt_manager.base_period && 
-            rtw_model->base_period % rt_manager.base_period) {
+    if (rt_kernel.base_period && 
+            rtw_model->base_period % rt_kernel.base_period) {
         pr_info("Model's base rate (%uns) is not an integer multiple of "
                 "RTAI baserate %luus\n", 
-                rtw_model->base_period, rt_manager.base_period);
+                rtw_model->base_period, rt_kernel.base_period);
         err = -EINVAL;
         goto out;
     }
 
     /* Get some memory to manage RT model */
-    rt_mdl = kmalloc(
-            sizeof(struct rt_mdl) + rtw_model->numst*sizeof(struct rt_task), 
+    model = kcalloc( 1, 
+            ( sizeof(struct model) 
+              + rtw_model->numst*sizeof(struct mdl_task)
+              + rtw_model->numst*sizeof(struct task_stats)),
             GFP_KERNEL);
-    if (!rt_mdl) {
+    if (!model) {
         printk("Error: Could not get memory for Real-Time Task\n");
         err = -ENOMEM;
         goto out;
     }
+    model->task_stats = 
+        (struct task_stats *)&model->task[rtw_model->numst];
+    model->task_stats_len = rtw_model->numst*sizeof(struct task_stats);
 
-    down(&rt_manager.sem);
+    down(&rt_kernel.lock);
 
     /* Make sure there is one free slot */
-    if (rt_manager.loaded_models == ~0UL) {
+    if (rt_kernel.loaded_models == ~0UL) {
         printk("Exceeded maximum number of tasks (%i)\n", MAX_MODELS);
         err = -ENOMEM;
         goto out_check_full;
     }
-    model_id = ffz(rt_manager.loaded_models);
-    rt_mdl->model_id = model_id;
-    set_bit(model_id, &rt_manager.loaded_models);
-    rt_manager.notify_buddy = 1;
+    model_id = ffz(rt_kernel.loaded_models);
+    model->id = model_id;
+    set_bit(model_id, &rt_kernel.loaded_models);
     pr_debug("Found free RTW Task %i\n", model_id);
 
-    rt_manager.rt_mdl[model_id] = rt_mdl;
+    rt_kernel.model[model_id] = model;
 
-    rt_mdl->rtw_model = rtw_model;
-
-    /* Before firing off the Real-Time Task, first setup the external
-     * communications - the character devices. This is race free (considering 
-     * that the process is available to the user, i.e. live), because 
-     * all the setup has been completed. 
-     * Create character devices for this process */
-    if ((err = rtp_fio_init_mdl(rt_mdl, rtw_model))) {
-        printk("Could not initialise file io\n");
-        goto out_fio_init;
-    }
+    model->rtw_model = rtw_model;
 
     for (i = 0; i < rtw_model->numst; i++) {
-        rt_mdl->thread[i].mdl_tid = i;
-        rt_mdl->thread[i].rt_mdl = rt_mdl;
+        model->task[i].mdl_tid = i;
+        model->task[i].model = model;
+        model->task[i].stats = &model->task_stats[i];
 
         /* Initialise RTAI task structure */
         if ((err = rt_task_init(
-                        &rt_mdl->thread[i].rtai_thread, /* RT_TASK 	*/
+                        &model->task[i].rtai_thread, /* RT_TASK 	*/
                         (i ? mdl_sec_thread 
                          : mdl_main_thread),      /* Task function 	*/
-                        (long)&rt_mdl->thread[i], /* Private data passed to 
+                        (long)&model->task[i], /* Private data passed to 
                                                    * task */
                         rtw_model->stack_size,   /* Stack size 	*/
                         i,                      /* priority 	*/
@@ -469,67 +484,68 @@ int register_rtw_model(struct rtw_model *rtw_model,
 
         /* Fill stack with a recognisable pattern to enable stack size 
          * profiling */
-        rt_task_stack_init(&rt_mdl->thread[i].rtai_thread, STACK_MAGIC);
+        rt_task_stack_init(&model->task[i].rtai_thread, STACK_MAGIC);
     }
 
-    /* Check that the model's rate is a multiple of rt_manager's baserate */
-    if (!rt_manager.base_period) {
+    /* Check that the model's rate is a multiple of rt_kernel's baserate */
+    if (!rt_kernel.base_period) {
         /* Use global baserate if it has been passed as a module parameter
          * otherwise take that from the model */
-        rt_manager.base_period = basetick ? basetick : rtw_model->base_period;
-        rt_manager.tick_period = 
-            start_rt_timer_ns(rt_manager.base_period*1000);
+        rt_kernel.base_period = basetick ? basetick : rtw_model->base_period;
+        rt_kernel.tick_period = 
+            start_rt_timer_ns(rt_kernel.base_period*1000);
+        model->task[0].master = 1;
         pr_info("Started RT timer at a rate of %luus\n", 
-                rt_manager.base_period);
+                rt_kernel.base_period);
     }
 
-    
-    /* Syncronize with get_time task. This is important so that the RT-Task
-     * starts with a very recent time sample */
-    get_time_seq = get_time.seq_count;
-    if ((err = wait_event_interruptible(get_time.time_q, 
-                    get_time_seq != get_time.seq_count))) {
-        pr_info("Interrupted while waiting for clock tick. Try again\n");
-        goto out_sleep;
+    /* Now setup the external
+     * communications - the character devices. This is race free (considering 
+     * that the process is available to the user, i.e. live), because 
+     * all the setup has been completed. 
+     * Create character devices for this process */
+    if ((err = rtp_fio_init_mdl(model, owner))) {
+        printk("Could not initialise file io\n");
+        goto out_fio_init;
     }
-    rt_sem_init(&rt_mdl->mdl_lock,1); /* Unlock model */
 
     now = rt_get_time();
+    model->photo_sample = 1;           /* Take a photo of next calculation */
     for (i = 0; i < rtw_model->numst; i++) {
         multiplier = rtw_model->get_sample_time_multiplier(i);
-        rt_mdl->thread[i].period = multiplier*rt_manager.base_period;
+        model->task[i].period = multiplier*rt_kernel.base_period;
         pr_info("RTW Model tid %i running at %luus\n", 
-                i, rt_mdl->thread[i].period);
+                i, model->task[i].period);
         if ((err = rt_task_make_periodic(
-                        &rt_mdl->thread[i].rtai_thread, 
-                        now + nano2count(1e6), //rt_manager.tick_period,
-                        multiplier*rt_manager.tick_period
+                        &model->task[i].rtai_thread, 
+                        now + nano2count(1e7), //rt_kernel.tick_period,
+                        multiplier*rt_kernel.tick_period
                         ))) {
                 printk("ERROR: Could not start periodic RTAI rask.\n");
                 goto out_make_periodic;
         }
     }
 
-
-    up(&rt_manager.sem);
-
-    wake_up_interruptible(&rt_manager.event_q);
+    up(&rt_kernel.lock);
 
     return model_id;
 
 out_make_periodic:
-    for (i--; i > rtw_model->numst; i--) {
-        rt_task_suspend(&rt_mdl->thread[i].rtai_thread);
-        rt_task_delete(&rt_mdl->thread[i].rtai_thread);
-    }
-out_sleep:
-out_task_init:
-    rtp_fio_clear_mdl(rt_mdl);
+    rtp_fio_clear_mdl(model);
 out_fio_init:
-    clear_bit(model_id, &rt_manager.loaded_models);
+    for (i--; i > rtw_model->numst; i--) {
+        rt_task_suspend(&model->task[i].rtai_thread);
+        rt_task_delete(&model->task[i].rtai_thread);
+    }
+out_task_init:
+    clear_bit(model_id, &rt_kernel.loaded_models);
+    if (!rt_kernel.loaded_models) {
+        rt_kernel.base_period = 0;
+        stop_rt_timer();
+    }
 out_check_full:
-    up(&rt_manager.sem);
-    kfree(rt_mdl);
+    up(&rt_kernel.lock);
+    kfree(model);
 out:
     return err;
 }
@@ -540,9 +556,9 @@ out:
 RT_TASK test_thread[2];
 
 /** Function: test_thread
- * arguments: long model_id: RTW-Manager Task Id for this task
+ * arguments: long model_id: RT-Kernel Task Id for this task
  *
- * This is the main thread that is called by RTAI.
+ * This is the main task that is called by RTAI.
  */
 static void test_thread_func(long priv_data)
 {
@@ -646,41 +662,32 @@ void __exit mod_cleanup(void)
     rtp_fio_clear();
 
     /* Stop world time task */
-    if (get_time.run) {
-        get_time.run = 0;
-        del_timer_sync(&get_time.task);
-    }
-    pr_info("RTW-Manager stopped\n");
+    kthread_stop(rt_kernel.helper_thread);
+
+    pr_info("RT-Kernel stopped\n");
     return;
 }
 
 int __init mod_init(void)
 {
     int err = -1;
+
+    pr_info("Starting RT-Kernel " PACKAGE_VERSION "\n");
+
 #ifdef TEST_THREAD
     return register_test_model();
 #endif //TEST_THREAD
 
-    /* The only thing to do here is start a thread to fetch world time */
-
     /* First start a separate thread to fetch world time.
      * Do this first so that the model can initialise to the correct
      * time */
-    init_waitqueue_head(&get_time.time_q);
-    rt_sem_init(&get_time.time_sem,1);
-    init_timer(&get_time.task);
-    get_time.task.expires = jiffies;
-    get_time.task.function = get_time_task;
-    get_time.run = 1;
-    get_time_task(0); /* Kickstart it. From now on it restarts itself. */
+    rt_sem_init(&rt_kernel.time.lock,1);
 
     /* Initialise management variables */
-    init_MUTEX(&rt_manager.sem);
-    init_MUTEX(&rt_manager.file_lock);
-    init_waitqueue_head(&rt_manager.event_q);
-    rt_manager.loaded_models = 0;
-    rt_manager.stopped_models = 0;
-    rt_manager.notify_buddy = 0;
+    init_MUTEX(&rt_kernel.lock);
+    init_MUTEX(&rt_kernel.file_lock);
+    init_waitqueue_head(&rt_kernel.event_q);
+    rt_kernel.loaded_models = 0;
 
     /* Initialise RTAI */
     rt_set_periodic_mode();
@@ -690,23 +697,33 @@ int __init mod_init(void)
         goto out_fio_init;
     }
 
+    /* The only thing to do here is start a thread to fetch world time */
+    rt_kernel.helper_thread = 
+        kthread_run(rt_kernel_helper, NULL, "rt_kernel_helper");
+    if (rt_kernel.helper_thread == ERR_PTR(-ENOMEM)) {
+        pr_info("Could not start timer thread - Out of memory\n");
+        goto out_start_thread;
+    }
+
     /* Now the module is ready to accept RT models, that register themselves
      * here by calling register_rtw_model() */
 
-    pr_info("Successfully started RTW-Manager\n");
+    pr_info("Successfully started RT-Kernel\n");
 
     return 0;
 
+    kthread_stop(rt_kernel.helper_thread);
+out_start_thread:
+    rtp_fio_clear();
 out_fio_init:
-    get_time.run = 0;
-    del_timer_sync(&get_time.task);
     return err;
 }
 
 
 MODULE_LICENSE("GPL v2");
-MODULE_DESCRIPTION("Real Time Workshop for RTAI module");
+MODULE_DESCRIPTION("RT-Kernel for " PACKAGE_NAME);
 MODULE_AUTHOR("Richard Hacker");
+MODULE_VERSION(PACKAGE_VERSION);
 
 EXPORT_SYMBOL_GPL(register_rtw_model);
 EXPORT_SYMBOL_GPL(free_rtw_model);

@@ -30,74 +30,89 @@
 #include <linux/wait.h>
 #include <rtai_sem.h>
 
-/* The following are the bits of rt_mdl->buddy_there to indicate
- * whether the specific channel has been opened by the buddy
- */
-#define RTB_BIT 0
-#define CTL_BIT 1
+#include "fio_ioctl.h"          /* MAX_MODELS */
 
-struct rt_task {
-    unsigned int mdl_tid;
-    unsigned long period;
-    struct rt_mdl *rt_mdl;
-    RT_TASK rtai_thread;
+/* The calling frequency of the kernel helper */
+#define HELPER_CALL_RATE 10
+
+/* Every model can have more than one task - one of this structure is 
+ * allocated for each task */
+struct mdl_task {
+    RT_TASK rtai_thread;        /** Structure for RTAI data */
+
+    int master;                 /** This is true for the first model task's
+                                 * fastest timing rate. Used by the
+                                 * helper_thread */
+
+    struct model *model;      /** Reference to the model */
+    unsigned long period;       /** Model task's period in microseconds */
+    unsigned int mdl_tid;       /** The model's task id */
+
+    struct task_stats *stats;
 };
 
-struct rt_mdl {
-    int model_id;               /** The model index in the array 
-                                 * \ref rt_manager.rt_mdl assigned by 
+struct model {
+    int id;                     /** The model index in the array 
+                                 * \ref rt_kernel.rt_mdl assigned by 
                                  * rt_kernel for this model. */
-    struct rtw_model *rtw_model; /** Data structure for the RTW model */
-    SEM mdl_lock;               /* If locked, model should not be executed */
+    const struct rtw_model *rtw_model; /** Data structure for the RTW model. 
+                                  * This gets passed to us when the model
+                                  * is registered */
 
-    unsigned long buddy_there;   /* The bits indicate whether one of the IO
-                                  * channels has been opened by the buddy.
-                                  */
+    struct buddy_fio *buddy_fio; 
 
     struct cdev rtp_dev;        /* Device for Process IO */
-    wait_queue_head_t data_q;
-    SEM buf_sem;
+    SEM buf_sem;                /* RT Sem to protect data path to buddy */
+    SEM rtP_sem;                /* RT Sem for parameters */
 
-    struct cdev ctl_dev;        /* Device for Control Interface */
-    wait_queue_head_t ctl_q;
-    SEM io_rtP_sem;
+    int new_rtP;   /* True if a new parameter set needs to be loaded */
+
+    struct semaphore buddy_lock;
+    wait_queue_head_t waitq;
+    unsigned int rtB_cnt;
+    size_t rtB_len;
 
     /* Management for Process IO */
     void *rtb_buf;
     void *rp;                   /* Read pointers */
     void *wp;                   /* Write pointers */
     void *rtb_last;             /* Pointer to last block of rtb_buf */
+    unsigned int photo_sample;  /* Decrease this by one every tick;
+                                 * when ==1, make a photo */
 
-    struct rt_task thread[];    /** Array of length equal to the number
+    SEM msg_sem;
+    char *msg_buf;
+    char *msg_ptr;
+    size_t msg_buf_len;
+
+    struct task_stats *task_stats; /* Array of stats with numst elements */
+    size_t task_stats_len;
+    unsigned int version_checked;
+
+    struct mdl_task task[];    /** Array of length equal to the number
                                  * of sample times the model has. */
 };
 
-#define MAX_MODELS sizeof(unsigned long)*8
-
-struct rt_manager {
-    dev_t dev;                  /**< Char dev range registered for rt_manager */
-    struct cdev main_ctrl;      /**< Char dev struct for rt_manager */
+struct rt_kernel {
+    dev_t dev;                  /**< Char dev range registered for rt_kernel */
+    struct cdev buddy_dev;      /**< Char dev struct for rt_kernel 
+                                  * communication with the buddy */
+    unsigned int chrdev_cnt;    /**< Count of character devices reserved */
 
     unsigned long loaded_models;  /**< The bits represent whether a RT model 
                                    * is loaded in this slot. Max no of RT 
                                    * models is thus 32 */
-    unsigned long stopped_models; /**< The bits represent whether the model 
-                                   * in this slot is stopped, but has not yet 
-                                   * been released bu the buddy */
-
-    int srq;                    /**< Service Request handle */
-    unsigned long srq_mask;     /**< The bits indicate to the service request
+    unsigned long watched_models;
+    unsigned long data_mask;    /**< The bits indicate to the service request
                                  * handler that the specific RT task had data
                                  * to be processed */
 
-    struct semaphore sem;       /* Protect manipulation of above vars */
+    struct semaphore lock;      /* Protect manipulation of above vars */
 
-    struct rt_mdl *rt_mdl[MAX_MODELS];
+    struct model *model[MAX_MODELS];
 
     /* The following variables are used to manage the communication between
-     * the main buddy process and the rt_manager */
-    unsigned int notify_buddy;  /* True wakes up buddy about a change in
-                                 * one of the Real-Time Tasks */
+     * the main buddy process and the rt_kernel */
     wait_queue_head_t event_q;  /* Event queue for poll of task load/unload
                                  * events */
 
@@ -106,15 +121,33 @@ struct rt_manager {
 
     unsigned long base_period;  /* The tick period in microsec */
     RTIME tick_period;          /* RTAI tick counts for base_period */
+
+    struct task_struct *helper_thread;
+
+    struct time {
+        double u;
+        double value;
+
+        struct timeval tv;          /** Current world time */
+        SEM lock;                   /* Protection for this struct */
+        unsigned int tv_update_period;  /* Time in microsec in which tv
+                                         * is updated */
+
+        unsigned long flag;         /** Lowest bit is 1 if there is a new
+                                     * time sample */
+
+        double i;
+        double base_step;
+    } time;
 };
 
-extern struct rt_manager rt_manager;
+extern struct rt_kernel rt_kernel;
 
 /* Copies the current Process Image to the internal buffer */
-void rtp_make_photo(struct rt_mdl *);
+void rtp_make_photo(struct model *);
 
-int rtp_fio_init_mdl(struct rt_mdl *, struct rtw_model *rtw_model);
-void rtp_fio_clear_mdl(struct rt_mdl *);
+int rtp_fio_init_mdl(struct model *, struct module *owner);
+void rtp_fio_clear_mdl(struct model *);
 int rtp_fio_init(void);
 void rtp_fio_clear(void);
 void rtp_data_avail_handler(void);

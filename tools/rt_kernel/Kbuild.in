@@ -1,5 +1,6 @@
 EXTRA_CFLAGS := @RTAI_FLAGS@ -I@abs_top_srcdir@/src/kernel \
-        -I@abs_top_srcdir@ -I@abs_top_srcdir@/src/include $(DEFS)
+        -I@abs_top_srcdir@ -I@abs_top_srcdir@/src/include \
+        -I@abs_top_srcdir@/tools/include $(DEFS)
 
 obj-m        := rt_kernel.o
 rt_kernel-y  := rt_main.o rt_fio.o

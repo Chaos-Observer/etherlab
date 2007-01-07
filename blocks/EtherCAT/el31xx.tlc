@@ -19,16 +19,14 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %function BlockTypeSetup( block, system ) void
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  %<InitEtherCAT(block, system)>
+  %<InitEtherCAT()>
 %endfunction
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %function BlockInstanceSetup( block, system ) void
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  %assign MasterIdx = InitEtherCATMaster(block, system, MasterId)
-  %assign DomainIdx = InitEtherCATDomain(block, system, MasterIdx)
-  %<InitEtherCATSlave( block, system, MasterIdx, DomainIdx, SlaveAddr)>
+  %<InitEtherCATTask(block, system)>
 %endfunction
 
 
@@ -41,11 +39,11 @@
    */
   %foreach sigIdx = Width
     %if StatusOp
-      %<RegisterEtherCATSlave(block, system, "%<Status_PDO>%<sigIdx+1>", \
-          LibBlockPWork(StatusByte,"","",sigIdx))>
+      %<RegisterEtherCATSlave(block, "%<Status_PDO>%<sigIdx+1>", \
+          MasterId, SlaveAddr, LibBlockPWork(StatusByte,"","",sigIdx))>
     %endif
-    %<RegisterEtherCATSlave(block, system, "%<Input_PDO>%<sigIdx+1>", \
-        LibBlockPWork(AD_Word,"","",sigIdx))>
+    %<RegisterEtherCATSlave(block, "%<Input_PDO>%<sigIdx+1>", \
+        MasterId, SlaveAddr, LibBlockPWork(AD_Word,"","",sigIdx))>
   %endforeach
 %endfunction
 

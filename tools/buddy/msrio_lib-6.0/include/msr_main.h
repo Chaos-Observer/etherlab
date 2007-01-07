@@ -304,7 +304,7 @@ void msr_rtlib_cleanup(void);
 *            newparamflag: Callback fŽür ParmeterŽänderung
 *                          RŽückgabe: 0: erfolgreich -1: nicht erfolgreich 
 *                          Parameter fŽür Callback: void * : *rtp from above
-*                          			char *    : Startadresse, die geŽändert wurde
+*                          			void *    : Startadresse, die geŽändert wurde
 *                                                  size_t : LŽänge in byte die geŽändert wurden
 *                          NULL: Funktion wird nicht aufgerufen						  
 *               
@@ -320,8 +320,16 @@ void msr_rtlib_cleanup(void);
 *******************************************************************************
 */
 
-int msr_init(void *_rtp, int (*_newparamflag)(void*,char*,size_t),unsigned long _base_rate,void *_base,unsigned int _blocksize,unsigned int _buflen);
+int msr_init(void *_rtp, int (*_newparamflag)(void*,void*,size_t),unsigned long _base_rate,void *_base,unsigned int _blocksize,unsigned int _buflen);
 
+
+int msr_reg_time(void *time);
+int msr_reg_task_stats(
+        int tid,
+        void *time, 
+        void *exec_time,
+        void *period,
+        void *overrun);
 
 /*
 *******************************************************************************

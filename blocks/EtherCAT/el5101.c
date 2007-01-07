@@ -14,9 +14,9 @@
 #define S_FUNCTION_NAME  el5101
 #define S_FUNCTION_LEVEL 2
 
-#include "math.h"
 #include "simstruc.h"
 #include "ethercat_ss_funcs.h"
+#include "ss_analog_in_funcs.c"
 
 #define MASTER     ((uint_T)mxGetScalar(ssGetSFcnParam(S,0)))
 #define INDEX                          (ssGetSFcnParam(S,1))
@@ -38,6 +38,7 @@ struct el5101 {
                          * 1: Continuous filter
                          * 2: Discrete filter
                          */
+    int_T paramCount;   /* Number of runtime parameters */
 };
     
 
@@ -105,8 +106,16 @@ static void mdlInitializeSizes(SimStruct *S)
     }
 
     ssSetNumSampleTimes(S, 1);
-    ssSetNumContStates(S, devInstance->filter == 1 ? 1 : 0);
-    ssSetNumDiscStates(S, devInstance->filter == 2 ? 1 : 0);
+    if (devInstance->filter) {
+        if (TSAMPLE) {
+            ssSetNumDiscStates(S, DYNAMICALLY_SIZED);
+        } else {
+            ssSetNumContStates(S, DYNAMICALLY_SIZED);
+        }
+    } else {
+        ssSetNumContStates(S, 0);
+        ssSetNumDiscStates(S, 0);
+    }
     ssSetNumRWork(S, 0);
     ssSetNumIWork(S, 0);
     ssSetNumPWork(S, devInstance->status ? 3 : 2);
@@ -130,139 +139,35 @@ static void mdlInitializeSampleTimes(SimStruct *S)
     ssSetOffsetTime(S, 0, 0.0);
 }
 
-/* Return the integration constant (k) for the following filter such that
- * it has a low pass frequency of w.
- * 
- *                           +---+                                      
- *                +---+      | 1 |                                       
- * ------->O----->| k |----->| - |------+----->                         
- *         ^      +---+      | s |      |                               
- *         |                 +---+      |                               
- *         |                            |                               
- *         +----------------------------+                               
- *
- * This is simply w itself
- * */
-real_T cont_convert(SimStruct *S, real_T w, real_T Ts)
-{
-    return w;
-}
-
-/* Return the input weight (k) for the following discrete filter with sample
- * time Ts such that it has an equivalent low pass frequency of a continuous
- * filter.
- * 
- *  U                            +-----+           Y                    
- *   n            +---+          |     |            n                    
- * ------->p----->| k |----->p-->|  -1 |---+-----+----->                
- *        -|      +---+     +|   | z   |   |     |                       
- *         |                 |   +-----+   |     |                      
- *         |                 |             |     |                      
- *         |                 +-------------+     |                      
- *         |                                     |                      
- *         |                                     |                      
- *         +-------------------------------------+                      
- *
- * The characteristic equation of this diagram
- *  Y(n+1)  = k*U(n) + (1-k)*Y(n)
- *
- * A continuous low pass filter has the property that a dirac delta decays
- * to (1 - 2/pi) after time t where t = 1/(2*pi*f) = 1/w where f is the 
- * low pass frequency
- *
- * The aim is now to find k for a discrete filter as above that will let a 
- * dirac delta 
- *      U(n) = {1: n=0; 0: n!=0}
- * decay to Y(N) = k(1-2/pi) in sample N = t/Ts = 1/(w*Ts)
- *
- *                          N         1/w*Ts
- * Y(N) = k(1-2/pi) = k(1-k)  = k(1-k)
- *
- * k = 1 - (1-2/pi)^(w*Ts)
- * */
-real_T disc_convert(SimStruct *S, real_T w, real_T Ts)
-{
-    real_T k1,k,dk,f,df,N;
-    real_T a = (1 - 2/M_PI);
-    int_T i = 100;
-
-    return 1.0 - pow( a, w*Ts);
-
-}
-
 #define MDL_SET_WORK_WIDTHS
 static void mdlSetWorkWidths(SimStruct *S)
 {
-    int_T dims, param, i;
     struct el5101 *devInstance = (struct el5101 *)ssGetUserData(S);
-    real_T Ts = TSAMPLE;
-    real_T (*convert)(SimStruct *S, real_T f, real_T Ts);
-    real_T *m, *c, *w;
-    int_T paramCount = 0;
-    ssParamRec p = {
-            NULL,               /* *name */
-            1,                  /* nDimensions */
-            &dims,              /* *dimensions */
-            SS_DOUBLE,          /* dataTypeId */
-            0,                  /* complexSignal */
-            NULL,               /* *data */
-            NULL,               /* dataAttributes */
-            1,                  /* nDlgParamIndices */
-            &param,             /* *dlgParamIndices */
-            RTPARAM_NOT_TRANSFORMED, /* transformed */
-            0                   /* outputAsMatrix */
-        
-    };
-    if (devInstance->scale && devInstance->filter) {
-        paramCount = 3;
-    } else if (devInstance->scale) {
-        paramCount = 2;
-    } else if (devInstance->filter) {
-        paramCount = 1;
-    } else {
-        return;
-    }
 
-    ssSetNumRunTimeParams(S, paramCount);
-    paramCount = 0;
+    devInstance->paramCount = 0;
+    if (devInstance->scale)
+        devInstance->paramCount += 2;
+    if (devInstance->filter)
+        devInstance->paramCount++;
+
+    ssSetNumRunTimeParams(S, devInstance->paramCount);
 
     /* Only when picking the third choice of Data Type
      * does Output scaling take place */
+    devInstance->paramCount = 0;
     if (devInstance->scale) {
-
-        p.name = "FullScale";
-        dims = 1;
-        param = SCALE_IDX;
-        p.data = m = mxCalloc(1,sizeof(real_T));
-        mexMakeMemoryPersistent(m);
-        *m = (mxGetScalar(ssGetSFcnParam(S,param)));
-        ssSetRunTimeParamInfo(S, paramCount++, &p);
-
-        p.name = "Offset";
-        dims = 1;
-        param = OFFSET_IDX;
-        p.data = c = mxCalloc(1,sizeof(real_T));
-        mexMakeMemoryPersistent(c);
-        *c = (mxGetScalar(ssGetSFcnParam(S,param)));
-        ssSetRunTimeParamInfo(S, paramCount++, &p);
+        set_scaling(S, 1, SCALE_IDX, OFFSET_IDX, 
+                devInstance->paramCount);
+        if (ssGetErrorStatus(S))
+            return;
+        devInstance->paramCount += 2;
     }
 
     if (devInstance->filter) {
-        if (devInstance->filter == 1) { /* Continuous */
-            p.name = "Omega";
-            convert = cont_convert;
-        } else {                        /* Discrete */
-            p.name = "InputWeight";
-            convert = disc_convert;
-        }
-        dims = 1;
-        param = OMEGA_IDX;
-        p.data = w = mxCalloc(1,sizeof(real_T));
-        mexMakeMemoryPersistent(w);
-        *w = (mxGetScalar(ssGetSFcnParam(S,param)));
-        if (*w == 0.0) 
-            ssSetErrorStatus(S,"Time Constant for LPF too small");
-        ssSetRunTimeParamInfo(S, paramCount++, &p);
+        set_filter(S, 1, OMEGA_IDX, devInstance->paramCount);
+        if (ssGetErrorStatus(S))
+            return;
+        devInstance->paramCount += 1;
     }
 }
 
@@ -291,26 +196,17 @@ static void mdlOutputs(SimStruct *S, int_T tid)
 static void mdlTerminate(SimStruct *S)
 {
     ssParamRec *p;
+    int_T i;
     struct el5101 *devInstance = (struct el5101 *)ssGetUserData(S);
 
     if (!devInstance)
         return;
 
     /* If output scaling is used, we malloc()'ed some data space */
-    if (devInstance->scale) {
-
-        p = ssGetRunTimeParamInfo(S,0);
-        mxFree(p->data);
-
-        p = ssGetRunTimeParamInfo(S,1);
-        mxFree(p->data);
-
-        if (devInstance->filter) {
-            p = ssGetRunTimeParamInfo(S,2);
-            mxFree(p->data);
-        }
+    for (i = 0; i < devInstance->paramCount; i++) {
+        p = ssGetRunTimeParamInfo(S,i);
+        free(p->data);
     }
-
         
     free(devInstance);
 }

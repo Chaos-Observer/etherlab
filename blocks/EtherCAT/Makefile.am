@@ -1,8 +1,9 @@
-ethercatdir = $(prefix)/blocks/EtherCAT
+ethercatdir = $(prefix)/$(subdir)
 
 dist_ethercat_DATA = \
         EtherCAT.tlc \
         ethercat_ss_funcs.h \
+        master_stats.c master_stats.tlc \
         el10xx.c el10xx.tlc \
         el20xx.c el20xx.tlc el2xxx_check.m \
         el31xx.c el31xx.tlc el31xx_check.m \
@@ -36,3 +37,7 @@ ecrt_support.o: $(EXTRA_DIST)
 clean-local:
 	make -C "$(LINUX_DIR)" M="@abs_builddir@" \
 		V="$(VERBOSE)" DEFS="$(DEFS)" clean
+
+install-data-local:
+	rm -f $(ethercatdir)/ETL.tlc
+	ln -sf ../ETL.tlc $(ethercatdir)/ETL.tlc

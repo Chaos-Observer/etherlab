@@ -64,7 +64,7 @@ mod_cleanup(void)
     free_rtw_model(rtw_model.model_id);
     kfree(rtw_model.pend_rtP);
     mdl_stop();
-    pr_info("Removed RTW Model \"%s\" from RTW_Manager\n", 
+    pr_info("Removed RTW Model \"%s\" from RT-Kernel\n", 
             rtw_model.modelName);
 }
 
@@ -112,14 +112,14 @@ mod_init(void)
     /* Having finished all the model initialisation, it is now time to 
      * register this RTW Model with the Real-Time Kernel to be scheduled */
     if ((rtw_model.model_id = register_rtw_model(&rtw_model,
-                    sizeof(rtw_model), REVISION)) < 0) {
+                    sizeof(rtw_model), REVISION, THIS_MODULE)) < 0) {
         printk("Could not register model with rtw_manager; rc = %i\n",
                 rtw_model.model_id);
         err = rtw_model.model_id;
         goto out_register_mdl;
     }
 
-    pr_info("Successfully registered RTW Model \"%s\" with RTW-Manager\n",
+    pr_info("Successfully registered RTW Model \"%s\" with RT-Kernel\n",
             rtw_model.modelName);
 
     return 0;

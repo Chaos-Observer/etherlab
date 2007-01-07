@@ -908,7 +908,7 @@ void clr_wfd(int x) {
  * indicate to Dispatcher that there is data for the client. When parameters
  * have changed, call newparamflag() to send new parameters to real time 
  * process */
-ssize_t msr_read(void *p)
+void msr_read(int fd, void *p)
 {
     struct msr_dev *dev = (struct msr_dev *)p;
     int count;
@@ -919,7 +919,10 @@ ssize_t msr_read(void *p)
      * Do not call msr_close() here -- this will be done by the
      * dispatcher */
     if (count <= 0) {
-	return count;
+        msr_close(p);
+        clr_fd(fd);
+        close(fd);
+	return;
     }
     else {  //Daten bekommen, Schreibzeiger weiterschieben
 	msr_incb(count,dev->write_buffer);
@@ -937,14 +940,14 @@ ssize_t msr_read(void *p)
     }
 
     /* Return the return value from read() system call */
-    return count;
+    return;
 }
 
 /* Dispatcher indicated that data channel to client is ready for write(). 
  * When output buffer is empty, tell dispatcher by calling clr_wfd() */
 
 /* FIXME, diese Funktion muß noch überarbeitet werden, sollte ohne temporären Speicher auskommen */
-ssize_t msr_write(void *p)
+void msr_write(int fd, void *p)
 {
     struct msr_dev *dev = (struct msr_dev *)p;
     ssize_t count = 0;
@@ -957,7 +960,9 @@ ssize_t msr_write(void *p)
     if(dev->disconnectflag)
     {
 	printf("msrio:write:disconnect\n");
-	return 0;
+        clr_fd(fd);
+        close(fd);
+	return;
     }
 
     max_len = msr_len_rb(dev,1024); //soviel bei einem Lesebefehl maximal gelesen
@@ -969,7 +974,7 @@ ssize_t msr_write(void *p)
 #ifdef RTW_BUDDY
 	clr_wfd(dev->client_wfd);
 #endif
-	return 0;
+	return;
     }
     
     //es sind Daten im Puffer also schreiben
@@ -977,7 +982,12 @@ ssize_t msr_write(void *p)
 
     /* Speicher anfordern für temporären Zwischenspeicher für die Daten */
     tmp_c = (char *)getmem(max_len);
-    if (!tmp_c) return -ENOMEM;   //Fehler
+    if (!tmp_c) {
+        msr_close(p);
+        clr_fd(fd);
+        close(fd);
+        return;   //Fehler
+    }
     /* Daten lesen */
     max_len = msr_read_charbuf(dev->read_buffer,tmp_c,max_len,&dev->rp_read_pointer);
     // und schreiben
@@ -998,7 +1008,7 @@ ssize_t msr_write(void *p)
 	clr_wfd(dev->client_wfd);
 #endif
 
-    return count;
+    return;
 }
 
 #endif

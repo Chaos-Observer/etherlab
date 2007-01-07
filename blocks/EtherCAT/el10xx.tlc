@@ -19,16 +19,14 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %function BlockTypeSetup( block, system ) void
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  %<InitEtherCAT(block, system)>
+  %<InitEtherCAT()>
 %endfunction
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %function BlockInstanceSetup( block, system ) void
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  %assign MasterIdx = InitEtherCATMaster(block, system, MasterId)
-  %assign DomainIdx = InitEtherCATDomain(block, system, MasterIdx)
-  %<InitEtherCATSlave( block, system, MasterIdx, DomainIdx, SlaveAddr)>
+  %<InitEtherCATTask(block, system)>
 %endfunction
 
 
@@ -39,8 +37,8 @@
   /* %<Type> Block: %<Name> 
    * Registering digital input with EtherCAT Driver
    */
-  %<RegisterEtherCATSlave(block, system, Input_PDO, \
-      LibBlockPWork(InputByte,"","",0))>
+  %<RegisterEtherCATSlave(block, Input_PDO, \
+      MasterId, SlaveAddr, LibBlockPWork(InputByte,"","",0))>
 %endfunction
 
 
@@ -62,7 +60,7 @@
     %case 2
       %% Input Vector Case: each input of the vector is tested
       %% for truth and the corresponding output bit is then set
-      %foreach idx = ChanNum
+      %foreach idx = Width
         %<LibBlockOutputSignal(0,"","",idx)> = 
                 *(uint8_T *)%<LibBlockPWork(InputByte,"","",0)> & 1<<%<idx>
                 ? 1 : 0;
@@ -72,7 +70,7 @@
     %case 3
       %% Separate Inputs Case: each input of the block is tested
       %% for truth and the corresponding output bit is then set
-      %foreach idx = ChanNum
+      %foreach idx = Width
         %<LibBlockOutputSignal(idx,"","",0)> = 
                 *(uint8_T *)%<LibBlockPWork(InputByte,"","",0)> & 1<<%<idx>
                 ? 1 : 0;

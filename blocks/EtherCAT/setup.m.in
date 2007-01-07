@@ -1,12 +1,13 @@
 function setup()
 
 disp(['Precompiling functions in ' pwd]);
+mex master_stats.c
 mex -I@prefix@/include el10xx.c
 mex -I@prefix@/include el20xx.c
-mex -I@prefix@/include el31xx.c
+mex -I@prefix@/include -I.. el31xx.c
 mex -I@prefix@/include el41xx.c
-mex -I@prefix@/include el5001.c
-mex -I@prefix@/include el5101.c
+mex -I@prefix@/include -I.. el5001.c
+mex -I@prefix@/include -I.. el5101.c
 mex -I@prefix@/include -I.. bk1120_in.c
 mex -I@prefix@/include -I.. bk1120_out.c
 if @EXPERIMENTAL@

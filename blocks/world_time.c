@@ -10,14 +10,13 @@
  */
 
 
-#define S_FUNCTION_NAME  taskinfo
+#define S_FUNCTION_NAME  world_time
 #define S_FUNCTION_LEVEL 2
 
 #include "simstruc.h"
 
-#define TGT_TSAMPLE       (mxGetScalar(ssGetSFcnParam(S,0)))
-#define TSAMPLE           (mxGetScalar(ssGetSFcnParam(S,1)))
-#define PARAM_COUNT                                     2
+#define TSAMPLE           (mxGetScalar(ssGetSFcnParam(S,0)))
+#define PARAM_COUNT                                     1
 
 
 /*====================*
@@ -43,11 +42,9 @@ static void mdlInitializeSizes(SimStruct *S)
 
     if (!ssSetNumInputPorts(S, 0)) return;
 
-    if (!ssSetNumOutputPorts(S, 2)) return;
+    if (!ssSetNumOutputPorts(S, 1)) return;
     ssSetOutputPortWidth(S, 0, 1);
     ssSetOutputPortDataType(S, 0, SS_DOUBLE);
-    ssSetOutputPortWidth(S, 1, 1);
-    ssSetOutputPortDataType(S, 0, SS_UINT32);
 
     ssSetNumSampleTimes(S, 1);
     ssSetNumContStates(S, 0);
@@ -97,7 +94,7 @@ static void mdlTerminate(SimStruct *S)
 #define MDL_RTW
 static void mdlRTW(SimStruct *S)
 {
-    if (!ssWriteRTWWorkVect(S, "PWork", 1, "TaskInfoPtr", 1))
+    if (!ssWriteRTWWorkVect(S, "PWork", 1, "TimeSrc", 1))
         return;
 }
 

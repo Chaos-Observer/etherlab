@@ -3,7 +3,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT([etherlab_rtw], [0.3.3], [lerich@gmx.net])
+AC_INIT([etherlab_rtw], [0.3.4-pre3], [lerich@gmx.net])
 AC_CONFIG_AUX_DIR(config)
 AM_INIT_AUTOMAKE([-Wall -Werror])
 AC_CONFIG_SRCDIR([config.h.in])
@@ -121,6 +121,8 @@ AC_CONFIG_FILES([
         etherlab/setup_etherlab.m 
         etherlab/etherlab_tools.mk 
         blocks/Makefile 
+        blocks/setup.m 
+        blocks/Kbuild 
         blocks/AddiData/Makefile 
         blocks/AddiData/setup.m 
         blocks/Hilscher/Makefile 
@@ -138,6 +140,7 @@ AC_CONFIG_FILES([
         tools/scripts/etherlab
         tools/rt_kernel/Kbuild
         tools/rt_kernel/Makefile
+        tools/include/Makefile
         lib/Makefile
 ])
 AC_OUTPUT

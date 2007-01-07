@@ -34,6 +34,7 @@
 
 #include "mdl_wrapper.h"
 #include "mdl_taskinfo.h"
+#include "mdl_time.h"
 
 #include "rtmodel.h"
 #include "rt_sim.h"
@@ -68,6 +69,8 @@ extern void MdlOutputs(int_T tid);
 extern void MdlUpdate(int_T tid);
 extern void MdlTerminate(void);
 
+double world_time[NUMST];
+
 #if NCSTATES > 0
   extern void rt_ODECreateIntegrationData(RTWSolverInfo *si);
   extern void rt_ODEUpdateContinuousStates(RTWSolverInfo *si);
@@ -94,10 +97,12 @@ extern void MdlTerminate(void);
  *      modifications.
  */
 const char *
-rt_OneStep(void)
+rt_OneStep(double time)
 {
     RT_MODEL *S = rtw_model.rt_model;
     real_T tnext;
+
+    world_time[0] = time;
 
     tnext = rt_SimGetNextSampleHit();
     rtsiSetSolverStopTime(rtmGetRTWSolverInfo(S),tnext);
@@ -116,6 +121,12 @@ rt_OneStep(void)
 
     return rtmGetErrorStatusFlag(S);
 } /* end rtOneStep */
+
+double *
+etl_get_world_time_ptr(unsigned int tid)
+{
+    return &world_time[0];
+}
 
 #else /* MULTITASKING */
 
@@ -142,10 +153,12 @@ rt_OneStep(void)
  *
  */
 const char *
-rt_OneStepMain(void)
+rt_OneStepMain(double time)
 {
     RT_MODEL *S = rtw_model.rt_model;
     real_T tnext;
+
+    world_time[FIRST_TID] = time;
 
     /*******************************************
      * Step the model for the base sample time *
@@ -179,13 +192,15 @@ rt_OneStepMain(void)
 } /* end rtOneStepMain */
 
 const char *
-rt_OneStepTid(uint_T tid)
+rt_OneStepTid(uint_T tid, double time)
 {
     RT_MODEL *S = rtw_model.rt_model;
 
 #if FIRST_TID == 1
     tid += FIRST_TID;
 #endif
+
+    world_time[tid] = time;
 
 /*
     if (rtmGetSampleHitArray(S)[tid]) {
@@ -205,6 +220,15 @@ rt_OneStepTid(uint_T tid)
 
 } /* end rtOneStepTid */
 
+double *
+etl_get_world_time_ptr(unsigned int tid)
+{
+    if (tid == 0) 
+        tid = FIRST_TID;
+
+    return &world_time[tid];
+}
+
 #endif /* MULTITASKING */
 
 void
@@ -213,24 +237,6 @@ mdl_set_error_msg(const char *msg)
     RT_MODEL *S = rtw_model.rt_model;
 
     rtmSetErrorStatusFlag(S, msg);
-}
-
-/* Function: mdl_takephoto ===================================================
- *
- * Abstact:
- *      Decides whether a process photo should be taken or not:
- *      1: Take photo
- *      0: No photo
- */
-int
-mdl_takephoto(void)
-{
-    if (--rtw_model.downsample_cnt) {
-        return 0;
-    } else {
-        rtw_model.downsample_cnt = rtw_model.downsample;
-        return 1;
-    }
 }
 
 /* Function: mdl_stop ========================================================
@@ -316,9 +322,6 @@ mdl_start(void)
     rtw_model.rtP_size = 0;
 #endif
 
-    rtw_model.take_photo = mdl_takephoto;
-    rtw_model.downsample_cnt = 1;    /* Next call should make first photo */
-
     /* Some variables concerning sample times passed to the model */
 #ifdef MULTITASKING
     rtw_model.numst = TID01EQ ? NUMST-1 : NUMST;
@@ -340,9 +343,6 @@ mdl_start(void)
 
     /* Register model callbacks */
     rtw_model.set_error_msg = mdl_set_error_msg;
-    rtw_model.init_time = mdlInitWorldTime;
-    rtw_model.set_time = mdlSetWorldTime;
-    rtw_model.exec_stats = mdlSetStats;
     rtw_model.modelVersion = STR(MODELVERSION);
     rtw_model.modelName = STR(MODEL);
 

@@ -34,8 +34,8 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "rich"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Thu Oct 19 00:09:59 2006"
-  ModelVersionFormat	  "1.%<AutoIncrement:221>"
+  LastModifiedDate	  "Fri Nov 24 14:58:07 2006"
+  ModelVersionFormat	  "1.%<AutoIncrement:247>"
   ConfigurationManager	  "rcs"
   LinearizationMsg	  "none"
   Profile		  off
@@ -127,9 +127,6 @@ Library {
       MinMaxOverflowLogging   "UseLocalSettings"
     }
     Block {
-      BlockType		      Terminator
-    }
-    Block {
       BlockType		      TriggerPort
       TriggerType	      "rising"
       StatesWhenEnabling      "inherit"
@@ -159,7 +156,7 @@ Library {
   }
   System {
     Name		    "etherlab_lib_exp"
-    Location		    [800, 415, 1395, 808]
+    Location		    [801, 602, 1396, 995]
     Open		    on
     ModelBrowserVisibility  off
     ModelBrowserWidth	    200
@@ -375,7 +372,7 @@ Library {
       MaskHideContents	      off
       System {
 	Name			"EtherCAT"
-	Location		[898, 210, 1395, 578]
+	Location		[898, 392, 1395, 760]
 	Open			on
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
@@ -399,10 +396,10 @@ Library {
 ",dtype,status,filter,omega,tsample"
 	  MaskType		  "EL31xx"
 	  MaskDescription	  "Beckhoff 2,4,8-Channel 16-Bit Analog Input"
-"\n\nOutput Type:\n  1-Bypte output: one bit coded input\n  Vector output: Out"
-"put vector is <Channels> wide\n  Separate outputs: have <Channels> number of "
-"outputs\n\nInput Gain/Offset:\n  Specify a possible Gain and Offset for the i"
-"nput signal"
+"\n\nOutput Type:\n  1-Byte output: one bit coded input\n  Vector output: Outp"
+"ut vector is <Channels> wide\n  Separate outputs: have <Channels> number of o"
+"utputs\n\nInput Gain/Offset:\n  Specify a possible Gain and Offset for the in"
+"put signal"
 	  MaskHelp		  "This block generically implements the Ether"
 "CAT 16-Bit Analog Input Terminal for various models.\n<p/>\nThe following Ter"
 "minals are supported:\n<center>\n<table width=\"80%\">\n<tr><td>EL3102,4,8</t"
@@ -455,12 +452,12 @@ Library {
 ".\n"
 	  MaskPromptString	  "Master|Slave Index|Device Model |Output Typ"
 "e |Output Full Scale|Output Offset|Output Data Type|Status Output|Output Filt"
-"er|LPF Time Constant (sec)|Sample Time (-1 inherited)"
+"er|LPF Time Constant (sec)|Sample Time"
 	  MaskStyleString	  "edit,edit,popup(EL3102|EL3104|EL3108|EL3112"
 "|EL3114|EL3122|EL3124|EL3142|EL3144|EL3148|EL3152|EL3154|EL3158|EL3162|EL3164"
 "|EL3168),popup(Vector Output|Separate Outputs),edit,edit,popup(Raw bits|Doubl"
 "e|Double with scale and offset),checkbox,checkbox,edit,edit"
-	  MaskTunableValueString  "off,off,off,off,on,on,off,off,off,off,off"
+	  MaskTunableValueString  "off,off,off,off,off,off,off,off,off,off,off"
 	  MaskCallbackString	  "|||el31xx_check('output_type');\n|||el31xx_"
 "check('dtype');||el31xx_check('filter');||"
 	  MaskEnableString	  "on,on,on,on,off,off,on,on,on,off,on"
@@ -471,7 +468,7 @@ Library {
 "scale=@5;offset=@6;dtype=@7;status=@8;filter=@9;tau=@10;tsample=@11;"
 	  MaskInitialization	  "f = {'±10V','0..20mA',...\n    '4..20mA',' "
 "','0..20mA',...\n    '4..20mA','10V',' ',' ',' '};\nfunc = char(f(str2num(mod"
-"el(5))+1));\nomega = 1/tau;\n"
+"el(5))+1));\nomega = 1./tau;\n"
 	  MaskDisplay		  "fprintf(...\n    '%s\\n%s AIn\\nM:%i Idx:%s"
 "',...\n    model,...\n    func,...\n    master,...\n    index)\n\nport_label("
 "'output',1,'S')\n"
@@ -479,7 +476,7 @@ Library {
 	  MaskIconOpaque	  on
 	  MaskIconRotate	  "none"
 	  MaskIconUnits		  "autoscale"
-	  MaskValueString	  "0|0|EL3102|Vector Output|1|0|Double|off|off"
+	  MaskValueString	  "0|1|EL3102|Vector Output|1|0|Double|off|off"
 "|0.1|0"
 	  MaskTabNameString	  ",,,,,,,,,,"
 	}
@@ -494,9 +491,9 @@ Library {
 "e"
 	  MaskType		  "EL31xx"
 	  MaskDescription	  "Beckhoff 2,4,8-Channel 16-Bit Analog Output"
-"\n\nInput Type:\n  1-Bypte input: one bit coded input\n  Vector input: Input "
-"vector is <Channels> wide\n  Separate inputs: have <Channels> number of input"
-"s\n"
+"\n\nInput Type:\n  1-Byte input: one bit coded input\n  Vector input: Input v"
+"ector is <Channels> wide\n  Separate inputs: have <Channels> number of inputs"
+"\n"
 	  MaskHelp		  "This block generically implements the Ether"
 "CAT 16-Bit Analog Input Terminal for various models.\n<p/>\nThe block input i"
 "s generally a <tt>double</tt> corresponding the the terminal's capability. Th"
@@ -533,7 +530,7 @@ Library {
 " <tt>0</tt> is continuous sample time (runs at the model's base rate). Settin"
 "g <tt>-1</tt> will try to set the time using back propagation.\n"
 	  MaskPromptString	  "Master|Slave Index|Device Model |Input Type"
-" |Status Output|Sample Time (-1 inherited)"
+" |Status Output|Sample Time (-1 for inherited)"
 	  MaskStyleString	  "edit,edit,popup(EL4102|EL4104|EL4108|EL4112"
 "|EL4114|EL4118|EL4122|EL4124|EL4128|EL4132|EL4134|EL4138),popup(Vector Input|"
 "Separate Inputs),checkbox,edit"
@@ -568,9 +565,9 @@ Library {
 "le"
 	  MaskType		  "EL10xx"
 	  MaskDescription	  "Beckhoff EtherCAT Digital Input\nEL1002,4,8"
-":	3ms filter\nEL1012,4,8:	10us filter\n\nOutput Type:\n  1-Bypt"
-"e output: one bit coded output\n  Vector output: Output vector is <Channels> "
-"wide\n  Separate outputs: have <Channels> number of outputs"
+":	3ms filter\nEL1012,4,8:	10us filter\n\nOutput Type:\n  1-Byte"
+" output: one bit coded output\n  Vector output: Output vector is <Channels> w"
+"ide\n  Separate outputs: have <Channels> number of outputs"
 	  MaskHelp		  "This block implements the Beckhoff's EtherC"
 "AT series of Digital Input Terminals.\n<p/>\nChoose or set the following opti"
 "ons:\n<h4>Master:</h4>\nSet the EtherCAT Master number that this terminal is "
@@ -598,11 +595,10 @@ Library {
 "del's base rate. If another block can set the sample time, choose -1 for inhe"
 "rited sample time."
 	  MaskPromptString	  "Master|Slave Index|Device Model|Output Type"
-"|Output Data Type|Sample Time (-1 inherited)"
+"|Output Data Type|Sample Time"
 	  MaskStyleString	  "edit,edit,popup(EL1002|EL1004|EL1008|EL1012"
-"|EL1014|EL1018),popup(1-Byte Output|Vector Output|Separate Outputs),popup(int"
-"8|uint8|int16|uint16|int32|uint32|boolean|real|real32|Inherited via back prop"
-"agation),edit"
+"|EL1014|EL1018),popup(1-Byte Output|Vector Output|Separate Outputs),popup(Sam"
+"e as Input|double|single|Inherited via back propagation),edit"
 	  MaskTunableValueString  "off,off,off,off,off,off"
 	  MaskCallbackString	  "|||||"
 	  MaskEnableString	  "on,on,on,on,on,on"
@@ -617,7 +613,7 @@ Library {
 	  MaskIconOpaque	  on
 	  MaskIconRotate	  "none"
 	  MaskIconUnits		  "autoscale"
-	  MaskValueString	  "0|0|EL1004|Vector Output|boolean|0"
+	  MaskValueString	  "0|0|EL1004|Vector Output|Same as Input|0"
 	  MaskTabNameString	  ",,,,,"
 	}
 	Block {
@@ -632,9 +628,9 @@ Library {
 	  MaskType		  "EL20xx"
 	  MaskDescription	  "Beckhoff EtherCAT Digital Output\nEL2002,4:"
 "	24V 0.5A\nEL2032:		24V 2A, Optional Status (with Vector"
-" Input)\n\nInput Type:\n  1-Bypte input: one bit coded input\n  Vector input:"
-" Input vector is <Channels> wide\n  Separate inputs: have <Channels> number o"
-"f inputs"
+" Input)\n\nInput Type:\n  1-Byte input: one bit coded input\n  Vector input: "
+"Input vector is <Channels> wide\n  Separate inputs: have <Channels> number of"
+" inputs"
 	  MaskHelp		  "This block implements the Beckhoff's EtherC"
 "AT series of Digital Output Terminals.\n<p/>\nChoose or set the following opt"
 "ions:\n<h4>Master:</h4>\nSet the EtherCAT Master number that this terminal is"
@@ -665,7 +661,7 @@ Library {
 "for a sample time at the model's base rate. If another block can set the samp"
 "le time, choose -1 for inherited sample time."
 	  MaskPromptString	  "Master|Slave Index|Device Model |Input Type"
-" |Status Output |Sample Time (-1 inherited)"
+" |Status Output |Sample Time (-1 for inherited)"
 	  MaskStyleString	  "edit,edit,popup(EL2002|EL2004|EL2032),popup"
 "(1-Byte Input|Vector Input|Separate Inputs),checkbox,edit"
 	  MaskTunableValueString  "off,off,off,off,off,off"
@@ -740,7 +736,7 @@ Library {
 "n.\n"
 	  MaskPromptString	  "Master|Slave Index|Output Full Scale|Output"
 " Offset|Output Data Type|Status Output|Output Filter|LPF Time Constant (sec)|"
-"Sample Time (-1 inherited)"
+"Sample Time"
 	  MaskStyleString	  "edit,edit,edit,edit,popup(Raw bits|Double|D"
 "ouble with scale and offset),checkbox,checkbox,edit,edit"
 	  MaskTunableValueString  "off,off,on,on,off,off,off,on,off"
@@ -759,18 +755,18 @@ Library {
 	  MaskIconOpaque	  on
 	  MaskIconRotate	  "none"
 	  MaskIconUnits		  "autoscale"
-	  MaskValueString	  "0|0|1|0|Double|off|off|0.1|0"
+	  MaskValueString	  "0|1|1|0|Double|off|off|0.1|0"
 	  MaskTabNameString	  ",,,,,,,,"
 	}
 	Block {
 	  BlockType		  "S-Function"
 	  Name			  "K-Bus In"
 	  Ports			  [0, 1]
-	  Position		  [25, 279, 105, 321]
+	  Position		  [25, 259, 105, 301]
 	  BackgroundColor	  "yellow"
 	  FunctionName		  "bk1120_in"
 	  Parameters		  "master,slave,kbus_offset,ip_type,width,swap"
-",op_type,tsample"
+",op_dtype,scaling,scale,offset,filter,omega,tsample"
 	  MaskType		  "K-Bus Input"
 	  MaskDescription	  "Beckhoff EK1110 K-Bus to EtherCAT Converter"
 " Input"
@@ -783,25 +779,27 @@ Library {
 "lly larger than 0 because the first coupler has that address.\n\n<h4>Slave In"
 "dex:</h4>\n "
 	  MaskPromptString	  "Master|Slave Index|K-Bus Address Offset|Inp"
-"ut Data Type|Swap Input Bytes|Vector Length|Output Data Format|Scale and Offs"
-"et|Full Scale|Offset|Sample Time (-1 inherited)"
+"ut Data Type|Swap Input Bytes|Vector Length|Output Data Type|Scale and Offset"
+"|Full Scale|Offset|Output Filter|LPF Time Constant (sec)|Sample Time"
 	  MaskStyleString	  "edit,edit,edit,popup(Bit0|Bit1|Bit2|Bit3|Bi"
 "t4|Bit5|Bit6 |Bit7|int8_T|uint8_T|int16_T|uint16_T|int32_T|uint32_T),checkbox"
-",edit,popup(Same as Input|double|single|Inherited via back propagation),edit,"
-"edit,edit,edit"
+",edit,popup(Same as Input|double|single|Inherited via back propagation),check"
+"box,edit,edit,checkbox,edit,edit"
 	  MaskTunableValueString  "off,off,off,off,off,off,off,off,off,off,off"
-	  MaskCallbackString	  "||||||||||"
-	  MaskEnableString	  "on,on,on,on,on,on,on,on,on,on,on"
-	  MaskVisibilityString	  "on,on,on,on,on,on,on,off,off,off,on"
-	  MaskToolTipString	  "on,on,on,on,on,on,on,on,on,on,on"
-	  MaskVarAliasString	  ",,,,,,,,,,"
+",off,off"
+	  MaskCallbackString	  "||||||bk1120_check('op_dtype');|bk1120_chec"
+"k('scaling');|||bk1120_check('filter');||"
+	  MaskEnableString	  "on,on,on,on,on,on,on,off,off,off,off,off,on"
+	  MaskVisibilityString	  "on,on,on,on,on,on,on,on,on,on,off,off,on"
+	  MaskToolTipString	  "on,on,on,on,on,on,on,on,on,on,on,on,on"
+	  MaskVarAliasString	  ",,,,,,,,,,,,"
 	  MaskVariables		  "master=@1;slave=&2;kbus_offset=@3;ip_type=@"
-"4;swap=@5;width=@6;op_type=@7;scale_and_offset=@8;full_scale=@9;offset=@10;ts"
-"ample=@11;"
+"4;swap=@5;width=@6;op_dtype=@7;scaling=@8;scale=@9;offset=@10;filter=@11;tau="
+"@12;tsample=@13;"
 	  MaskInitialization	  "types = char(...\n    'Bit0', 'Bit1', 'Bit2"
 "', ...\n    'Bit3', 'Bit4', 'Bit5', ...\n    'Bit6', 'Bit7', ...\n    'int8_T"
 "', 'uint8_T', ...\n    'int16_T', 'uint16_T', ...\n    'int32_T', 'uint32_T')"
-";\nfunc = strtrim(types(ip_type,:));\n"
+";\nfunc = strtrim(types(ip_type,:));\nomega = 1/tau;\n"
 	  MaskDisplay		  "fprintf(...\n    'BK1120\\n%s In\\nM:%i Idx"
 ":%s',...\n    func,...\n    master,...\n    slave);"
 	  MaskSelfModifiable	  on
@@ -809,14 +807,15 @@ Library {
 	  MaskIconOpaque	  on
 	  MaskIconRotate	  "none"
 	  MaskIconUnits		  "autoscale"
-	  MaskValueString	  "0|1|0|int16_T|off|1|Same as Input|0|0|0|0"
-	  MaskTabNameString	  ",,,,,,,,,,"
+	  MaskValueString	  "0|1|0|int16_T|off|1|Same as Input|off|1|0|o"
+"ff|0.1|0"
+	  MaskTabNameString	  ",,,,,,,,,,,,"
 	}
 	Block {
 	  BlockType		  "S-Function"
 	  Name			  "K-Bus Out"
 	  Ports			  [1]
-	  Position		  [180, 279, 260, 321]
+	  Position		  [180, 259, 260, 301]
 	  BackgroundColor	  "yellow"
 	  FunctionName		  "bk1120_out"
 	  Parameters		  "master,slave,kbus_offset,op_type,swap,tsamp"
@@ -833,7 +832,7 @@ Library {
 "lly larger than 0 because the first coupler has that address.\n\n<h4>Slave In"
 "dex:</h4>\n "
 	  MaskPromptString	  "Master|Slave Index|K-Bus Address Offset|Act"
-"uator Data Type|Swap Output Bytes|Sample Time (-1 inherited)"
+"uator Data Type|Swap Output Bytes|Sample Time (-1 for inherited)"
 	  MaskStyleString	  "edit,edit,edit,popup(Bit0|Bit1|Bit2|Bit3|Bi"
 "t4|Bit5|Bit6 |Bit7|int8_T|uint8_T|int16_T|uint16_T|int32_T|uint32_T),checkbox"
 ",edit"
@@ -858,6 +857,35 @@ Library {
 	  MaskIconUnits		  "autoscale"
 	  MaskValueString	  "0|1|0|Bit0|off|-1"
 	  MaskTabNameString	  ",,,,,"
+	}
+	Block {
+	  BlockType		  "S-Function"
+	  Name			  "Master Stats"
+	  Ports			  [0, 1]
+	  Position		  [320, 29, 390, 61]
+	  BackgroundColor	  "yellow"
+	  FunctionName		  "master_stats"
+	  Parameters		  "master,tsample"
+	  MaskType		  "World Time"
+	  MaskDescription	  "Outputs the current world time for the samp"
+"le time."
+	  MaskHelp		  "This block outputs the hosts current real w"
+"orld time in seconds since 1.1.1970"
+	  MaskPromptString	  "Master|Sample Time"
+	  MaskStyleString	  "edit,edit"
+	  MaskTunableValueString  "off,off"
+	  MaskCallbackString	  "|"
+	  MaskEnableString	  "on,on"
+	  MaskVisibilityString	  "on,on"
+	  MaskToolTipString	  "on,on"
+	  MaskVarAliasString	  ","
+	  MaskVariables		  "master=@1;tsample=@2;"
+	  MaskIconFrame		  on
+	  MaskIconOpaque	  on
+	  MaskIconRotate	  "none"
+	  MaskIconUnits		  "autoscale"
+	  MaskValueString	  "0|0"
+	  MaskTabNameString	  ","
 	}
 	Block {
 	  BlockType		  "S-Function"
@@ -916,8 +944,7 @@ Library {
 	  MaskPromptString	  "Master|Slave Index|Output Full Scale|Output"
 " Offset|Output Data Type|SSI Code |Baudrate |Frame Type |SSI Frame Size |Data"
 " Length |Disable Frame Error|Enable Inhibit Time|Min Inhibit Time [us] (1..65"
-"535)|Status Output|Output Filter|LPF Time Constant (sec)|Sample Time (-1 inhe"
-"rited)"
+"535)|Status Output|Output Filter|LPF Time Constant (sec)|Sample Time"
 	  MaskStyleString	  "edit,edit,edit,edit,popup(Raw bits|Double|D"
 "ouble with scale and offset),popup(Binary|Gray),popup(1250k|1000k|500k|250k|1"
 "25k),popup(Multiturn (25 bits)|Singleturn (13 bits)|Variable (set size in Fra"
@@ -1236,7 +1263,7 @@ Library {
       Ports		      []
       Position		      [106, 45, 209, 85]
       BackgroundColor	      "lightBlue"
-      AttributesFormatString  "NEVER DELETE"
+      AttributesFormatString  "Not required\\nany more"
       OpenFcn		      "model=bdroot;     \ntry               \n  rtwbu"
 "ild(model);\ncatch             \n  error(lasterr); \nend               \n    "
 "              "
@@ -1255,7 +1282,7 @@ Library {
       MaskIconUnits	      "autoscale"
       System {
 	Name			"Task Info"
-	Location		[1035, 556, 1395, 889]
+	Location		[1036, 207, 1396, 540]
 	Open			off
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
@@ -1268,107 +1295,58 @@ Library {
 	TiledPageScale		1
 	ShowPageBoundaries	off
 	ZoomFactor		"100"
-	Block {
-	  BlockType		  "S-Function"
-	  Name			  "TaskInfo"
-	  Ports			  [0, 4]
-	  Position		  [65, 48, 125, 187]
-	  FunctionName		  "taskinfo"
-	  Parameters		  "Ts"
-	  MaskPromptString	  "Sample Time"
-	  MaskStyleString	  "edit"
-	  MaskTunableValueString  "on"
-	  MaskEnableString	  "on"
-	  MaskVisibilityString	  "on"
-	  MaskToolTipString	  "on"
-	  MaskVariables		  "Ts=@1;"
-	  MaskIconFrame		  on
-	  MaskIconOpaque	  on
-	  MaskIconRotate	  "none"
-	  MaskIconUnits		  "autoscale"
-	  MaskValueString	  "str2num(get_param(bdroot,'FixedStep'))"
-	  Port {
-	    PortNumber		    1
-	    Name		    "__time__"
-	    RTWStorageClass	    "Auto"
-	    DataLoggingNameMode	    "SignalName"
-	  }
-	  Port {
-	    PortNumber		    2
-	    Name		    "__exec_time__"
-	    RTWStorageClass	    "Auto"
-	    DataLoggingNameMode	    "SignalName"
-	  }
-	  Port {
-	    PortNumber		    3
-	    Name		    "__Ts__"
-	    RTWStorageClass	    "Auto"
-	    DataLoggingNameMode	    "SignalName"
-	  }
-	  Port {
-	    PortNumber		    4
-	    Name		    "__overrun__"
-	    RTWStorageClass	    "Auto"
-	    DataLoggingNameMode	    "SignalName"
-	  }
-	}
-	Block {
-	  BlockType		  Terminator
-	  Name			  "Terminator"
-	  Position		  [215, 55, 235, 75]
-	  ShowName		  off
-	}
-	Block {
-	  BlockType		  Terminator
-	  Name			  "Terminator1"
-	  Position		  [215, 90, 235, 110]
-	  ShowName		  off
-	}
-	Block {
-	  BlockType		  Terminator
-	  Name			  "Terminator2"
-	  Position		  [215, 125, 235, 145]
-	  ShowName		  off
-	}
-	Block {
-	  BlockType		  Terminator
-	  Name			  "Terminator3"
-	  Position		  [215, 160, 235, 180]
-	  ShowName		  off
-	}
-	Line {
-	  Name			  "__overrun__"
-	  Labels		  [0, 0]
-	  SrcBlock		  "TaskInfo"
-	  SrcPort		  4
-	  DstBlock		  "Terminator3"
-	  DstPort		  1
-	}
-	Line {
-	  Name			  "__Ts__"
-	  Labels		  [0, 0]
-	  SrcBlock		  "TaskInfo"
-	  SrcPort		  3
-	  DstBlock		  "Terminator2"
-	  DstPort		  1
-	}
-	Line {
-	  Name			  "__exec_time__"
-	  Labels		  [0, 0]
-	  SrcBlock		  "TaskInfo"
-	  SrcPort		  2
-	  DstBlock		  "Terminator1"
-	  DstPort		  1
-	}
-	Line {
-	  Name			  "__time__"
-	  Labels		  [0, 0]
-	  SrcBlock		  "TaskInfo"
-	  SrcPort		  1
-	  DstBlock		  "Terminator"
-	  DstPort		  1
-	}
       }
+    }
+    Block {
+      BlockType		      "S-Function"
+      Name		      "TaskInfo"
+      Ports		      [0, 4]
+      Position		      [440, 148, 500, 287]
+      FunctionName	      "taskinfo"
+      Parameters	      "TgtTs,Ts"
+      MaskPromptString	      "Taskinfo for sample time|Sample Time"
+      MaskStyleString	      "edit,edit"
+      MaskTunableValueString  "off,on"
+      MaskCallbackString      "|"
+      MaskEnableString	      "on,on"
+      MaskVisibilityString    "on,on"
+      MaskToolTipString	      "on,on"
+      MaskVarAliasString      ","
+      MaskVariables	      "TgtTs=@1;Ts=@2;"
+      MaskDisplay	      "port_label('output',1,'ExecTime')\nport_label('"
+"output',2,'Overruns')\n\n"
+      MaskIconFrame	      on
+      MaskIconOpaque	      on
+      MaskIconRotate	      "none"
+      MaskIconUnits	      "autoscale"
+      MaskValueString	      "0|str2num(get_param(bdroot,'FixedStep'))"
+      MaskTabNameString	      ","
+    }
+    Block {
+      BlockType		      "S-Function"
+      Name		      "World Time"
+      Ports		      [0, 1]
+      Position		      [435, 49, 505, 81]
+      BackgroundColor	      "yellow"
+      FunctionName	      "world_time"
+      Parameters	      "tsample"
+      MaskType		      "World Time"
+      MaskDescription	      "Outputs the current world time for the sample t"
+"ime."
+      MaskHelp		      "This block outputs the hosts current real world"
+" time in seconds since 1.1.1970"
+      MaskPromptString	      "Sample Time"
+      MaskStyleString	      "edit"
+      MaskTunableValueString  "off"
+      MaskEnableString	      "on"
+      MaskVisibilityString    "on"
+      MaskToolTipString	      "on"
+      MaskVariables	      "tsample=@1;"
+      MaskIconFrame	      on
+      MaskIconOpaque	      on
+      MaskIconRotate	      "none"
+      MaskIconUnits	      "autoscale"
+      MaskValueString	      "0"
     }
     Block {
       BlockType		      SubSystem

@@ -268,6 +268,7 @@ static void msr_com_stopdata(struct msr_dev *dev,char *params);
 static void msr_com_startdata(struct msr_dev *dev,char *params);
 static void msr_com_stopdata2(struct msr_dev *dev,char *params);
 static void msr_com_startdata2(struct msr_dev *dev,char *params);
+static void msr_com_triggerevents(struct msr_dev *dev,char *params);
 static void msr_host_access(struct msr_dev *dev,char *params);
 static void msr_broadcast(struct msr_dev *dev,char *params);
 static void msr_echo(struct msr_dev *dev,char *params);
@@ -297,6 +298,7 @@ const struct msr_command msr_command_array[] =
  {"start_data",&msr_com_startdata},
  {"sad",&msr_com_startdata},
  {"xsad",&msr_com_startdata2},
+ {"te",&msr_com_triggerevents},
  {"stop_data",&msr_com_stopdata},
  {"sod",&msr_com_stopdata},
  {"xsod",&msr_com_stopdata2},
@@ -695,6 +697,7 @@ static void msr_com_startdata2(struct msr_dev *dev,char *params)
     char *cmode_buf = msr_get_attrib(params,"compression"); /*0: nichts 1: Gradienten */
     char *rp_buf = msr_get_attrib(params,"rppos");          /* setzt den Lesezeiger auf einen bestimmten Wert */
     char *prec_buf = msr_get_attrib(params,"precision");
+    char *event_buf = msr_get_attrib(params,"event");  /* 0: Standard 1: Eventbasiert */
 
 #define MSR_SYNC_STR "sync"  /*sync setzt die Counter aller zu sendenden Kanäle auf 0, um so das Senden der Kanäle zu synchronisieren */                  
 #define MSR_QUIET_STR "quiet" /*quiet unterbindet das Senden, dies ermöglicht, die zu senden Kanäle mit unterschiedlicher Abtastrate
@@ -712,6 +715,7 @@ static void msr_com_startdata2(struct msr_dev *dev,char *params)
     char *start;
     int index,count;
     unsigned int prec;
+    int event=0;
 
     dev->datamode = 1;  /* Individualübertragungsmode aktivieren */
     if(reductionbuf) {
@@ -761,6 +765,12 @@ static void msr_com_startdata2(struct msr_dev *dev,char *params)
     else
 	prec = 2;
 
+    if(event_buf) {
+	event = (int)simple_strtol(event_buf,NULL,10);
+	if(event)
+	    dev->triggereventchannels = 1;
+	freemem(event_buf);
+    }
 
     /*------------*/
 
@@ -788,6 +798,7 @@ static void msr_com_startdata2(struct msr_dev *dev,char *params)
 		    }
 		    celement->cmode = cmode;
 		    celement->codmode = codmode;
+		    celement->event = event;
 		    //celement->counter = offs;
 		    //msr_print_info("Reg Kanal: %d, red: %d, bs; %d",kelement->index,celement->reduction,celement->bs);
 		}
@@ -818,6 +829,7 @@ static void msr_com_startdata2(struct msr_dev *dev,char *params)
 			    }
 			    celement->cmode = cmode;
 			    celement->codmode = codmode;
+			    celement->event = event;
 			    //celement->counter = offs;
 			    //msr_print_info("Reg Kanal: %d, red: %d, bs; %d",kelement->index,celement->reduction,celement->bs);
 			}
@@ -861,6 +873,8 @@ static void msr_com_startdata2(struct msr_dev *dev,char *params)
 #undef MSR_QUIET_STR
 
 }
+
+
 
 /*-----------------------------------------------------------------------------*/
 static void msr_com_stopdata(struct msr_dev *dev,char *params)
@@ -908,6 +922,12 @@ static void msr_com_stopdata2(struct msr_dev *dev,char *params)
 
 }
 
+/*-----------------------------------------------------------------------------*/
+static void msr_com_triggerevents(struct msr_dev *dev,char *params)
+/*-----------------------------------------------------------------------------*/
+{
+    dev->triggereventchannels = 1;
+}
 
 
 /*-----------------------------------------------------------------------------*/

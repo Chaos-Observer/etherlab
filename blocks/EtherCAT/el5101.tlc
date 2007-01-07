@@ -18,16 +18,14 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %function BlockTypeSetup( block, system ) void
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  %<InitEtherCAT(block, system)>
+  %<InitEtherCAT()>
 %endfunction
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %function BlockInstanceSetup( block, system ) void
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  %assign MasterIdx = InitEtherCATMaster(block, system, MasterId)
-  %assign DomainIdx = InitEtherCATDomain(block, system, MasterIdx)
-  %<InitEtherCATSlave( block, system, MasterIdx, DomainIdx, SlaveAddr)>
+  %<InitEtherCATTask(block, system)>
 %endfunction
 
 
@@ -38,13 +36,12 @@
   /* %<Type> Block: %<Name> 
    * Registering analog input with EtherCAT Driver
    */
-  %<RegisterEtherCATSlave(block, system, "Beckhoff_EL5101_Value", \
-      LibBlockPWork(INC_Word,"","",0))>
+  %<RegisterEtherCATSlave(block, "Beckhoff_EL5101_Value", \
+      MasterId, SlaveAddr, LibBlockPWork(INC_Word,"","",0))>
   %if StatusOp
-    %<RegisterEtherCATSlave(block, system, "Beckhoff_EL5101_Status", \
-        LibBlockPWork(StatusByte,"","",0))>
+    %<RegisterEtherCATSlave(block, "Beckhoff_EL5101_Status", \
+        MasterId, SlaveAddr, LibBlockPWork(StatusByte,"","",0))>
   %endif
-  %<LibBlockPWork(SlavePtr,"","",0)> = %<system.EtherCAT.SlaveStruct>;
 %endfunction
 
 

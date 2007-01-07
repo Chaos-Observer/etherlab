@@ -1,0 +1,38 @@
+%%
+%% Generic Routines for EtherLab
+%% 
+%% Copyright (C) 2006
+%% Richard Hacker
+%% IgH Essen GmbH
+%% 
+%% License: GPL
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function InitETL() void
+%% This function checks whether the EtherLab system has been initialised
+%% before already, which is demonstrated by the existance of variable 
+%% CompiledModel.ETL.
+%% Essentially strings for error messages are prepared.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  %if !EXISTS(CompiledModel.ETL)
+    %assign model_c = LibGetModelDotCFile()
+
+    %trace "Initializing ETL Interface"
+    %addtorecord CompiledModel ETL { ...
+                ErrMsg "etl_errbuf" ...
+                ErrStr "errstr_rc" ...
+                }
+
+    %with CompiledModel
+  
+      %openfile buf
+      char %<ETL.ErrMsg>[256];
+      const char *%<ETL.ErrStr>;
+      %closefile buf
+      %<LibMdlStartCustomCode(buf, "header")>
+  
+  %endwith
+  %endif
+%endfunction

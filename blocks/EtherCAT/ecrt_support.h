@@ -1,7 +1,56 @@
-int ext_lock_dev(void *);
-void ext_unlock_dev(void *);
-struct rt_ec_dev *register_ec_master(unsigned int);
-struct rt_ec_domain *register_ec_domain(struct rt_ec_dev *,unsigned int);
-void ethercat_support_free_master(struct rt_ec_dev *);
-void ethercat_support_lock_master(struct rt_ec_dev *);
-void ethercat_support_unlock_master(struct rt_ec_dev *);
+#ifdef __KERNEL__
+#include <linux/types.h>
+#else
+#include <stdint.h>
+#endif
+
+#include "ecdb.h"
+#include "ecrt.h"
+
+struct ecat_pdo;
+
+void
+ecs_send(int tid);
+void
+ecs_receive(int tid);
+const char *
+ecs_start(void);
+
+struct ecat_pdo *
+ecs_reg_pdo(
+        unsigned int tid,
+        unsigned int master_id,
+
+        const char *slave_address,
+        uint32_t vendor_id, /**< vendor ID */
+        uint32_t product_code, /**< product code */
+        uint16_t pdo_index, /**< PDO index */
+        uint8_t pdo_subindex, /**< PDO subindex */
+        void **data_ptr,
+
+        const char **errmsg
+        );
+struct ecat_pdo *
+ecs_reg_pdo_range(
+        unsigned int tid,
+        unsigned int master_id,
+
+        const char *slave_address,
+        uint32_t vendor_id, /**< vendor ID */
+        uint32_t product_code, /**< product code */
+        ec_direction_t pdo_direction,
+        uint16_t pdo_offset,
+        uint16_t pdo_length,
+        void **data_ptr,
+
+        const char **errmsg
+        );
+
+void
+ecs_end(void);
+
+const char *
+ecs_init( 
+        unsigned int *st       /* Zero terminated list of sample times in 
+                                 * microseconds */
+        );

@@ -1,4 +1,4 @@
-%implements "world_time" "C"
+%implements "master_info" "C"
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %function BlockTypeSetup( block, system) void
@@ -17,8 +17,8 @@
 
   /* %<Type> Block: %<Name>
    */
-  %<LibBlockPWork(TimeSrc,"","",0)> = \
-    etl_get_world_time_ptr(%<LibGetGlobalTIDFromLocalSFcnTID(0)>);
+%%  %<LibBlockPWork(TimeSrc,"","",0)> = \
+%%    etl_get_world_time_ptr(%<LibGetGlobalTIDFromLocalSFcnTID(0)>);
 %endfunction
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -27,6 +27,10 @@
 
   /* %<Type> Block: %<Name>
    */
-  %<LibBlockOutputSignal(0,"","",0)> = \
-        *(double *)%<LibBlockPWork(TimeSrc,"","",0)>;
+  {
+     int_T cycles;
+
+     ecrt_get_stats(&cycles);
+    %<LibBlockOutputSignal(0,"","",0)> = cycles;
+  }
 %endfunction

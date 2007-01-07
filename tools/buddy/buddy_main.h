@@ -39,6 +39,18 @@
 #ifndef _BUDDY_MAIN_H
 #define _BUDDY_MAIN_H
 
+/* Command line variables */
+extern int argc;
+extern char * const *argv;
+
+/* Maximum number of open files */
+extern int file_max;
+
+/* Run in foreground */
+extern int foreground;
+
+/* Directory from where buddy was started */
+extern char *cwd;
 
 /** Register a file handle with the dispatcher. 
  *
@@ -65,9 +77,9 @@
 int init_fd(
         int fd,                 /**< The file discriptor for which the 
                                   * callbacks are registered. */
-        int (*read)(void *),    /**< Method to be called when \a fd becomes 
+        void (*read)(int, void *),/**< Method to be called when \a fd becomes 
                                   * readable. Can be NULL*/
-        int (*write)(void *),   /**< Method to be called when \a fd becomes 
+        void (*write)(int, void *),/**< Method to be called when \a fd becomes 
                                   * writeable Can be NULL*/
         void *priv_data         /**< Argument that is passed when calling 
                                   * registered callback */

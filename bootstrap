@@ -3,5 +3,5 @@
 set -x
 aclocal -I config
 autoheader
-automake --add-missing
+automake --add-missing -Woverride
 autoconf

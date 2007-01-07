@@ -77,6 +77,7 @@
 #include <msr_base64.h>
 #include <msr_hex_bin.h>
 #include <msr_interpreter.h>
+#include <msr_attributelist.h>
 
 #include <msr_rcsinfo.h>
 
@@ -124,74 +125,11 @@ DECLARE_MUTEX(strwrlock);  /* String-Read-Write-Lock */
 
 #else
 extern void *prtp;
-extern int (*newparamflag)(void*, char*, size_t);  //Funktion, die aufgerufen werden muß, wenn ein Parameter beschrieben wurde
+extern int (*newparamflag)(void*, void*, size_t);  //Funktion, die aufgerufen werden muß, wenn ein Parameter beschrieben wurde
 
 #endif
 
-/*
-***************************************************************************************************
-*
-* Function: msr_reg_meta
-*
-* Beschreibung: Funktion für die Verwendung der msr_lib unter Simulink. Die Metainformationen, wie z.B. 
-*               Limits oder Einheiten können nicht bei der Registrierung der Parameter oder Kanäle
-*               mit übergeben werden, sondern müssen vorab über diese Funktion registriert werden.
-*               Beim nachfolgenden Registrierung von Parametern und Kanälen wird dann durch die Liste aller
-*               metatags gelaufen, überprüft, ob der Pfad im path der metatags enthalten ist und der Tag dann für
-*               die Registierung verwendet. Gibt es mehrere Pfade, die zutreffen und wiedersprechende Attribut im Tag
-*               haben, gewinnt das letzte Attribut. Beispiel:
-*               path = /system/eingänge,              tag = <meta ll="10" ul="20" unit="s"\>
-*               path = /system/eingänge/digital,      tag = <meta unit="h"\>
-*               path = /system/eingänge/digital/bus1, tag = <meta ll="5" range="eins,zwei,drei"\>
-*              
-*               Parameterregistierung von /system/eingänge/digital/bus1/p1 erhält dann als meta:
-*                                         <meta ll="5" unit="h" ul="20" range="eins,zwei,drei"\>
-*
-*               Parameterregistierung von /system/eingänge/analog/p1 erhält dann als meta:
-*                                         <meta ll="10" unit="s" ul="20"\>
-*
-*
-* Parameter: siehe Beschreibung
-*
-* Rückgabe:  keine
-*               
-* Status: dev
-*
-***************************************************************************************************
-*/
-
-void msr_reg_meta(char *path,char *tag){
- struct msr_meta_list *newelement=NULL;
- struct msr_meta_list *element=NULL;
-
- int len;
- newelement = (struct msr_meta_list*) getmem(sizeof(struct msr_meta_list));
-
- if(!newelement) return;
-
- newelement->path = strdup(path);
- newelement->tag = strdup(tag);
- newelement->next = NULL;
- 
- len = strlen(path);
-
- if(msr_meta_head == NULL) { //erstes Element
-     msr_meta_head = newelement;
- }
- else {
-     //jetzt nach der Pathlänge in die Liste einsortieren (damit später "linear" durch die Liste gelaufen werden kann...)
-     FOR_THE_LIST(element,msr_meta_head) {
-	 if(element) { //es gibt mindestens ein Element
-	     if(element->next != NULL) { //es kommt noch ein Element
-		 if(strlen(element->path) < len && strlen(element->next->path) >= len) 
-		     MSR_LIST_INSERT(element,newelement);
-	     }
-	     else
-		 MSR_LIST_INSERT(element,newelement); //hinten anhängen
-	 }
-     }
-
- }
+void msr_reg_meta(char *path,char *tag){ //opsolete
 }
 
 
@@ -211,16 +149,7 @@ void msr_reg_meta(char *path,char *tag){
 ***************************************************************************************************
 */
 
-void msr_clean_meta_list(void)
-{
-    struct msr_meta_list *element;
-    FOR_THE_LIST(element,msr_meta_head) {
-	if (element) {
-	    freemem(element->path);
-	    freemem(element->tag);
-	}
-    }
-    MSR_CLEAN_LIST(msr_meta_head,msr_meta_list);  //die Liste selber freigeben
+void msr_clean_meta_list(void){ //opsolete
 }
 
 
@@ -343,8 +272,8 @@ do {                                                                            
        ogbuf = msr_get_attrib(self->info,"ul");                                       \
                                                                                       \
     if(ugbuf)                                                                         \
-	ug = (VTYP)VFUNKTION(ugbuf,NULL);					      \
-    if(ogbuf)  									      \
+	ug = (VTYP)VFUNKTION(ugbuf,NULL);	 				      \
+    if(ogbuf)                                 					      \
 	og = (VTYP)VFUNKTION(ogbuf,NULL);                                             \
                                                                                       \
     do {									      \
@@ -484,19 +413,19 @@ int w_p_uchar(struct msr_param_list *self,char *buf,unsigned int si,int mode) {
 
 int w_p_flt(struct msr_param_list *self,char *buf,unsigned int si,int mode) {
     if(mode == MSR_CODEASCII)
-	WPARAM(float,simple_strtod);
+	WPARAM(float,strtod);
     else
 	if(mode == MSR_CODEHEX)
-	    WHEXPARAM(float,simple_strtod);
+	    WHEXPARAM(float,strtod);
     return 0;
 }
 
 int w_p_dbl(struct msr_param_list *self,char *buf,unsigned int si,int mode) {
     if(mode == MSR_CODEASCII)
-	WPARAM(double,simple_strtod);
+	WPARAM(double,strtod);
     else
 	if(mode == MSR_CODEHEX)
-	    WHEXPARAM(double,simple_strtod);
+	    WHEXPARAM(double,strtod);
     return 0;
 }
 
@@ -562,7 +491,6 @@ int p_num_chk(struct msr_param_list *self) {
     }
     return flag;
 }
-
 
 //Freigabe methode für numerische Werte
 void num_free(struct msr_param_list *self) {
@@ -681,6 +609,7 @@ int msr_cfi_reg_param(char *bez,char *einh,void *adr,int rnum, int cnum,int orie
 	freemem(initbuf);
     }    
 
+    element->p_chk(element);  //die Checkfunktion einmal aufrufen, damit der Vergleichsbuffer mit den richtigen Daten gefüllt ist
 
     //FIXME, hier noch FLAGS überschreiben, falls die in info auftauchen
 
@@ -816,11 +745,19 @@ void msr_clean_param_list(void)
 ***************************************************************************************************
 */
 
-void msr_check_param_list(void) 
+void msr_check_param_list(struct msr_param_list *p) 
 {
     struct msr_param_list *element;
 
-    FOR_THE_LIST(element,msr_param_head) {
+    if(p == NULL) {
+	FOR_THE_LIST(element,msr_param_head) {
+	    if(element->p_chk) 
+		if(element->p_chk(element) == 1) 
+		    msr_dev_printf("<pu index=\"%i\"/>",element->index);  //Atomarer Aufruf
+	}
+    }
+    else {
+	element = p;
 	if(element->p_chk) 
 	    if(element->p_chk(element) == 1) 
 		msr_dev_printf("<pu index=\"%i\"/>",element->index);  //Atomarer Aufruf
@@ -1049,8 +986,12 @@ void msr_write_param(struct msr_dev *dev/*struct msr_char_buf *buf*/,char *aname
 			newparamflag(prtp,element->p_adr,element->dataSize*element->rnum*element->cnum); 
 
 		    //im Userspace auch die Checkfunktion für dieses Element aufrufen
-		    if(element->p_chk && (element->p_chk(element) == 1))
-			msr_dev_printf("<pu index=\"%i\"/>",element->index);  //Atomarer Aufruf
+		    if((element->p_flags & MSR_DEP) == MSR_DEP) //alle Parameter überprüfen
+			msr_check_param_list(NULL);
+		    else
+			msr_check_param_list(element);
+//		    if(element->p_chk && (element->p_chk(element) == 1))
+//			msr_dev_printf("<pu index=\"%i\"/>",element->index);  //Atomarer Aufruf
 #endif
 		}
 #ifdef __KERNEL__
@@ -1713,13 +1654,32 @@ void msr_value_printf_base64(struct msr_char_buf *buf,int cnt,enum enum_var_typ 
     }
 }
 
+int channel_data_change(struct msr_kanal_list *kanal,unsigned int index) { //vergleicht, ob sich der Wert eines Kanal zwischen zwei Abtastschritten geändert hat
+
+    char *p1;
+    char *p2;
+
+    int j;
+    p1 = (char *)(k_base + index * k_blocksize + (int)kanal->p_adr);  //Startadresse des aktuellen Wertes
+    j = (index + k_buflen - kanal->sampling_red) % k_buflen;  //der vorherige Wert
+    p2 = (char *)(k_base + j * k_blocksize + (int)kanal->p_adr);
+
+    for(j=0;j<kanal->dataSize;j++)
+	if(p1[j] != p2[j]) 
+	    return 1;
+
+    return 0;
+}
+
+
+
 /*
 ***************************************************************************************************
 *
 * Function: msr_write_kaenale_to_char_buffer2
 *
 * Beschreibung: Schreibt die Kanalwerte in einen Zeichenringpuffer (für die Datenübertragung zum Client)
-*               Für individuellen Datenverkehr
+*               Für individuellen Datenverkehr, diese Funktion wird jede Zeitscheibe aufgerufen
 *                      
 * Parameter: struct msr_dev *dev : Device
 *            
@@ -1749,7 +1709,9 @@ void msr_write_kanaele_to_char_buffer2(struct msr_dev *dev)
     FOR_THE_LIST(element,dev->send_ch_head) {
 	if ((element) && (element->kanal)){
 	    /* prüfen ob schon gesendet werden soll */
-	    if(element->reduction != 0 && (dev->msr_kanal_read_pointer % (element->reduction*element->bs*element->kanal->sampling_red) == 0)) {
+	    if((element->reduction != 0 && !element->event && ((dev->msr_kanal_read_pointer % (element->reduction*element->bs*element->kanal->sampling_red) == 0))) 
+	       || (element->event && dev->triggereventchannels)  //eventkanal und trigger ausgelöst
+	       || ((element->event) && channel_data_change(element->kanal,dev->msr_kanal_read_pointer))) {  //eventkanal und Trigger durch Änderung des Wertes
 		if(dohead == 0) {
 		    if(dev->timechannel) {
 			msr_buf_printf(kp,"<data level=\"%d\" time=\"",(LEV_RP*100)/k_buflen);
@@ -1762,12 +1724,19 @@ void msr_write_kanaele_to_char_buffer2(struct msr_dev *dev)
 		    dohead = 1;
 		}
 
-		//startindex berechnen
-		start = (k_buflen + dev-> msr_kanal_read_pointer - element->kanal->sampling_red*element->reduction*(element->bs-1)) % k_buflen;
-		//increment berechnen
-		incr = element->reduction * element->kanal->sampling_red;
-		//Anzahl
-		cnt = element->bs;
+		if(element->event) {
+		    start = dev-> msr_kanal_read_pointer;
+		    incr = element->kanal->sampling_red;
+		    cnt = 1;
+		}
+		else {
+		    //startindex berechnen
+		    start = (k_buflen + dev-> msr_kanal_read_pointer - element->kanal->sampling_red*element->reduction*(element->bs-1)) % k_buflen;
+		    //increment berechnen
+		    incr = element->reduction * element->kanal->sampling_red;
+		    //Anzahl
+		    cnt = element->bs;
+		}
 		//Vartyp
 		p_var_typ = element->kanal->p_var_typ;
 
@@ -1792,7 +1761,10 @@ void msr_write_kanaele_to_char_buffer2(struct msr_dev *dev)
 			break;
 		}
 
-		msr_buf_printf(kp,"<F c=\"%d\" d=\"",element->kanal->index);
+		if(element->event)
+		    msr_buf_printf(kp,"<E c=\"%d\" d=\"",element->kanal->index);
+		else
+		    msr_buf_printf(kp,"<F c=\"%d\" d=\"",element->kanal->index);
 		// jetzt die Codierung
 
 		switch(element->codmode) {
@@ -1811,7 +1783,7 @@ void msr_write_kanaele_to_char_buffer2(struct msr_dev *dev)
     }
 	if(dohead == 1)
 	    msr_buf_printf(kp,"</data>\n");
-
+	dev->triggereventchannels = 0;
 #undef LEV_RP	
 }
 
@@ -1888,38 +1860,18 @@ enum enum_var_typ RTW_to_MSR(unsigned int datatyp) {
 *******************************************************************************
 */
 
-char *get_info_str(char *_buf,char **rbuf) {
-
-    int len;
-
-    char *open_ind; /* "(" */
-    char *close_ind; /* ")" */
-
-    char *info;
-    char *buf;
-
-    buf = strdup(_buf);
-    *rbuf = buf;
-    open_ind = strchr(buf,'<');
-    if (open_ind) {
-	close_ind = strchr(open_ind,'>'); /* ab da !!! weitersuchen */
-	/* jetzt Verifikation */
-	if(close_ind) {   /* geschlossene Klammer gefunden */
-	    len = close_ind-open_ind; //die Klammern werden nicht mitkopiert und es kommt noch eine Null dran
-	    info = (char *)getmem(len);
-	    memset(info,0,len);
-	    memcpy(info,open_ind+1,len-1);
-	    //jetzt noch den Info Bereich aus dem ursprünglichen String rausschneiden
-	    memmove(open_ind,close_ind+1,strlen(buf) /* mit der 0 */ - (close_ind-buf));   //FIXME Überprüfen
-	    return info;
-	}
-    }
-    //sonst Nullstring zurückgeben
-    info = getmem(1);
-    info[0] = 0;
-    return info;
-}
-
+//RTW ersetzt \n durch Leerzeichen, diese werden hier entfernt
+#define RTWPATHTRIM(c)                \
+do {                                                             \
+    int i,j=0;                                                     \
+    for(i=0;i<strlen(c)+1;i++)  {                                   \
+	if (i<strlen(c)-1 && ((c[i] == '/' && c[i+1] == '/') || (c[i] == ' ' && c[i+1] == '/') || (c[i] == '/' && c[i+1] == ' ')))    \
+        ; \
+/* do nothing*/ \
+        else                                                    \
+	    c[j++] = c[i];                                       \
+   }            \
+} while(0)
 
 int msr_reg_rtw_param( const char *path, const char *name, const char *cTypeName,
                    void *data,
@@ -1928,9 +1880,12 @@ int msr_reg_rtw_param( const char *path, const char *name, const char *cTypeName
 		       unsigned int dataSize){
     char *buf;
     char *rbuf,*info;
+    char *value;
+    int result=1;
+    int dohide = 0;
 
-    unsigned int i;
-    int result;
+    struct talist *alist = NULL;
+
 
     //Hilfspuffer
     buf = (char *)getmem(strlen(path)+strlen(name)+2+20);
@@ -1941,26 +1896,95 @@ int msr_reg_rtw_param( const char *path, const char *name, const char *cTypeName
     else
 	sprintf(buf,"%s/%s",path,name);
 
-    //dann alle \n durch Leerzeichen ersetzen
-    for(i=0;i<strlen(buf);i++)
-	if(buf[i] == '\n')
-	    buf[i] = ' ';
-
-    //dann Info (welches in (.....) steht extrahieren
-    info = get_info_str(buf,&rbuf);
-
-    //und registrieren
-    result = msr_cfi_reg_param(rbuf,"",data,rnum,cnum,orientation,RTW_to_MSR(dataType),info,MSR_R | MSR_W,NULL,NULL);
 
 
+
+    //jetzt alle Ausdrücke, die im Pfad in <> stehen extrahieren und interpretieren
+    rbuf = extractalist(&alist,buf);
+
+    RTWPATHTRIM(rbuf);
+    if(rbuf[strlen(rbuf)-1] == '/') 
+	rbuf[strlen(rbuf)-1] = 0;
+
+    info = alisttostr(alist);
+
+    //und registrieren, falls gewünscht
+    if(hasattribute(alist,"hide")) {
+	value = getattribute(alist,"hide");
+	if (value[0] == 0 || value [0] == 'p') {
+//	    printf("Hiding Parameter: %s\n",buf);
+	    dohide = 1;
+	}
+    }
+
+    if(!dohide) {
+	    result = msr_cfi_reg_param(rbuf,"",data,rnum,cnum,orientation,RTW_to_MSR(dataType),info,MSR_R | MSR_W,NULL,NULL);
+
+	    //jetzt noch die einzelnen Elemente registrieren aber nur bis zu einer Obergrenze von ?? Stck 2006.11.06
+
+	    if(rnum+cnum > 2 && rnum+cnum<100) {  //sonst werden es zu viele Parameter
+		int r,c;
+		void *p;
+		char *buf2 = (char *)getmem(strlen(rbuf)+2+100); //warum 100 ??
+		for (r = 0; r < rnum; r++) {
+		    for (c = 0; c < cnum; c++) {
+			MSR_CALC_ADR((void *)data,dataSize,orientation,rnum,cnum);
+			//neuen Namen
+			if (rnum == 1 || cnum == 1)  //Vektor
+			    sprintf(buf2,"%s/%i",rbuf,r+c);
+			else                         //Matrize
+			    sprintf(buf2,"%s/%i,%i",rbuf,r,c);
+			//p wird in MSR_CALC_ADR berechnet !!!!!!!!!!!
+			result = msr_cfi_reg_param(buf2,"",p,1,1,orientation,RTW_to_MSR(dataType),info,MSR_R | MSR_W | MSR_DEP,NULL,NULL);
+		    }
+	    }
+	    freemem(buf2);
+	}
+
+    }
     freemem(info);
     freemem(rbuf);
     freemem(buf);
 
+    freealist(&alist);
     return result;
 
 }
 
+int msr_reg_time(void *time)
+{
+    msr_reg_kanal3("/Time","s","",
+            time,TDBL,"",default_sampling_red);
+    return 0;
+}
+
+int msr_reg_task_stats(
+        int tid,
+        void *time,
+        void *exec_time,
+        void *period,
+        void *overrun)
+{
+    char buf[50];
+
+    snprintf(buf, 50, "/Taskinfo/%i/TaskTime", tid);
+    msr_reg_kanal3(buf,"us","",
+            time,TDBL,"",default_sampling_red);
+
+    snprintf(buf, 50, "/Taskinfo/%i/ExecTime", tid);
+    msr_reg_kanal3(buf,"us","",
+            exec_time,TUINT,"",default_sampling_red);
+
+    snprintf(buf, 50, "/Taskinfo/%i/Period", tid);
+    msr_reg_kanal3(buf,"us","",
+            period,TUINT,"",default_sampling_red);
+
+    snprintf(buf, 50, "/Taskinfo/%i/Overrun", tid);
+    msr_reg_kanal3(buf,"","",
+            overrun,TUINT,"",default_sampling_red);
+
+    return 0;
+}
 
 /*
 *******************************************************************************
@@ -1994,15 +2018,19 @@ int msr_reg_rtw_signal( const char *path, const char *name, const char *cTypeNam
 			unsigned int dataType, unsigned int orientation,
 			unsigned int dataSize){
 
-    char *buf,*buf2;
+    char *buf;
     char *rbuf,*info;
-
-    int i,result = 0,r,c;
+    char *value;
+    int result = 1,r,c;
+    int dohide = 0;
 
     void *p;
 
+    struct talist *alist = NULL;
+
 //    printf("Kanaloffset: %d\n",(unsigned int)offset);
     //Hilfspuffer
+
     buf = (char *)getmem(strlen(path)+2+20);
 
     //erstmal den Namen zusammensetzten zum einem gültigen Pfad
@@ -2012,49 +2040,56 @@ int msr_reg_rtw_signal( const char *path, const char *name, const char *cTypeNam
 	sprintf(buf,"%s",path);
 
 
-    //dann alle \n durch Leerzeichen ersetzen
-    for(i=0;i<strlen(buf);i++)
-	if(buf[i] == '\n')
-	    buf[i] = ' ';
+    rbuf = extractalist(&alist,buf);
 
-    //dann Info (welches in (.....) steht extrahieren
-    info = get_info_str(buf,&rbuf);
+    RTWPATHTRIM(rbuf);
+
+    if(rbuf[strlen(rbuf)-1] == '/') 
+	rbuf[strlen(rbuf)-1] = 0;
+
+
+    info = alisttostr(alist);
 
     //und registrieren (hier aber für Vektoren und Matrizen einen eigenen Kanal)
 
 
-    if(rnum+cnum > 2) {
-	buf2 = (char *)getmem(strlen(rbuf)+2+100); 
-	for (r = 0; r < rnum; r++) {
-	    for (c = 0; c < cnum; c++) {
-		MSR_CALC_ADR((void *)offset,dataSize,orientation,rnum,cnum);
-		//neuen Namen
-		if (rnum == 1 || cnum == 1)  //Vektor
-		    sprintf(buf2,"%s/%i",rbuf,r+c);
-		else                         //Matrize
-		    sprintf(buf2,"%s/%i/%i",rbuf,r,c);
-                //p wird in MSR_CALC_ADR berechnet !!!!!!!!!!!
-		result |= msr_reg_kanal3(buf2,(char *)name,"",p,RTW_to_MSR(dataType),info,default_sampling_red);
-	    }
+    //und registrieren, falls gewünscht
+    if(hasattribute(alist,"hide")) {
+	value = getattribute(alist,"hide");
+	if (value[0] == 0 || value [0] == 's' || value [0] == 'k')  {//signal oder kanal
+//	    printf("Hiding Channel: %s\n",buf);
+	    dohide = 1;
 	}
-	freemem(buf2);
-    }
-    else {  //ein Sklarer Kanal
-	result |= msr_reg_kanal3(rbuf,(char *)name,"",(void *)offset,RTW_to_MSR(dataType),info,default_sampling_red);
     }
 
 
-    //wenn Zeitkanal vorhanden auch einen Kanal mit name /Time registrieren um kompatibel mit testmanager zu bleiben
-    //__time__ ist im Alias zu finden, am 9.8.06 geändert Hm
+    if(!dohide) {
+	if(rnum+cnum > 2) {
+	    char *buf2 = (char *)getmem(strlen(rbuf)+2+100); 
+	    for (r = 0; r < rnum; r++) {
+		for (c = 0; c < cnum; c++) {
+		    MSR_CALC_ADR((void *)offset,dataSize,orientation,rnum,cnum);
+		    //neuen Namen
+		    if (rnum == 1 || cnum == 1)  //Vektor
+			sprintf(buf2,"%s/%i",rbuf,r+c);
+		    else                         //Matrize
+			sprintf(buf2,"%s/%i/%i",rbuf,r,c);
+		    //p wird in MSR_CALC_ADR berechnet !!!!!!!!!!!
+		    result |= msr_reg_kanal3(buf2,(char *)name,"",p,RTW_to_MSR(dataType),info,default_sampling_red);
+		}
+	    }
+	    freemem(buf2);
+	}
+	else {  //ein Sklarer Kanal
+	    result |= msr_reg_kanal3(rbuf,(char *)name,"",(void *)offset,RTW_to_MSR(dataType),info,default_sampling_red);
+	}
 
-    if (strstr(name,"__time__") && (rnum+cnum == 2) && (RTW_to_MSR(dataType) == TDBL)) {   
-	msr_reg_kanal3("/Time","s","",(void *)offset,RTW_to_MSR(dataType),"",default_sampling_red);
-	printf("msrio:Time channel found and registered... \n");
     }
 
     freemem(info);
     freemem(rbuf);
     freemem(buf);
+    freealist(&alist);
 
     return result;
 

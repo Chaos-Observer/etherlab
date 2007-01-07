@@ -10,12 +10,12 @@
  */
 
 
-#define S_FUNCTION_NAME  taskinfo
+#define S_FUNCTION_NAME  master_info
 #define S_FUNCTION_LEVEL 2
 
 #include "simstruc.h"
 
-#define TGT_TSAMPLE       (mxGetScalar(ssGetSFcnParam(S,0)))
+#define MASTER            (mxGetScalar(ssGetSFcnParam(S,0)))
 #define TSAMPLE           (mxGetScalar(ssGetSFcnParam(S,1)))
 #define PARAM_COUNT                                     2
 
@@ -43,18 +43,16 @@ static void mdlInitializeSizes(SimStruct *S)
 
     if (!ssSetNumInputPorts(S, 0)) return;
 
-    if (!ssSetNumOutputPorts(S, 2)) return;
+    if (!ssSetNumOutputPorts(S, 1)) return;
     ssSetOutputPortWidth(S, 0, 1);
     ssSetOutputPortDataType(S, 0, SS_DOUBLE);
-    ssSetOutputPortWidth(S, 1, 1);
-    ssSetOutputPortDataType(S, 0, SS_UINT32);
 
     ssSetNumSampleTimes(S, 1);
     ssSetNumContStates(S, 0);
     ssSetNumDiscStates(S, 0);
     ssSetNumRWork(S, 0);
     ssSetNumIWork(S, 0);
-    ssSetNumPWork(S, 1);
+    ssSetNumPWork(S, 0);
     ssSetNumModes(S, 0);
     ssSetNumNonsampledZCs(S, 0);
 
@@ -97,7 +95,9 @@ static void mdlTerminate(SimStruct *S)
 #define MDL_RTW
 static void mdlRTW(SimStruct *S)
 {
-    if (!ssWriteRTWWorkVect(S, "PWork", 1, "TaskInfoPtr", 1))
+    int32_T master = MASTER;
+
+    if (!ssWriteRTWScalarParam(S, "MasterId", &master, SS_INT32))
         return;
 }
 

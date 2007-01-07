@@ -16,6 +16,7 @@ ANSI_OPTS        = -std=gnu99 -pedantic
 CC               = gcc
 LD               = ld
 LDFLAGS		 =
+INSTRUMENT_LIBS  = @prefix@/lib/libetherlab.a
 USER_INCLUDES    = -I@ETHERLAB_DIR@/include -I$(ETHERLAB_DIR)/include -I$(ETHERLAB_DIR)/src/kernel 
 
 # These definitions are used by targets that have the WARN_ON_GLNX option

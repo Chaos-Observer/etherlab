@@ -54,6 +54,8 @@
 #define MSR_G 0x20 /* Gruppenbezeichnung */
 #define MSR_AW 0x40 /* Wert kann nur vom Administrator (FIXME noch implementieren) beschrieben werden */
 #define MSR_P 0x80 /* Persistente Variable, wird beim beenden des Moduls gespeichert und beim Start wieder beschrieben wird */
+#define MSR_DEP 0x100 /* Andere Variablen sind von dieser abhängig, z.B. ist die Variable ein Ausschnitt aus einem Simulinkarray
+			 dieses Flag sorgt dafür, das beim beschreiben auch gemeldet wird das sich andere Parameter geändert haben */ 
 
 /* ein paar Kombinationen */
 #define MSR_RWS (MSR_R | MSR_W | MSR_S)
@@ -500,7 +502,7 @@ void msr_clean_param_list(void);
 *
 * Beschreibung: Testet, ob sich Parameter geändert haben (wird im Interrupt aufgerufen ?)
 *
-* Parameter: 
+* Parameter: das element, was überprüft werden soll, bei NULL werden alle Überprüft
 *
 * Rückgabe:  
 *               
@@ -509,7 +511,7 @@ void msr_clean_param_list(void);
 ***************************************************************************************************
 */
 
-void msr_check_param_list(void);
+void msr_check_param_list(struct msr_param_list *p);
 
 /*
 ***************************************************************************************************

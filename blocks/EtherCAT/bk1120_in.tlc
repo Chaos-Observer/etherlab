@@ -16,16 +16,14 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %function BlockTypeSetup( block, system ) void
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  %<InitEtherCAT(block, system)>
+  %<InitEtherCAT()>
 %endfunction
 
     
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %function BlockInstanceSetup( block, system ) void
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  %assign MasterIdx = InitEtherCATMaster(block, system, MasterId)
-  %assign DomainIdx = InitEtherCATDomain(block, system, MasterIdx)
-  %<InitEtherCATSlave( block, system, MasterIdx, DomainIdx, SlaveAddr)>
+  %<InitEtherCATTask(block, system)>
 %endfunction
 
 
@@ -33,7 +31,7 @@
 %function Start(block, system) Output
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   %%
-  %switch InputDataFormat
+  %switch InputDataType
     %case 1
     %case 2
     %case 3
@@ -42,7 +40,7 @@
     %case 6
     %case 7
     %case 8
-    %assign bytes = ((InputDataFormat - 1) + Width)/8 + 1
+    %assign bytes = ((InputDataType - 1) + Width)/8 + 1
     %break
     %%
     %case 9
@@ -65,8 +63,8 @@
   /* %<Type> Block: %<Name> 
    * Registering digital input with Master
    */
-  %<RegisterEtherCATSlaveAddrRange(block, system, "Beckhoff_BK1120", \
-        "EC_DIR_INPUT", ImageOffset, bytes, \
+  %<RegisterEtherCATSlaveAddrRange(block, "Beckhoff_BK1120", \
+        MasterId, SlaveAddr, "EC_DIR_INPUT", ImageOffset, bytes, \
         LibBlockPWork(InputAddr,"","",0))>
 %endfunction
 
@@ -80,15 +78,16 @@
   %%
   %% Input Vector Case: each input of the vector is tested
   %% for truth and the corresponding output bit is then set
-  %if InputDataFormat >= 1 && InputDataFormat < 9
-      %assign bitoffset = InputDataFormat-1
+  %if InputDataType >= 1 && InputDataType < 9
+      %assign bitoffset = InputDataType-1
       %foreach idx = Width
         %<LibBlockOutputSignal(0,"","",idx)> = 
                ((uint8_T *)%<LibBlockPWork(InputAddr,"","",0)>)...
                  [%<(bitoffset+idx)/8>] & %<1<<(bitoffset+idx)%8> != 0;
       %endforeach
   %else
-      %switch InputDataFormat
+      %%
+      %switch InputDataType
         %case 9
         %assign dtype = "int8_T"
         %assign d_width = 1
@@ -122,27 +121,46 @@
         %break
         %%
       %endswitch
-      %%
-      %if Swap
+      %if Swap && Filter == 0
         {
           uint8_T tmp[%<d_width>];
           uint8_T *p;
       %endif
-      %foreach idx = Width
-          %if Swap
+      %foreach sigIdx = Width
+          %switch Filter
+            %case 0
+              %if Swap
 
-              p = (uint8_T *)...
-                &((%<dtype> *)%<LibBlockPWork(InputAddr,"","",0)>)[%<idx>];
-              %foreach idx = d_width
-                tmp[%<idx>] = p[%<d_width - idx - 1>];
-              %endforeach
-              %<LibBlockOutputSignal(0,"","",idx)> = *(%<dtype> *)tmp;
+                  p = (uint8_T *)...
+                    &((%<dtype> *)%<LibBlockPWork(InputAddr,"","",0)>)[%<sigIdx>];
+                  %foreach idx = d_width
+                    tmp[%<idx>] = p[%<d_width - idx - 1>];
+                  %endforeach
+                  %assign s0 = "*(%<dtype> *)tmp"
+              %else
+                  %assign s0 = ...
+                        "((%<dtype> *)%<LibBlockPWork(InputAddr,"","",0)>)[%<sigIdx>]"
+              %endif
+              %break
+            %case 1
+              %% Continuous filter
+              %assign s0 = LibBlockContinuousState("","",sigIdx)
+              %break
+            %case 2
+              %% Discrete filter
+              %assign s0 = LibBlockDiscreteState("","",sigIdx)
+              %break
+          %endswitch
+          %if Scaling
+            %assign m = "%<LibBlockParameter(FullScale,"","",sigIdx)>/%<InputMax>*"
+            %assign c = " + %<LibBlockParameter(Offset,"","",sigIdx)>"
           %else
-              %<LibBlockOutputSignal(0,"","",idx)> = 
-                ((%<dtype> *)%<LibBlockPWork(InputAddr,"","",0)>)[%<idx>];
+            %assign m = ""
+            %assign c = ""
           %endif
+          %<LibBlockOutputSignal(0,"","",sigIdx)> = %<m>%<s0>%<c>;
       %endforeach
-      %if Swap
+      %if Swap && Filter == 0
         }
       %endif
   %endif

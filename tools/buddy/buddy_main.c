@@ -78,13 +78,22 @@ The central dispatcher then calls the function that was registered when
 #include <unistd.h>		// close(), unlink(), sysconf()
 #include <string.h>		// memset()
 #include <sys/select.h>		// select(), FD_SET, FD_CLR, fd_isset...
+#include <sys/stat.h>		// umask()
+#include <sys/wait.h>		// wait()
 #include <errno.h>		// ENOMEM, EBADF
+#include <getopt.h>
+#include <signal.h>
 
 #include "buddy_main.h"
 
-//#include "file_io.h"
-#include "rtp_io.h"
-#include "net_io.h"
+#include "modules.h"
+
+int debug = 0;
+int foreground = 0;
+char *cwd;
+int argc;
+char * const *argv;
+int file_max;
 
 /**
  * \struct fd_set
@@ -115,10 +124,65 @@ int select_max;	/**< Max file descriptors @c select(2) has to watch */
  * are called, passing @e priv_data as a parameter.
  */
 struct callback {
-	int (*read)(void *);  /**< Callback when @c read(2) will not block */
-	int (*write)(void *); /**< Callback when @c write(2) will not block */
+	void (*read)(int, void *);  /**< Callback when @c read(2) will not block */
+	void (*write)(int, void *); /**< Callback when @c write(2) will not block */
 	void *priv_data;      /**< Data that gets passed to callback */
 };
+
+struct sigchild_list {
+    struct sigchild_list *next;
+
+    int pid;
+    void (*call)(void *);
+    void *priv_data;
+} *sigchild_list;
+
+int 
+reg_sigchild(int pid, void *priv_data) {
+    struct sigchild_list *sc;
+
+    if (!(sc= malloc(sizeof(struct sigchild_list)))) {
+        return -errno;
+    }
+
+    sc->pid = pid;
+    sc->priv_data = priv_data;
+    sc->next = sigchild_list;
+    sigchild_list = sc;
+
+    return 0;
+}
+
+void
+sig_handle(int signum)
+{
+    pid_t pid;
+    int status;
+    struct sigchild_list *sc;
+
+    switch (signum) {
+        case SIGCHLD:
+            pid = wait(&status);
+
+            printf("Child %i was killed\n", pid);
+
+            for (sc = sigchild_list; sc; sc = sigchild_list->next) {
+                if (sc->pid == pid)
+                    (*sc->call)(sc->priv_data);
+            }
+            break;
+
+        case SIGTERM:
+            printf("Buddy was killed\n");
+            kill(0, SIGTERM);
+            exit(-SIGTERM);
+
+        default:
+            printf("Unknown signal cought\n");
+            exit(-signum);
+    }
+
+}
 
 /**
  * Base pointer to the list of callbacks.
@@ -133,7 +197,10 @@ struct callback {
  */
 struct callback **callback_list;
 
-int init_fd(int fd, int (*read)(void *), int (*write)(void *), void *priv_data)
+int init_fd(int fd, 
+        void (*read)(int, void *), 
+        void (*write)(int, void *), 
+        void *priv_data)
 /* Purpose:	Sets up callback[] and struct select_vec for a new file
  * 		and also read, write callbacks, and callback private data
  */
@@ -229,29 +296,20 @@ void clr_fd(int fd)
 }
 
 
-void file_init(void) 
+void init_modules(void)
 /* Purpose:	go into a select() loop, calling appropriate client actions
  * 		when either data from has arrived, or data must be sent to 
  * 		client
  * scope:	private
  */
 {
-	int file_max;
-	size_t s;
-
 	/* Allocate memory for fd_client. This array must be large enough
 	 * to accomodate all file descriptors a process can have. So first
 	 * find out max open files */
-	if (0 > (file_max = sysconf(_SC_OPEN_MAX))) {
-		perror("Error obtaining max open files");
+	if (!(callback_list = calloc(file_max, sizeof(struct callback *)))) {
+		perror("Error calloc");
 		exit(1);
 	}
-	s = file_max*sizeof(struct callback *);
-	if (!(callback_list = malloc(s))) {
-		perror("Error malloc");
-		exit(1);
-	}
-	memset(callback_list, 0, s);
 
 	/* Initialise file descriptor sets for select() */
 	FD_ZERO(&init_fd_set.rfd);
@@ -261,13 +319,56 @@ void file_init(void)
 	/* Open initial communication channels to enable data clients
 	 * to attach to this data server
 	 */
-	if (
-	    //prepare_pipe("/tmp/p") ||
-	    prepare_unix("/tmp/msr_sock") ||
-	    prepare_tcp(2345) ||
-	    prepare_rtp("/dev/etl") //FIFO(RTP_FIO), FIFO(RTB_FIO))
+	if (0
+//	    || command_module_prepare()
+	    || rtp_module_prepare()
 	    )
 		exit(1);
+}
+
+void 
+printhelp(const char *name)
+{
+    printf("%s: This is the user-space helper for the RT Kernel\n"
+            "The main program accepts the following options:\n"
+            "    -f, --foreground\n"
+            "\tDon't fork; stay in foreground\n"
+            "    -d, --debug level\n"
+            "\tSet the debug level 0-7\n"
+            "\n"
+            "The following options are available for each module.\n\n",
+            name);
+    command_module_help();
+}
+
+void
+parse_args(void)
+{
+    int c;
+    struct option longopts[] = {
+        {"help", 0, 0, 'h'},
+        {"foreground", 0, 0, 'n'},
+        {"debug", 1, 0, 'd'},
+        {},
+    };
+
+    optind = 0;
+    while ((c = getopt_long(argc, argv, ":hnd:", longopts, NULL)) != -1) {
+        switch (c) {
+            case 'n':
+                foreground = 1;
+                break;
+            case 'd':
+                debug += atoi(optarg);
+                break;
+            case ':':
+                fprintf(stderr, "Argument for option -%c missing\n", optopt);
+                exit(-1);
+            case 'h':
+                printhelp(argv[0]);
+                exit(0);
+        }
+    }
 }
 
 /*
@@ -278,13 +379,77 @@ void file_init(void)
  * Once these file descritors are ready to be written to, the appropriate
  * write() function of the stream is called.
  */
-int main(void)
+//#include <fcntl.h>
+int main(int ac, char **av)
 {
 	int fd_count,	// Number of ready file descriptors from select()
 		fd;	// Temporary fd
 	struct callback *cb;
+        int pid;
+        struct sigaction sa;
 
-	file_init();	// Initialise all file descriptors
+//        fd = open("/dev/etl1", O_RDWR | O_NONBLOCK );
+//        printf("fd is %i\n", fd);
+//
+//        if (!(pid = fork())) {
+//        } else if (pid > 0) {
+//            close(fd);
+//        }
+//        
+//        sleep(10);
+//        return 0;
+
+        argc = ac;
+        argv = av;
+
+	if (0 > (file_max = sysconf(_SC_OPEN_MAX))) {
+		perror("Error obtaining max open files");
+		exit(1);
+	}
+
+        opterr = 0;
+        if (!(cwd = getcwd(NULL, 0))) {
+            perror("getcwd()");
+            return -errno;
+        }
+
+        parse_args();
+
+        init_modules(); // Initialise all file descriptors
+
+        sa.sa_handler = sig_handle;
+        sigemptyset(&sa.sa_mask);
+        sa.sa_flags = SA_NOCLDSTOP;
+        if ( sigaction(SIGCHLD, &sa, NULL)) {
+            perror("sigaction()");
+            return -errno;
+        }
+//        if ( sigaction(SIGTERM, &sa, NULL)) {
+//            perror("sigaction()");
+//            return -errno;
+//        }
+
+        /* Check if we can go into background */
+        if (!foreground) {
+            /* Close standard file descriptors */
+            fclose(stdin);
+            fclose(stdout);
+            fclose(stderr);
+
+            /* Fork here */
+            if ((pid = fork()) < 0) {
+                perror("fork()");
+                return -errno;
+            } else if (pid != 0) {
+                /* We're the parent here, so get out */
+                return 0;
+            } else {
+                /* We're the child */
+                setsid();           // Session leader
+                chdir("/");         // Don't sit around in directories
+                umask(0);           // For files we create 
+            }
+        }
 
 	// Main never ending loop around select()
 	while (1) {
@@ -300,8 +465,10 @@ int main(void)
 
 		/* Allways expect at least 1 fd to be ready.
 		 * Otherwise a signal was sent */
-		if (fd_count <= 0)
+		if (fd_count <= 0 && errno != EINTR) {
+                    perror("select()");
 			break;
+                }
 
 		fd = 0;
 		/* There are fd_count ready file discriptors.
@@ -318,7 +485,7 @@ int main(void)
 				cb = callback_list[fd];
 
 				// Call appropriate client function
-				cb->read(cb->priv_data);
+				(*cb->read)(fd, cb->priv_data);
 			}
 
 			/* Is output channel to client ready? */
@@ -330,11 +497,16 @@ int main(void)
 				cb = callback_list[fd];
 
 				// Call appropriate client function
-				cb->write(cb->priv_data);
+				(*cb->write)(fd, cb->priv_data);
 			}
 			fd++;
 		}
 	}
+        printf("Phew, finished, but don't know why!\n");
+
+        /* Kill everything in this process group */
+//        kill(0, SIGTERM);
 
 	return 0;
 }
+

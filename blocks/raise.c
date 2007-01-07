@@ -10,14 +10,20 @@
  */
 
 
-#define S_FUNCTION_NAME  taskinfo
+#define S_FUNCTION_NAME  raise
 #define S_FUNCTION_LEVEL 2
 
 #include "simstruc.h"
+#include "get_string.h"
 
-#define TGT_TSAMPLE       (mxGetScalar(ssGetSFcnParam(S,0)))
-#define TSAMPLE           (mxGetScalar(ssGetSFcnParam(S,1)))
-#define PARAM_COUNT                                     2
+#define ID                             (ssGetSFcnParam(S,0)) 
+#define MSG_STR                        (ssGetSFcnParam(S,1)) 
+#define AUTO_RESET ((uint_T)mxGetScalar(ssGetSFcnParam(S,2)))
+#define TSAMPLE            (mxGetScalar(ssGetSFcnParam(S,3)))
+#define PARAM_COUNT                                      4
+/*
+#define DST_PATH               (ssGetSFcnParam(S,3)) 
+*/
 
 
 /*====================*
@@ -41,19 +47,19 @@ static void mdlInitializeSizes(SimStruct *S)
     for( i = 0; i < PARAM_COUNT; i++) 
         ssSetSFcnParamTunable(S,i,SS_PRM_NOT_TUNABLE);
 
-    if (!ssSetNumInputPorts(S, 0)) return;
+    if (!ssSetNumInputPorts(S, 1)) return;
+    ssSetInputPortWidth(S, 0, DYNAMICALLY_SIZED);
+    ssSetInputPortDataType(S, 0, DYNAMICALLY_TYPED);
+    ssSetInputPortDirectFeedThrough(S, 0, 1);
+    ssSetInputPortRequiredContiguous(S,0,0);
 
-    if (!ssSetNumOutputPorts(S, 2)) return;
-    ssSetOutputPortWidth(S, 0, 1);
-    ssSetOutputPortDataType(S, 0, SS_DOUBLE);
-    ssSetOutputPortWidth(S, 1, 1);
-    ssSetOutputPortDataType(S, 0, SS_UINT32);
+    if (!ssSetNumOutputPorts(S, 0)) return;
 
     ssSetNumSampleTimes(S, 1);
     ssSetNumContStates(S, 0);
     ssSetNumDiscStates(S, 0);
     ssSetNumRWork(S, 0);
-    ssSetNumIWork(S, 0);
+    ssSetNumIWork(S, DYNAMICALLY_SIZED);
     ssSetNumPWork(S, 1);
     ssSetNumModes(S, 0);
     ssSetNumNonsampledZCs(S, 0);
@@ -73,6 +79,13 @@ static void mdlInitializeSampleTimes(SimStruct *S)
 {
     ssSetSampleTime(S, 0, TSAMPLE);
     ssSetOffsetTime(S, 0, 0.0);
+}
+
+#define MDL_SET_INPUT_PORT_WIDTH
+static void mdlSetInputPortWidth(SimStruct *S, int_T port, int_T width)
+{
+    ssSetInputPortWidth( S, port, width);
+    ssSetNumIWork( S, width);
 }
 
 /* Function: mdlOutputs =======================================================
@@ -97,7 +110,20 @@ static void mdlTerminate(SimStruct *S)
 #define MDL_RTW
 static void mdlRTW(SimStruct *S)
 {
-    if (!ssWriteRTWWorkVect(S, "PWork", 1, "TaskInfoPtr", 1))
+    const char *id      = getString(S,ID);
+    const char *msg_str = getString(S,MSG_STR);
+    uint32_T auto_reset = AUTO_RESET;
+
+    if (!ssWriteRTWStrParam(S, "Id", id))
+        return;
+    if (!ssWriteRTWStrParam(S, "MsgStr", msg_str))
+        return;
+    if (!ssWriteRTWScalarParam(S, "AutoReset", &auto_reset, SS_UINT32))
+        return;
+    if (!ssWriteRTWWorkVect(S, "IWork", 1, 
+                "RaiseState", ssGetInputPortWidth(S,0)))
+        return;
+    if (!ssWriteRTWWorkVect(S, "PWork", 1, "Addr", 1))
         return;
 }
 

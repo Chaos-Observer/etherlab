@@ -250,11 +250,13 @@ net_out1:
 net_out:
 	return -1;
 }
-int prepare_unix( char *path )
+int prepare_unix(char *path)
 {
 	struct file_io *filp;
 	struct sockaddr_un addr;
 	char name[sizeof(addr.sun_path)+20];
+
+        parse_options (argv, argc);
 
 	printf("%s: Preparing unix socket path: %s\n", __FUNCTION__, path);
 

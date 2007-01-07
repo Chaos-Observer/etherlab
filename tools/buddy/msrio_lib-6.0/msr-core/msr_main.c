@@ -108,7 +108,7 @@ struct msr_dev *msr_dev_head = NULL;
 
 void *prtp,*krtp;
 
-int (*newparamflag)(void*, char*, size_t) = NULL;
+int (*newparamflag)(void*, void*, size_t) = NULL;
 
 
 extern struct msr_char_buf *msr_kanal_puffer;
@@ -155,7 +155,7 @@ void msr_rtlib_cleanup(void)
 *            newparamflag: Callback für Parmeteränderung
 *                          Rückgabe: 0: erfolgreich -1: nicht erfolgreich 
 *                          Parameter für Callback: void * : *rtp from above
-*                          			char *    : Startadresse, die geändert wurde
+*                          			void *    : Startadresse, die geändert wurde
 *                                                  size_t : Länge in byte die geändert wurden
 *                          NULL: Funktion wird nicht aufgerufen						  
 *               
@@ -172,7 +172,7 @@ void msr_rtlib_cleanup(void)
 */
 
 
-int msr_init(void *_rtp, int (*_newparamflag)(void*,char*,size_t),unsigned long _base_rate,void *_base,unsigned int _blocksize,unsigned int _buflen){
+int msr_init(void *_rtp, int (*_newparamflag)(void*,void*,size_t),unsigned long _base_rate,void *_base,unsigned int _blocksize,unsigned int _buflen){
 
     int result = 0;
     /* Save data for real time communications client */
@@ -231,7 +231,6 @@ void msr_disconnect(void){
     FOR_THE_LIST(dev,msr_dev_head) 
 	if(dev) {
 	    dev->disconnectflag = 1;  //disconnect markieren
-	    set_wfd(dev->client_wfd);
 	}
 }
 

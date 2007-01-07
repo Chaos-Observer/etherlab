@@ -22,11 +22,11 @@
 #define ADDR                         (ssGetSFcnParam(S,1)) 
 #define DEVICE_STR                   (ssGetSFcnParam(S,2))
 #define OP_TYPE  ((uint_T)mxGetScalar(ssGetSFcnParam(S,3)))
-#define DTYPE    ((uint_T)mxGetScalar(ssGetSFcnParam(S,4)))
+#define OP_DTYPE ((uint_T)mxGetScalar(ssGetSFcnParam(S,4)))
 #define TSAMPLE          (mxGetScalar(ssGetSFcnParam(S,5)))
 
 struct el10xx_dev {
-    int_T       channels;           /* Number of input channels */
+    int_T       width;              /* Number of input channels */
     char_T      *input_pdo;         /* Name for input pdo */
 };
 
@@ -58,14 +58,7 @@ struct supportedDevice supportedDevices[] = {
 static void mdlInitializeSizes(SimStruct *S)
 {
     int_T i;
-    uint_T dataType[] = {  0, /*i Dummy, DTYPE starts at 1 */
-        SS_INT8, SS_UINT8, 
-        SS_INT16, SS_UINT16,
-        SS_INT32, SS_UINT32, 
-        SS_BOOLEAN, 
-        SS_DOUBLE, SS_SINGLE, 
-        DYNAMICALLY_TYPED
-    };
+    uint_T op_dtype;
     const struct supportedDevice *dev;
     struct el10xx_dev *devInstance;
     
@@ -86,6 +79,24 @@ static void mdlInitializeSizes(SimStruct *S)
 
     ssSetUserData(S,devInstance);
     
+    switch (OP_DTYPE) {
+        case 1:         /* Same as input */
+            op_dtype = (OP_TYPE == 1) ? SS_UINT8 : SS_BOOLEAN;
+            break;
+        case 2:         /* Double */
+            op_dtype = SS_DOUBLE;
+            break;
+        case 3:         /* Single */
+            op_dtype = SS_SINGLE;
+            break;
+        case 4:         /* Inherited */
+            op_dtype = DYNAMICALLY_TYPED;
+            break;
+        default:
+            ssSetErrorStatus(S, "Invalid output data type selected");
+            return;
+    }
+
     /*
      * Set Inputs
      */
@@ -95,7 +106,7 @@ static void mdlInitializeSizes(SimStruct *S)
      * Set Outputs
      */
     if (OP_TYPE == 3) {
-        if (!ssSetNumOutputPorts(S, devInstance->channels)) return;
+        if (!ssSetNumOutputPorts(S, devInstance->width)) return;
     } else {
         if (!ssSetNumOutputPorts(S, 1)) return;
     }
@@ -103,9 +114,8 @@ static void mdlInitializeSizes(SimStruct *S)
     for( i = 0; i < ssGetNumOutputPorts(S); i++) {
         /* Only by "Vector Input" have CHANNELS port width, else 1 */
         ssSetOutputPortWidth(   S, i, 
-                OP_TYPE == 2 ? devInstance->channels : 1);
-        ssSetOutputPortDataType(S, i, 
-                OP_TYPE == 1 ? SS_UINT8 : dataType[DTYPE]);
+                OP_TYPE == 2 ? devInstance->width : 1);
+        ssSetOutputPortDataType(S, i, op_dtype);
     }
 
     ssSetNumSampleTimes(S, 1);
@@ -119,7 +129,6 @@ static void mdlInitializeSizes(SimStruct *S)
 
     ssSetOptions(S, 
             SS_OPTION_WORKS_WITH_CODE_REUSE | 
-            /* SS_OPTION_PLACE_ASAP | */
             SS_OPTION_RUNTIME_EXCEPTION_FREE_CODE);
 
 }
@@ -169,7 +178,7 @@ static void mdlRTW(SimStruct *S)
         return;
     if (!ssWriteRTWStrParam(S, "Input_PDO", devInstance->input_pdo))
         return;
-    if (!ssWriteRTWScalarParam(S, "ChanNum", &devInstance->channels, SS_INT32))
+    if (!ssWriteRTWScalarParam(S, "Width", &devInstance->width, SS_INT32))
         return;
     if (!ssWriteRTWScalarParam(S, "OpType", &op_type, SS_INT32))
         return;

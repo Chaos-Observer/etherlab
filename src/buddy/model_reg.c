@@ -9,6 +9,8 @@
 
 #include "rtmodel.h"
 
+char version_string[] = STR(MODELVERSION);
+
 static int reg_signals(void)
 {
 	rtwCAPI_ModelMappingInfo* mmi = &(rtmGetDataMapInfo(rtM).mmi);
@@ -36,7 +38,10 @@ static int reg_signals(void)
 	dimArray = rtwCAPI_GetDimensionArray(mmi);
 	dTypeMap = rtwCAPI_GetDataTypeMap(mmi);
 	if (!dimMap || !dimArray || !dTypeMap) {
-		fprintf(stderr, "One of dimMap, dimArray or dTypeMap is NULL %p %p %p\n", dimMap, dimArray, dTypeMap);
+		fprintf(stderr, 
+                        "One of dimMap, dimArray or dTypeMap is "
+                        "NULL %p %p %p\n", 
+                        dimMap, dimArray, dTypeMap);
 		return -1;
 	}
 
@@ -53,13 +58,15 @@ static int reg_signals(void)
 		dimIdx = rtwCAPI_GetSignalDimensionIdx(signals, sigIdx);
 
 		if (rtwCAPI_GetNumDims(dimMap, dimIdx) != 2) {
-			fprintf(stderr, "Cannot handle array dimensions != 2\n");
+			fprintf(stderr, 
+                                "Cannot handle array dimensions != 2\n");
 			return -1;
 		}
 		dimArrayIdx = rtwCAPI_GetDimArrayIndex(dimMap, dimIdx);
 		orientation = rtwCAPI_GetOrientation(dimMap, dimIdx);
 		if (orientation == rtwCAPI_MATRIX_COL_MAJOR_ND) {
-			fprintf(stderr, "Cannot handle n Dimensional arrays\n");
+			fprintf(stderr, 
+                                "Cannot handle n Dimensional arrays\n");
 			return -1;
 		}
 
@@ -107,7 +114,10 @@ static int reg_params(void *mdl_rtP)
 	dimArray = rtwCAPI_GetDimensionArray(mmi);
 	dTypeMap = rtwCAPI_GetDataTypeMap(mmi);
 	if (!dimMap || !dimArray || !dTypeMap) {
-		fprintf(stderr, "One of dimMap, dimArray or dTypeMap is NULL %p %p %p\n", dimMap, dimArray, dTypeMap);
+		fprintf(stderr, 
+                        "One of dimMap, dimArray or dTypeMap is "
+                        "NULL %p %p %p\n",
+                        dimMap, dimArray, dTypeMap);
 		return -1;
 	}
 
@@ -125,13 +135,15 @@ static int reg_params(void *mdl_rtP)
                         paramIdx);
 
 		if (rtwCAPI_GetNumDims(dimMap, dimIdx) != 2) {
-			fprintf(stderr, "Cannot handle array dimensions != 2\n");
+			fprintf(stderr,
+                                "Cannot handle array dimensions != 2\n");
 			return -1;
 		}
 		dimArrayIdx = rtwCAPI_GetDimArrayIndex(dimMap, dimIdx);
 		orientation = rtwCAPI_GetOrientation(dimMap, dimIdx);
 		if (orientation == rtwCAPI_MATRIX_COL_MAJOR_ND) {
-			fprintf(stderr, "Cannot handle n Dimensional arrays\n");
+			fprintf(stderr,
+                                "Cannot handle n Dimensional arrays\n");
 			return -1;
 		}
 
@@ -156,7 +168,7 @@ static int reg_params(void *mdl_rtP)
 
 int model_init(void *mdl_rtP)
 {
-	printf("Initialising model\n");
+	printf("Initialising model version %s\n", version_string);
 
 	CAPI_INIT(rtM);
 
@@ -169,13 +181,15 @@ int model_init(void *mdl_rtP)
 
 #ifdef rtP
 	if (reg_params(mdl_rtP)) {
-		fprintf(stderr, "Could not register parameters with msr software\n");
+		fprintf(stderr,
+                        "Could not register parameters with msr software\n");
 		goto out_reg_params;
 	}
 #endif
 
 	if (reg_signals()) {
-		fprintf(stderr, "Could not register signals with msr software\n");
+		fprintf(stderr,
+                        "Could not register signals with msr software\n");
 		goto out_reg_signals;
 	}
 

@@ -55,12 +55,10 @@ case "$1" in
 		echo -n Starting $SERVICE
 
 		# remove stale device nodes
-		for i in {0..9}; do
-			rm -f /dev/${DEVICE}$i
-		done
+		rm -f /dev/${DEVICE}*
 
                 if ! ( grep -q rtai_hal /proc/modules || insmod @RTAI_DIR@/modules/rtai_hal.ko ) || \
-                        ! ( grep -q rtai_up /proc/modules || insmod @RTAI_DIR@/modules/rtai_up.ko ) || \
+                        ! ( egrep -q 'rtai_(up|sched)' /proc/modules || insmod @RTAI_DIR@/modules/rtai_up.ko ) || \
                         ! ( grep -q rtai_sem /proc/modules || insmod @RTAI_DIR@/modules/rtai_sem.ko ) || \
                         ! ( grep -q rtai_math /proc/modules || insmod @RTAI_DIR@/modules/rtai_math.ko ) || \
 		        ! insmod $MODULE_PATH; then
@@ -74,7 +72,7 @@ case "$1" in
         major=$(awk "\$2==\"$MODULE\" {print \$1}" /proc/devices)
 
         # create device nodes
-		for i in {0..64}; do
+		for i in {0..32}; do
 			mknod /dev/${DEVICE}$i c $major $i
 		done
 
@@ -93,9 +91,7 @@ case "$1" in
 		fi;
 
 		# remove device nodes
-		for i in {0..64}; do
-			rm -f /dev/${DEVICE}$i
-		done
+		rm -f /dev/${DEVICE}*
 
 		rc_status -v
 		;;

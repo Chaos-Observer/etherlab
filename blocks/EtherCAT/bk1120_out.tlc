@@ -16,16 +16,14 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %function BlockTypeSetup( block, system ) void
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  %<InitEtherCAT(block, system)>
+  %<InitEtherCAT()>
 %endfunction
 
     
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %function BlockInstanceSetup( block, system ) void
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  %assign MasterIdx = InitEtherCATMaster(block, system, MasterId)
-  %assign DomainIdx = InitEtherCATDomain(block, system, MasterIdx)
-  %<InitEtherCATSlave( block, system, MasterIdx, DomainIdx, SlaveAddr)>
+  %<InitEtherCATTask(block, system)>
 %endfunction
 
 
@@ -66,8 +64,8 @@
   /* %<Type> Block: %<Name> 
    * Registering digital output with Master
    */
-  %<RegisterEtherCATSlaveAddrRange(block, system, "Beckhoff_BK1120", \
-        "EC_DIR_OUTPUT", ImageOffset, bytes, \
+  %<RegisterEtherCATSlaveAddrRange(block, "Beckhoff_BK1120", \
+        MasterId, SlaveAddr, "EC_DIR_OUTPUT", ImageOffset, bytes, \
         LibBlockPWork(OutputAddr,"","",0))>
 %endfunction
 

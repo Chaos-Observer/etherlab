@@ -3,7 +3,7 @@
  * $Revision: 1.2 $
  * $Date: 2006/02/15 13:45:03 $
  *
- * SFunction to implement Beckhoff's series EL316x of EtherCAT Analog Input 
+ * SFunction to implement Beckhoff's series EL31xx of EtherCAT Analog Input 
  * Terminals
  *
  * Copyright (c) 2006, Richard Hacker
@@ -14,9 +14,9 @@
 #define S_FUNCTION_NAME  el31xx
 #define S_FUNCTION_LEVEL 2
 
-#include "math.h"
 #include "simstruc.h"
 #include "ethercat_ss_funcs.h"
+#include "ss_analog_in_funcs.c"
 
 #define PARAM_COUNT 11
 #define MASTER     ((uint_T)mxGetScalar(ssGetSFcnParam(S,0)))
@@ -31,7 +31,7 @@
 #define OMEGA_IDX                                        9   
 #define TSAMPLE            (mxGetScalar(ssGetSFcnParam(S,10)))
 
-struct el31xxx_dev {
+struct el31xx_dev {
     real_T rawFullScale;
     real_T rawOffset;
     int_T sign;
@@ -40,42 +40,42 @@ struct el31xxx_dev {
     char_T *status_pdo;
 };
 
-struct el31xxx_dev el3102_dev = {10.0, 0.0,   1, 2, 
+struct el31xx_dev el3102_dev = {10.0, 0.0,   1, 2, 
     "Beckhoff_EL3102_Input", "Beckhoff_EL3102_Status" };
-struct el31xxx_dev el3104_dev = {10.0, 0.0,   1, 4, 
+struct el31xx_dev el3104_dev = {10.0, 0.0,   1, 4, 
     "Beckhoff_EL3104_Input", "Beckhoff_EL3104_Status"};
-struct el31xxx_dev el3108_dev = {10.0, 0.0,   1, 8, 
+struct el31xx_dev el3108_dev = {10.0, 0.0,   1, 8, 
     "Beckhoff_EL3108_Input", "Beckhoff_EL3108_Status" };
 
-struct el31xxx_dev el3112_dev = {0.02, 0.0,   0, 2, 
+struct el31xx_dev el3112_dev = {0.02, 0.0,   0, 2, 
     "Beckhoff_EL3112_Input", "Beckhoff_EL3112_Status"};
-struct el31xxx_dev el3114_dev = {0.02, 0.0,   0, 4, 
+struct el31xx_dev el3114_dev = {0.02, 0.0,   0, 4, 
     "Beckhoff_EL3114_Input", "Beckhoff_EL3114_Status"};
 
-struct el31xxx_dev el3122_dev = {0.16, 0.004, 0, 2, 
+struct el31xx_dev el3122_dev = {0.16, 0.004, 0, 2, 
     "Beckhoff_EL3122_Input", "Beckhoff_EL3122_Status"};
-struct el31xxx_dev el3124_dev = {0.16, 0.004, 0, 4, 
+struct el31xx_dev el3124_dev = {0.16, 0.004, 0, 4, 
     "Beckhoff_EL3124_Input", "Beckhoff_EL3124_Status"};
 
-struct el31xxx_dev el3142_dev = {0.02, 0.0,   0, 2, 
+struct el31xx_dev el3142_dev = {0.02, 0.0,   0, 2, 
     "Beckhoff_EL3142_Input", "Beckhoff_EL3142_Status"};
-struct el31xxx_dev el3144_dev = {0.02, 0.0,   0, 4, 
+struct el31xx_dev el3144_dev = {0.02, 0.0,   0, 4, 
     "Beckhoff_EL3144_Input", "Beckhoff_EL3144_Status"};
-struct el31xxx_dev el3148_dev = {0.02, 0.0,   0, 8, 
+struct el31xx_dev el3148_dev = {0.02, 0.0,   0, 8, 
     "Beckhoff_EL3148_Input", "Beckhoff_EL3148_Status"};
 
-struct el31xxx_dev el3152_dev = {0.16, 0.004, 0, 2, 
+struct el31xx_dev el3152_dev = {0.16, 0.004, 0, 2, 
     "Beckhoff_EL3152_Input", "Beckhoff_EL3152_Status"};
-struct el31xxx_dev el3154_dev = {0.16, 0.004, 0, 4, 
+struct el31xx_dev el3154_dev = {0.16, 0.004, 0, 4, 
     "Beckhoff_EL3154_Input", "Beckhoff_EL3154_Status"};
-struct el31xxx_dev el3158_dev = {0.16, 0.004, 0, 8, 
+struct el31xx_dev el3158_dev = {0.16, 0.004, 0, 8, 
     "Beckhoff_EL3158_Input", "Beckhoff_EL3158_Status"};
 
-struct el31xxx_dev el3162_dev = {10.0, 0.0,   0, 2,
+struct el31xx_dev el3162_dev = {10.0, 0.0,   0, 2,
     "Beckhoff_EL3162_Input", "Beckhoff_EL3162_Status"};
-struct el31xxx_dev el3164_dev = {10.0, 0.0,   0, 4,
+struct el31xx_dev el3164_dev = {10.0, 0.0,   0, 4,
     "Beckhoff_EL3164_Input", "Beckhoff_EL3164_Status"};
-struct el31xxx_dev el3168_dev = {10.0, 0.0,   0, 8,
+struct el31xx_dev el3168_dev = {10.0, 0.0,   0, 8,
     "Beckhoff_EL3168_Input", "Beckhoff_EL3168_Status"};
 
 struct supportedDevice supportedDevices[] = {
@@ -114,7 +114,8 @@ struct el31xx {
                          * 1: Continuous filter
                          * 2: Discrete filter
                          */
-    struct el31xxx_dev *device;
+    int_T paramCount;   /* Number of runtime parameters */
+    struct el31xx_dev *device;
 };
     
 
@@ -131,7 +132,7 @@ static void mdlInitializeSizes(SimStruct *S)
 {
     int_T i, width;
     struct el31xx *devInstance;
-    struct el31xxx_dev *device;
+    struct el31xx_dev *device;
     const struct supportedDevice *model;
     uint_T op_dtype;
     
@@ -158,7 +159,7 @@ static void mdlInitializeSizes(SimStruct *S)
     if (FILTER)
         devInstance->filter = (TSAMPLE == 0) ? 1 : 2;
     devInstance->device = device =
-        (struct el31xxx_dev *)model->priv_data;
+        (struct el31xx_dev *)model->priv_data;
 
     switch (OP_DTYPE) {
         case 1:         /* Raw */
@@ -222,8 +223,16 @@ static void mdlInitializeSizes(SimStruct *S)
     }
 
     ssSetNumSampleTimes(S, 1);
-    ssSetNumContStates(S, devInstance->filter == 1 ? device->width : 0);
-    ssSetNumDiscStates(S, devInstance->filter == 2 ? device->width : 0);
+    if (devInstance->filter) {
+        if (TSAMPLE) {
+            ssSetNumDiscStates(S, DYNAMICALLY_SIZED);
+        } else {
+            ssSetNumContStates(S, DYNAMICALLY_SIZED);
+        }
+    } else {
+        ssSetNumContStates(S, 0);
+        ssSetNumDiscStates(S, 0);
+    }
     ssSetNumRWork(S, 0);
     ssSetNumIWork(S, 0);
     ssSetNumPWork(S, (devInstance->status ? 2 : 1) * device->width);
@@ -247,190 +256,36 @@ static void mdlInitializeSampleTimes(SimStruct *S)
     ssSetOffsetTime(S, 0, 0.0);
 }
 
-/* Return the integration constant (k) for the following filter such that
- * it has a low pass frequency of w.
- * 
- *                           +---+                                      
- *                +---+      | 1 |                                       
- * ------->O----->| k |----->| - |------+----->                         
- *         ^      +---+      | s |      |                               
- *         |                 +---+      |                               
- *         |                            |                               
- *         +----------------------------+                               
- *
- * This is simply w itself
- * */
-real_T cont_convert(SimStruct *S, real_T w, real_T Ts)
-{
-    return w;
-}
-
-/* Return the input weight (k) for the following discrete filter with sample
- * time Ts such that it has an equivalent low pass frequency of a continuous
- * filter.
- * 
- *  U                            +-----+           Y                    
- *   n            +---+          |     |            n                    
- * ------->p----->| k |----->p-->|  -1 |---+-----+----->                
- *        -|      +---+     +|   | z   |   |     |                       
- *         |                 |   +-----+   |     |                      
- *         |                 |             |     |                      
- *         |                 +-------------+     |                      
- *         |                                     |                      
- *         |                                     |                      
- *         +-------------------------------------+                      
- *
- * The characteristic equation of this diagram
- *  Y(n+1)  = k*U(n) + (1-k)*Y(n)
- *
- * A continuous low pass filter has the property that a dirac delta decays
- * to (1 - 2/pi) after time t where t = 1/(2*pi*f) = 1/w where f is the 
- * low pass frequency
- *
- * The aim is now to find k for a discrete filter as above that will let a 
- * dirac delta 
- *      U(n) = {1: n=0; 0: n!=0}
- * decay to Y(N) = k(1-2/pi) in sample N = t/Ts = 1/(w*Ts)
- *
- *                          N         1/w*Ts
- * Y(N) = k(1-2/pi) = k(1-k)  = k(1-k)
- *
- * k = 1 - (1-2/pi)^(w*Ts)
- * */
-real_T disc_convert(SimStruct *S, real_T w, real_T Ts)
-{
-    real_T k1,k,dk,f,df,N;
-    real_T a = (1 - 2/M_PI);
-    int_T i = 100;
-
-    return 1.0 - pow( a, w*Ts);
-
-    /*
-     * This has to be solved iteratively
-     * First estimate of k: k = 1/N
-     * Now solve:
-     *   f(k) = k(1-k)^N - k(1 - 2/pi)
-     *
-     * using Newton: k = k - f(k)/f'(k)
-     *
-     *  where:
-     *   f'(k) = (1-k)^N - k*N*(1-k)^(N-1) - (1 - 2/pi)
-     *
-     */
-    N = 1.0/(w*Ts);
-
-    k = w*Ts;           /* First estimate of k
-                           The exact value is emperically found to be
-                           allways be larger than this first estimate */
-
-    if (k >= 1)
-        return 1.0;
-
-    do {
-        k1 = k;
-        f = k*pow( 1-k, N) - k*(1 - 2/M_PI);
-        df = pow( 1-k, N) - k*(N)*pow( 1-k, N-1) - (1 - 2/M_PI);
-        dk = -f/df;
-        k =  (k+dk >= 1.0) ? (1.0+k)/2.0 : k+dk;
-    } while (fabs(k-k1) > 1.0e-6 && --i);
-    if (i == 0)
-        ssSetErrorStatus(S, "Could not find correct filter time constant. "
-                "Choose a value larger than the sample time.");
-
-    return k;
-}
-
 #define MDL_SET_WORK_WIDTHS
 static void mdlSetWorkWidths(SimStruct *S)
 {
-    int_T dims, param, i;
-    int_T scaleDim  = mxGetNumberOfElements( ssGetSFcnParam(S,SCALE_IDX));
-    int_T offsetDim = mxGetNumberOfElements( ssGetSFcnParam(S,OFFSET_IDX));
-    int_T omegaDim = mxGetNumberOfElements( ssGetSFcnParam(S,OMEGA_IDX));
     struct el31xx *devInstance = (struct el31xx *)ssGetUserData(S);
-    struct el31xxx_dev *device = devInstance->device;
-    real_T Ts = TSAMPLE;
-    real_T (*convert)(SimStruct *S, real_T f, real_T Ts);
-    real_T *m, *c, *w;
-    int_T paramCount = 0;
-    ssParamRec p = {
-            NULL,               /* *name */
-            1,                  /* nDimensions */
-            &dims,              /* *dimensions */
-            SS_DOUBLE,          /* dataTypeId */
-            0,                  /* complexSignal */
-            NULL,               /* *data */
-            NULL,               /* dataAttributes */
-            1,                  /* nDlgParamIndices */
-            &param,             /* *dlgParamIndices */
-            RTPARAM_NOT_TRANSFORMED, /* transformed */
-            0                   /* outputAsMatrix */
-        
-    };
-    if (devInstance->scale && devInstance->filter) {
-        paramCount = 3;
-    } else if (devInstance->scale) {
-        paramCount = 2;
-    } else if (devInstance->filter) {
-        paramCount = 1;
-    } else {
-        return;
-    }
+    struct el31xx_dev *device = devInstance->device;
 
-    ssSetNumRunTimeParams(S, paramCount);
-    paramCount = 0;
+    devInstance->paramCount = 0;
+    if (devInstance->scale)
+        devInstance->paramCount += 2;
+    if (devInstance->filter)
+        devInstance->paramCount++;
+
+    ssSetNumRunTimeParams(S, devInstance->paramCount);
 
     /* Only when picking the third choice of Data Type
      * does Output scaling take place */
+    devInstance->paramCount = 0;
     if (devInstance->scale) {
-
-        if (scaleDim != 1 && device->width != scaleDim) {
-            ssSetErrorStatus(S,"Dimensions of Gain does not match output width");
-        }
-        if (offsetDim != 1 && device->width != offsetDim) {
-            ssSetErrorStatus(S,"Dimensions of Offset does not match output width");
-        }
-        if (omegaDim != 1 && device->width != omegaDim) {
-            ssSetErrorStatus(S,"Dimensions of LPF Frequncy does not match output width");
-        }
-
-        p.name = "FullScale";
-        dims = scaleDim;
-        param = SCALE_IDX;
-        p.data = m = mxCalloc(dims,sizeof(real_T));
-        mexMakeMemoryPersistent(m);
-        for( i = 0; i < dims; i++ )
-            m[i] = (mxGetPr(ssGetSFcnParam(S,param)))[i];
-        ssSetRunTimeParamInfo(S, paramCount++, &p);
-
-        p.name = "Offset";
-        dims = offsetDim;
-        param = OFFSET_IDX;
-        p.data = c = mxCalloc(dims,sizeof(real_T));
-        mexMakeMemoryPersistent(c);
-        for( i = 0; i < dims; i++ )
-            c[i] = (mxGetPr(ssGetSFcnParam(S,param)))[i];
-        ssSetRunTimeParamInfo(S, paramCount++, &p);
+        set_scaling(S, device->width, SCALE_IDX, OFFSET_IDX, 
+                devInstance->paramCount);
+        if (ssGetErrorStatus(S))
+            return;
+        devInstance->paramCount += 2;
     }
 
     if (devInstance->filter) {
-        if (devInstance->filter == 1) { /* Continuous */
-            p.name = "Omega";
-            convert = cont_convert;
-        } else {                        /* Discrete */
-            p.name = "InputWeight";
-            convert = disc_convert;
-        }
-        dims = omegaDim;
-        param = OMEGA_IDX;
-        p.data = w = mxCalloc(dims,sizeof(real_T));
-        mexMakeMemoryPersistent(w);
-        for( i = 0; i < dims; i++ ) {
-            w[i] = convert(S, (mxGetPr(ssGetSFcnParam(S,param)))[i], Ts);
-            if (w[i] == 0.0) 
-                ssSetErrorStatus(S,"Time Constant for LPF too small");
-        }
-        ssSetRunTimeParamInfo(S, paramCount++, &p);
+        set_filter(S, device->width, OMEGA_IDX, devInstance->paramCount);
+        if (ssGetErrorStatus(S))
+            return;
+        devInstance->paramCount += 1;
     }
 }
 
@@ -460,34 +315,26 @@ static void mdlTerminate(SimStruct *S)
 {
     ssParamRec *p;
     struct el31xx *devInstance = (struct el31xx *)ssGetUserData(S);
+    int_T i;
 
     if (!devInstance)
         return;
 
     /* If output scaling is used, we malloc()'ed some data space */
-    if (devInstance->scale) {
 
-        p = ssGetRunTimeParamInfo(S,0);
-        mxFree(p->data);
-
-        p = ssGetRunTimeParamInfo(S,1);
-        mxFree(p->data);
-
-        if (devInstance->filter) {
-            p = ssGetRunTimeParamInfo(S,2);
-            mxFree(p->data);
-        }
+    for (i = 0; i < devInstance->paramCount; i++) {
+        p = ssGetRunTimeParamInfo(S,i);
+        free(p->data);
     }
 
     free(devInstance);
-
 }
 
 #define MDL_RTW
 static void mdlRTW(SimStruct *S)
 {
     struct el31xx *devInstance = (struct el31xx *)ssGetUserData(S);
-    struct el31xxx_dev *device = devInstance->device;
+    struct el31xx_dev *device = devInstance->device;
     int32_T master = MASTER;
     const char *addr = getString(S,INDEX);
 

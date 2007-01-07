@@ -1,1 +1,1 @@
-SUBDIRS = buddy rt_kernel scripts
+SUBDIRS = buddy rt_kernel scripts include

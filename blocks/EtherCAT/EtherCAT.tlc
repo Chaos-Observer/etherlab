@@ -7,48 +7,118 @@
 %% 
 %% License: GPL
 
+%include "ETL.tlc"
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%function InitEtherCAT( block, system) void
+%function InitEtherCAT() void
 %% This function checks whether the EtherCAT system has been called once
 %% before already, which is demonstrated by the existance of variable 
-%% system.EtherCAT. If not, include C-header file for EtherCAT, 
+%% ::EtherCAT. If not, include C-header file for EtherCAT, 
 %% and declare a variable where the slave's data structure is placed 
 %% by EtherCAT when registering the slaves during mdlStart()
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-  %if !EXISTS(system.EtherCAT)
+  %if !EXISTS(CompiledModel.EtherCAT)
+    %assign model_c = LibGetModelDotCFile()
+
+    %<InitETL()>
+
     %trace "Initializing EtherCAT Interface"
-    %addtorecord system EtherCAT { ...
-                NumMasters 0 ...
-                SlaveStruct "ec_slave" ...
+    %if LibNumDiscreteSampleTimes() > 1
+      %assign Tid01Eq = %<ISEQUAL(LibGetClockTickStepSize(0), \
+                          LibGetClockTickStepSize(1))>
+    %else
+      %assign Tid01Eq = 0
+    %endif
+    %addtorecord CompiledModel EtherCAT { ...
+                NumTasks 0 ...
+                Pdo "pdo" ...
+                Tid01Eq %<Tid01Eq> ...
                 }
 
-    %% EtherCAT header
-    %<LibAddToCommonIncludes("ecrt.h")>
-    %<LibAddToCommonIncludes("ecdb.h")>
-%%    %<LibAddToCommonIncludes("ecrt_support.h")>
+    %with CompiledModel
+      %% EtherCAT header
+      %<LibAddToCommonIncludes("ecrt_support.h")>
+  
+      %openfile buf
+      struct ecat_pdo *%<EtherCAT.Pdo>;
+      %closefile buf
+      %<LibMdlStartCustomCode(buf, "header")>
+  
+      %openfile buf
+      /* Sample times for EtherCAT */
+      unsigned int ec_st[] = {
+      %foreach tid = LibNumDiscreteSampleTimes()
+          %<CAST("Unsigned",LibGetClockTickStepSize(tid)*1000000)>,
+      %endforeach
+          0U };
+      %closefile buf
+      %<LibMdlStartCustomCode(buf, "header")>
 
-    %openfile buf
-    ec_slave_t *%<system.EtherCAT.SlaveStruct> = NULL; /* Pointer to Slave */
-    %closefile buf
-    %<LibMdlStartCustomCode(buf, "header")>
-
+      %openfile buf
+  
+      /* Initialising EtherCAT Support system */
+      if ((%<ETL.ErrStr> = ecs_init( ec_st))) {
+          snprintf(%<ETL.ErrMsg>, sizeof(%<ETL.ErrMsg>),
+                   "Could not initialise EtherCAT Support layer: %s",
+                   %<ETL.ErrStr>);
+          %<LibSetRTModelErrorStatus("%<ETL.ErrMsg>")>;
+          return;
+      }
+  %%/*
+  %%        LibIsSingleRateModel %<LibIsSingleRateModel()>
+  %%        LibNumAsynchronousSampleTimes %<LibNumAsynchronousSampleTimes()>
+  %%        LibNuEmDiscreteSampleTimes %<LibNumDiscreteSampleTimes()>
+  %%        Tid01Eq %<EtherCAT.Tid01Eq>
+  %%%foreach TID = LibNumDiscreteSampleTimes()
+  %%%assign tid = %<TID>
+  %%
+  %%        Sample time %<TID>
+  %%        LibIsContinuous %<LibIsContinuous(TID)>
+  %%        LibIsDiscrete %<LibIsDiscrete(TID)>
+  %%        LibTriggeredTID %<LibTriggeredTID(tid)>
+  %%        LibGetClockTickStepSize %<LibGetClockTickStepSize(tid)>
+  %%        LibAsynchronousTriggeredTID %<LibAsynchronousTriggeredTID(tid)>
+  %%        LibGetClockTickDataTypeId %<LibGetClockTickDataTypeId(tid)>
+  %%%endforeach 
+  %%*/
+      %closefile buf
+      %<LibMdlStartCustomCode(buf, "execution")>
+  
+      %openfile buf
+  
+      /* Starting EtherCAT subsystem */
+      if ((%<ETL.ErrStr> = ecs_start())) {
+            snprintf(%<ETL.ErrMsg>, sizeof(%<ETL.ErrMsg>), 
+               "Starting EtherCAT subsystem failed: %s\n", %<ETL.ErrStr>);
+            %<LibSetRTModelErrorStatus("%<ETL.ErrMsg>")>;
+            return;
+      }
+      %closefile buf
+      %<LibMdlStartCustomCode(buf, "trailer")>
+  
+      %openfile buf
+  
+      /* Shutting down EtherCAT subsystem */
+      ecs_end();
+      %closefile buf
+      %<LibMdlTerminateCustomCode(buf, "execution")>
+  
+  %endwith
   %endif
 %endfunction
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%function GetEtherCATMasterIdx(system, MasterId)
-%% Find the record index for master %<MasterId>
-%% Return: MasterIdx : index in system.EtherCAT.Master if found
+%function GetEtherCATTaskIdx(Tid)
+%% Find the record index for sample time %<SampleTime>
+%% Return: SampleTimeIdx : index in EtherCAT if found
 %%         -1: not found
 %%
-%% %<MasterId> is a global variable 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  %with system.EtherCAT
-    %foreach m = NumMasters
-      %if Master[m].Id == MasterId
-        %trace "Found master %<MasterId> @ Idx %<m>"
+  %with EtherCAT
+    %foreach m = NumTasks
+      %if Task[m].Tid == Tid
+        %trace "Found sample time %<Tid> @ Idx %<m>"
         %return m
       %endif
     %endforeach
@@ -57,289 +127,115 @@
 %endfunction
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%function InitEtherCATMaster( block, system, MasterId)
-%% Make sure the master gets registered and deregistered
-%% and the slaves are activated before starting
-%% Return: MasterIdx : index in system.EtherCAT.Master 
-%%                      of master
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  %assign model_c = LibGetModelDotCFile()
-
-  %with system.EtherCAT
-    %assign MasterIdx = GetEtherCATMasterIdx(system, MasterId)
-    %if MasterIdx != -1
-      %return MasterIdx
-    %endif
-
-    %% This is the first time this Master was called. Setup the structures
-    %% required to get it to work.
-
-    %assign NewMasterIdx = NumMasters
-
-    %assign system.EtherCAT.NumMasters = NewMasterIdx + 1
-
-    %% Create record structure for this master in the system
-    %% All slaves attached to this master will be recorded here
-    %addtorecord system.EtherCAT Master { ...
-          Id MasterId ...
-          NumDomains 0 ...
-          NumSlaves 0 ...
-          MasterStruct "ecat_master_%<MasterId>" ...
-          MasterSuppStruct "ethercat_support_%<MasterId>" ...
-          }
-    %trace "Added new Record for master %<MasterId> @ %<NewMasterIdx>; ...
-           system.EtherCAT = %<system.EtherCAT>"
-
-    %with Master[NewMasterIdx]
-      %% Define a C global pointer for the master. All EtherCAT calls
-      %% require this pointer
-      %openfile buf
-
-        /* EtherCAT master %<MasterId> */
-        ec_master_t *%<MasterStruct>;
-%%        struct rt_ec_dev *%<MasterSuppStruct>;
-      %closefile buf
-      %<LibSetSourceFileSection(model_c, "Declarations", buf)>
-
-      %openfile buf
-
-      /* EtherCAT Receive on Master %<MasterId> */
-%%      ethercat_support_lock_master(%<MasterSuppStruct>);
-      ecrt_master_receive(%<MasterStruct>);
-%%      ethercat_support_unlock_master(%<MasterSuppStruct>);
-      %closefile buf
-      %<LibSystemOutputCustomCode(system,buf,"execution")>
-
-      %openfile buf
-
-      /* EtherCAT Receive on Master %<MasterId> */
-%%      ethercat_support_lock_master(%<MasterSuppStruct>);
-      ecrt_master_run(%<MasterStruct>);
-      ecrt_master_send(%<MasterStruct>);
-%%      ethercat_support_unlock_master(%<MasterSuppStruct>);
-      %closefile buf
-      %<LibSystemOutputCustomCode(system,buf,"trailer")>
-
-      %% Insert code to request the master at the start of mdlStart()
-      %openfile buf
-  
-      /* Grab EtherCAT Master %<MasterId> */
-      if ((%<MasterStruct> = ecrt_request_master(%<MasterId>)) == NULL) {
-          %<LibSetRTModelErrorStatus("\"EtherCAT Master %<MasterId> initialise failed\"")>;
-          return;
-      }
-%%      if ((%<MasterSuppStruct> = register_ec_master(%<MasterId>)) == NULL) {
-%%          %<LibSetRTModelErrorStatus("\"Registering EtherCAT Master %<MasterId> failed\"")>;
-%%          return;
-%%      }
-      %closefile buf
-      %<LibMdlStartCustomCode(buf,"execution")>
-
-      %% Add code that activates all registered slaves at the end of mdlStart()
-      %openfile buf
-  
-      /* Activate Slaves on EtherCAT Master %<MasterId> */
-      if ( ecrt_master_activate(%<MasterStruct>)) {
-          %<LibSetRTModelErrorStatus("\"Activating EtherCAT Slaves on Master %<MasterId> failed\"")>;
-          return;
-      }
-
-      ecrt_master_prepare(%<MasterStruct>);
-
-      /* Activating EOE */
-%%      mdl_ecrt_callbacks(%<MasterStruct>,ext_lock_dev,ext_unlock_dev,%<MasterSuppStruct>);
-          
-      %closefile buf
-      %<LibMdlStartCustomCode(buf,"trailer")>
-
-      %openfile buf
-
-      /* Release EtherCAT Master %<MasterId> */
-      if (%<MasterStruct>) {
-%%        ecrt_master_callbacks(%<MasterStruct>,NULL,NULL,NULL);
-%%        ethercat_support_free_master(%<MasterSuppStruct>);
-        ecrt_release_master(%<MasterStruct>);
-      }
-      %closefile buf
-      %<LibMdlTerminateCustomCode(buf,"trailer")>
-
-    %endwith
-  %endwith
-
-  %return NewMasterIdx
-%endfunction
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%function GetEtherCATDomainIdx(MasterIdx,Ts)
-%% Find the record index n system.EtherCAT.Master[MasterIdx] 
-%% for Domain %<Domain>
-%%
-%% Inputs: MasterIdx: record index of master 
-%% Return: DomainIdx : index in system.EtherCAT.Master[MasterIdx] if found
-%%         -1: not found
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  %with system.EtherCAT.Master[MasterIdx]
-    %foreach d = NumDomains
-      %if Domain[d].SampleTime == Ts
-        %trace "Found domain for sample time %<Ts> @ Idx %<d>"
-        %return d
-      %endif
-    %endforeach
-  %endwith
-  %return -1
-%endfunction
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%function InitEtherCATDomain( block, system, MasterIdx)
+%function InitEtherCATTask( block, system)
 %% Make sure the domain for the block's sample time exists
-%% Return: DomainIdx : index in system.EtherCAT.Master[MasterIdx]
-%%                      of domain
+%% Return: Idx : index in EtherCAT.Task[Idx]
+%%                      correspondig to block's Tid
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  %assign model_c = LibGetModelDotCFile()
 
-  %with system.EtherCAT.Master[MasterIdx]
+  %with EtherCAT
     %% Get Task ID of the block
     %assign tid = LibGetGlobalTIDFromLocalSFcnTID(0)
     %% And the Step Size thereof
     %assign Ts = LibGetClockTickStepSize(tid)
-    %% Fundamental Step Size
-    %assign Tf = LibGetClockTickStepSize(0)
 
-    %assign DomainIdx = GetEtherCATDomainIdx(MasterIdx,Ts)
-
-    %if DomainIdx != -1
-      %% Domain has been registered already
-      %return DomainIdx
+    %if EtherCAT.Tid01Eq && tid == 1
+        %assign tid = 0
     %endif
 
-    %% No domain exists with this DomainId
+    %addtorecord block EtherCATTid tid
+
+    %assign Idx = GetEtherCATTaskIdx(tid)
+
+    %if Idx != -1
+      %% SampleDomain has been registered already
+      %return Idx
+    %endif
+
+    %% No domain exists with this Task Id
 
     %%
-    %% Insert a new Domain with this sample time
+    %% Insert a new Task with this task id
     %%
-    %assign DomainIdx = system.EtherCAT.Master[MasterIdx].NumDomains
-    %assign system.EtherCAT.Master[MasterIdx].NumDomains = DomainIdx + 1
-    %addtorecord system.EtherCAT.Master[MasterIdx] Domain { ...
-          Id DomainIdx ...
+    %assign TaskIdx = EtherCAT.NumTasks
+    %assign EtherCAT.NumTasks = TaskIdx + 1
+    %addtorecord EtherCAT Task { ...
+          Tid tid ...
           SampleTime Ts ...
-          TID tid ...
-          NumSlaves 0 ...
-          Struct "ecat_domain_m%<MasterIdx>_d%<DomainIdx>" ...
-          SuppStruct "ecat_domain_supp_m%<MasterIdx>_d%<DomainIdx>" ...
           }
-    %trace "Added new Domain for SampleTime %<Ts> @ %<DomainIdx>; ...
-            system.EtherCAT.Master[%<MasterIdx>] = ...
-            %<system.EtherCAT.Master[MasterIdx]>"
+    %trace "Added new Task for SampleTime %<Ts> @ %<TaskIdx>"
 
     %openfile buf
 
-    /* EtherCAT domain: M%<MasterId> D%<DomainIdx> */
-    ec_domain_t *%<Domain[DomainIdx].Struct>;
-%%    struct rt_ec_domain *%<Domain[DomainIdx].SuppStruct>;
-    %closefile buf
-    %<LibSetSourceFileSection(model_c, "Declarations", buf)>
-
-    %openfile buf
-
-    /* EtherCAT Receive Domain for Sample Time [%<Ts>] */
-    %if Ts != Tf
-      if (%<LibIsSampleHit(tid)>) {
-    %endif
-%%        ethercat_support_lock_master(%<MasterSuppStruct>);
-        ecrt_domain_process(%<Domain[DomainIdx].Struct>);
-%%        if (ecrt_domain_state(%<Domain[DomainIdx].Struct>)) {
-%%            %<LibSetRTModelErrorStatus("\"EtherCAT exchange IO failed\"")>;
-%%        }
-%%        ethercat_support_unlock_master(%<MasterSuppStruct>);
-    %if Ts != Tf
-      }
-    %endif
+    /* EtherCAT Process for Sample Time [%<Ts>] */
+    if (%<LibIsSampleHit(tid)>) {
+      ecs_receive(%<tid>);
+      #ifdef ASYNC_ECAT
+      ecs_send(%<tid>);
+      #endif
+    }
     %closefile buf
     %<LibSystemOutputCustomCode(system,buf,"execution")>
 
     %openfile buf
 
-    /* Register Domain with EtherCAT Master for Sample Time [%<Ts>] */
-    if ( !(%<Domain[DomainIdx].Struct> = \
-                ecrt_master_create_domain(%<MasterStruct>)) \
-%%        && !(%<Domain[DomainIdx].SuppStruct> = \
-%%                register_ec_domain(%<MasterSuppStruct>, \
-%%                %<CAST("Number",Ts*1000000)>)) \
-                ) {
-      %<LibSetRTModelErrorStatus("\"EtherCAT Domain registration failed\"")>;
-      return;
+    /* EtherCAT Queue for Sample Time [%<Ts>] */
+    #ifndef ASYNC_ECAT
+    if (%<LibIsSampleHit(tid)>) {
+      ecs_send(%<tid>);
     }
+    #endif
     %closefile buf
-    %<LibMdlStartCustomCode(buf,"execution")>
+    %<LibSystemOutputCustomCode(system,buf,"trailer")>
 
   %endwith
 
-  %return DomainIdx
+  %return TaskIdx
 %endfunction
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%function InitEtherCATSlave( block, system, MasterIdx, DomainIdx, ...
-        SlaveAddr) void
+%function RegisterEtherCATSlave( block, DeviceModel, ...
+        MasterId, SlaveAddr, DataPtr) Output
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  %assign MasterId = system.EtherCAT.Master[MasterIdx].Id
-
-  %with system.EtherCAT.Master[MasterIdx]
-  
-    %%
-    %% First time a Slave is used in the domain. Create a record for it
-    %% 
-    %addtorecord system.EtherCAT.Master[MasterIdx] Slave ...
-               { Id SlaveAddr }
-    %assign system.EtherCAT.Master[MasterIdx].NumSlaves = NumSlaves + 1
-
-    %%
-    %% Now check that a slave appears only once in a domain
-    %%
-    %with Domain[DomainIdx]
-      %assign Ts = SampleTime
-      %assign SlaveIdx = NumSlaves
-      %assign system.EtherCAT.Master[MasterIdx].Domain[DomainIdx].NumSlaves = ...
-          NumSlaves + 1
-  
-      %addtorecord system.EtherCAT.Master[MasterIdx].Domain[DomainIdx] Slave ...
-          { Id SlaveAddr Path "%<LibGetFormattedBlockPath(block)>"}
-  
-      %trace "Added new Slave Addr %<SlaveAddr> for Master ...
-          %<MasterId> and Sample Time ...
-          %<system.EtherCAT.Master[MasterIdx].Domain[DomainIdx].SampleTime> ...
-          system.EtherCAT.Master[%<MasterIdx>].Domain[%<DomainIdx>] = ...
-          %<system.EtherCAT.Master[MasterIdx].Domain[DomainIdx]>"
-    %endwith
-    %addtorecord block EtherCAT { ...
-        MasterStruct MasterStruct ...
-        DomainStruct Domain[DomainIdx].Struct ...
-        SlaveAddr SlaveAddr ...
-        }
-  %endwith
-
-%endfunction
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%function RegisterEtherCATSlave( block, system, DeviceModel, ...
-        DataPtr) Output
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  if ( !(%<system.EtherCAT.SlaveStruct> = ecrt_domain_register_pdo( 
-           %<block.EtherCAT.DomainStruct>, "%<block.EtherCAT.SlaveAddr>", \
-           %<DeviceModel>, &%<DataPtr>))) {
-        %<LibSetRTModelErrorStatus("\"EtherCAT slave register failed\"")>;
+  if (!(%<EtherCAT.Pdo> = ecs_reg_pdo( \
+           %<block.EtherCATTid>, \
+           %<MasterId>, "%<SlaveAddr>", \
+           %<DeviceModel>, &%<DataPtr>, &%<ETL.ErrStr>))) {
+        snprintf(%<ETL.ErrMsg>, sizeof(%<ETL.ErrMsg>), 
+           "EtherCAT slave %<LibGetFormattedBlockPath(block)> register "
+           "failed: %s", %<ETL.ErrStr>);
+        %<LibSetRTModelErrorStatus( "%<ETL.ErrMsg>")>;
         return;
   }
 %endfunction
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%function RegisterEtherCATSlaveAddrRange( block, system, DeviceModel, ...
-        RdWr, ImageOffset, ImageLength, DataPtr) Output
+%function RegisterEtherCATSlaveSDO( block, DataType, Index, Subindex, ...
+        Value) Output
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  if ( !(%<system.EtherCAT.SlaveStruct> = ecrt_domain_register_pdo_range( 
-           %<block.EtherCAT.DomainStruct>, "%<block.EtherCAT.SlaveAddr>", \
+  if ((%<ETL.ErrStr> = ecs_reg_sdo( %<EtherCAT.Pdo>, \
+           %<DataType>, %<Index>, %<Subindex>, %<Value>))) {
+        snprintf(%<ETL.ErrMsg>, sizeof(%<ETL.ErrMsg>), 
+           "EtherCAT slave %<LibGetFormattedBlockPath(block)> SDO register "
+           "failed: %s", %<ETL.ErrStr>);
+        %<LibSetRTModelErrorStatus( "%<ETL.ErrMsg>")>;
+        return;
+  }
+%endfunction
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function RegisterEtherCATSlaveAddrRange( block, DeviceModel, ...
+        MasterId, SlaveAddr, RdWr, ImageOffset, ImageLength, DataPtr) Output
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  if ( !(%<EtherCAT.Pdo> = ecs_reg_pdo_range( 
+           %<block.EtherCATTid>, \
+           %<MasterId>, "%<SlaveAddr>", \
            %<DeviceModel>, %<RdWr>, %<ImageOffset>, %<ImageLength>, \
-           &%<DataPtr>))) {
-        %<LibSetRTModelErrorStatus("\"EtherCAT slave register failed\"")>;
+           &%<DataPtr>, &%<ETL.ErrStr>))) {
+        snprintf(%<ETL.ErrMsg>, sizeof(%<ETL.ErrMsg>), 
+           "EtherCAT slave %<LibGetFormattedBlockPath(block)> range register "
+           "failed: %s", %<ETL.ErrStr>);
+        %<LibSetRTModelErrorStatus( "%<ETL.ErrMsg>")>;
         return;
   }
 %endfunction

@@ -19,16 +19,14 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %function BlockTypeSetup( block, system ) void
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  %<InitEtherCAT(block, system)>
+  %<InitEtherCAT()>
 %endfunction
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %function BlockInstanceSetup( block, system ) void
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  %assign MasterIdx = InitEtherCATMaster(block, system, MasterId)
-  %assign DomainIdx = InitEtherCATDomain(block, system, MasterIdx)
-  %<InitEtherCATSlave( block, system, MasterIdx, DomainIdx, SlaveAddr)>
+  %<InitEtherCATTask(block, system)>
 %endfunction
 
 
@@ -39,11 +37,11 @@
   /* %<Type> Block: %<Name> 
    * Registering digital output with EtherCAT Driver
    */
-  %<RegisterEtherCATSlave(block, system, Output_PDO, \
-        LibBlockPWork(OutputByte,"","",0))>
+  %<RegisterEtherCATSlave(block, Output_PDO, \
+        MasterId, SlaveAddr, LibBlockPWork(OutputByte,"","",0))>
   %if StatusOp
-    %<RegisterEtherCATSlave(block, system, Status_PDO, \
-        LibBlockPWork(StatusByte,"","",0))>
+    %<RegisterEtherCATSlave(block, Status_PDO, \
+        MasterId, SlaveAddr, LibBlockPWork(StatusByte,"","",0))>
   %endif
 %endfunction
 

@@ -1,6 +1,8 @@
 /* This file should be included in analog input S-Functions and it
  * provides functionality to set an output filter and to scale the output */
 
+#include "math.h"
+
 /* Return the integration constant (k) for the following filter such that
  * it has a low pass frequency of w.
  * 
@@ -53,48 +55,12 @@ real_T cont_convert(SimStruct *S, real_T w, real_T Ts)
  * */
 real_T disc_convert(SimStruct *S, real_T w, real_T Ts)
 {
-    real_T k1,k,dk,f,df,N;
     real_T a = (1 - 2/M_PI);
-    int_T i = 100;
 
     return 1.0 - pow( a, w*Ts);
-
-    /*
-     * This has to be solved iteratively
-     * First estimate of k: k = 1/N
-     * Now solve:
-     *   f(k) = k(1-k)^N - k(1 - 2/pi)
-     *
-     * using Newton: k = k - f(k)/f'(k)
-     *
-     *  where:
-     *   f'(k) = (1-k)^N - k*N*(1-k)^(N-1) - (1 - 2/pi)
-     *
-     */
-    N = 1.0/(w*Ts);
-
-    k = w*Ts;           /* First estimate of k
-                           The exact value is emperically found to be
-                           allways be larger than this first estimate */
-
-    if (k >= 1)
-        return 1.0;
-
-    do {
-        k1 = k;
-        f = k*pow( 1-k, N) - k*(1 - 2/M_PI);
-        df = pow( 1-k, N) - k*(N)*pow( 1-k, N-1) - (1 - 2/M_PI);
-        dk = -f/df;
-        k =  (k+dk >= 1.0) ? (1.0+k)/2.0 : k+dk;
-    } while (fabs(k-k1) > 1.0e-6 && --i);
-    if (i == 0)
-        ssSetErrorStatus(S, "Could not find correct filter time constant. "
-                "Choose a value larger than the sample time.");
-
-    return k;
 }
 
-static void set_scaling(SimStruct *S, int_T output_port, 
+static void set_scaling(SimStruct *S, int_T width, 
         int_T gain_idx, int_T offset_idx, int_T param_idx)
 {
     int_T i;
@@ -104,7 +70,7 @@ static void set_scaling(SimStruct *S, int_T output_port,
     ssParamRec p = {
             NULL,               /* *name - gets filled in later*/
             1,                  /* nDimensions */
-            &ndims,             /* *dimensions */
+            NULL,               /* *dimensions */
             SS_DOUBLE,          /* dataTypeId */
             0,                  /* complexSignal */
             NULL,               /* *data - filled in later */
@@ -116,39 +82,46 @@ static void set_scaling(SimStruct *S, int_T output_port,
         
     };
 
-    if (gain_dims != 1 && 
-            gain_dims != ssGetOutputPortWidth(S,output_port)) {
+    if (gain_dims != 1 && gain_dims != width) {
         ssSetErrorStatus(S,
                 "Dimensions of Gain does not match output width");
         return;
     }
-    if (offset_dims != 1 && 
-            offset_dims != ssGetOutputPortWidth(S,output_port)) {
+    if (offset_dims != 1 && offset_dims != width) {
         ssSetErrorStatus(S,
                 "Dimensions of Offset does not match output width");
         return;
     }
 
     p.name = "FullScale";
-    p.data = g = mxCalloc(gain_dims,sizeof(real_T));
+    p.dimensions = &gain_dims;
+    p.data = g = malloc(gain_dims*sizeof(real_T));
+    if (!g) {
+        ssSetErrorStatus(S,"Could not allocate memory");
+        return;
+    }
     p.nDlgParamIndices = 1;
     p.dlgParamIndices = &gain_idx;
-    mexMakeMemoryPersistent(g);
     for( i = 0; i < gain_dims; i++ )
         g[i] = (mxGetPr(ssGetSFcnParam(S,gain_idx)))[i];
     ssSetRunTimeParamInfo(S, param_idx++, &p);
 
     p.name = "Offset";
-    p.data = o = mxCalloc(offset_dims,sizeof(real_T));
+    p.dimensions = &offset_dims;
+    p.data = o = malloc(offset_dims*sizeof(real_T));
+    if (!o) {
+        ssSetErrorStatus(S,"Could not allocate memory");
+        free(g);
+        return;
+    }
     p.nDlgParamIndices = 1;
     p.dlgParamIndices = &offset_idx;
-    mexMakeMemoryPersistent(g);
     for( i = 0; i < offset_dims; i++ )
         o[i] = (mxGetPr(ssGetSFcnParam(S,offset_idx)))[i];
     ssSetRunTimeParamInfo(S, param_idx++, &p);
 }
 
-static void set_filter(SimStruct *S, int_T output_port, int_T omega_idx, 
+static void set_filter(SimStruct *S, int_T width, int_T omega_idx, 
         int_T param_idx)
 {
     int_T i;
@@ -171,29 +144,33 @@ static void set_filter(SimStruct *S, int_T output_port, int_T omega_idx,
         
     };
 
-    if (ndims != 1 && ndims != ssGetOutputPortWidth(S,output_port)) {
+    if (ndims != 1 && ndims != width) {
         ssSetErrorStatus(S,
                 "Dimensions of LPF Frequncy does not match output width");
         return;
     }
 
-    if (Ts) { /* Continuous */
+    if (Ts) {           /* Discrete */
+        p.name = "InputWeight";
+        convert = disc_convert;
+        ssSetNumDiscStates(S, ndims);
+    } else {            /* Continuous */
         p.name = "Omega";
         convert = cont_convert;
         ssSetNumContStates(S, ndims);
-        ssSetNumDiscStates(S, 0);
-    } else {                        /* Discrete */
-        p.name = "InputWeight";
-        convert = disc_convert;
-        ssSetNumContStates(S, 0);
-        ssSetNumDiscStates(S, ndims);
     }
-    p.data = w = mxCalloc(ndims,sizeof(real_T));
-    mexMakeMemoryPersistent(w);
+    p.data = w = malloc(ndims*sizeof(real_T));
+    if (!w) {
+        ssSetErrorStatus(S,"Could not allocate memory");
+        return;
+    }
     for( i = 0; i < ndims; i++ ) {
         w[i] = convert(S, (mxGetPr(ssGetSFcnParam(S,omega_idx)))[i], Ts);
-        if (w[i] == 0.0) 
+        if (w[i] == 0.0) {
             ssSetErrorStatus(S,"Time Constant for LPF too small");
+            free(w);
+            return;
+        }
     }
     ssSetRunTimeParamInfo(S, param_idx, &p);
 }

@@ -14,7 +14,6 @@
 #define S_FUNCTION_NAME  el41xx
 #define S_FUNCTION_LEVEL 2
 
-#include "math.h"
 #include "simstruc.h"
 #include "ethercat_ss_funcs.h"
 

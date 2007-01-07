@@ -1,3 +1,36 @@
+2007-01-07      Richard Hacker (lerich_at_gmx.net)
+	This is a major rework of the entire real-time subsystem. Therefore
+	it is not possible to describe all the changes in the files.
+
+	This Changelog reflects release 0.2.4-pre3
+
+	The following features were implemented/reworked:
+	* rt_kernel: now has an associated thread that helps the kernel
+	  - real world time is tracked and sent to the model
+	  - polls model to check whether data has been produced, waking up
+	    the buddy in such case
+	  - Multirate models are supported as separate RTAI tasks
+	  - Only one character device is required per loaded model
+	  - Data and management structures have been reworked to use more
+	    meaningful and less confusious names 
+	  - ioctl() reworked, cleaned up
+	* etherlab_lib: 
+	  - Started implementing new Simulink blocks that implements a 
+	    raise/catch subsystem
+	  - It is not mandatory any more to include the taskinfo block
+	    in the model
+	  - World time is a new separate block
+	  - EtherCAT has been completely reworked to include a support
+	    layer to arbitrate between the model and EtherCAT driver
+	* buddy:
+	  - Command line switches are now used
+	  - Buddy now becomes a daemon immediately (suppressed with -n switch)
+	  - MSR code now runs in a separate task, thus cleaning up is now
+	    much easier than before
+	  - Data and management structures have been reworked to make
+	    for easier reading
+	  - ioctl() calls reworked to reflect new commands
+
 2006-10-19      Richard Hacker (lerich_at_gmx.net)
 	* etherlab_rtw-0.3.3.tar.gz: Released new version
 	* blocks/EtherCAT/EtherCAT.tlc (InitEtherCATDomain): Removed check

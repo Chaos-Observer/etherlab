@@ -45,7 +45,6 @@
 /* Local headers */
 #include "rt_main.h"
 #include "rt_kernel.h"
-#include "fio_ioctl.h"
 
 /*#########################################################################*
  * Here the file operations for the RTW Process IO are defined.
@@ -60,15 +59,15 @@ static struct page *rtp_vma_nopage(struct vm_area_struct *vma,
 {
     unsigned long offset;
     struct page *page = NOPAGE_SIGBUS;
-    struct rt_mdl *rt_mdl = vma->vm_private_data;
+    struct model *model = vma->vm_private_data;
 
     offset = (address - vma->vm_start) + (vma->vm_pgoff << PAGE_SHIFT);
 
     /* Check that buddy did not want to access memory out of range */
-    if (offset >= rt_mdl->rtb_last - rt_mdl->rtb_buf)
+    if (offset >= model->rtb_last - model->rtb_buf)
         return NOPAGE_SIGBUS;
 
-    page = vmalloc_to_page(rt_mdl->rtb_buf + offset);
+    page = vmalloc_to_page(model->rtb_buf + offset);
 
     pr_debug("Nopage fault vma, address = %#lx, offset = %#lx, page = %p\n", 
             address, offset, page);
@@ -91,14 +90,13 @@ static int rtp_mmap(
         struct file *filp,
         struct vm_area_struct *vma
         ) {
-    struct rt_mdl *rt_mdl = filp->private_data;
-
-    if (!rt_mdl->rtb_buf)
-        return -ENODEV;
+    struct model *model = filp->private_data;
 
     vma->vm_ops = &rtp_vm_ops;
     vma->vm_flags |= VM_RESERVED;       /* Pages will not be swapped out */
-    vma->vm_private_data = filp->private_data;
+
+    /* Store model in private data */
+    vma->vm_private_data = model;
 
     return 0;
 }
@@ -108,40 +106,77 @@ static int rtp_open(
         struct file *filp
         ) {
     int err = 0;
-    struct rt_mdl *rt_mdl = 
-        container_of(inode->i_cdev, struct rt_mdl, rtp_dev);
+    size_t buf_len;
+    struct model *model = 
+        container_of(inode->i_cdev, struct model, rtp_dev);
+    const struct rtw_model *rtw_model = model->rtw_model;
 
-    down(&rt_manager.sem);
-    if (test_and_set_bit(RTB_BIT, &rt_mdl->buddy_there)) {
-        err = -EBUSY;
-    } else if (!test_bit(rt_mdl->model_id, &rt_manager.loaded_models) ||
-            test_bit(rt_mdl->model_id, &rt_manager.stopped_models)) {
-        err = -ENODEV;
-        clear_bit(RTB_BIT, &rt_mdl->buddy_there);
-    } else {
-        filp->private_data = rt_mdl;
+    if (down_trylock(&model->buddy_lock)) {
+        return -EBUSY;
     }
-    up(&rt_manager.sem);
+    filp->private_data = model;
 
+    /* Get some memory to store snapshots of the BlockIO vector */
+    model->rtB_cnt = (rtw_model->buffer_time > rtw_model->sample_period)
+        ? rtw_model->buffer_time/rtw_model->sample_period : 1;
+    model->rtB_len = rtw_model->rtB_size + model->task_stats_len;
+    buf_len = model->rtB_cnt * model->rtB_len;
+    model->rtb_buf = vmalloc(buf_len);
+    if (!model->rtb_buf) {
+        printk("Could not vmalloc buffer length %u "
+                "for Process IO\n", buf_len);
+        err = -ENOMEM;
+        goto out_vmalloc;
+    }
+    pr_debug("Allocated BlockIO Buf size %u, addr %p\n", 
+            buf_len, model->rtb_buf);
+
+    model->msg_ptr = model->msg_buf = (char *)__get_free_page(GFP_KERNEL);
+    model->msg_buf_len = PAGE_SIZE;
+    if (!model->msg_ptr) {
+        printk("Could not get free page for message buffer\n");
+        err = -ENOMEM;
+        goto out_get_free_page;
+    }
+
+    /* Setup pointer to the last image in the buffer */
+    model->rtb_last = model->rtb_buf + buf_len;
+    model->rp = model->rtb_buf;
+
+    /* Setting this wp starts the process of taking images
+     * of the model */
+    rt_sem_wait(&model->buf_sem);
+    model->wp = model->rtb_buf;
+    rt_sem_signal(&model->buf_sem);
+
+    set_bit(model->id, &rt_kernel.watched_models);
+    return 0;
+
+    free_page((unsigned long)model->msg_ptr);
+out_get_free_page:
+    vfree(model->rtb_buf);
+out_vmalloc:
+    up(&model->buddy_lock);
     return err;
 }
+
 static int rtp_release(
         struct inode *inode,
         struct file *filp
         ) {
-    struct rt_mdl *rt_mdl = filp->private_data;
+    struct model *model = filp->private_data;
     int err = 0;
 
-    down(&rt_manager.sem);
-    clear_bit(RTB_BIT, &rt_mdl->buddy_there);
-    rt_sem_wait(&rt_mdl->buf_sem);
-    if (rt_mdl->rtb_buf)
-        vfree(rt_mdl->rtb_buf);
-    rt_mdl->rtb_buf = NULL;
-    rt_mdl->wp = NULL;
-    rt_sem_signal(&rt_mdl->buf_sem);
-    up(&rt_manager.sem);
-    wake_up_interruptible(&rt_mdl->data_q);
+    rt_sem_wait(&model->buf_sem);
+    model->wp = NULL;
+    rt_sem_signal(&model->buf_sem);
+
+    vfree(model->rtb_buf);
+    free_page((unsigned long)model->msg_ptr);
+    up(&model->buddy_lock);
+
+    clear_bit(model->id, &rt_kernel.watched_models);
+    wake_up_interruptible( &rt_kernel.event_q);
 
     return err;
 }
@@ -150,77 +185,65 @@ static long rtp_ioctl(
         unsigned int command,
         unsigned long data
         ) {
-    struct rt_mdl *rt_mdl = filp->private_data;
-    struct rtw_model *rtw_model = rt_mdl->rtw_model;
+    struct model *model = filp->private_data;
+    const struct rtw_model *rtw_model = model->rtw_model;
     long rv = 0;
 
-    down(&rt_manager.sem);
     switch (command) {
-        case RTP_CREATE_BLOCKIO_BUF:
+        case GET_MDL_PROPERTIES:
             {
-                unsigned int buf_size;
+                struct mdl_properties properties;
 
-                /* Work out how long the buffer for all BlockIO must be */
-                buf_size = rtw_model->buffer_time > rtw_model->sample_period
-                    ? rtw_model->buffer_time/rtw_model->sample_period : 1;
-                rv = buf_size;  /* User buddy process wants to know how
-                                   many images are taken, not the 
-                                   buffer length */
-                buf_size *= rtw_model->rtB_size;
+                properties.rtB_len   = model->rtB_len;
+                properties.rtB_cnt   = model->rtB_cnt;
+                properties.numst     = rtw_model->numst;
+                properties.rtP_size  = rtw_model->rtP_size;
+                properties.base_rate = rtw_model->sample_period;
+                strcpy(properties.so_path, rtw_model->so_path);
 
-                /* Get some memory */
-                rt_mdl->rtb_buf = vmalloc(buf_size);
-                if (!rt_mdl->rtb_buf) {
-                    printk("Could not vmalloc buffer length %ul "
-                            "for Process IO\n", buf_size);
-                    rv = -ENOMEM;
-                    break;
+                rv = copy_to_user((void *)data, &properties, 
+                        sizeof(properties));
+                break;
+            }
+
+        case GET_WRITE_PTRS:
+            {
+                struct data_p data_p;
+
+                /* Get the current write pointer. All data between the 
+                 * current read and write pointer is valid. 
+                 * In case the buffer overflowed, return -ENOSPC */
+                if (model->wp) {
+                    /* Get pointer. If write pointer has wrapped, return 
+                     * end of data area. */
+                    data_p.wp = model->wp >= model->rp 
+                        ? model->wp - model->rtb_buf
+                        : (model->rtb_last - model->rtb_buf);
+
+                    /* Return time slice index */
+                    data_p.wp /= model->rtB_len;
+                } else {
+                    /* You were sleeping !! */
+                    data_p.wp = -ENOSPC;
                 }
-                pr_debug("Allocated BlockIO Buf size %u, addr %p\n", 
-                        buf_size, rt_mdl->rtb_buf);
 
-                rt_sem_wait(&rt_mdl->buf_sem);
+                data_p.msg = model->msg_ptr - model->msg_buf;
 
-                /* Setup pointer to the last image in the buffer */
-                rt_mdl->rtb_last = rt_mdl->rtb_buf + buf_size;
+                rv = copy_to_user((void *)data, &data_p, sizeof(data_p));
 
-                /* Setting this wp starts the process of taking images
-                 * of the model */
-                rt_mdl->wp = rt_mdl->rtb_buf;
-                    
-                rt_sem_signal(&rt_mdl->buf_sem);
+                break;
             }
-            break;
 
-        case RTP_GET_WP:
-            /* Get the current write pointer. All data between the current read
-             * and write pointer is valid. 
-             * In case the buffer overflowed, return -ENOSPC */
-            if (rt_mdl->wp) {
-                /* Get pointer. If write pointer has wrapped, return end of
-                 * data area. */
-                rv = rt_mdl->wp >= rt_mdl->rp 
-                    ? rt_mdl->wp - rt_mdl->rtb_buf
-                    : (rt_mdl->rtb_last - rt_mdl->rtb_buf);
-
-                /* Return time slice index */
-                rv /= rtw_model->rtB_size;
-            } else {
-                /* You were sleeping !! */
-                rv = -ENOSPC;
-            }
-            break;
-
-        case RTP_SET_RP:
+        case SET_BLOCKIO_RP:
             /* Set the buddy process' current read pointer. All data up to
              * this pointer has been processed, and the space can be
              * overwritten.
              * No errors */
 
             /* Convert time slice to offset in buffer */
-            data *= rtw_model->rtB_size;
+            data *= model->rtB_len;
 
-            if (data >= rt_mdl->rtb_last - rt_mdl->rtb_buf) {
+            if (data >= model->rtb_last - model->rtb_buf) {
                 /* Ideally, the buddy does not know how long the buffer is
                  * (he could know using RTP_GET_SIZE and the size of one
                  * BlockIO), and just wants to read the next segment.
@@ -229,208 +252,76 @@ static long rtp_ioctl(
                  * the buffer's end */
                 data = 0;
             }
-            rt_mdl->rp = rt_mdl->rtb_buf + data;
+            model->rp = model->rtb_buf + data;
 
-            /* Return time slice of actual read pointer. */
-            rv = data/rtw_model->rtB_size;
+            /* Since the read pointer may have wrapped, return time slice of 
+             * the real read pointer. */
+            rv = data/model->rtB_len;
             break;
 
-        case RTP_RESET_RP:
+        case RESET_BLOCKIO_RP:
             /* Reset the buddy processes read pointer to the actual write
              * pointer. This is important, because logging stops when there
              * is a collision, i.e. the buddy process is dead 
              * Return the current write pointer
              * No Errors */
-            rt_mdl->rp = rt_mdl->wp = rt_mdl->rtb_buf;
+            model->rp = model->wp = model->rtb_buf;
             rv = 0;
             break;
             
-        case RTP_BLOCKIO_SIZE:
-            rv = rtw_model->rtB_size;
-            break;
+        case CHECK_VER_STR:
+            {
+                size_t usr_ver_str_len, ver_str_len;
+                char *user_ver_str;
 
-        default:
-            pr_info("ioctl() number %u unknown\n", command);
-            rv = -ENOTTY;
-            break;
-    }
-    up(&rt_manager.sem);
+                pr_debug("Checking ver str\n");
 
-    return rv;
-}
-static unsigned int rtp_poll(
-        struct file *filp,
-        poll_table *wait
-        ) {
-    struct rt_mdl *rt_mdl = filp->private_data;
-    unsigned int mask = 0;
+                /* First check whether MAX_MODEL_NAME_LEN is long enough! */
+                ver_str_len = strlen(rtw_model->modelVersion) + 1;
 
-    /* Wait for data */
-    poll_wait(filp, &rt_mdl->data_q, wait);
+                /* Find out how long the buddy's version string is */
+                if ( !(usr_ver_str_len = strnlen_user((void *)data, 
+                            ver_str_len))) {
+                    pr_info("Internal error: Could not get version string "
+                            "length from user space\n");
+                    rv = -EFAULT;
+                    break;
+                }
+                if (usr_ver_str_len != ver_str_len) {
+                    /* The lengths don't match, so the versions can't be
+                     * the same */
+                    pr_info("Version string lengths do not match usr: "
+                            "%i, kernel %i\n",
+                            usr_ver_str_len, ver_str_len);
+                    rv = -EACCES;
+                    break;
+                }
+                if (!(user_ver_str = kmalloc(ver_str_len, GFP_KERNEL))) {
+                    pr_debug("no memory\n");
+                    rv = -ENOMEM;
+                    break;
+                }
 
-    /* File has data when read and write pointers are different */
-    if (rt_mdl->wp != rt_mdl->rp) {
-        mask = POLLIN | POLLRDNORM;
-    }
+                /* Make a copy of it */
+                if ((rv = copy_from_user(user_ver_str, (void *)data, 
+                                ver_str_len))) {
+                    pr_info("Failed to copy %li bytes from user\n", rv);
+                    rv = -ENOMEM;
+                } else if (strcmp(user_ver_str, rtw_model->modelVersion)) {
+                    pr_info("Version check failed: user version %s, "
+                            "model version %s\n", 
+                            user_ver_str, rtw_model->modelVersion);
+                    rv = -EACCES;
+                } else {
+                    pr_debug("Version check worked\n");
+                    model->version_checked = 1;
+                }
+                kfree(user_ver_str);
 
-    return mask;
-}
-/* This is the Linux Kernel side helper for the poll function, because 
- * wake_up() cannot be called from inside the rt-task 
- */
-void rtp_data_avail_handler(void)
-{
-    unsigned int model_id;
-
-    while ((model_id = ffs(rt_manager.srq_mask))) {
-        model_id--;
-        clear_bit(model_id, &rt_manager.srq_mask);
-        //pr_debug("TID %u has data for buddy\n", model_id);
-
-        //if (waitqueue_active(&rt_manager.rt_mdl[model_id].data_q))
-            wake_up_interruptible(&rt_manager.rt_mdl[model_id]->data_q);
-    }
-}
-
-static struct file_operations rtp_fops = {
-    .unlocked_ioctl =    rtp_ioctl,
-    .mmap =     rtp_mmap,
-    .open =     rtp_open,
-    .poll =     rtp_poll,
-    .release =  rtp_release,
-    .owner =    THIS_MODULE,
-};
-
-/* This makes a snapshot of the current process and places this slice
- * in rtb_buf after the last one */
-void rtp_make_photo(struct rt_mdl *rt_mdl)
-{
-    struct rtw_model *rtw_model = rt_mdl->rtw_model;
-
-    rt_sem_wait(&rt_mdl->buf_sem);
-
-    /* Only take a photo when wp is valid. To stop taking photos (e.g.
-     * when not initialised or when the buffer is full), set wp to NULL */
-    if (rt_mdl->wp) {
-        memcpy(rt_mdl->wp, rtw_model->mdl_rtB, rtw_model->rtB_size);
-
-        /* Update write pointer, wrapping if necessary */
-        rt_mdl->wp += rtw_model->rtB_size;
-        if (rt_mdl->wp == rt_mdl->rtb_last) {
-            rt_mdl->wp = rt_mdl->rtb_buf;
-        }
-
-        /* Stop if the write pointer caught up to the read pointer */
-        if (rt_mdl->wp == rt_mdl->rp) {
-            rt_mdl->wp = NULL;
-            pr_info("rtp_buf full\n");
-        }
-    }
-    rt_sem_signal(&rt_mdl->buf_sem);
-
-    /* Send a signal that data is available */
-    set_bit(rt_mdl->model_id, &rt_manager.srq_mask);
-    rt_pend_linux_srq(rt_manager.srq);
-}
-
-
-/*#########################################################################*
- * Here the file operations to control the RTW Process are defined.
- * The buddy needs this to be able to get various information from the 
- * Real-Time Process
- *#########################################################################*/
-
-
-static int ctl_open(
-        struct inode *inode,
-        struct file *filp
-        ) {
-    int err = 0;
-    struct rt_mdl *rt_mdl = 
-        container_of(inode->i_cdev, struct rt_mdl, ctl_dev);
-
-    down(&rt_manager.sem);
-    /* Only one is allowed */
-    if (test_and_set_bit(CTL_BIT, &rt_mdl->buddy_there)) {
-        pr_info("Another process has already aquired the Control Channel\n");
-        err = -EBUSY;
-    } else if (!test_bit(rt_mdl->model_id, &rt_manager.loaded_models) ||
-            test_bit(rt_mdl->model_id, &rt_manager.stopped_models)) {
-        clear_bit(CTL_BIT, &rt_mdl->buddy_there);
-        err = -ENODEV;
-    } else {
-        filp->private_data = rt_mdl;
-    }
-    up(&rt_manager.sem);
-
-    return err;
-}
-static int ctl_release(
-        struct inode *inode,
-        struct file *filp
-        ) {
-    int err = 0;
-    struct rt_mdl *rt_mdl = filp->private_data;
-
-    clear_bit(CTL_BIT, &rt_mdl->buddy_there);
-    wake_up_interruptible(&rt_mdl->data_q);
-
-    return err;
-}
-static long ctl_ioctl(
-        struct file *filp,
-        unsigned int command,
-        unsigned long data
-        ) {
-    long rv = 0;
-    struct rt_mdl *rt_mdl = filp->private_data;
-    struct rtw_model *rtw_model = rt_mdl->rtw_model;
-
-    down(&rt_manager.sem);
-    switch (command) {
-        case CTL_NEW_PARAM:
-
-            /* Steal lock if it has not yet been used */
-            rt_sem_wait(&rt_mdl->io_rtP_sem);
-
-            /* Put parameters into a pending area. RT task
-             * will pick it up from there */
-            if (copy_from_user(rtw_model->pend_rtP, (void *)data, 
-                    rtw_model->rtP_size)) {
-                rv = -EFAULT;
-            } else {
-                rtw_model->new_rtP = 1;
-            }
-
-            /* Signal RT task of new parameters */
-            rt_sem_signal(&rt_mdl->io_rtP_sem);
-
-            rt_printk("Sent rt process new parameter set\n");
-            break;
-
-        case CTL_IP_FORCE:
-            /* Input forcing vector was received */
-            rt_printk("IP_FORCE not yet implemented\n");
-            rv = -EINVAL;
-            break;
-
-        case CTL_OP_FORCE:
-            /* Output forcing vector was received */
-            rt_printk("IP_FORCE not yet implemented\n");
-            rv = -EINVAL;
-            break;
-
-        case CTL_VER_STR:
-            /* Buddy process wants to get out version string */
-            rv = strlen(rtw_model->modelVersion);
-            if (copy_to_user((void *)data, rtw_model->modelVersion, rv)) {
-                rv = -EFAULT;
                 break;
             }
-            rt_printk("Sent version string %s\n", rtw_model->modelVersion);
-            break;
 
-        case CTL_GET_PARAM:
+        case GET_PARAM:
             /* Buddy process wants to get the complete parameter
              * set */
             if (copy_to_user((void *)data, rtw_model->mdl_rtP,
@@ -438,101 +329,256 @@ static long ctl_ioctl(
                 rv = -EFAULT;
                 break;
             }
-            rt_printk("Sent parameters to buddy\n");
+            pr_debug("Sent parameters to buddy\n");
             break;
 
-        case CTL_GET_SAMPLEPERIOD:
-            /* Buddy process wants to get the complete parameter
-             * set */
-            rv = rtw_model->sample_period;
-            rt_printk("Sent base rate (%lu) to buddy\n", 
-                    rtw_model->sample_period);
+        case NEW_PARAM:
+            /* Copy a completely new parameter list from user space to 
+             * the pending param space */
+
+            /* Reject if the model has no parameter set */
+            if (!rtw_model->rtP_size) {
+                rv = -ENODEV;
+                break;
+            }
+
+            if (!model->version_checked) {
+                pr_info("Model version numbers not verified.\n");
+                rv = -EACCES;
+                break;
+            }
+
+            /* Steal lock if it has not yet been used */
+            if (model->new_rtP) {
+                rt_sem_wait(&model->rtP_sem);
+                model->new_rtP = 0;
+                rt_sem_signal(&model->rtP_sem);
+            }
+
+            /* Put parameters into a pending area. RT task
+             * will pick it up from there */
+            if (copy_from_user(rtw_model->pend_rtP, (void *)data, 
+                    rtw_model->rtP_size)) {
+                rv = -EFAULT;
+            } else {
+                model->new_rtP = 1;
+            }
+
+            pr_debug("Sent rt process new parameter set\n");
             break;
 
-        case CTL_SET_PARAM:
+        case CHANGE_PARAM:
             /* Only a part of parameter set to be changed */
             {
                 struct param_change p;
                 struct change_ptr change_ptr;
                 int i;
 
-                /* Reject if there is no parameter set */
+                /* Reject if the model has no parameter set */
                 if (!rtw_model->rtP_size) {
                     rv = -ENODEV;
                     break;
                 }
 
+                if (!model->version_checked) {
+                    pr_info("Model version numbers not verified.\n");
+                    rv = -EACCES;
+                    break;
+                }
+
+                /* Check if access to user space is ok. */
                 if (copy_from_user(&p, (void *)data, sizeof(struct param_change))
                         || !access_ok(VERIFY_READ, p.rtP, rtw_model->rtP_size)
-                        || !access_ok(VERIFY_READ, p.changes, 
-                                p.count*sizeof(struct change_ptr))) {
+                        || (p.count && !access_ok(VERIFY_READ, p.changes, 
+                                p.count*sizeof(struct change_ptr)))
+                        ) {
                     rv = -EFAULT;
                     break;
                 }
 
-                rt_sem_wait(&rt_mdl->io_rtP_sem);
+                /* If there was a new parameter set pending, delete the
+                 * request and set it later. We then have access and don't
+                 * have to keep the real_time task waiting */
+                if (model->new_rtP) {
+                    rt_sem_wait(&model->rtP_sem);
+                    model->new_rtP = 0;
+                    rt_sem_signal(&model->rtP_sem);
+                }
 
+                /* Copy the immediate change */
+                if (p.pos + p.len > rtw_model->rtP_size) {
+                    rv = -ERANGE;
+                    break;
+                }
+                __copy_from_user(rtw_model->pend_rtP + p.pos,
+                        p.rtP + p.pos, p.len);
+
+                pr_debug("Setting %i bytes at offset %i for parameters\n", 
+                        p.len, p.pos);
+
+                /* Now go through the change list, if one exists */
                 for( i = 0; i < p.count; i++) {
                     __copy_from_user(&change_ptr, &p.changes[i],
                             sizeof(struct change_ptr));
+                    if (change_ptr.pos + change_ptr.len 
+                            > rtw_model->rtP_size) {
+                        memcpy(rtw_model->pend_rtP, rtw_model->mdl_rtP,
+                                rtw_model->rtP_size);
+                        rv = -ERANGE;
+                        break;
+                    }
                     __copy_from_user(
                             rtw_model->pend_rtP + change_ptr.pos, 
                             p.rtP + change_ptr.pos,
                             change_ptr.len);
-                    rt_printk("Setting %i bytes at offset %i for parameters\n", 
+                    pr_debug("Setting %i bytes at offset %i for parameters\n", 
                             change_ptr.len, change_ptr.pos);
                 }
 
-                rtw_model->new_rtP = 1;
-                rt_sem_signal(&rt_mdl->io_rtP_sem);
+                /* Now tell the real time process of new parameter set */
+                model->new_rtP = 1;
             }
 
             break;
 
-        case CTL_GET_PARAM_SIZE:
-            rv = rtw_model->rtP_size;
-            break;
-
-        case CTL_GET_SO_PATH:
-            rv = strlen(rtw_model->so_path);
-            if (copy_to_user((void *)data, rtw_model->so_path, rv)){
-                rv = -EFAULT;
-                break;
-            };
-            break;
-
         default:
+            pr_info("ioctl() number %u unknown\n", command);
             rv = -ENOTTY;
             break;
     }
-    up(&rt_manager.sem);
 
     return rv;
 }
-ssize_t ctl_read(
+static unsigned int rtp_poll(
         struct file *filp,
-        char __user *dest,
-        size_t buflen,
-        loff_t *loff
+        poll_table *wait
         ) {
-    size_t size = 0;
-    return size;
+    struct model *model = filp->private_data;
+    unsigned int mask = 0;
+
+    /* Wait for data */
+    poll_wait(filp, &model->waitq, wait);
+
+    /* File has data when read and write pointers are different or a 
+     * new message is waiting */
+    if (model->wp != model->rp || model->msg_ptr != model->msg_buf) {
+        mask = POLLIN | POLLRDNORM;
+    }
+
+    return mask;
 }
-unsigned int ctl_poll(
-        struct file *filp,
-        struct poll_table_struct *pstruct
-        ) {
-    return 0;
+static struct file_operations rtp_fops = {
+    .unlocked_ioctl =    rtp_ioctl,
+//    .read =     rtp_read,
+    .mmap =     rtp_mmap,
+    .open =     rtp_open,
+    .poll =     rtp_poll,
+    .release =  rtp_release,
+    .owner =    THIS_MODULE,
+};
+
+/* This is the Linux Kernel side helper for the poll function, because 
+ * wake_up() cannot be called from inside the rt-task 
+ */
+void rtp_data_avail_handler(void)
+{
+    unsigned int model_id;
+
+    down(&rt_kernel.lock);
+    while ((model_id = ffs(rt_kernel.data_mask))) {
+        model_id--;
+        clear_bit(model_id, &rt_kernel.data_mask);
+        //pr_debug("TID %u has data for buddy\n", model_id);
+
+        wake_up_interruptible( &rt_kernel.model[model_id]->waitq);
+    }
+    up(&rt_kernel.lock);
 }
 
-struct file_operations ctl_fops = {
-    .unlocked_ioctl =     ctl_ioctl,
-    .owner =     THIS_MODULE,
-    .open =      ctl_open,
-    .release =   ctl_release,
-    .read =      ctl_read,
-    .poll =      ctl_poll,
-};
+/* This makes a snapshot of the current process and places this slice
+ * in rtb_buf after the last one */
+void rtp_make_photo(struct model *model)
+{
+    const struct rtw_model *rtw_model = model->rtw_model;
+
+    rt_sem_wait(&model->buf_sem);
+
+    /* Only take a photo when wp is valid. To stop taking photos (e.g.
+     * when not initialised or when the buffer is full), set wp to NULL */
+    if (model->wp) {
+        memcpy(model->wp, rtw_model->mdl_rtB, rtw_model->rtB_size);
+        memcpy(model->wp + rtw_model->rtB_size, model->task_stats,
+                model->task_stats_len);
+
+        /* Update write pointer, wrapping if necessary */
+        model->wp += model->rtB_len;
+        if (model->wp == model->rtb_last) {
+            model->wp = model->rtb_buf;
+        }
+
+        /* Stop if the write pointer caught up to the read pointer */
+        if (model->wp == model->rp) {
+            model->wp = NULL;
+            pr_info("rtp_buf full\n");
+        }
+    }
+    rt_sem_signal(&model->buf_sem);
+
+    /* Send a signal that data is available */
+    set_bit(model->id, &rt_kernel.data_mask);
+}
+
+
+/*#########################################################################*
+ * Here is general management code to initialise a new Real-Time Workshop
+ * model that is inserted into the Kernel.
+ *#########################################################################*/
+
+/* Free file handles of a specific RTW Model */
+void rtp_fio_clear_mdl(struct model *model)
+{
+    pr_debug("Tearing down FIO for model_id %u\n", model->id);
+
+    clear_bit(model->id, &rt_kernel.data_mask);
+    clear_bit(model->id, &rt_kernel.watched_models);
+    cdev_del(&model->rtp_dev);
+}
+
+/** 
+ * Here all the file operations for the communication with the buddy 
+ * are initialised for the new RTW Model */
+int rtp_fio_init_mdl(struct model *model, struct module *owner)
+{
+    dev_t devno;
+    int major = MAJOR(rt_kernel.dev), minor = MINOR(rt_kernel.dev);
+    int err = -1;
+
+    pr_debug("Initialising FIO for model_id %u\n", model->id);
+
+    rt_sem_init(&model->buf_sem,1); /* Lock the BlockIO buffer semaphore */
+    init_MUTEX(&model->buddy_lock);
+    init_waitqueue_head(&model->waitq);
+    model->wp = NULL;
+
+    /* Character device for BlockIO stream */
+    cdev_init(&model->rtp_dev, &rtp_fops);
+    model->rtp_dev.owner = owner;
+    devno = MKDEV(major, minor + model->id + 1);
+    if ((err = cdev_add(&model->rtp_dev, devno, 1))) {
+        printk("Could not add Process IO FOPS to cdev\n");
+        goto out_add_rtp;
+    }
+    pr_debug("Added char dev for BlockIO, minor %u\n", MINOR(devno));
+
+    /* Wake the buddy to tell that there is a new process */
+    wake_up_interruptible(&rt_kernel.event_q);
+
+    return 0;
+
+    cdev_del(&model->rtp_dev);
+out_add_rtp:
+    return err;
+}
 
 
 /*#########################################################################*
@@ -545,7 +591,7 @@ static int rtp_main_open(
         ) {
     int err = 0;
 
-    if (down_trylock(&rt_manager.file_lock)) {
+    if (down_trylock(&rt_kernel.file_lock)) {
         err = -EBUSY;
     }
 
@@ -556,7 +602,8 @@ static int rtp_main_release(
         struct file *filp
         ) {
 
-    up(&rt_manager.file_lock);
+    rt_kernel.watched_models = 0;
+    up(&rt_kernel.file_lock);
     return 0;
 }
 static unsigned int rtp_main_poll(
@@ -566,13 +613,10 @@ static unsigned int rtp_main_poll(
     unsigned int mask = 0;
 
     /* Wait for data */
-    poll_wait(filp, &rt_manager.event_q, wait);
+    poll_wait(filp, &rt_kernel.event_q, wait);
 
     /* Check whether there was a change in the states of a Real-Time Process */
-    if (rt_manager.notify_buddy) {
-        down(&rt_manager.sem);
-        rt_manager.notify_buddy = 0;
-        up(&rt_manager.sem);
+    if (rt_kernel.loaded_models != rt_kernel.watched_models) {
         mask = POLLIN | POLLRDNORM;
     }
 
@@ -585,37 +629,53 @@ static long rtp_main_ioctl(
         unsigned long data
         ) {
     long rv = 0;
-    pr_debug("ioctl command %#x, data %lu\n", command, data);
-    down(&rt_manager.sem);
+
+    pr_debug("rt_kernel ioctl command %#x, data %lu\n", command, data);
+
+    down(&rt_kernel.lock);
     switch (command) {
-        case RTM_GET_ACTIVE_MODELS:
-            rv = put_user(rt_manager.loaded_models ^ rt_manager.stopped_models, 
+        case RTK_SET_MODEL_WATCHED:
+            if (data < MAX_MODELS
+                    && test_bit(data, &rt_kernel.loaded_models)) {
+                pr_debug("Marking model %lu as watched\n", data);
+                set_bit(data, &rt_kernel.watched_models);
+            } else {
+                pr_debug("Could not mark model %lu as watched\n", data);
+                rv = -ENODEV;
+            }
+            break;
+
+        case RTK_GET_ACTIVE_MODELS:
+            rv = put_user(rt_kernel.loaded_models, (uint32_t *)data);
+            break;
+
+        case RTK_GET_NEW_MODELS:
+            rv = put_user(rt_kernel.loaded_models ^ rt_kernel.watched_models, 
                     (uint32_t *)data);
             break;
 
-        case RTM_MODEL_NAME:
+        case RTK_MODEL_NAME:
             {
-                struct rtp_model rtp_model;
+                struct rtp_model_name *rtp_model_name = 
+                    (struct rtp_model_name *)data;
+                typeof(rtp_model_name->number) mdl_number;
                 const char *name;
-                rv = copy_from_user(&rtp_model, (void *)data,
-                        sizeof(rtp_model.number));
-                if (rv)
+
+                if ((rv = get_user(mdl_number, &rtp_model_name->number)))
                     break;
-                if (rtp_model.number >= MAX_MODELS || 
-                        !test_bit(rtp_model.number, &rt_manager.loaded_models)
-                        ) {
+                if (mdl_number >= MAX_MODELS || 
+                        !test_bit(mdl_number, &rt_kernel.loaded_models)) {
                     pr_debug("Requested model number %i does not exist\n", 
-                            rtp_model.number);
+                            mdl_number);
                     rv = -ENODEV;
                     break;
                 }
 
-                name = rt_manager.rt_mdl[rtp_model.number]->rtw_model->modelName;
+                name = rt_kernel.model[mdl_number]->rtw_model->modelName;
 
                 // Model name length was checked to be less than 
                 // MAX_MODEL_NAME_LEN when it was registered
-                rv = copy_to_user(&(((struct rtp_model *)data)->name), 
-                    name, strlen(name)+1);
+                rv = copy_to_user(rtp_model_name->name, name, strlen(name)+1);
                 break;
             }
 
@@ -623,12 +683,12 @@ static long rtp_main_ioctl(
             rv = -ENOTTY;
             break;
     }
-    up(&rt_manager.sem);
+    up(&rt_kernel.lock);
 
     return rv;
 }
 
-static struct file_operations main_fops = {
+static struct file_operations kernel_fops = {
     .unlocked_ioctl = rtp_main_ioctl,
     .poll           = rtp_main_poll,
     .open           = rtp_main_open,
@@ -636,67 +696,6 @@ static struct file_operations main_fops = {
     .owner          = THIS_MODULE,
 };
 
-
-/*#########################################################################*
- * Here is general management code to initialise a new Real-Time Workshop
- * model that is inserted into the Kernel.
- *#########################################################################*/
-
-/* Free file handles of a specific RTW Model */
-void rtp_fio_clear_mdl(struct rt_mdl *rt_mdl)
-{
-
-    pr_debug("Tearing down FIO for model_id %u\n", rt_mdl->model_id);
-
-    cdev_del(&rt_mdl->ctl_dev);
-    cdev_del(&rt_mdl->rtp_dev);
-}
-
-/* Create file handles to insert another RTW Model into the Real-Time Kernel */
-int rtp_fio_init_mdl( struct rt_mdl *rt_mdl, struct rtw_model *rtw_model)
-{
-    dev_t devno;
-    int major = MAJOR(rt_manager.dev), minor = MINOR(rt_manager.dev);
-    int err = -1;
-
-    pr_debug("Initialising FIO for model_id %u, model %s\n", 
-            rt_mdl->model_id, rtw_model->modelName);
-
-    /* Normal initialisation of semaphores */
-    init_waitqueue_head(&rt_mdl->data_q);
-    init_waitqueue_head(&rt_mdl->ctl_q);
-    rt_sem_init(&rt_mdl->io_rtP_sem,1);
-    rt_sem_init(&rt_mdl->buf_sem,1); /* Lock the BlockIO buffer semaphore */
-    rt_mdl->wp = NULL;
-    rt_mdl->buddy_there = 0;
-
-    /* Character device to control process */
-    cdev_init(&rt_mdl->ctl_dev, &ctl_fops);
-    rt_mdl->ctl_dev.owner = THIS_MODULE;
-    devno = MKDEV(major, minor + 2*rt_mdl->model_id + 1);
-    if ((err = cdev_add(&rt_mdl->ctl_dev, devno, 1))) {
-        printk("Could not add Control FOPS to cdev\n");
-        goto out_add_ctl;
-    }
-    pr_debug("Added char dev for Controls, minor %u\n", MINOR(devno));
-
-    /* Character device for BlockIO stream */
-    cdev_init(&rt_mdl->rtp_dev, &rtp_fops);
-    rt_mdl->rtp_dev.owner = THIS_MODULE;
-    devno = MKDEV(major, minor + 2*rt_mdl->model_id + 2);
-    if ((err = cdev_add(&rt_mdl->rtp_dev, devno, 1))) {
-        printk("Could not add Process IO FOPS to cdev\n");
-        goto out_add_rtp;
-    }
-    pr_debug("Added char dev for BlockIO, minor %u\n", MINOR(devno));
-
-    return 0;
-
-out_add_rtp:
-    cdev_del(&rt_mdl->ctl_dev);
-out_add_ctl:
-    return err;
-}
 
 /*#########################################################################*
  * Here is general management code to initialise file handles for the 
@@ -708,55 +707,45 @@ void rtp_fio_clear(void)
 {
     pr_debug("Tearing down FIO for rt_kernel\n");
 
-    if(rt_manager.srq > 0)
-        rt_free_srq(rt_manager.srq);
-
-    cdev_del(&rt_manager.main_ctrl);
-    unregister_chrdev_region(rt_manager.dev,2*MAX_MODELS+1);
+    cdev_del(&rt_kernel.buddy_dev);
+    unregister_chrdev_region(rt_kernel.dev, rt_kernel.chrdev_cnt);
 }
 
-/* Set up the Real-Time Kernel file handles */
+/* Set up the Real-Time Kernel file handles. This is called once when
+ * the rt_kernel is loaded, and opens up the char device for 
+ * communication between buddy and rt_kernel */
 int rtp_fio_init(void)
 {
     int err = -1;
 
     pr_debug("Initialising FIO for rt_kernel\n");
 
-    /* Create character devices for this process. Each RT model needs 2
-     * char devices, and rt_manager needs 1 */
-    if ((err = alloc_chrdev_region(&rt_manager.dev, 0, 
-                    2*MAX_MODELS+1, "rt_kernel"))) {
+    rt_kernel.watched_models = 0;
+
+    /* Create character devices for this process. Each RT model needs 1
+     * char device, and rt_kernel needs 1 */
+    rt_kernel.chrdev_cnt = MAX_MODELS+1;
+    if ((err = alloc_chrdev_region(&rt_kernel.dev, 0, 
+                    rt_kernel.chrdev_cnt, "rt_kernel"))) {
         printk("Could not allocate character device\n");
         goto out_chrdev;
     }
     pr_debug("Reserved char dev for rt_kernel, major %u, minor start %u\n",
-            MAJOR(rt_manager.dev), MINOR(rt_manager.dev));
+            MAJOR(rt_kernel.dev), MINOR(rt_kernel.dev));
 
-    cdev_init(&rt_manager.main_ctrl, &main_fops);
-    rt_manager.main_ctrl.owner = THIS_MODULE;
-    if ((err = cdev_add(&rt_manager.main_ctrl, rt_manager.dev, 1))) {
+    cdev_init(&rt_kernel.buddy_dev, &kernel_fops);
+    rt_kernel.buddy_dev.owner = THIS_MODULE;
+    if ((err = cdev_add(&rt_kernel.buddy_dev, rt_kernel.dev, 1))) {
         printk("Could not add Process IO FOPS to cdev\n");
         goto out_add_rtp;
     }
     pr_debug("Started char dev for rt_kernel\n");
 
-    /* Get a service request handler. This is the only way to call linux 
-     * kernel functions reliably from within an RTAI thread */
-    if ((rt_manager.srq = 
-                rt_request_srq(0, rtp_data_avail_handler, NULL)) < 0) {
-        printk("Error: could not get a linux service request handler\n");
-        err = rt_manager.srq;
-        goto out_req_srq;
-    }
-
-
     return 0;
 
-    rt_free_srq(rt_manager.srq);
-out_req_srq:
-    cdev_del(&rt_manager.main_ctrl);
+    cdev_del(&rt_kernel.buddy_dev);
 out_add_rtp:
-    unregister_chrdev_region(rt_manager.dev,2*MAX_MODELS+1);
+    unregister_chrdev_region(rt_kernel.dev, rt_kernel.chrdev_cnt);
 out_chrdev:
     return err;
 }

@@ -1,17 +1,11 @@
-* Make multitasking available
 * Implement Data input stream
 * use kmalloc() for process and parameter io.
 * make Virtual block inputs and outputs visible
 * Check that EL5001 works with all possibilities
 * Activate meta-tags
 * make something to store permanent data
-* what happens when a model is unloaded while buddy is sleeping?
-  Suspect that unloading will wait forever, at least until buddy wakes up!
-  Check rt_module.c:free_rtw_model()
-  --- No, it crashes quite neatly ;-)
-  Have a major race condition. When the buddy goes to sleep, the model
-  get unloaded anyway (there is still a problem: removing a mdl hangs
-  forever when the buffer has not yet overflowed). Due to the fact that
-  the priv_data of the file descriptors point directly to the rt_mdl, you
-  get a oops because it is not there any more!
 * Make test thread in rt_module.c a command line switch
+* Implement raise/catch
+* Implement printf()
+* Implement EtherCAT Master Stats block
+* Implement scaling and filter in bk1120_in

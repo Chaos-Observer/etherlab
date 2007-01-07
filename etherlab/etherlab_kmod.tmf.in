@@ -370,7 +370,6 @@ Makefile: $(MAKEFILE)
 $(MODEL_OBJ): $(OBJS) $(SHARED_LIB) $(LIBS) $(MODELREF_LINK_LIBS)
 	$(ld) $(LDFLAGS) -r -o $@ $(LINK_OBJS) $(MODELREF_LINK_LIBS) \
 		$(SHARED_LIB) $(LIBS)
-#		$(SHARED_LIB) $(LIBS) -L.. -lecrt_support
 	@echo "### Created $@"
 
 # Copy $(RTAI_MOD_SRC) to local dir. KBuild needs it there

@@ -19,16 +19,14 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %function BlockTypeSetup( block, system ) void
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  %<InitEtherCAT(block, system)>
+  %<InitEtherCAT()>
 %endfunction
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %function BlockInstanceSetup( block, system ) void
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  %assign MasterIdx = InitEtherCATMaster(block, system, MasterId)
-  %assign DomainIdx = InitEtherCATDomain(block, system, MasterIdx)
-  %<InitEtherCATSlave( block, system, MasterIdx, DomainIdx, SlaveAddr)>
+  %<InitEtherCATTask(block, system)>
 %endfunction
 
 
@@ -40,8 +38,8 @@
    * Registering analog output with EtherCAT Driver
    */
   %foreach sigIdx = Width
-    %<RegisterEtherCATSlave(block, system, "%<Output_PDO>%<sigIdx+1>", \
-        LibBlockPWork(DA_Word,"","",sigIdx))>
+    %<RegisterEtherCATSlave(block, "%<Output_PDO>%<sigIdx+1>", \
+        MasterId, SlaveAddr, LibBlockPWork(DA_Word,"","",sigIdx))>
   %endforeach
 %endfunction
 

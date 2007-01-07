@@ -17,16 +17,14 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %function BlockTypeSetup( block, system ) void
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  %<InitEtherCAT(block, system)>
+  %<InitEtherCAT()>
 %endfunction
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %function BlockInstanceSetup( block, system ) void
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  %assign MasterIdx = InitEtherCATMaster(block, system, MasterId)
-  %assign DomainIdx = InitEtherCATDomain(block, system, MasterIdx)
-  %<InitEtherCATSlave( block, system, MasterIdx, DomainIdx, SlaveAddr)>
+  %<InitEtherCATTask(block, system)>
 %endfunction
 
 
@@ -35,15 +33,14 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   /* %<Type> Block: %<Name> 
-   * Registering analog input with EtherCAT Driver
+   * Registering counter input with EtherCAT Driver
    */
-  %<RegisterEtherCATSlave(block, system, "Beckhoff_EL5001_Value", \
-      LibBlockPWork(SSI_Long,"","",0))>
+  %<RegisterEtherCATSlave(block, "Beckhoff_EL5001_Value", \
+      MasterId, SlaveAddr, LibBlockPWork(SSI_Long,"","",0))>
   %if StatusOp
-    %<RegisterEtherCATSlave(block, system, "Beckhoff_EL5001_Status", \
-        LibBlockPWork(StatusByte,"","",0))>
+    %<RegisterEtherCATSlave(block, "Beckhoff_EL5001_Status", \
+      MasterId, SlaveAddr, LibBlockPWork(StatusByte,"","",0))>
   %endif
-  %<LibBlockPWork(SlavePtr,"","",0)> = %<system.EtherCAT.SlaveStruct>;
 
   /* %<Type> Block: %<Name> 
    * Configure SSI Slave:
@@ -57,36 +54,15 @@
    *    DataLength=%<DataLength>
    *    InhibitTime=%<InhibitTime>
    */
-    if (!%<LibGetRTModelErrorStatus()> && (
-           ecrt_slave_conf_sdo8(
-           (ec_slave_t*)%<LibBlockPWork(SlavePtr,"","",0)>,\
-           0x4061,1,%<FrameError>)
-        || ecrt_slave_conf_sdo8(
-           (ec_slave_t*)%<LibBlockPWork(SlavePtr,"","",0)>,\
-           0x4061,2,%<PowerFail>)
-        || ecrt_slave_conf_sdo8(
-           (ec_slave_t*)%<LibBlockPWork(SlavePtr,"","",0)>,\
-           0x4061,3,%<EnableInhibit>)
-        || ecrt_slave_conf_sdo8(
-           (ec_slave_t*)%<LibBlockPWork(SlavePtr,"","",0)>,\
-           0x4066,0,%<SSICode>)
-        || ecrt_slave_conf_sdo8(
-           (ec_slave_t*)%<LibBlockPWork(SlavePtr,"","",0)>,\
-           0x4067,0,%<BaudRate>)
-        || ecrt_slave_conf_sdo8(
-           (ec_slave_t*)%<LibBlockPWork(SlavePtr,"","",0)>,\
-           0x4068,0,%<FrameType>)
-        || ecrt_slave_conf_sdo8(
-           (ec_slave_t*)%<LibBlockPWork(SlavePtr,"","",0)>,\
-           0x4069,0,%<FrameSize>)
-        || ecrt_slave_conf_sdo8(
-           (ec_slave_t*)%<LibBlockPWork(SlavePtr,"","",0)>,\
-           0x406A,0,%<DataLength>)
-        || ecrt_slave_conf_sdo8(
-           (ec_slave_t*)%<LibBlockPWork(SlavePtr,"","",0)>,\
-           0x406B,0,%<InhibitTime>))) {
-      %<LibSetRTModelErrorStatus("\"Init of SSI %<MasterId>:%<SlaveAddr> failed\"")>;
-    }
+  %<RegisterEtherCATSlaveSDO(block, 8, "0x4061", 1, FrameError)>
+  %<RegisterEtherCATSlaveSDO(block, 8, "0x4061", 2, PowerFail)>
+  %<RegisterEtherCATSlaveSDO(block, 8, "0x4061", 3, EnableInhibit)>
+  %<RegisterEtherCATSlaveSDO(block, 8, "0x4066", 0, SSICode)>
+  %<RegisterEtherCATSlaveSDO(block, 8, "0x4067", 0, BaudRate)>
+  %<RegisterEtherCATSlaveSDO(block, 8, "0x4068", 0, FrameType)>
+  %<RegisterEtherCATSlaveSDO(block, 8, "0x4069", 0, FrameSize)>
+  %<RegisterEtherCATSlaveSDO(block, 8, "0x406A", 0, DataLength)>
+  %<RegisterEtherCATSlaveSDO(block, 8, "0x406B", 0, InhibitTime)>
 %endfunction
 
 

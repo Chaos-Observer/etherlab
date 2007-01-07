@@ -183,6 +183,7 @@ struct msr_send_ch_list
     int cmode;                               /* Compressionsmodus FIXME noch nicht implementiert */
     int prec;                                /* Genauigkeit in Nachkommastellen */
 //    int counter; FIXME nicht mehr nötig
+    int event;                              /* Übertragungsmodus 0:Standard, 1:Event (nur ein Änderung des Wertes) */
 };
 
 struct msr_dev {
@@ -199,6 +200,7 @@ struct msr_dev {
     int datamode;                            /* Übertragungsmodus: 0: alle Kanäle zusammen 1:Kanäle mit unterschiedlicher Abtastrate */
     char codmode;                            /* Übertragungsmodus nur für <sad>  nichts formatiert ascii oder "base64" auf die rohwerte 
 						bei xsad kann die Übertragung für die einzelnen Kanäle separat gesetzt werden */
+    char triggereventchannels;               /* triggert die Übertragung von Eventkanälen an (auch, wenn sich nichts geändert hat) */
     struct msr_send_ch_list *send_ch_head;   /* Zeiger auf eine Liste der Kanäle die gesendet werden */
     int write_access;                        /* 1 wenn Schreibzugriff auf Parameter erlaubt, sonst 0 */
     int isadmin;                             /* 1 wenn sich ein Administrator angemeldet hat */
@@ -262,11 +264,11 @@ int msr_close(void *p);
 
 /* Read ist von MSR aus gesehen. Daten gehen von Client an MSR.
  * Rueckgabe ist das resultat von der read() syscall */
-ssize_t msr_read(void *p);
+void msr_read(int fd, void *p);
 
 /* Write ist von MSR aus gesehen. Daten gehen von MSR an Client.
  * Rueckgabe ist das resultat von der write() syscall */
-ssize_t msr_write(void *p);
+void msr_write(int fd, void *p);
 
 
 #endif
