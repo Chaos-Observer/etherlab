@@ -1,0 +1,4 @@
+EXTRA_CFLAGS := -I@ETHERLAB_DIR@/include @RTAI_FLAGS@ $(DEFS) \
+        -I@abs_top_srcdir@
+
+obj-m   := raise_catch.o

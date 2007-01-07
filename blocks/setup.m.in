@@ -1,0 +1,7 @@
+function setup()
+
+disp(['Precompiling functions in ' pwd]);
+mex taskinfo.c
+mex world_time.c
+mex -I@prefix@/include raise.c
+return
