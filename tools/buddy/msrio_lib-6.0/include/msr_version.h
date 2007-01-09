@@ -4,7 +4,7 @@
 // Version der MSR_LIBRARIES 
 #define VERSION  6
 #define PATCHLEVEL 0
-#define SUBLEVEL  2
+#define SUBLEVEL  5
 
 
 #define MSR_VERSION (((VERSION) << 16) + ((PATCHLEVEL) << 8) + (SUBLEVEL))

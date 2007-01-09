@@ -76,43 +76,12 @@ extern struct new_utsname system_utsname;  //für Maschinenname
 /*--external data--------------------------------------------------------------------------------*/
 extern struct msr_kanal_list *msr_kanal_head; /* Kanalliste */
 extern int k_buflen; /* in msr_reg.c */
+extern struct msr_dev *msr_dev_head;  //Liste aller Verbindungen
 
-
-#ifndef __KERNEL__
-extern struct msr_dev *msr_dev_head;  //nur User Space
-#endif
 
 /*--public data----------------------------------------------------------------------------------*/
 
-/*
-***************************************************************************************************
-*   character device functions
-***************************************************************************************************
-*/
 
-#ifdef __KERNEL__
-
-int msr_dev_open(struct inode *inode, struct file *filp);
-int msr_dev_release(struct inode *inode, struct file *filp);
-ssize_t msr_dev_read(struct file *filp, char *buf, size_t count,loff_t *f_pos);
-ssize_t msr_dev_write(struct file *filp, const char *buf, size_t count,loff_t *f_pos);
-unsigned int msr_dev_poll(struct file *filp, poll_table *wait);
-
-
-struct file_operations msr_dev_fops = {
-    read:       msr_dev_read,
-    write:      msr_dev_write, 
-//    ioctl:      msr_dev_ioctl, 
-    poll:       msr_dev_poll,
-    open:       msr_dev_open,
-    release:    msr_dev_release,
-}; 
-
-/* warteschlange für lesende Prozesse */
-
-DECLARE_WAIT_QUEUE_HEAD(msr_read_waitqueue);
-
-#endif
 
 struct msr_char_buf *msr_in_int_charbuffer = NULL;  /* in diesen Puffer darf aus Interruptroutinen
 						       hereingeschrieben werden */
@@ -471,267 +440,6 @@ int msr_len_rb(struct msr_dev *dev,int count)
     return (MIN(ldev,count));
 }
 
-#ifdef __KERNEL__
-
-/*
-***************************************************************************************************
-*
-* Function: msr_dev_open, msr_dev_release
-*
-*
-* Status: exp
-*
-***************************************************************************************************
-*/
-
-int msr_dev_open(struct inode *inode, struct file *filp)
-{
-
-    struct msr_dev *dev = NULL;
-    int  num = MINOR(inode->i_rdev);
-
-    struct msr_kanal_list *element;
-
-    MSR_PRINT("msr_module: (open) MAJOR: %i, MINOR: %i\n",MAJOR(inode->i_rdev),num); 
-    if (!filp->private_data && num > 0)
-        return -ENODEV; /* not devfs: allow 1 device only */
-
-    dev = (struct msr_dev *)getmem(sizeof(struct msr_dev));
-    if (!dev) return -ENOMEM;
-    memset(dev,0,sizeof(struct msr_dev));
-
-    /* Lese und Schreibpuffer einrichten */
-    MSR_PRINT("msr_module: dev: Readbuffer...\n"); 
-    dev->write_buffer = msr_create_charbuf(MSR_CHAR_BUF_SIZE);
-    if(!dev->write_buffer){
-	printk(KERN_WARNING "msr_modul: kein Speicher fuer Ringpuffer bei devopen.\n");
-	freemem(dev);
-	return -ENOMEM;
-    }
-    //Filepointer merken
-    dev->filp = (unsigned int)filp;
-
-    MSR_PRINT("msr_module: dev: Writebuffer...\n"); 
-    dev->read_buffer = msr_create_charbuf(MSR_CHAR_BUF_SIZE);
-    if(!dev->read_buffer){
-	printk(KERN_WARNING "msr_modul: kein Speicher fuer Ringpuffer bei devopen.\n");
-	msr_free_charbuf(&dev->write_buffer);
-	freemem(dev);
-	return -ENOMEM;
-    }
-
-
-    MSR_PRINT("msr_module: dev: Pointer setzten...\n"); 
-
-    /* jetzt den kanal_lese_zeiger auf den aktuellen kanal_write_pointer setzten */
-    dev->msr_kanal_read_pointer = msr_kanal_write_pointer;
-    /* den Lesezeiger in dem characterringpuffer der Interruptroutine setzten */
-    dev->intr_read_pointer = msr_in_int_charbuffer->write_pointer; 
-    /* den Lesezeiger des Userringpuffers setzen */
-    dev->user_read_pointer = msr_user_charbuffer->write_pointer; 
-
-    dev->wp_read_pointer = 0;
-    dev->rp_read_pointer = 0;
-    /* dev->reduction = HZ; */       /* jede Sekunde erstmal senden */
-    dev->reduction = 0;         /* nicht senden bei öffnen des Devices */
-    dev->datamode = 0;          /* Standardübertragung = alle Kanäle zusammen */
-    dev->codmode=MSR_CODEASCII;                             
-    dev->write_access = 0;      /* erstmal keinen Schreibzugriff auf Parameter */
-    dev->isadmin = 0;           /* kein Administrator */
-    dev->echo = 0;              /* kein Echo */
-    dev->filter = 0;            /* kein Filter */
-    dev->avr_filter_length = 1; /* +-1 Wert filtern, falls gleitender Mittelwert als Filter gewählt ist */
-
-    dev->cinbufsize = MSR_BLOCK_BUF_ELEMENTS*sizeof(double);
-    dev->cinbuf = getmem(dev->cinbufsize);
-    if(!dev->cinbuf) {
-	printk(KERN_WARNING "msr_modul: kein Speicher fuer IN-Out-Buffer bei devopen.\n");
-	msr_free_charbuf(&dev->write_buffer);
-	msr_free_charbuf(&dev->read_buffer);
-	freemem(dev);
-	return -ENOMEM;
-    }
-//    dev->coutbuf = getmem(MSR_BLOCK_BUF_ELEMENTS*sizeof(double)); wird nicht oder nicht mehr gebraucht ??
-
-
-    /*jetzt noch den Kanal für die Zeit suchen (dieser muß /Time/StructTimeval heißen */
-    dev->timechannel = NULL;            /* Kein Zeitkanal */
-
-    FOR_THE_LIST(element,msr_kanal_head) {
-	if ((element) && strcmp(element->p_bez,"/TimeStructTimeval") == 0)
-	    dev->timechannel = element;
-    }
-
-    //wenn Struct Timeval nicht gefunden wurde nochmal nach Time suchen
-    if(!dev->timechannel) {
-      FOR_THE_LIST(element,msr_kanal_head) {
-	if ((element) && strcmp(element->p_bez,"/Time") == 0)
-	  dev->timechannel = element;
-      }
-    }
-
-
-
-    filp->private_data = dev;
-    //MOD_INC_USE_COUNT;
-   
-    MSR_PRINT("msr_module: (open) ok\n");
-    /* msr_buf_printf(dev->read_buffer,"<%s %s>\n",MSR_INFO,MSR_DEVOPEN); */
-    msr_buf_printf(dev->read_buffer,"<connected name=\"%s\" host=\"%s\" version=\"%d\" features=\"%s\" recievebufsize=\"%d\"/>\n",
-		   MSR_TASK_NAME,system_utsname.nodename,
-		   MSR_VERSION,
-		   MSR_FEATURES,   //steht auch in msr_version.h !!
-		   dev->write_buffer->bufsize);
-    /* und zum Test mal an alle raushauen */
-    msr_print_info("new connection");
-
-    //locking des Moduls für 2.6. Kernel
-#if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,0)
-    try_module_get(THIS_MODULE);
-#endif
-
-    return 0;          /* success */
-}
-
-
-/***************************************************************************************************/
-int msr_dev_release(struct inode *inode, struct file *filp)
-{
-    struct msr_dev *dev = filp->private_data;
-
-    dev->reduction = 0; /* erstmal die Datenübertragung stoppen */
-
-    /* speicherplatz wieder freigeben */
-    clean_send_channel_list(&dev->send_ch_head);
-
-//    if((dev->ioctlbuf) != NULL) 
-//	freemem(dev->ioctlbuf);
-
-    if((dev->cinbuf) != NULL) { 
-	freemem(dev->cinbuf);
-	dev->cinbuf = NULL;
-    }
-
-/*    if((dev->coutbuf) != NULL) 
-	freemem(dev->coutbuf);
-*/
-    msr_free_charbuf(&dev->read_buffer);
-    msr_free_charbuf(&dev->write_buffer);
-    freemem(dev);
-
-    //MOD_DEC_USE_COUNT;
-
-    //locking des Moduls für 2.6. Kernel
-#if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,0)
-    module_put(THIS_MODULE);
-#endif
-    MSR_PRINT("msr_module: (close) ok\n");
-    return 0;
-}
-
-
-
-
-/***************************************************************************************************/
-unsigned int msr_dev_poll(struct file *filp, poll_table *wait)
-{
-     struct msr_dev *dev = filp->private_data; /* die zugehörige Datenstruktur */
-    unsigned int mask = 0;
-
-    poll_wait(filp, &msr_read_waitqueue,  wait);
-
-    if (msr_len_rb(dev,2) > 0) mask |= POLLIN | POLLRDNORM;  /* readable wenn mindestens 2 bytes im readbuffer stehen*/
-    mask |= POLLOUT | POLLWRNORM; /* writable immer !*/
-
-    return mask;
-}
-
-/***************************************************************************************************/
-ssize_t msr_dev_read(struct file *filp, char *buf, size_t count,
-                loff_t *f_pos)
-{
-    char *tmp_c;
-    struct msr_dev *dev = filp->private_data; /* die zugehörige Datenstruktur */
-
-    /* Berechnung der maximal zu lesenden Anzahl Bytes */
-    ssize_t max_len = msr_len_rb(dev,count);
-    /* ist überhaupt was zu lesen ?*/
-    if(max_len == 0) 
-    {      
-	if (filp->f_flags & O_NONBLOCK)        /* ist das File nonblocking geöffnet ???*/
-	    return -EAGAIN;
-	if (count == 0) return 0;              /* wir wollen wohl keine Daten .... */
-        /* sonst warten ... */
-	if (wait_event_interruptible(msr_read_waitqueue,msr_len_rb(dev,count) > 0))
-	    return -ERESTARTSYS; /* signal: tell the fs layer to handle it */
-    }
-
-    /* jetzt max_len noch mal berechnen, da sich write_pointer ja geändert haben könnte */
-    max_len =  msr_len_rb(dev,count);
-
-    /* Speicher anfordern für temporären Zwischenspeicher für die Daten */
-    tmp_c = (char *)getmem(max_len);
-    if (!tmp_c) return -ENOMEM;
-
-    /* Daten lesen */
-    max_len = msr_read_charbuf(dev->read_buffer,tmp_c,max_len,&dev->rp_read_pointer);
-
-    /* in den Userspace kopieren */
-    if (copy_to_user(buf,tmp_c,max_len)) {
-	freemem(tmp_c);
-	return -EFAULT;
-    }
-    
-    freemem(tmp_c);
-    /* if(max_len > count)  DEBUGGING HM
-       printk("msr_module: max_len > count %d %d\n",max_len,count); */
-    return max_len;
-
-
-#undef MAX_LEN
-}
-
-/***************************************************************************************************/
-ssize_t msr_dev_write(struct file *filp, const char *buf, size_t count,
-                loff_t *f_pos)
-{
-    struct msr_dev *dev = filp->private_data; /* die zugehörige Datenstruktur */
-    char *tmp_c;                              /* reentrant ??? */
-
-    if(count == 0) return 0;
-    if(count > MSR_CHAR_BUF_SIZE) 
-	count = MSR_CHAR_BUF_SIZE;
-
-    /* Speicher anfordern für temporären Zwischenspeicher für die Daten */
-    tmp_c = (char *)getmem(count+1);
-    if (!tmp_c) 
-	return -ENOMEM;
-    memset(tmp_c,0,count+1);
-
-    if (copy_from_user(tmp_c,buf,count)) {
-	freemem(tmp_c);
-	return -EFAULT;
-    }
-    MSR_PRINT("msr_module: got %s\n",tmp_c);
-
-    /* jetzt in den write_puffer übertragen */
-    msr_write_charbuf(tmp_c,count,dev->write_buffer);
-    /* und den temporären Speicher wieder freigeben */
-   
-
-    /* und zum test, im read_buffer echo */
-    /* msr_write_charbuf(tmp_c,count,dev->read_buffer); */
-    
-    freemem(tmp_c);
-
-    /* jetzt kommt die Interpretation des oder der geschriebenen Komandos */
-    while(msr_interpreter(dev)); /* solange, bis alles interpretiert ist */
-    return count;
-
-}
-
-
-#else //Und alles für den Userspace-------------------------------------------------------------------
 
 /* A new Client connection has arrived. Setup internal structures for Client */
 void *msr_open(int client_rfd, int client_wfd)
@@ -804,6 +512,12 @@ void *msr_open(int client_rfd, int client_wfd)
     dev->client_wfd = client_wfd;
     dev->next = NULL;  
 
+    dev->ap_name = strdup("unknown");  //Name des verbundenen Programmes (dies muß das Programm selber mitteilen)
+    dev->hostname=strdup("unknown");
+    dev->count_in = 0;                 //Anzahl bytes von Applikation zum Echtzeitprozess seit Verbindungsaufbau
+    dev->count_out = 0;                //Anzahl bytes vom Echtzeitprozess zur Applikation
+    do_gettimeofday(&dev->connection_time);          //Zeit, wann die Verbindung geöffnet wurde (UTC)
+
 
     /*und noch in die Liste aller devices eintragen (nur Userspace) */
 
@@ -816,7 +530,7 @@ void *msr_open(int client_rfd, int client_wfd)
     else
 	msr_dev_head = dev;    /* erstes Element */
 
-    /*jetzt noch den Kanal für die Zeit suchen (dieser muß /Time/StructTimeval heißen */
+    /*jetzt noch den Kanal für die Zeit suchen (dieser muß /Time/StructTimeval heißen) */
     dev->timechannel = NULL;            /* Kein Zeitkanal */
 
     FOR_THE_LIST(element,msr_kanal_head) {
@@ -877,6 +591,8 @@ int msr_close(void *p)
     }
 
 
+    freemem(dev->ap_name);
+
     if((dev->cinbuf) != NULL) { 
 	freemem(dev->cinbuf);
 	dev->cinbuf = NULL;
@@ -914,6 +630,8 @@ void msr_read(int fd, void *p)
     int count;
 
     count = read(dev->client_rfd,msr_getb(dev->write_buffer), 4096); //wir lesen immer eine Seite ?
+
+    dev->count_in+=count;  //statistics
 
     /* Check for errors (rv < 0) or connection close (rv == 0).
      * Do not call msr_close() here -- this will be done by the
@@ -992,6 +710,9 @@ void msr_write(int fd, void *p)
     max_len = msr_read_charbuf(dev->read_buffer,tmp_c,max_len,&dev->rp_read_pointer);
     // und schreiben
     count = write(dev->client_wfd, tmp_c,max_len);
+
+    dev->count_out+=count;  //statistics
+
     freemem(tmp_c);
     //überprüfen, ob es geklappt hat
     if(count != max_len) {
@@ -1011,7 +732,7 @@ void msr_write(int fd, void *p)
     return;
 }
 
-#endif
+
 
 
 

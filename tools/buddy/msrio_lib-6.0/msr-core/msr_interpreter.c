@@ -220,27 +220,13 @@
 #include <msr_target.h>
 #include <msr_mem.h>
 
-#ifdef __KERNEL__
-/* hier die Kernelbiblotheken */
-#include <linux/config.h>
-#include <linux/module.h>
-#include <linux/version.h>
 
-#include <linux/sched.h>
-#include <linux/kernel.h>
-#include <linux/vmalloc.h> 
-#include <linux/fs.h>     /* everything... */
-#include <asm/segment.h>
-#include <asm/uaccess.h>
-
-
-#else
 /* hier die Userbibliotheken */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <asm/param.h> //Für HZ
-#endif
+
 
 #include <msr_interpreter.h>
 #include <msr_reg.h>
@@ -272,6 +258,7 @@ static void msr_com_triggerevents(struct msr_dev *dev,char *params);
 static void msr_host_access(struct msr_dev *dev,char *params);
 static void msr_broadcast(struct msr_dev *dev,char *params);
 static void msr_echo(struct msr_dev *dev,char *params);
+static void msr_read_statistics(struct msr_dev *dev,char *params);
 
 /*--external functions---------------------------------------------------------------------------*/
 
@@ -281,6 +268,7 @@ extern volatile int msr_kanal_wrap;
 
 extern struct msr_param_list *msr_param_head; /* Parameterliste */
 extern struct msr_kanal_list *msr_kanal_head; /* Kanalliste */
+struct msr_dev *msr_dev_head;  
 
 
 extern int  k_buflen;
@@ -306,7 +294,9 @@ const struct msr_command msr_command_array[] =
  {"decmodusecnt",msr_dec_mod_use_count},
  {"remote_host", &msr_host_access},
  {"broadcast",&msr_broadcast},
- {"echo",&msr_echo}};
+ {"echo",&msr_echo},
+ {"rs",&msr_read_statistics},
+ {"read_statics",&msr_read_statistics}};
 
 #define msr_cas (sizeof(msr_command_array)/sizeof(struct msr_command)) 
 /* max. Index des msr_command_arrays */
@@ -939,14 +929,25 @@ static void msr_host_access(struct msr_dev *dev,char *params)
     */
 
     char *namebuf = msr_get_attrib(params,"name");
+    char *ap_namebuf = msr_get_attrib(params,"applicationname");
+
     char *access = msr_get_attrib(params,"access");
     char *isadmin = msr_get_attrib(params,"isadmin");
 
     if(namebuf){
         /* name ist vorhanden */
-      printk("msr_modul: connect from: %s\n",namebuf); 
-
+	printk("msr_modul: connect from: %s\n",namebuf); 
+	if(dev->hostname)
+	    freemem(dev->hostname);
+	dev->hostname=strdup(namebuf);
     }
+
+    if(ap_namebuf) {
+	if(dev->ap_name)
+	    freemem(dev->ap_name);
+	dev->ap_name=strdup(ap_namebuf);
+    }
+
     if(access) {
 	if (strcmp(access,"allow") == 0) {
 	    dev->write_access = 1;
@@ -966,6 +967,7 @@ static void msr_host_access(struct msr_dev *dev,char *params)
     }
 
     if(namebuf) freemem(namebuf);
+    if(ap_namebuf) freemem(ap_namebuf);
     if(access) freemem(access);
     if(isadmin) freemem(isadmin);
 
@@ -987,6 +989,38 @@ static void msr_echo(struct msr_dev *dev,char *params)
 }
 
 
+/*-----------------------------------------------------------------------------*/
+static void msr_read_statistics(struct msr_dev *dev,char *params)
+{
+
+    struct msr_dev *dev_element = NULL;
+
+    char *idbuf = msr_get_attrib(params,"id");
+
+    int cnt = 0;
+
+    if(idbuf) {
+	msr_buf_printf(dev->read_buffer,"<clients id=\"%s\">\n",idbuf);
+	freemem(idbuf);
+    }
+    else
+	msr_buf_printf(dev->read_buffer,"<clients>\n");
+
+
+    FOR_THE_LIST(dev_element,msr_dev_head) {
+	msr_buf_printf(dev->read_buffer,"<client index=\"%i\" name=\"%s\" apname=\"%s\" countin=\"%lu\" countout=\"%lu\" connectedtime=\"%lu.%lu\"/>\n",
+		       cnt++,
+		       dev_element->hostname,
+		       dev_element->ap_name,
+		       dev_element->count_in,
+		       dev_element->count_out,
+		       dev_element->connection_time.tv_sec,
+		       dev_element->connection_time.tv_usec);
+    } 
+
+    msr_buf_printf(dev->read_buffer,"<clients/>\n");
+
+}
 
 /*
 ***************************************************************************************************

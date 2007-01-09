@@ -212,11 +212,18 @@ struct msr_dev {
     void *cinbuf;                            // Puffer für Kompression von Kanälen
     int cinbufsize;                          // und dessen Größe
     struct msr_kanal_list *timechannel;      // Zeitkanal 
+
+    // Informationen über den angeschlossenen Client
+    char *hostname;                          //Host, von dem die Verbindung gekommen ist (dies muß das Programm selber mitteilen)
+    char *ap_name;                           //Name des verbundenen Programmes (dies muß das Programm selber mitteilen)
+    unsigned long int count_in;              //Anzahl bytes von Applikation zum Echtzeitprozess seit Verbindungsaufbau
+    unsigned long int count_out;             //Anzahl bytes vom Echtzeitprozess zur Applikation
+    struct timeval connection_time;          //Zeit, wann die Verbindung geöffnet wurde (UTC)
 #ifndef __KERNEL__
     int client_rfd;                          // User-Variante
     int client_wfd;
     int disconnectflag;
-    struct msr_dev *next;                    //für verkette Liste der devices
+    struct msr_dev *next;                    //für verkette Liste der devices = clients
 #endif
 
 };
