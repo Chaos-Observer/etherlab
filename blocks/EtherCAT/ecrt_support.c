@@ -104,10 +104,10 @@ struct ecat_master {
     ec_master_t *handle;        /* Handle retured by EtherCAT code */
 
     SEM lock;                   /* Lock the ecat master */
-    unsigned int last_call;     /* TSC of last call. Need this to decide
+    cycles_t last_call;     /* TSC of last call. Need this to decide
                                  * whether it is allowable to let others
                                  * use the ecat card */
-    unsigned int grace_cycles;  /* Grant the use of the network card if the
+    cycles_t grace_cycles;  /* Grant the use of the network card if the
                                  * call comes within this grace period 
                                  * since last call */
 };
@@ -207,6 +207,7 @@ ecs_send(int tid)
         master = &ecat_data->st[tid].master[i];
         master->last_call = get_cycles();
         rt_sem_wait(&master->lock);
+        ecrt_master_run(master->handle);
         ecrt_master_send(master->handle);
         pr_debug("\ttid %i: ecrt_master_send(%p)\n", 
                 tid, master->handle);
@@ -252,11 +253,14 @@ ecs_request_cb(void *p)
 #define MASTER ((struct ecat_master *)p)
 
     /* Make sure that the master is not required in the near future */
-//    if ((get_cycles() - MASTER->last_call) > MASTER->grace_cycles) {
-//        printk("%i left, wanted %u\n", (int)(get_cycles() - MASTER->last_call), MASTER->grace_cycles);
-//        return -1;
-//    }
-//    printk("granted\n");
+    if ((get_cycles() - MASTER->last_call) > MASTER->grace_cycles) {
+        pr_debug("ecs_request_cb() %i cycles left, wanted %llu, last call %llu\n", 
+                MASTER,
+                (int)(get_cycles() - MASTER->last_call), 
+                MASTER->grace_cycles, 
+                MASTER->last_call);
+        return -1;
+    }
     rt_sem_wait(&MASTER->lock);
     return 0;
 #undef MASTER
@@ -269,8 +273,6 @@ ecs_request_cb(void *p)
 void
 ecs_release_cb(void *p)
 {
-
-//    printk("released\n");
 #define MASTER ((struct ecat_master *)p)
     rt_sem_signal(&MASTER->lock);
 #undef MASTER
@@ -362,14 +364,15 @@ ecs_start(void)
                     master->id);
             goto out_request_master;
         }
-        ecrt_master_callbacks(master->handle, 
-                ecs_request_cb, ecs_release_cb, master);
 
         /* Find out to which tid this master will be allocated. The fastest
          * tid will get it */
         master_tid = master->fastest_tid;
         master_idx = ecat_data->st[master_tid].master_count++;
         new_master = &ecat_data->st[master_tid].master[master_idx];
+
+        ecrt_master_callbacks(master->handle, 
+                ecs_request_cb, ecs_release_cb, new_master);
 
         /* grace_cycles is a value that allows others to lock the network
          * card if the current value of get_cycles() since the last tick
@@ -378,7 +381,6 @@ ecs_start(void)
          * value to 20 microseconds less than the sample time's period */
         master->grace_cycles = 
             (ecat_data->st[master_tid].period - 20)*(cpu_khz/1000);
-//        printk("Grace = %u, cpu_khz = %u\n", master->grace_cycles, cpu_khz);
 
         list_for_each_entry_safe(domain, n2, &master->domain_list, list) {
             unsigned int tid, domain_idx;
