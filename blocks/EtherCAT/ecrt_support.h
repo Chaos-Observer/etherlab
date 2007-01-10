@@ -16,6 +16,11 @@ ecs_receive(int tid);
 const char *
 ecs_start(void);
 
+const char *
+ecs_reg_sdo( struct ecat_pdo *pdo,
+        int sdo_type, uint16_t sdo_index,
+        uint8_t sdo_subindex, uint32_t value);
+
 struct ecat_pdo *
 ecs_reg_pdo(
         unsigned int tid,

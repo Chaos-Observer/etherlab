@@ -74,7 +74,8 @@ AC_ARG_ENABLE([debug],
 AC_PROG_CC
 AC_PROG_RANLIB
 AC_PROG_INSTALL
-#AC_PATH_PROG(TAC, tac)
+AC_PROG_LN_S
+AC_PATH_PROG(RM, rm)
 #AC_PATH_PROG(XARGS, xargs)
 
 # Checks for libraries

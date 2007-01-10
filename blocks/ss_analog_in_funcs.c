@@ -153,11 +153,11 @@ static void set_filter(SimStruct *S, int_T width, int_T omega_idx,
     if (Ts) {           /* Discrete */
         p.name = "InputWeight";
         convert = disc_convert;
-        ssSetNumDiscStates(S, ndims);
+        ssSetNumDiscStates(S, width);
     } else {            /* Continuous */
         p.name = "Omega";
         convert = cont_convert;
-        ssSetNumContStates(S, ndims);
+        ssSetNumContStates(S, width);
     }
     p.data = w = malloc(ndims*sizeof(real_T));
     if (!w) {

@@ -38,6 +38,9 @@ clean-local:
 	make -C "$(LINUX_DIR)" M="@abs_builddir@" \
 		V="$(VERBOSE)" DEFS="$(DEFS)" clean
 
-install-data-local:
-	rm -f $(ethercatdir)/ETL.tlc
-	ln -sf ../ETL.tlc $(ethercatdir)/ETL.tlc
+install-data-hook:
+	$(RM) -f $(DESTDIR)/$(ethercatdir)/ETL.tlc
+	$(LN_S) -f ../ETL.tlc $(DESTDIR)/$(ethercatdir)/ETL.tlc
+
+uninstall-hook:
+	$(RM) -f $(DESTDIR)/$(ethercatdir)/ETL.tlc
