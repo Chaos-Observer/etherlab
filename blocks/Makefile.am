@@ -18,6 +18,9 @@ dist_blocks_DATA = \
         ss_analog_in_funcs.c
 
 blocks_DATA = setup.m
+if EXPERIMENTAL
+blocks_DATA += etherlab_lib_exp.mdl
+endif
 
 include_HEADERS = raise_catch.h
 
