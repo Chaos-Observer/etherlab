@@ -90,7 +90,7 @@
       /* Starting EtherCAT subsystem */
       if ((%<ETL.ErrStr> = ecs_start())) {
             snprintf(%<ETL.ErrMsg>, sizeof(%<ETL.ErrMsg>), 
-               "Starting EtherCAT subsystem failed: %s\n", %<ETL.ErrStr>);
+               "Starting EtherCAT subsystem failed: %s", %<ETL.ErrStr>);
             %<LibSetRTModelErrorStatus("%<ETL.ErrMsg>")>;
             return;
       }

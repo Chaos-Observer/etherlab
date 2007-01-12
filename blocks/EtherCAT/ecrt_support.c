@@ -215,7 +215,9 @@ ecs_send(int tid)
     }
 }
 
-/* There was some problem during initialisation - clean up here */
+/* There was some problem during initialisation - free
+ * allocated memory that will not be freed when model insert code
+ * calls ecs_end() */
 void 
 abort_init(void)
 {
@@ -534,27 +536,13 @@ out_create_domain:
     ecat_data->st[master_tid].master_count--;
     ecrt_release_master(master->handle);
 out_request_master:
-    for( i = 0; i < ecat_data->nst; i++)
-        for( j = 0; j < ecat_data->st[i].master_count; j++) {
-            printk("Releasing master %i from st %i\n", j, i);
-            if (ecat_data->st[i].master[j].handle)
-                ecrt_release_master(ecat_data->st[i].master[j].handle);
-        }
     abort_init();
     return errbuf;
 
 out_master_activate:
     snprintf(errbuf, sizeof(errbuf),
-            "Master %i activate failed\n", master->id);
-    ecs_end();
+            "Master %i activate failed", master->id);
     return errbuf;
-//    while (1) {
-//        while(j--)
-//                ecrt_release_master(ecat_data->st[i].master[j].handle);
-//        if (!i--)
-//            break;
-//        j = ecat_data->st[i].master_count;
-//    }
 }
 
 /* This function queues SDO's after a registered EtherCAT Terminal is 

@@ -28,7 +28,13 @@
     %with CompiledModel
   
       %openfile buf
+
+      /* All EtherLAB error messages go in here */
       char %<ETL.ErrMsg>[256];
+      %closefile buf
+      %<LibSetSourceFileSection(model_c, "Declarations", buf)>
+
+      %openfile buf
       const char *%<ETL.ErrStr>;
       %closefile buf
       %<LibMdlStartCustomCode(buf, "header")>
