@@ -1,3 +1,10 @@
+2007-02-09      Richard Hacker (lerich_at_gmx.net)
+	Released Version 1.0!
+
+	Lots of bugfixes, increased robustness to failures, version 
+	checking of ethercat, etc. 
+
+
 2007-01-07      Richard Hacker (lerich_at_gmx.net)
 	This is a major rework of the entire real-time subsystem. Therefore
 	it is not possible to describe all the changes in the files.
