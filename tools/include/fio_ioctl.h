@@ -98,10 +98,6 @@ struct mdl_properties {
 /* Return a bit mask in a uint32_t indicating which models are active */
 #define RTK_GET_ACTIVE_MODELS   _IOR(RTK_MAGIC, 0, unsigned long *)
 
-/* Return a bit mask in a uint32_t indicating which models are new
- * and not yet watched by the buddy */
-#define RTK_GET_NEW_MODELS      _IOR(RTK_MAGIC, 1, unsigned long *)
-
 /* Pass the model number to the rt_kernel, and it replies with the model
  * name */
 struct rtp_model_name {
@@ -109,9 +105,3 @@ struct rtp_model_name {
     char name[MAX_MODEL_NAME_LEN];
 };
 #define RTK_MODEL_NAME          _IOR(RTK_MAGIC, 2, struct rtp_model_name *)
-
-/* Mark model as watched by the buddy. This is used by the buddy to tell
- * the rt_kernel that it knows about the model even though it cannot 
- * connect to it (e.g. the model description file is missing).  */
-#define RTK_SET_MODEL_WATCHED   _IOW(RTK_MAGIC, 3, unsigned int)
-

@@ -102,7 +102,7 @@ struct rt_kernel {
     unsigned long loaded_models;  /**< The bits represent whether a RT model 
                                    * is loaded in this slot. Max no of RT 
                                    * models is thus 32 */
-    unsigned long watched_models;
+    unsigned long model_state_changed;
     unsigned long data_mask;    /**< The bits indicate to the service request
                                  * handler that the specific RT task had data
                                  * to be processed */

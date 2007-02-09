@@ -149,7 +149,6 @@ static int rtp_open(
     model->wp = model->rtb_buf;
     rt_sem_signal(&model->buf_sem);
 
-    set_bit(model->id, &rt_kernel.watched_models);
     return 0;
 
     free_page((unsigned long)model->msg_ptr);
@@ -174,9 +173,6 @@ static int rtp_release(
     vfree(model->rtb_buf);
     free_page((unsigned long)model->msg_ptr);
     up(&model->buddy_lock);
-
-    clear_bit(model->id, &rt_kernel.watched_models);
-    wake_up_interruptible( &rt_kernel.event_q);
 
     return err;
 }
@@ -540,8 +536,11 @@ void rtp_fio_clear_mdl(struct model *model)
     pr_debug("Tearing down FIO for model_id %u\n", model->id);
 
     clear_bit(model->id, &rt_kernel.data_mask);
-    clear_bit(model->id, &rt_kernel.watched_models);
     cdev_del(&model->rtp_dev);
+
+    /* Wake the buddy to tell that there is a new process */
+    rt_kernel.model_state_changed = 1;
+    wake_up_interruptible(&rt_kernel.event_q);
 }
 
 /** 
@@ -571,6 +570,7 @@ int rtp_fio_init_mdl(struct model *model, struct module *owner)
     pr_debug("Added char dev for BlockIO, minor %u\n", MINOR(devno));
 
     /* Wake the buddy to tell that there is a new process */
+    rt_kernel.model_state_changed = 1;
     wake_up_interruptible(&rt_kernel.event_q);
 
     return 0;
@@ -594,6 +594,7 @@ static int rtp_main_open(
     if (down_trylock(&rt_kernel.file_lock)) {
         err = -EBUSY;
     }
+    rt_kernel.model_state_changed = 0;
 
     return err;
 }
@@ -601,8 +602,6 @@ static int rtp_main_release(
         struct inode *inode,
         struct file *filp
         ) {
-
-    rt_kernel.watched_models = 0;
     up(&rt_kernel.file_lock);
     return 0;
 }
@@ -616,8 +615,9 @@ static unsigned int rtp_main_poll(
     poll_wait(filp, &rt_kernel.event_q, wait);
 
     /* Check whether there was a change in the states of a Real-Time Process */
-    if (rt_kernel.loaded_models != rt_kernel.watched_models) {
+    if (rt_kernel.model_state_changed) {
         mask = POLLIN | POLLRDNORM;
+        rt_kernel.model_state_changed = 0;
     }
 
     return mask;
@@ -634,24 +634,8 @@ static long rtp_main_ioctl(
 
     down(&rt_kernel.lock);
     switch (command) {
-        case RTK_SET_MODEL_WATCHED:
-            if (data < MAX_MODELS
-                    && test_bit(data, &rt_kernel.loaded_models)) {
-                pr_debug("Marking model %lu as watched\n", data);
-                set_bit(data, &rt_kernel.watched_models);
-            } else {
-                pr_debug("Could not mark model %lu as watched\n", data);
-                rv = -ENODEV;
-            }
-            break;
-
         case RTK_GET_ACTIVE_MODELS:
             rv = put_user(rt_kernel.loaded_models, (uint32_t *)data);
-            break;
-
-        case RTK_GET_NEW_MODELS:
-            rv = put_user(rt_kernel.loaded_models ^ rt_kernel.watched_models, 
-                    (uint32_t *)data);
             break;
 
         case RTK_MODEL_NAME:
@@ -720,7 +704,7 @@ int rtp_fio_init(void)
 
     pr_debug("Initialising FIO for rt_kernel\n");
 
-    rt_kernel.watched_models = 0;
+    rt_kernel.model_state_changed = 0;
 
     /* Create character devices for this process. Each RT model needs 1
      * char device, and rt_kernel needs 1 */

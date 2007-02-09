@@ -388,17 +388,6 @@ int main(int ac, char **av)
         int pid;
         struct sigaction sa;
 
-//        fd = open("/dev/etl1", O_RDWR | O_NONBLOCK );
-//        printf("fd is %i\n", fd);
-//
-//        if (!(pid = fork())) {
-//        } else if (pid > 0) {
-//            close(fd);
-//        }
-//        
-//        sleep(10);
-//        return 0;
-
         argc = ac;
         argv = av;
 
@@ -415,8 +404,6 @@ int main(int ac, char **av)
 
         parse_args();
 
-        init_modules(); // Initialise all file descriptors
-
         sa.sa_handler = sig_handle;
         sigemptyset(&sa.sa_mask);
         sa.sa_flags = SA_NOCLDSTOP;
@@ -424,10 +411,6 @@ int main(int ac, char **av)
             perror("sigaction()");
             return -errno;
         }
-//        if ( sigaction(SIGTERM, &sa, NULL)) {
-//            perror("sigaction()");
-//            return -errno;
-//        }
 
         /* Check if we can go into background */
         if (!foreground) {
@@ -451,6 +434,9 @@ int main(int ac, char **av)
             }
         }
 
+        init_modules(); // Initialise all file descriptors
+
+
 	// Main never ending loop around select()
 	while (1) {
 		/* Call select() */
@@ -465,9 +451,19 @@ int main(int ac, char **av)
 
 		/* Allways expect at least 1 fd to be ready.
 		 * Otherwise a signal was sent */
-		if (fd_count <= 0 && errno != EINTR) {
-                    perror("select()");
-			break;
+		if (fd_count == -1) {
+                    /* Interrupted system call is ok, go back to the top */
+                    if (errno == EINTR) 
+                        continue;
+
+                    /* Don't know this error, bale out */
+                    perror("select() error");
+                    fprintf(stderr, "Aborting\n");
+                    break;
+                } else if (fd_count == 0) {
+                    fprintf(stderr, "%s:select() returned 0, don't know why\n",
+                            __FILE__);
+                    break;
                 }
 
 		fd = 0;
@@ -505,7 +501,7 @@ int main(int ac, char **av)
         printf("Phew, finished, but don't know why!\n");
 
         /* Kill everything in this process group */
-//        kill(0, SIGTERM);
+        kill(0, SIGTERM);
 
 	return 0;
 }

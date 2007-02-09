@@ -361,11 +361,8 @@ void free_rtw_model(int model_id)
     struct model *model = rt_kernel.model[model_id];
     unsigned int i;
 
-
-    clear_bit(model->id, &rt_kernel.loaded_models);
-    rtp_fio_clear_mdl(model);
-
     down(&rt_kernel.lock);
+
     for (i = 0; i < model->rtw_model->numst; i++) {
         rt_task_suspend(&model->task[i].rtai_thread);
         printk("Unused stack memory: %i\n", 
@@ -373,6 +370,9 @@ void free_rtw_model(int model_id)
 
         rt_task_delete(&model->task[i].rtai_thread);
     }
+
+    clear_bit(model_id, &rt_kernel.loaded_models);
+    rtp_fio_clear_mdl(model);
 
     if (!rt_kernel.loaded_models) {
         /* Last process to be removed */

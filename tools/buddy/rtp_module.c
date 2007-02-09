@@ -86,8 +86,6 @@ static int param_change(void *priv_data, void *start, size_t len)
         struct param_change delta;
         int rv;
 
-        printf("new params\n");
-
         delta.rtP = model->rtP;
         delta.pos = (void *)start - model->rtP;
         delta.len = len;
@@ -186,11 +184,11 @@ static int find_so_file(char *filename, size_t len,
             else {
                 fprintf(stderr, 
                         "Could not locate model description file "
-                        "%s/<mdl>.so. Either start from the working "
+                        "%s/%s.so. Either start from the working "
                         "directory, or pass the path as an argument to "
                         "insmod:\n"
                         "\tinsmod <mdl>_kmod.ko so_path=<path_to_dir>\n",
-                        so_path);
+                        so_path, model_name);
             }
             return rv;
         } else {
@@ -228,7 +226,7 @@ static int find_so_file(char *filename, size_t len,
     return -ENOENT;
 }
 
-static int start_model(int fd, const char *model_name, unsigned int model_num)
+static int start_model(const char *model_name, unsigned int model_num)
 {
     int rv = 0;
     char filename[PATH_MAX];
@@ -406,20 +404,21 @@ out_open_rtb:
 
 static void open_model(int fd, void *d)
 {
-//    struct rtp_io *rtp_io = d;
     int rv, i, j, pid;
     uint32_t new_models;
     struct rtp_model_name rtp_model_name;
 
-    rv = ioctl(fd, RTK_GET_NEW_MODELS, &new_models);
+    rv = ioctl(fd, RTK_GET_ACTIVE_MODELS, &new_models);
     if (rv) {
         perror("Could not get names of active models");
+        fprintf(stderr, 
+                "pid %i, ioctl fd %i number RTK_GET_ACTIVE_MODELS: %u\n", 
+                getpid(), fd, RTK_GET_ACTIVE_MODELS);
         return;
     }
 
     /* Get a list of models that have started since last time 
      * it was checked */
-//    new_models = ~rtp_io->active_models & model_list;
     for( i = 0; i < 32; i++) {
         if (!(new_models & (0x01<<i))) {
             continue;
@@ -431,19 +430,16 @@ static void open_model(int fd, void *d)
             perror("Error getting model name");
             continue;
         }
-        printf("Starting model %s\n", rtp_model_name.name);
-        if (ioctl(fd, RTK_SET_MODEL_WATCHED, i)) {
-            perror("Cannot mark model watched");
-            continue;
-        }
+        printf("Starting model %s pid %i\n", rtp_model_name.name, getpid());
 
         if (!(pid = fork())) { 
             // child
             for (j = foreground ? 3 : 0; j < file_max; j++) {
-                if (!close(j))
+                if (!close(j)) {
                     clr_fd(j);
+                }
             }
-            if (start_model(fd, rtp_model_name.name, i))
+            if (start_model(rtp_model_name.name, i))
                 exit(-1);
         } else if (pid > 0) {
             // parent
@@ -468,15 +464,17 @@ int rtp_module_prepare(void)
      * one */
     snprintf(filename, sizeof(filename), "%s0", rtp_io.dev_path);
 
-    printf("Opening %s\n", filename);
     if ((fd = open(filename, O_RDWR | O_NONBLOCK)) < 0) {
             perror("Error opening manager channel");
             rv = -errno;
             goto out_open_manager;
     }
+    printf("Opened %s, fd %i pid %i\n", filename, fd, getpid());
 
-//    rtp_io.active_models = 0;
     init_fd(fd, open_model, NULL, &rtp_io);
+
+    open_model(fd, &rtp_io);
+
     return 0;
 
     close(fd);
