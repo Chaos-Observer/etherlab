@@ -231,6 +231,7 @@ void msr_disconnect(void){
     FOR_THE_LIST(dev,msr_dev_head) 
 	if(dev) {
 	    dev->disconnectflag = 1;  //disconnect markieren
+	    set_wfd(dev->client_wfd);
 	}
 }
 

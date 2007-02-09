@@ -117,7 +117,7 @@ struct talist *addattribute(struct talist **head,char *name,char *value){
 
     if(!name) return NULL;  //der Name muß schon vorhanden sein
 
-    if(DBG >0) 
+    if(DBG >1) 
 	    printf("A-List append: %s = %s\n",name,value);
 
 
@@ -125,7 +125,7 @@ struct talist *addattribute(struct talist **head,char *name,char *value){
     if(strstr(name,"no") == name || strstr(name,"un") == name) {
 	FOR_THE_LIST(element,*head) {  
 	    if(element && strcmp(element->name,name+2) == 0) { //es gibt den Namen schon in der Liste
-		if (DBG > 0) printf("Remove Element %s\n",element->name);
+		if (DBG > 1) printf("Remove Element %s\n",element->name);
 		remattribute(head,element->name);
 		return NULL;
     	    }
@@ -135,7 +135,7 @@ struct talist *addattribute(struct talist **head,char *name,char *value){
 
     FOR_THE_LIST(element,*head) {  
 	if(element && strcmp(element->name,name) == 0) { //es gibt den Namen schon in der Liste
-	    if (DBG > 0) printf("Element found...\n");
+	    if (DBG > 1) printf("Element found...\n");
 	    free(element->value);             //dann nur den neuen Wert zuweisen
 	    element->value=NULL;
 	    element->value = strdup(value);
@@ -326,7 +326,7 @@ char *alisttostr(struct talist *head){
 	}
     }
 
-    if(DBG > 0)
+    if(DBG > 1)
 	printf("Listsize: %d\n",ecnt);
     buf = (char *)malloc(size+1); //die Null am Ende nicht vergessen              
     FOR_THE_LIST(element,head) {  //erst durch die Liste laufen und zählen, wie groß der String sein muß
@@ -406,12 +406,18 @@ char *extractalist(struct talist **head,char *buf) {
 		break;
 
 	    case '>':
-		state = OUTXMLFRAME;
-		rbuf[j] = 0;
-		namebuf[n] = 0;
-		if(n>0) 
-		    addattribute(head,namebuf,""); //war nur ein Attribute
-		n = 0;
+		if(state == INXMLFRAME) {
+		    state = OUTXMLFRAME;
+		    rbuf[j] = 0;
+		    namebuf[n] = 0;
+		    if(n>0) 
+			addattribute(head,namebuf,""); //war nur ein Attribute
+		    n = 0;
+		}
+		else {
+		    printf("XML-Statement error in: %s\n",buf);
+		//sonst nix tun da Framefehler
+		}
 		break;
 
 	    case ' ':
@@ -434,12 +440,12 @@ char *extractalist(struct talist **head,char *buf) {
 			    case ENDVALUE:
 				substate = INNAME;
 			    default:
-				if(DBG >0) printf("A-List, no Substate\n");
+				if(DBG >1) printf("A-List, no Substate\n");
 				break;
 			}
 			break;
 		    default:
-			if(DBG >0) printf("A-List, no State\n");
+			if(DBG >1) printf("A-List, no State\n");
 			break;
 		}
 		break;
@@ -460,12 +466,12 @@ char *extractalist(struct talist **head,char *buf) {
 				valuebuf[v++] = buf[i];
 				break;
 			    default:
-				if(DBG >0) printf("A-List, no Substate\n");
+				if(DBG >1) printf("A-List, no Substate\n");
 				break;
 			}
 			break;
 		    default:
-			if(DBG >0) printf("A-List, no State\n");
+			if(DBG >1) printf("A-List, no State\n");
 			break;
 		}
 		break;
@@ -482,7 +488,7 @@ char *extractalist(struct talist **head,char *buf) {
 			n = 0;
 			substate = ENDVALUE;
 		    default:
-			if(DBG >0) printf("A-List, no Substate\n");
+			if(DBG >1) printf("A-List, no Substate\n");
 			break;
 		}
 		break;
@@ -504,7 +510,7 @@ char *extractalist(struct talist **head,char *buf) {
 			}
 			break;
 		    default:
-			if(DBG >0) printf("A-List, no State\n");
+			if(DBG >1) printf("A-List, no State\n");
 			break;
 		}
 		break;

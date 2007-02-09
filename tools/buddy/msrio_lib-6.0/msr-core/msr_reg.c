@@ -26,6 +26,9 @@
 *                 Alias im Kanalnamen
 *                 Floatformatierung auf ffloat() umbauen
 *
+*           Floats werden mit %.16g formatiert, damit die Epochenzeit noch auf eine usec reinpasst!
+*
+*
 *
 *
 *
@@ -83,7 +86,7 @@
 
 RCS_ID("$Header: /vol/projekte/msr_messen_steuern_regeln/linux/kernel_space/msrio_lib-0.9/msr-core/RCS/msr_reg.c,v 1.34 2006/08/09 12:40:52 hm Exp hm $");
 
-#define DBG 1
+#define DBG 0
 /*--external functions---------------------------------------------------------------------------*/
 
 /*--external data--------------------------------------------------------------------------------*/
@@ -206,7 +209,7 @@ int r_p_dbl(struct msr_param_list *self,char *buf) {
 #ifdef __KERNEL__
     FPARAM(double,"%s%i.%.6i",F_FLOAT);
 #else
-    FPARAM(double,"%f",);
+    FPARAM(double,"%.16g",);
 #endif
 }
 
@@ -214,7 +217,7 @@ int r_p_flt(struct msr_param_list *self,char *buf) {
 #ifdef __KERNEL__
     FPARAM(float,"%s%i.%.6i",F_FLOAT);
 #else
-    FPARAM(float,"%f",);
+    FPARAM(float,"%.16g",);
 #endif
 }
 
@@ -1236,7 +1239,7 @@ int msr_print_kanal_list(char *buf,char *aname,int mode)
 			     element->p_bez);
 	    }
 	    else {
-		len+=sprintf(buf+len,"<channel name=\"%s\" alias=\"%s\" index=\"%i\" typ=\"%s\" datasize=\"%i\" bufsize=\"%i\" HZ=\"%f\"",
+		len+=sprintf(buf+len,"<channel name=\"%s\" alias=\"%s\" index=\"%i\" typ=\"%s\" datasize=\"%i\" bufsize=\"%i\" HZ=\"%.16g\"",
 			     element->p_bez,
 			     element->alias,
 			     index,
@@ -1283,10 +1286,10 @@ int msr_print_kanal_list(char *buf,char *aname,int mode)
 			len+=sprintf(buf+len,"%lu\"/>\n",(*(unsigned long int*)(k_base + wp * k_blocksize + (int)element->p_adr)));
 			break;
 		    case TFLT:
-			len+=sprintf(buf+len,"%f\"/>\n",(*(float*)(k_base + wp * k_blocksize + (int)element->p_adr)));
+			len+=sprintf(buf+len,"%.16g\"/>\n",(*(float*)(k_base + wp * k_blocksize + (int)element->p_adr)));  
 			break;
 		    case TDBL:
-			len+=sprintf(buf+len,"%f\"/>\n",(*(double*)(k_base + wp * k_blocksize + (int)element->p_adr)));
+			len+=sprintf(buf+len,"%.16g\"/>\n",(*(double*)(k_base + wp * k_blocksize + (int)element->p_adr))); 
 			break;
  		    case TTIMEVAL:
 			len+=sprintf(buf+len,"%u.%.6u\"/>\n",(unsigned int)(*(struct timeval*)(k_base + wp * k_blocksize + (int)element->p_adr)).tv_sec,
@@ -1366,7 +1369,7 @@ int printChVal(struct msr_char_buf *buf,struct msr_kanal_list *kanal,int index)
 	    if((tmp_value == 0.0))
 		cnt=msr_buf_printf(buf,"0");
 	    else
-		cnt=msr_buf_printf(buf,"%f",tmp_value);
+		cnt=msr_buf_printf(buf,"%.16g",tmp_value);
 	    break;
 	}
 	case TDBL:{
@@ -1375,7 +1378,7 @@ int printChVal(struct msr_char_buf *buf,struct msr_kanal_list *kanal,int index)
 	    if((tmp_value == 0.0))
 		cnt=msr_buf_printf(buf,"0");
 	    else
-		cnt=msr_buf_printf(buf,"%f",tmp_value);
+		cnt=msr_buf_printf(buf,"%.16g",tmp_value); 
 
 	    break;
 	}
@@ -1532,12 +1535,6 @@ void msr_comp_grad(void *vbuf,int cnt,enum enum_var_typ p_var_typ) {
 }
 
 
-int ffloat(char *buf,double x,unsigned int prec)
-{
-    return sprintf(buf,"%f",x);  
-}
-
-
 void msr_value_printf(struct msr_char_buf *buf,int cnt,enum enum_var_typ p_var_typ,void *vbuf,unsigned int prec)
 {
     int i;
@@ -1584,20 +1581,10 @@ void msr_value_printf(struct msr_char_buf *buf,int cnt,enum enum_var_typ p_var_t
 	    break;
 
 	case TFLT:
-	    CPPF(float,"%f");
-/*	    for(i=0;i<cnt;i++) {
-		msr_incb(ffloat(msr_getb(buf),((float *)vbuf)[i],prec),buf);
-		if(i != cnt-1)
-		    msr_buf_printf(buf,",");
-		    } */
+	    CPPF(float,"%.16g");
 	    break;
 	case TDBL:
-	    CPPF(double,"%f"); /*
-	    for(i=0;i<cnt;i++) {
-		msr_incb(ffloat(msr_getb(buf),((double *)vbuf)[i],prec),buf);
-		if(i != cnt-1)
-		    msr_buf_printf(buf,",");
-		    } */
+	    CPPF(double,"%.16g");
 	    break;
 	default: break;
     }
@@ -1887,6 +1874,8 @@ int msr_reg_rtw_param( const char *path, const char *name, const char *cTypeName
     struct talist *alist = NULL;
 
 
+    if(DBG > 0) printk("reg_rtw_param_ %s,%s\n",path,name);
+
     //Hilfspuffer
     buf = (char *)getmem(strlen(path)+strlen(name)+2+20);
 
@@ -1921,25 +1910,26 @@ int msr_reg_rtw_param( const char *path, const char *name, const char *cTypeName
 	    result = msr_cfi_reg_param(rbuf,"",data,rnum,cnum,orientation,RTW_to_MSR(dataType),info,MSR_R | MSR_W,NULL,NULL);
 
 	    //jetzt noch die einzelnen Elemente registrieren aber nur bis zu einer Obergrenze von ?? Stck 2006.11.06
-
-	    if(rnum+cnum > 2 && rnum+cnum<100) {  //sonst werden es zu viele Parameter
-		int r,c;
-		void *p;
-		char *buf2 = (char *)getmem(strlen(rbuf)+2+100); //warum 100 ??
-		for (r = 0; r < rnum; r++) {
-		    for (c = 0; c < cnum; c++) {
-			MSR_CALC_ADR((void *)data,dataSize,orientation,rnum,cnum);
-			//neuen Namen
-			if (rnum == 1 || cnum == 1)  //Vektor
-			    sprintf(buf2,"%s/%i",rbuf,r+c);
-			else                         //Matrize
-			    sprintf(buf2,"%s/%i,%i",rbuf,r,c);
-			//p wird in MSR_CALC_ADR berechnet !!!!!!!!!!!
-			result = msr_cfi_reg_param(buf2,"",p,1,1,orientation,RTW_to_MSR(dataType),info,MSR_R | MSR_W | MSR_DEP,NULL,NULL);
+	    if (!hasattribute(alist,"hideelements")) {
+		if(rnum+cnum > 2 && rnum+cnum<100) {  //sonst werden es zu viele Parameter
+		    int r,c;
+		    void *p;
+		    char *buf2 = (char *)getmem(strlen(rbuf)+2+100); //warum 100 ??
+		    for (r = 0; r < rnum; r++) {
+			for (c = 0; c < cnum; c++) {
+			    MSR_CALC_ADR((void *)data,dataSize,orientation,rnum,cnum);
+			    //neuen Namen
+			    if (rnum == 1 || cnum == 1)  //Vektor
+				sprintf(buf2,"%s/%i",rbuf,r+c);
+			    else                         //Matrize
+				sprintf(buf2,"%s/%i,%i",rbuf,r,c);
+			    //p wird in MSR_CALC_ADR berechnet !!!!!!!!!!!
+			    result = msr_cfi_reg_param(buf2,"",p,1,1,orientation,RTW_to_MSR(dataType),info,MSR_R | MSR_W | MSR_DEP,NULL,NULL);
+			}
 		    }
+		    freemem(buf2);
+		}
 	    }
-	    freemem(buf2);
-	}
 
     }
     freemem(info);
