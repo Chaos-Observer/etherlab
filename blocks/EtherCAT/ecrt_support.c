@@ -265,6 +265,9 @@ ecs_end(void)
     struct ecat_pdo *pdo, *n3;
     struct sdo_init *sdo, *n4;
 
+    if (!ecat_data)
+        return;
+
     list_for_each_entry_safe(master, n1, &ecat_data->master_list, list) {
         list_for_each_entry_safe(domain, n2, &master->domain_list, list) {
             list_for_each_entry_safe(pdo, n3, &domain->pdo_list, list) {
@@ -290,7 +293,9 @@ ecs_end(void)
         }
 
 
-    kfree(st_data);
+    if (st_data)
+        kfree(st_data);
+
     kfree(ecat_data);
 }
 
@@ -739,6 +744,12 @@ ecs_init(
     size_t len;
     int i;
 
+    /* Make sure that the correct header version is used */
+#if ECRT_VERSION_MAGIC != ECRT_VERSION(1,2)
+#error Incompatible EtherCAT header file found.
+#error This source is only compatible with EtherCAT Version 1.2
+#endif
+
     /* Count how many sample times there are. The list is zero terminated */
     for (nst = 0; st[nst]; nst++);
     pr_debug("Number of sample times: %u\n", nst);
@@ -759,6 +770,15 @@ ecs_init(
     /* Set the period for all sample times */
     for ( i = 0; i < nst; i++ )
         ecat_data->st[i].period = st[i];
+
+    /* Make sure that the EtherCAT driver has the correct interface */
+    if (ECRT_VERSION_MAGIC != ecrt_version_magic()) {
+        snprintf(errbuf, sizeof(errbuf), 
+                "EtherCAT driver version 0x%02x is not supported. "
+                "Expecting version 0x%02x", 
+                ecrt_version_magic(), ECRT_VERSION_MAGIC);
+        return errbuf;
+    }
 
     return NULL;
 }
