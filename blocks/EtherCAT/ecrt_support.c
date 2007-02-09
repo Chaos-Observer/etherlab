@@ -215,31 +215,6 @@ ecs_send(int tid)
     }
 }
 
-/* There was some problem during initialisation - free
- * allocated memory that will not be freed when model insert code
- * calls ecs_end() */
-void 
-abort_init(void)
-{
-    struct ecat_master *master, *n1;
-    struct ecat_domain *domain, *n2;
-    struct ecat_pdo *pdo, *n3;
-    struct sdo_init *sdo, *n4;
-
-    list_for_each_entry_safe(master, n1, &ecat_data->master_list, list) {
-        list_for_each_entry_safe(domain, n2, &master->domain_list, list) {
-            list_for_each_entry_safe(pdo, n3, &domain->pdo_list, list) {
-                list_for_each_entry_safe(sdo, n4, &pdo->sdo_list, list) {
-                    kfree(sdo);
-                }
-                kfree(pdo);
-            }
-            kfree(domain);
-        }
-        kfree(master);
-    }
-}
-
 /* This callback is passed to EtherCAT during master initialisation. 
  *
  * Normally it is not allowable for anyone else to use the master other
@@ -285,6 +260,23 @@ ecs_end(void)
 {
     unsigned int i, j;
     void *st_data = NULL;
+    struct ecat_master *master, *n1;
+    struct ecat_domain *domain, *n2;
+    struct ecat_pdo *pdo, *n3;
+    struct sdo_init *sdo, *n4;
+
+    list_for_each_entry_safe(master, n1, &ecat_data->master_list, list) {
+        list_for_each_entry_safe(domain, n2, &master->domain_list, list) {
+            list_for_each_entry_safe(pdo, n3, &domain->pdo_list, list) {
+                list_for_each_entry_safe(sdo, n4, &pdo->sdo_list, list) {
+                    kfree(sdo);
+                }
+                kfree(pdo);
+            }
+            kfree(domain);
+        }
+        kfree(master);
+    }
 
     for( i = 0; i < ecat_data->nst; i++)
         for( j = 0; j < ecat_data->st[i].master_count; j++) {
@@ -536,7 +528,6 @@ out_create_domain:
     ecat_data->st[master_tid].master_count--;
     ecrt_release_master(master->handle);
 out_request_master:
-    abort_init();
     return errbuf;
 
 out_master_activate:
@@ -584,7 +575,6 @@ ecs_reg_sdo( struct ecat_pdo *pdo,
     return NULL;
 
 out:
-    abort_init();
     return errmsg;
 }
 
@@ -698,7 +688,6 @@ ecs_reg_pdo(
     return pdo;
 
 out_reg_pdo:
-    abort_init();
     return NULL;
 }
 
@@ -738,7 +727,6 @@ ecs_reg_pdo_range(
     return pdo;
 
 out_reg_pdo_range:
-    abort_init();
     return NULL;
 }
 
