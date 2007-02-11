@@ -16,7 +16,7 @@ dnl RTAI Path
 AC_ARG_WITH([rtai-dir], 
     AS_HELP_STRING(
         [--with-rtai-dir=<rtai-dir>],
-        [RTAI directory [[/usr/realtime]]]),
+        [RTAI directory (/usr/realtime)]),
     [ ],
     [
         withval=$(type -p rtai-config)
@@ -32,13 +32,29 @@ RTAI_FLAGS=$($RTAI_DIR/bin/rtai-config --module-cflags)
 AC_SUBST(RTAI_FLAGS)
 
 dnl Make sure rtai-config reports correct kernel
-LINUX_DIR=$($RTAI_DIR/bin/rtai-config --linux-dir)
+dnl and that IPIPE is configured for the kernel
+AC_ARG_WITH([linux-dir], 
+    AS_HELP_STRING(
+        [--with-linux-dir=<linux-dir>],
+        [Kernel directory (rtai-config --linux-dir)]),
+    [ ],
+    [
+        withval=$(${RTAI_DIR}/bin/rtai-config --linux-dir)
+    ])
 AC_MSG_CHECKING(Linux kernel path)
-test -r "$LINUX_DIR/.config" && \
-    sh -c "source $LINUX_DIR/.config; test x\"\$CONFIG_IPIPE\" == \"xy\"" || \
-    AC_MSG_ERROR([IPIPE not configured in $LINUX_DIR/.config])
-AC_MSG_RESULT($LINUX_DIR)
-AC_SUBST(LINUX_DIR)
+test -r "${withval}/.config" || \
+        AC_MSG_ERROR([.config not found in ${withval}])
+AC_MSG_RESULT(${withval})
+AC_MSG_CHECKING(Checking IPIPE configured in kernel)
+ipipe_conf=$(make -f - -I${withval} <<'EOF'
+include .config
+all:
+	@echo -n $(CONFIG_IPIPE)
+EOF)
+test "x${ipipe_conf}" == "xy" || \
+    AC_MSG_ERROR(not configured)
+AC_MSG_RESULT(yes)
+AC_SUBST(LINUX_DIR,$withval)
 
 dnl Allow experimental stuff  for development
 AC_ARG_ENABLE([experimental],
