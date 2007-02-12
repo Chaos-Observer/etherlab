@@ -103,8 +103,6 @@ DOWNSAMPLE           := |>DOWNSAMPLE<|
 VERBOSE              := |>VERBOSE_BUILD<|
 
 ETHERLAB_DIR         := @prefix@
-KERNEL_DIR           := @LINUX_DIR@
-RTAI_FLAGS           := @RTAI_FLAGS@
 
 MODELVERSION 	     = $(shell grep -m1 "Model Version" $(MODEL).h | sed "s/.*: *\([^[:space:]]*\).*/\1/")
 

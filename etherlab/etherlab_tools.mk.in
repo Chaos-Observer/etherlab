@@ -30,3 +30,5 @@ GCC_WARN_OPTS_MAX := -pedantic -Wall -Wshadow \
 			-Wnested-externs -Wpointer-arith
 GCC_WARN_OPTS_MAX := $(GCC_WARN_OPTS) -Wshadow -Wcast-qual
 
+KERNEL_DIR           := @LINUX_DIR@
+RTAI_FLAGS           := @RTAI_FLAGS@
