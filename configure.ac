@@ -46,7 +46,7 @@ test -r "${withval}/.config" || \
         AC_MSG_ERROR([.config not found in ${withval}])
 AC_MSG_RESULT(${withval})
 AC_MSG_CHECKING(Checking IPIPE configured in kernel)
-ipipe_conf=$(make -f - -I${withval} <<'EOF'
+ipipe_conf=$(make -s -f - -I${withval} <<'EOF'
 include .config
 all:
 	@echo -n $(CONFIG_IPIPE)
