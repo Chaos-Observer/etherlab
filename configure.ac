@@ -3,7 +3,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT([etherlab_rtw], [1.0], [lerich@gmx.net])
+AC_INIT([etherlab_rtw], [1.1-rc1], [lerich@gmx.net])
 AC_CONFIG_AUX_DIR(config)
 AM_INIT_AUTOMAKE([-Wall -Werror])
 AC_CONFIG_SRCDIR([config.h.in])
@@ -12,41 +12,74 @@ ETHERLAB_DIR=/opt/etherlab
 AC_PREFIX_DEFAULT([/opt/etherlab/rtw])
 AC_SUBST(ETHERLAB_DIR)
 
+dnl Compile and install Simulink related components (default: yes)
+AC_ARG_ENABLE([simulink],
+    AS_HELP_STRING(
+        [--disable-simulink],
+        [Do not install Simulink components]),
+    [ case "${enableval}" in
+        yes) simulink=1 ;;
+        no)  simulink=0 ;;
+        *)   AC_MSG_ERROR([bad value for --enable-simulink]) ;;
+      esac],
+    [ simulink=1 ]
+)
+AM_CONDITIONAL(SIMULINK, test x$simulink = x1)
+AC_SUBST(SIMULINK,${simulink})
+
+dnl Compile and install rt_kernel related components (default: yes)
+AC_ARG_ENABLE([kernel],
+    AS_HELP_STRING(
+        [--disable-kernel],
+        [Do not install RT-Kernel components]),
+    [ case "${enableval}" in
+        yes) kernel=1 ;;
+        no)  kernel=0 ;;
+        *)   AC_MSG_ERROR([bad value for --enable-kernel]) ;;
+      esac],
+    [ kernel=1 ]
+)
+AM_CONDITIONAL(KERNEL, test x$kernel = x1)
+AC_SUBST(KERNEL,${kernel})
+
 dnl RTAI Path
+if test "x$kernel" = "x1"; then
 AC_ARG_WITH([rtai-dir], 
     AS_HELP_STRING(
         [--with-rtai-dir=<rtai-dir>],
         [RTAI directory (/usr/realtime)]),
-    [ ],
+    [ rtai_dir=${withval} ],
     [
-        withval=$(type -p rtai-config)
-        withval=${withval%%bin/rtai-config}
-        test x"$withval" == x && withval=/usr/realtime
+        rtai_dir=$(type -p rtai-config)
+        rtai_dir=${rtai_dir%%bin/rtai-config}
+        test x"$rtai_dir" == x && rtai_dir=/usr/realtime
     ])
 AC_MSG_CHECKING(RTAI path)
-test -r "$withval"/include/rtai.h ||\
-    AC_MSG_ERROR([No installed RTAI found $withval/include/rtai.h])
-AC_SUBST(RTAI_DIR,[$withval])
+test -r "$rtai_dir"/include/rtai.h ||\
+    AC_MSG_ERROR([No installed RTAI found $rtai_dir/include/rtai.h])
+AC_SUBST(RTAI_DIR,[$rtai_dir])
 AC_MSG_RESULT($RTAI_DIR)
 RTAI_FLAGS=$($RTAI_DIR/bin/rtai-config --module-cflags)
 AC_SUBST(RTAI_FLAGS)
+fi
 
 dnl Make sure rtai-config reports correct kernel
 dnl and that IPIPE is configured for the kernel
+if test "x$kernel" = "x1"; then
 AC_ARG_WITH([linux-dir], 
     AS_HELP_STRING(
         [--with-linux-dir=<linux-dir>],
         [Kernel directory (rtai-config --linux-dir)]),
-    [ ],
+    [ linux_dir=$(withval) ],
     [
-        withval=$(${RTAI_DIR}/bin/rtai-config --linux-dir)
+        linux_dir=$(${RTAI_DIR}/bin/rtai-config --linux-dir)
     ])
 AC_MSG_CHECKING(Linux kernel path)
-test -r "${withval}/.config" || \
-        AC_MSG_ERROR([.config not found in ${withval}])
-AC_MSG_RESULT(${withval})
+test -r "${linux_dir}/.config" || \
+        AC_MSG_ERROR([.config not found in ${linux_dir}])
+AC_MSG_RESULT(${linux_dir})
 AC_MSG_CHECKING(Checking IPIPE configured in kernel)
-ipipe_conf=$(make -s -f - -I${withval} <<'EOF'
+ipipe_conf=$(make -s -f - -I${linux_dir} <<'EOF'
 include .config
 all:
 	@echo -n $(CONFIG_IPIPE)
@@ -54,7 +87,8 @@ EOF)
 test "x${ipipe_conf}" == "xy" || \
     AC_MSG_ERROR(not configured)
 AC_MSG_RESULT(yes)
-AC_SUBST(LINUX_DIR,$withval)
+AC_SUBST(LINUX_DIR,$linux_dir)
+fi
 
 dnl Allow experimental stuff  for development
 AC_ARG_ENABLE([experimental],
@@ -137,15 +171,14 @@ AC_CONFIG_FILES([
         etherlab/etherlab_kmod.tmf
         etherlab/setup_etherlab.m 
         etherlab/etherlab_tools.mk 
+        etherlab/etherlab_config.m
         blocks/Makefile 
         blocks/setup.m 
-        blocks/Kbuild 
         blocks/AddiData/Makefile 
         blocks/AddiData/setup.m 
         blocks/Hilscher/Makefile 
         blocks/Hilscher/setup.m 
         blocks/EtherCAT/Makefile
-        blocks/EtherCAT/Kbuild
         blocks/EtherCAT/setup.m 
         src/Makefile
         src/include/Makefile
@@ -158,6 +191,7 @@ AC_CONFIG_FILES([
         tools/rt_kernel/Kbuild
         tools/rt_kernel/Makefile
         tools/include/Makefile
+        lib/Kbuild
         lib/Makefile
 ])
 AC_OUTPUT

@@ -20,24 +20,6 @@ endif
 
 ethercat_DATA = setup.m
 
-#lib_LIBRARIES = libecrt_support.a
-#libecrt_support_a_SOURCES =
-#libecrt_support_a_LIBADD = ecrt_support.o
-
-include_HEADERS = ecrt_support.h
-
-EXTRA_DIST = ecrt_support.h ecrt_support.c
-
-all: ecrt_support.o
-
-ecrt_support.o: $(EXTRA_DIST)
-	make -C "$(LINUX_DIR)" M="@abs_builddir@" \
-		V="$(VERBOSE)" DEFS="$(DEFS)" "_module_@abs_builddir@"
-
-clean-local:
-	make -C "$(LINUX_DIR)" M="@abs_builddir@" \
-		V="$(VERBOSE)" DEFS="$(DEFS)" clean
-
 install-data-hook:
 	$(RM) -f $(DESTDIR)/$(ethercatdir)/ETL.tlc
 	$(LN_S) -f ../ETL.tlc $(DESTDIR)/$(ethercatdir)/ETL.tlc

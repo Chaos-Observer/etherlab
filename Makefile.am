@@ -1,13 +1,17 @@
-SUBDIRS = \
-        blocks \
+SUBDIRS = etherlab
+
+if KERNEL
+SUBDIRS += \
         tools \
-        etherlab \
         src \
         lib
+endif
 
-EXTRA_DIST = bootstrap etherlab/setup_etherlab.m.in
+if SIMULINK
+SUBDIRS += \
+        blocks
+endif
+        
+EXTRA_DIST = bootstrap
 
 include_HEADERS = config.h
-
-etherlabdir = $(prefix)
-etherlab_DATA = etherlab/setup_etherlab.m
