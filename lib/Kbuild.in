@@ -1,4 +1,8 @@
 EXTRA_CFLAGS := -I@ETHERLAB_DIR@/include @RTAI_FLAGS@ $(DEFS) \
         -I@abs_top_srcdir@
 
-obj-m   := raise_catch.o ecrt_support.o
+obj-m   := raise_catch.o
+
+ifeq (@ETHERCAT@,1)
+obj-m   +=  ecrt_support.o
+endif
