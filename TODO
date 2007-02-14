@@ -9,3 +9,4 @@
 * Implement printf()
 * Implement EtherCAT Master Stats block
 * Implement scaling and filter in bk1120_in
+* Have etherlab_buddy do logging over syslog
