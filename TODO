@@ -1,3 +1,10 @@
+For Rel 1.1
+-----------
+* Buddy should fork properly and report using the syslog channel
+
+
+Others:
+------
 * Implement Data input stream
 * use kmalloc() for process and parameter io.
 * make Virtual block inputs and outputs visible
@@ -9,4 +16,3 @@
 * Implement printf()
 * Implement EtherCAT Master Stats block
 * Implement scaling and filter in bk1120_in
-* Have etherlab_buddy do logging over syslog
