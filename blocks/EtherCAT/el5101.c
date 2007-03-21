@@ -24,20 +24,14 @@
 #define OFFSET_IDX                                       3
 #define OP_DTYPE   ((uint_T)mxGetScalar(ssGetSFcnParam(S,4)))
 #define STATUS     ((uint_T)mxGetScalar(ssGetSFcnParam(S,5)))
-#define FILTER     ((uint_T)mxGetScalar(ssGetSFcnParam(S,6)))
-#define OMEGA_IDX                                        7
-#define TSAMPLE            (mxGetScalar(ssGetSFcnParam(S,8)))
-#define PARAM_COUNT                                      9
+#define TSAMPLE            (mxGetScalar(ssGetSFcnParam(S,6)))
+#define PARAM_COUNT                                      7
 
 struct el5101 {
     uint_T status;
     uint_T raw;
     uint_T scale;
     int_T op_type;
-    int_T filter;       /* 0: No filter
-                         * 1: Continuous filter
-                         * 2: Discrete filter
-                         */
     int_T paramCount;   /* Number of runtime parameters */
 };
     
@@ -72,8 +66,6 @@ static void mdlInitializeSizes(SimStruct *S)
     ssSetUserData(S,devInstance);
 
     devInstance->status = STATUS;
-    if (FILTER)
-        devInstance->filter = (TSAMPLE == 0) ? 1 : 2;
 
     switch (OP_DTYPE) {
         case 1:         /* Raw */
@@ -106,16 +98,8 @@ static void mdlInitializeSizes(SimStruct *S)
     }
 
     ssSetNumSampleTimes(S, 1);
-    if (devInstance->filter) {
-        if (TSAMPLE) {
-            ssSetNumDiscStates(S, DYNAMICALLY_SIZED);
-        } else {
-            ssSetNumContStates(S, DYNAMICALLY_SIZED);
-        }
-    } else {
-        ssSetNumContStates(S, 0);
-        ssSetNumDiscStates(S, 0);
-    }
+    ssSetNumContStates(S, 0);
+    ssSetNumDiscStates(S, 0);
     ssSetNumRWork(S, 0);
     ssSetNumIWork(S, 0);
     ssSetNumPWork(S, devInstance->status ? 3 : 2);
@@ -147,8 +131,6 @@ static void mdlSetWorkWidths(SimStruct *S)
     devInstance->paramCount = 0;
     if (devInstance->scale)
         devInstance->paramCount += 2;
-    if (devInstance->filter)
-        devInstance->paramCount++;
 
     ssSetNumRunTimeParams(S, devInstance->paramCount);
 
@@ -163,19 +145,6 @@ static void mdlSetWorkWidths(SimStruct *S)
         devInstance->paramCount += 2;
     }
 
-    if (devInstance->filter) {
-        set_filter(S, 1, OMEGA_IDX, devInstance->paramCount);
-        if (ssGetErrorStatus(S))
-            return;
-        devInstance->paramCount += 1;
-    }
-}
-
-#define MDL_DERIVATIVES
-static void mdlDerivatives(SimStruct *S)
-{
-    /* Required, otherwise Simulink complains if the filter is chosen
-     * while in continuous sample time */
 }
 
 /* Function: mdlOutputs =======================================================
@@ -241,8 +210,6 @@ static void mdlRTW(SimStruct *S)
     if (!ssWriteRTWScalarParam(S, "ScaleOp", &devInstance->scale, SS_INT32))
         return;
     if (!ssWriteRTWScalarParam(S, "StatusOp", &devInstance->status, SS_INT32))
-        return;
-    if (!ssWriteRTWScalarParam(S, "Filter", &devInstance->filter, SS_INT32))
         return;
     if (!ssWriteRTWScalarParam(S, "InputMax", &inputmax, SS_DOUBLE))
         return;
