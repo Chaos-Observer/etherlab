@@ -34,8 +34,8 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "rich"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Fri Nov 24 14:58:07 2006"
-  ModelVersionFormat	  "1.%<AutoIncrement:247>"
+  LastModifiedDate	  "Sun Feb 18 17:18:53 2007"
+  ModelVersionFormat	  "1.%<AutoIncrement:251>"
   ConfigurationManager	  "rcs"
   LinearizationMsg	  "none"
   Profile		  off
@@ -156,7 +156,7 @@ Library {
   }
   System {
     Name		    "etherlab_lib_exp"
-    Location		    [801, 602, 1396, 995]
+    Location		    [800, 601, 1395, 994]
     Open		    on
     ModelBrowserVisibility  off
     ModelBrowserWidth	    200
@@ -372,7 +372,7 @@ Library {
       MaskHideContents	      off
       System {
 	Name			"EtherCAT"
-	Location		[898, 392, 1395, 760]
+	Location		[898, 444, 1395, 812]
 	Open			on
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
@@ -684,13 +684,13 @@ Library {
 	}
 	Block {
 	  BlockType		  "S-Function"
-	  Name			  "INC_0"
+	  Name			  "ENC_0"
 	  Ports			  [0, 1]
 	  Position		  [25, 200, 105, 240]
 	  BackgroundColor	  "yellow"
 	  FunctionName		  "el5101"
-	  Parameters		  "master,index,scale,offset,dtype,status,filt"
-"er,omega,tsample"
+	  Parameters		  "master,index,scale,offset,dtype,status,tsam"
+"ple"
 	  MaskType		  "EL5101"
 	  MaskDescription	  "Beckhoff EtherCAT Incremental Encoder Input"
 	  MaskHelp		  "This block implements the EtherCAT Incremen"
@@ -724,39 +724,30 @@ Library {
 "set</tt></b>, allowing the output to be scaled with an offset.\n</ul>\n\n<p> "
 "\nChoosing <b>Status Output</b> provides a port of type <tt>uint8_T</tt> wher"
 "e the status is presented. Refer to manufacturors documentation for the used "
-"coding.\n This is only enabled when <b>Vector Output</b> is selected. \n\n<h4"
-">Output Filter</h4>\nWhen not in <b>Raw</b> mode, the <b>Output Filter</b> ch"
-"eckbox becomes available, allowing the use of an internal low pass filter. En"
-"ter the <b>LPF Time Constant</b> for the filter in the field below.\n<br>For "
-"continuous sample time systems (0 in Sample Time), the filter is also continu"
-"ous. Discrete samples systems (Sample Time > 0) uses an equivalent discrete l"
-"ow pass filter with a similar time constant.\n\n<p>\nSet the <b>Sample Time</"
-"b> for the block. <tt>0</tt> is continuous sample time (runs at the model's b"
-"ase rate). Setting <tt>-1</tt> will try to set the time using back propagatio"
-"n.\n"
-	  MaskPromptString	  "Master|Slave Index|Output Full Scale|Output"
-" Offset|Output Data Type|Status Output|Output Filter|LPF Time Constant (sec)|"
-"Sample Time"
-	  MaskStyleString	  "edit,edit,edit,edit,popup(Raw bits|Double|D"
-"ouble with scale and offset),checkbox,checkbox,edit,edit"
-	  MaskTunableValueString  "off,off,on,on,off,off,off,on,off"
-	  MaskCallbackString	  "||||el5101_check('dtype');||el5101_check('f"
-"ilter');||"
-	  MaskEnableString	  "on,on,off,off,on,off,on,off,on"
-	  MaskVisibilityString	  "on,on,on,on,on,on,on,on,on"
-	  MaskToolTipString	  "on,on,on,on,on,on,on,on,on"
-	  MaskVarAliasString	  ",,,,,,,,"
-	  MaskVariables		  "master=@1;index=&2;scale=@3;offset=@4;dtype"
-"=@5;status=@6;filter=@7;tau=@8;tsample=@9;"
-	  MaskInitialization	  "omega=1/tau;"
+"coding.\n This is only enabled when <b>Vector Output</b> is selected. \n\n<p>"
+"\nSet the <b>Sample Time</b> for the block. <tt>0</tt> is continuous sample t"
+"ime (runs at the model's base rate). Setting <tt>-1</tt> will try to set the "
+"time using back propagation.\n"
+	  MaskPromptString	  "Master|Slave Index|Output Data Type|Output "
+"Full Scale|Output Offset|Status Output|Sample Time"
+	  MaskStyleString	  "edit,edit,popup(Raw bits|Double|Double with"
+" scale and offset),edit,edit,checkbox,edit"
+	  MaskTunableValueString  "off,off,off,on,on,off,off"
+	  MaskCallbackString	  "||el5101_check('dtype');||||"
+	  MaskEnableString	  "on,on,on,off,off,on,on"
+	  MaskVisibilityString	  "on,on,on,on,on,on,on"
+	  MaskToolTipString	  "on,on,on,on,on,on,on"
+	  MaskVarAliasString	  ",,,,,,"
+	  MaskVariables		  "master=@1;index=&2;dtype=@3;scale=@4;offset"
+"=@5;status=@6;tsample=@7;"
 	  MaskDisplay		  "fprintf(...\n    'EL5101\\nIncr.-Enc. Input"
 "\\nM:%i Idx:%s',...\n    master,...\n    index)\n"
 	  MaskIconFrame		  on
 	  MaskIconOpaque	  on
 	  MaskIconRotate	  "none"
 	  MaskIconUnits		  "autoscale"
-	  MaskValueString	  "0|1|1|0|Double|off|off|0.1|0"
-	  MaskTabNameString	  ",,,,,,,,"
+	  MaskValueString	  "0|1|Double|1|0|off|0"
+	  MaskTabNameString	  ",,,,,,"
 	}
 	Block {
 	  BlockType		  "S-Function"
