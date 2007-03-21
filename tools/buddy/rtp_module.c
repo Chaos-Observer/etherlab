@@ -22,6 +22,8 @@
 #include <limits.h>	// PATH_MAX
 #include <sys/ioctl.h>	// ioctl()
 #include <sys/mman.h>	// mmap()
+#include <syslog.h>	// syslog()
+#include <errno.h>	// errno
 
 //#include "defines.h"
 #include "fio_ioctl.h"
@@ -33,6 +35,7 @@
 #include "net_io.h"
 
 int msr_port = 2345;
+uint32_t active_models = 0;
 
 struct rtp_io {
     /* The path to the character device of the rt_kernel */
@@ -173,25 +176,23 @@ static int find_so_file(char *filename, size_t len,
 
     if (!strlen(so_path)) {
         /* No file name was supplied by the model, so try to locate
-         * it in the working directory when the buddy was started */
+         * it in the working directory where the buddy was started */
         snprintf(filename, len, "%s/%s.so", cwd, model_name);
 
         if (access(filename, R_OK | X_OK)) {
             /* File was not found, give up */
             rv = -errno;
-            if (!access(filename, R_OK))
-                perror("Cannot find <mdl>.so");
-            else {
-                fprintf(stderr, 
-                        "Could not locate model description file "
-                        "%s/%s.so. Either start from the working "
-                        "directory, or pass the path as an argument to "
-                        "insmod:\n"
-                        "\tinsmod <mdl>_kmod.ko so_path=<path_to_dir>\n",
-                        so_path, model_name);
-            }
+            syslog(LOG_ERR, 
+                    "Could not locate model description file "
+                    "%s/%s.so. Either start the buddy from the model's "
+                    "working directory, or pass the path as an argument to "
+                    "insmod:\n"
+                    "\tinsmod <mdl>_kmod.ko so_path=<path_to_dir>\n",
+                    so_path, model_name);
             return rv;
         } else {
+            syslog(LOG_DEBUG, "Found model description file: %s",
+                    filename);
             return 0;
         }
     }
@@ -203,27 +204,32 @@ static int find_so_file(char *filename, size_t len,
     path_prefix = (so_path[0] == '/' || strcmp("./", so_path) != 1) 
         ? "" : "./";
 
-    /* First try: use the name that was supplied as the path to
-     * the file's directory */
-    snprintf(filename, len, "%s%s/%s.so", 
-            path_prefix, so_path, model_name);
-    if (!access(filename, R_OK | X_OK))
-        return 0;
+    do {
+        /* First try: use the name that was supplied as the path to
+         * the file's directory */
+        snprintf(filename, len, "%s%s/%s.so", 
+                path_prefix, so_path, model_name);
+        if (!access(filename, R_OK | X_OK))
+            break;
 
-    /* Now try whether just the .so was not supplied */
-    snprintf(filename, len, "%s%s.so", path_prefix, so_path);
-    if (!access(filename, R_OK | X_OK))
-        return 0;
+        /* Now try whether just the .so was not supplied */
+        snprintf(filename, len, "%s%s.so", path_prefix, so_path);
+        if (!access(filename, R_OK | X_OK))
+            break;
 
-    /* Last, try if this points directly to a file */
-    snprintf(filename, len, "%s%s", 
-            path_prefix, so_path);
-    if (!access(filename, R_OK | X_OK))
-        return 0;
+        /* Last, try if this points directly to a file */
+        snprintf(filename, len, "%s%s", 
+                path_prefix, so_path);
+        if (!access(filename, R_OK | X_OK))
+            break;
 
-    fprintf(stderr, "Could not locate model description file %s/%s.so"
-            " - check the path passed to insmod\n", so_path, model_name);
-    return -ENOENT;
+        syslog(LOG_ERR, "Could not locate model description file %s/%s.so"
+                " - check the path passed to insmod\n", so_path, model_name);
+        return -ENOENT;
+    } while (1);
+
+    syslog(LOG_DEBUG, "Found model description file as %s", filename);
+    return 0;
 }
 
 static int start_model(const char *model_name, unsigned int model_num)
@@ -245,9 +251,11 @@ static int start_model(const char *model_name, unsigned int model_num)
      * chars less than PATH_MAX, so there is enough space to add a few
      * numbers. */
     snprintf(filename, PATH_MAX, "%s%u", rtp_io.dev_path, model_num + 1);
-    printf("Open data channel (%s) to the Real-Time Process\n", filename);
+    syslog(LOG_DEBUG, "Open data channel (%s) to the Real-Time Process\n",
+            filename);
     if ((model->rtp_fd = open(filename, O_RDONLY | O_NONBLOCK)) < 0) {
-        perror("Cannot open block IO char device to Real-Time Process");
+        syslog(LOG_ERR, "Cannot open char device %s to rt_process: %s",
+                filename, strerror(errno));
         rv = -errno;
         goto out_open_rtb;
     }
@@ -261,7 +269,7 @@ static int start_model(const char *model_name, unsigned int model_num)
 
     /* Get memory for parameter structure */
     if (!(model->rtP = malloc(model->properties.rtP_size))) {
-        perror("Error getting memory for parameters");
+        syslog(LOG_ERR, "Could not allocate memory: %s", strerror(errno));
         rv = -errno;
         goto out_malloc_rtP;
     }
@@ -269,7 +277,8 @@ static int start_model(const char *model_name, unsigned int model_num)
      * that the model may already have been running and that these parameters
      * are not necessarily the defaults */
     if ((rv = ioctl(model->rtp_fd, GET_PARAM, model->rtP)) < 0) {
-        fprintf(stderr, "Failed to collect initial parameter set %i\n", rv);
+        syslog(LOG_ERR, "Could not fetch model's current parameter set: %s",
+                strerror(errno));
         goto out_ioctl_get_param;
     }
 
@@ -281,7 +290,8 @@ static int start_model(const char *model_name, unsigned int model_num)
         mmap(0, model->properties.rtB_len * model->properties.rtB_cnt, 
                 PROT_READ, MAP_PRIVATE, model->rtp_fd, 0);
     if (model->blockio_start == MAP_FAILED) {
-        perror("mmap() failed");
+        syslog(LOG_ERR, "Could not memory map model's IO space: %s",
+                strerror(errno));
         goto out_mmap;
     }
     model->slice_rp = ioctl(model->rtp_fd, RESET_BLOCKIO_RP);
@@ -301,21 +311,24 @@ static int start_model(const char *model_name, unsigned int model_num)
 
     /* Now load the shared object. This also additionally executes the function
      * having __attribute__((constructor)) */
-    printf("Loading model symbol file %s\n", filename);
+    syslog(LOG_DEBUG, "Loading model symbol file %s\n", filename);
     dlhandle = dlopen(filename, RTLD_LAZY);
     if (!dlhandle) {
-        fprintf(stderr, "%s\n", dlerror());
+        syslog(LOG_ERR, "Could not open model description file %s: %s",
+                filename, dlerror());
         rv = -errno;
         goto out_dlopen;
     }
     if (!(version_string = dlsym(dlhandle, "version_string"))) {
+        syslog(LOG_ERR, "Symbol \"version_string\" is not exported in %s: %s",
+                filename, dlerror());
         rv = -errno;
-        fprintf(stderr,"%s\n", dlerror());
         goto out_init_sym;
     }
     if (!(model_init = dlsym(dlhandle, "model_init"))) {
+        syslog(LOG_ERR, "Symbol \"model_init\" is not exported in %s: %s",
+                filename, dlerror());
         rv = -errno;
-        fprintf(stderr,"%s\n", dlerror());
         goto out_init_sym;
     }
 
@@ -323,20 +336,20 @@ static int start_model(const char *model_name, unsigned int model_num)
     if ((rv = ioctl(model->rtp_fd, CHECK_VER_STR, version_string)) < 0) {
         switch (errno) {
             case EFAULT:
-                fprintf(stderr, "ERROR: Could not verify model and "
+                syslog(LOG_ERR, "ERROR: Could not verify model and "
                         "description file versions due to an internal "
                         "error\n");
                 break;
             case EACCES:
-                fprintf(stderr, "Error loading model description file %s: "
+                syslog(LOG_ERR, "Error loading model description file %s: "
                         "Real Time Module and description files do not "
                         "match. Recompile and retry\n", version_string);
                 break;
             case ENOMEM:
-                fprintf(stderr, "ERROR: Low on memory\n");
+                syslog(LOG_ERR, "ERROR: Low on memory\n");
                 break;
             default:
-                fprintf(stderr, "ERROR: An unforseen error occurred.\n");
+                syslog(LOG_ERR, "ERROR: An unexpected error occurred.\n");
                 break;
         }
         rv = -errno;
@@ -349,8 +362,8 @@ static int start_model(const char *model_name, unsigned int model_num)
     if (msr_init(model, param_change, 
                 model->properties.base_rate, model->blockio_start, 
                 model->properties.rtB_len, model->properties.rtB_cnt)) {
-            fprintf(stderr, "Could not initialise msr software\n");
-            goto out_msr_init;
+        syslog(LOG_ERR, "Could not initialise msr software\n");
+        goto out_msr_init;
     }
     /* Initialise the model with the pointer obtained from the shared
      * object above */
@@ -366,13 +379,12 @@ static int start_model(const char *model_name, unsigned int model_num)
                 &task_stats[st].time_step, &task_stats[st].overrun);
     }
 
-    printf("%s: Preparing msr module socket port: %i\n", 
-            __FUNCTION__, msr_port);
+    syslog(LOG_DEBUG, "Preparing msr module socket port: %i\n", msr_port);
     model->net_fd = prepare_tcp(msr_port, new_msr_client, msr_read, 
                 msr_write, NULL);
     if (model->net_fd < 0) {
-        fprintf(stderr, "Could not initialise %s\n", __FILE__);
-        return -1;
+        syslog(LOG_ERR, "Could not register network port %i", msr_port);
+        goto out_prepare_tcp;
     }
 
     /* Now register the model with the main dispatcher. When the file handle
@@ -381,9 +393,11 @@ static int start_model(const char *model_name, unsigned int model_num)
 
     /* Free unused memory */
     dlclose(dlhandle);
+
+    syslog(LOG_DEBUG, "Finished registering model with buddy");
     return 0;
 
-
+out_prepare_tcp:
     msr_cleanup();
 out_msr_init:
 out_wrong_version:
@@ -405,20 +419,21 @@ out_open_rtb:
 static void open_model(int fd, void *d)
 {
     int rv, i, j, pid;
-    uint32_t new_models;
+    uint32_t new_models, deleted_models, running_models; 
     struct rtp_model_name rtp_model_name;
 
-    rv = ioctl(fd, RTK_GET_ACTIVE_MODELS, &new_models);
+    /* Ask the rt_kernel for the bitmask of running models. The bits in
+     * running_models represent whether the model is running */
+    rv = ioctl(fd, RTK_GET_ACTIVE_MODELS, &running_models);
     if (rv) {
-        perror("Could not get names of active models");
-        fprintf(stderr, 
-                "pid %i, ioctl fd %i number RTK_GET_ACTIVE_MODELS: %u\n", 
-                getpid(), fd, RTK_GET_ACTIVE_MODELS);
+        syslog(LOG_ERR, "ioctl() error: Could not get the bit mask of "
+                "active models: %s", strerror(errno));
         return;
     }
 
     /* Get a list of models that have started since last time 
      * it was checked */
+    new_models = running_models & ~active_models;
     for( i = 0; i < 32; i++) {
         if (!(new_models & (0x01<<i))) {
             continue;
@@ -427,13 +442,17 @@ static void open_model(int fd, void *d)
         rtp_model_name.number = i;
         rv = ioctl(fd, RTK_MODEL_NAME, &rtp_model_name);
         if (rv) {
-            perror("Error getting model name");
+            syslog(LOG_ERR, "ioctl() errorgetting model name: %s",
+                    strerror(errno));
             continue;
         }
-        printf("Starting model %s pid %i\n", rtp_model_name.name, getpid());
+        syslog(LOG_DEBUG, "Starting new model number %i, name: %s", 
+                i, rtp_model_name.name);
 
         if (!(pid = fork())) { 
-            // child
+            // child here
+
+            /* Close all open file handles */
             for (j = foreground ? 3 : 0; j < file_max; j++) {
                 if (!close(j)) {
                     clr_fd(j);
@@ -447,9 +466,23 @@ static void open_model(int fd, void *d)
             //reg_sigchild(pid, &rtp_io->model[i]);
         } else { 
             // fork() failed
-            perror("fork()");
+            syslog(LOG_CRIT, "Forking failed: %s", strerror(errno));
         }
     }
+
+    /* Get a list of models that have started since last time 
+     * it was checked */
+    deleted_models = ~running_models & active_models;
+    for( i = 0; i < 32; i++) {
+        if (!(deleted_models & (0x01<<i))) {
+            continue;
+        }
+
+        syslog(LOG_DEBUG, "Stopping deleted model number %i, name: %s", 
+                i, rtp_model_name.name);
+    }
+
+    active_models = running_models;
 
     return;
 }
@@ -460,16 +493,20 @@ int rtp_module_prepare(void)
     int rv = 0;
     char filename[PATH_MAX];
 
+    syslog(LOG_DEBUG, "%s(%s): Initialising RT-Kernel comms channel",
+            __FILE__, __func__);
+
     /* Open a file descriptor to the rt_kernel. It is allways the first
      * one */
     snprintf(filename, sizeof(filename), "%s0", rtp_io.dev_path);
+    syslog(LOG_INFO, "    Opening character device %s", filename);
 
     if ((fd = open(filename, O_RDWR | O_NONBLOCK)) < 0) {
-            perror("Error opening manager channel");
-            rv = -errno;
-            goto out_open_manager;
+        syslog(LOG_EMERG, "Could not open control channel to rt_kernel: %s",
+                strerror(errno));
+        rv = -errno;
+        goto out_open_manager;
     }
-    printf("Opened %s, fd %i pid %i\n", filename, fd, getpid());
 
     init_fd(fd, open_model, NULL, &rtp_io);
 

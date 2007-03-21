@@ -83,12 +83,13 @@ The central dispatcher then calls the function that was registered when
 #include <errno.h>		// ENOMEM, EBADF
 #include <getopt.h>
 #include <signal.h>
+#include <syslog.h>
 
 #include "buddy_main.h"
 
 #include "modules.h"
 
-int debug = 0;
+unsigned int debug = 0;
 int foreground = 0;
 char *cwd;
 int argc;
@@ -137,6 +138,7 @@ struct sigchild_list {
     void *priv_data;
 } *sigchild_list;
 
+/*
 int 
 reg_sigchild(int pid, void *priv_data) {
     struct sigchild_list *sc;
@@ -152,6 +154,7 @@ reg_sigchild(int pid, void *priv_data) {
 
     return 0;
 }
+*/
 
 void
 sig_handle(int signum)
@@ -207,9 +210,14 @@ int init_fd(int fd,
 {
 	struct callback *f;
 
+        syslog(LOG_DEBUG, "%s(%s): Setting callbacks for file descr %i",
+                __FILE__, __func__, fd);
+
 	if (!(f = callback_list[fd])) {
 		// First time fd is used. Allocate a new structure
 		if (!(f = (struct callback *)malloc(sizeof(struct callback)))) {
+                        syslog(LOG_CRIT, "malloc() failed: %s", 
+                                strerror(errno));
 			return -ENOMEM;
 		}
 
@@ -219,9 +227,9 @@ int init_fd(int fd,
 		// Make sure select_max is correct
 		if (fd >= select_max) {
 			select_max = fd+1;
-			printf("Select max is %i\n", select_max);
+                        syslog(LOG_DEBUG, "Setting highest file descriptor "
+                                "for select() to %i", select_max);
 		}
-
 	}
 
         if (read) {
@@ -268,8 +276,8 @@ void clr_fd(int fd)
 	struct callback *f = callback_list[fd];
 	int i;
 
-	if (!f)
-		return;
+        syslog(LOG_DEBUG, "%s(%s): Resetting callbacks structures for "
+                "select() file descriptor %i", __FILE__, __func__, fd);
 
 	FD_CLR(fd, &init_fd_set.rfd);
 	FD_CLR(fd, &init_fd_set.wfd);
@@ -287,7 +295,8 @@ void clr_fd(int fd)
 
 		select_max = i+1;
 
-		printf("\t select max is now %i\n", select_max);
+                syslog(LOG_DEBUG, "Setting highest file descriptor "
+                        "for select() to %i", select_max);
 	}
 
 	free(f);
@@ -303,12 +312,16 @@ void init_modules(void)
  * scope:	private
  */
 {
+    syslog(LOG_DEBUG, "%s(%s): Initialising file descriptors for select()",
+            __FILE__, __func__);
+
 	/* Allocate memory for fd_client. This array must be large enough
 	 * to accomodate all file descriptors a process can have. So first
 	 * find out max open files */
 	if (!(callback_list = calloc(file_max, sizeof(struct callback *)))) {
-		perror("Error calloc");
-		exit(1);
+            syslog(LOG_EMERG, "malloc() failed: %s", strerror(errno));
+            syslog(LOG_EMERG, "   Aborting...");
+            exit(1);
 	}
 
 	/* Initialise file descriptor sets for select() */
@@ -333,7 +346,7 @@ printhelp(const char *name)
             "The main program accepts the following options:\n"
             "    -f, --foreground\n"
             "\tDon't fork; stay in foreground\n"
-            "    -d, --debug level\n"
+            "    -d <level>, --debug=<level>\n"
             "\tSet the debug level 0-7\n"
             "\n"
             "The following options are available for each module.\n\n",
@@ -347,23 +360,30 @@ parse_args(void)
     int c;
     struct option longopts[] = {
         {"help", 0, 0, 'h'},
-        {"foreground", 0, 0, 'n'},
+        {"foreground", 0, 0, 'f'},
         {"debug", 1, 0, 'd'},
         {},
     };
 
     optind = 0;
-    while ((c = getopt_long(argc, argv, ":hnd:", longopts, NULL)) != -1) {
+    while ((c = getopt_long(argc, argv, ":hnfd:", longopts, NULL)) != -1) {
         switch (c) {
-            case 'n':
+            case 'f':
+            case 'n':   /* Stay backwards compatible */
                 foreground = 1;
                 break;
             case 'd':
-                debug += atoi(optarg);
+                debug = atoi(optarg);
                 break;
             case ':':
-                fprintf(stderr, "Argument for option -%c missing\n", optopt);
-                exit(-1);
+                if (optopt == 'd') {
+                    debug += 1;
+                } else {
+                    fprintf(stderr, 
+                            "Argument for option -%c missing\n", optopt);
+                    exit(-1);
+                }
+                break;
             case 'h':
                 printhelp(argv[0]);
                 exit(0);
@@ -379,30 +399,43 @@ parse_args(void)
  * Once these file descritors are ready to be written to, the appropriate
  * write() function of the stream is called.
  */
-//#include <fcntl.h>
 int main(int ac, char **av)
 {
 	int fd_count,	// Number of ready file descriptors from select()
 		fd;	// Temporary fd
 	struct callback *cb;
-        int pid;
+        int pid, i;
         struct sigaction sa;
 
         argc = ac;
         argv = av;
 
+        parse_args();
+
+        /* Find out what the file limit is */
 	if (0 > (file_max = sysconf(_SC_OPEN_MAX))) {
 		perror("Error obtaining max open files");
 		exit(1);
 	}
 
+        /* Close all unwanted file descriptors */
+        for ( i = 3; i < file_max; i++) {
+            close(i);
+        }
+
+        /* Fire up syslog */
+        openlog("etherlab_buddy", 
+                LOG_CONS | LOG_NDELAY | LOG_PID | (foreground ? LOG_PERROR : 0),
+                LOG_USER);
+        setlogmask(LOG_UPTO(debug+LOG_ERR));
+
+        /* Remember the directory we were started in. This is one of the
+         * directories searched for the model description files */
         opterr = 0;
         if (!(cwd = getcwd(NULL, 0))) {
             perror("getcwd()");
             return -errno;
         }
-
-        parse_args();
 
         sa.sa_handler = sig_handle;
         sigemptyset(&sa.sa_mask);
@@ -414,6 +447,9 @@ int main(int ac, char **av)
 
         /* Check if we can go into background */
         if (!foreground) {
+
+            syslog(LOG_DEBUG, "Daemonising");
+
             /* Close standard file descriptors */
             fclose(stdin);
             fclose(stdout);
@@ -421,13 +457,16 @@ int main(int ac, char **av)
 
             /* Fork here */
             if ((pid = fork()) < 0) {
-                perror("fork()");
+                syslog(LOG_EMERG, "fork() failed: %s", strerror(errno));
                 return -errno;
             } else if (pid != 0) {
                 /* We're the parent here, so get out */
+                syslog(LOG_DEBUG, "Parent; exiting normally");
                 return 0;
             } else {
                 /* We're the child */
+                syslog(LOG_DEBUG, "Child daemon");
+
                 setsid();           // Session leader
                 chdir("/");         // Don't sit around in directories
                 umask(0);           // For files we create 
