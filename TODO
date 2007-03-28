@@ -13,6 +13,7 @@ Others:
 * make something to store permanent data
 * Make test thread in rt_module.c a command line switch
 * Implement raise/catch
+* Implement rate change
 * Implement printf()
 * Implement EtherCAT Master Stats block
 * Implement scaling and filter in bk1120_in
