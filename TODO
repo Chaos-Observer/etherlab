@@ -1,6 +1,7 @@
 For Rel 1.1
 -----------
 * Buddy should fork properly and report using the syslog channel
+* edit some README and/or INSTALL 
 
 
 Others:
