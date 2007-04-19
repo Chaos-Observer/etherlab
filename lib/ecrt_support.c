@@ -207,7 +207,6 @@ ecs_send(int tid)
         master = &ecat_data->st[tid].master[i];
         master->last_call = get_cycles();
         rt_sem_wait(&master->lock);
-        ecrt_master_run(master->handle);
         ecrt_master_send(master->handle);
         pr_debug("\ttid %i: ecrt_master_send(%p)\n", 
                 tid, master->handle);
@@ -312,6 +311,7 @@ ecs_start(void)
     unsigned int i, j;
     unsigned int master_tid = 0;
     unsigned int total_masters = 0, total_domains = 0;
+    int error;
 
 
     /* Now that the master and domain counts are known, we can
@@ -397,25 +397,34 @@ ecs_start(void)
             list_for_each_entry_safe(pdo, n3, &domain->pdo_list, list) {
                 /* Depending on the type of pdo (typed or range), have
                  * different calls to EtherCAT */
+                slave = ecrt_master_get_slave(master->handle, 
+                        pdo->data.slave_address,
+                        pdo->data.vendor_id,
+                        pdo->data.product_code);
+                if (!slave) {
+                    snprintf(errbuf, sizeof(errbuf), 
+                            "EtherCAT get_slave() %s on Master %u failed.",
+                            pdo->data.slave_address, master->id);
+                    goto out_get_slave;
+                }
                 switch(pdo->type) {
                     case pdo_typed:
-                        slave = ecrt_domain_register_pdo(
-                                domain->handle, 
-                                pdo->data.slave_address, pdo->data.vendor_id, 
-                                pdo->data.product_code, pdo->data.pdo_index, 
-                                pdo->data.pdo_subindex, pdo->data.data_ptr);
+                        error = ecrt_domain_register_pdo(
+                                domain->handle, slave,
+                                pdo->data.pdo_entry_index, 
+                                pdo->data.pdo_entry_subindex, 
+                                pdo->data.data_ptr);
                         pr_debug("\t%p = ecrt_domain_register_pdo("
                                 "%p, \"%s\", %i, %i, %i, %i, %p)\n", slave,
                                 domain->handle,
                                 pdo->data.slave_address, pdo->data.vendor_id, 
-                                pdo->data.product_code, pdo->data.pdo_index, 
-                                pdo->data.pdo_subindex, pdo->data.data_ptr);
+                                pdo->data.product_code, pdo->data.pdo_entry_index, 
+                                pdo->data.pdo_entry_subindex, pdo->data.data_ptr);
                         break;
                     case pdo_range:
-                        slave = ecrt_domain_register_pdo_range(
-                                domain->handle, 
-                                pdo->data.slave_address, pdo->data.vendor_id, 
-                                pdo->data.product_code, pdo->pdo_direction, 
+                        error = ecrt_domain_register_pdo_range(
+                                domain->handle, slave,
+                                pdo->pdo_direction, 
                                 pdo->pdo_offset, pdo->pdo_length, 
                                 pdo->data.data_ptr);
                         pr_debug("\t%p = ecrt_domain_register_pdo_range("
@@ -427,11 +436,12 @@ ecs_start(void)
                                 pdo->data.data_ptr);
                         break;
                     default:
+                        error = 1;
                         pr_info("Unknown pdo->type in %s\n", __func__);
                         slave = NULL;
                         break;
                 }
-                if (!slave) {
+                if (error) {
                     snprintf(errbuf, sizeof(errbuf), 
                             "EtherCAT register PDO for slave %s "
                             "on Master %u failed.",
@@ -529,6 +539,7 @@ out_conf_sdo:
             "EtherCAT SDO for slave %s failed.",
             pdo->data.slave_address);
 out_register_pdo:
+out_get_slave:
 out_create_domain:
     ecat_data->st[master_tid].master_count--;
     ecrt_release_master(master->handle);
@@ -686,8 +697,8 @@ ecs_reg_pdo(
     pdo->data.slave_address = slave_address;
     pdo->data.vendor_id = vendor_id;
     pdo->data.product_code = product_code;
-    pdo->data.pdo_index = pdo_index;
-    pdo->data.pdo_subindex = pdo_subindex;
+    pdo->data.pdo_entry_index = pdo_index;
+    pdo->data.pdo_entry_subindex = pdo_subindex;
     pdo->data.data_ptr = data_ptr;
 
     return pdo;
@@ -745,9 +756,9 @@ ecs_init(
     int i;
 
     /* Make sure that the correct header version is used */
-#if ECRT_VERSION_MAGIC != ECRT_VERSION(1,2)
+#if ECRT_VERSION_MAGIC != ECRT_VERSION(1,3)
 #error Incompatible EtherCAT header file found.
-#error This source is only compatible with EtherCAT Version 1.2
+#error This source is only compatible with EtherCAT Version 1.3
 #endif
 
     /* Count how many sample times there are. The list is zero terminated */
