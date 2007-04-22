@@ -9,41 +9,33 @@ function el5101_check(section)
             );
 
     switch section
-    case 'output_type'
-        % When not in vector output, no control and status outputs
-        if strcmp(values.output_type, 'Vector Output')
-            en.status = 'on';
+    case 'IndexReset'
+        if strcmp(values.reset, 'on')
+            en.reload      = 'off';
+            set_param(gcb, 'reload', 'off');
         else
-            en.status = 'off';
-            set_param(gcb, 'status', 'off');
+            en.reload      = 'on';
         end
-    case 'dtype'
-        % Gain and Offset are only allowed with this Data Type
-        if strcmp(values.dtype, 'Double with scale and offset');
-            en.scale = 'on';
-            en.offset = 'on';
+    case 'Reload'
+        if strcmp(values.reload, 'on')
+            en.reset      = 'off';
+            set_param(gcb, 'reset', 'off');
+            en.reloadvalue = 'on';
         else
-            en.scale = 'off';
-            en.offset = 'off';
-            if ~strcmp(get_param(gcb, 'scale'), '1')
-                set_param(gcb, 'scale', '1');
-            end
-            if ~strcmp(get_param(gcb, 'offset'), '0')
-                set_param(gcb, 'offset', '0');
-            end
+            en.reset      = 'on';
+            en.reloadvalue = 'off';
         end
-        if strcmp(values.dtype, 'Raw bits')
-            set_param(gcb,'filter','off');
-            en.filter = 'off';
-            en.tau = 'off';
+    case 'Freq'
+        if strcmp(values.freq, 'on')
+            en.freqwin = 'on';
         else
-            en.filter = 'on';
+            en.freqwin = 'off';
         end
-    case 'filter'
-        if (strcmp(values.filter,'on'))
-            en.tau = 'on';
+    case 'Latch'
+        if strcmp(values.latch, 'on')
+            en.gate = 'on';
         else
-            en.tau = 'off';
+            en.gate = 'off';
         end
     end
 

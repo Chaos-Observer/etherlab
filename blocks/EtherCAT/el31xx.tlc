@@ -37,14 +37,21 @@
   /* %<Type> Block: %<Name> 
    * Registering analog input with EtherCAT Driver
    */
-  %foreach sigIdx = Width
-    %if StatusOp
+  %if StatusOp
+    %foreach sigIdx = Width
+      %<RegisterEtherCATSlaveBlock(block, DeviceModel, \
+          MasterId, SlaveAddr, 0)>
       %<RegisterEtherCATSlave(block, "%<Status_PDO>%<sigIdx+1>", \
-          MasterId, SlaveAddr, LibBlockPWork(StatusByte,"","",sigIdx))>
-    %endif
-    %<RegisterEtherCATSlave(block, "%<Input_PDO>%<sigIdx+1>", \
-        MasterId, SlaveAddr, LibBlockPWork(AD_Word,"","",sigIdx))>
-  %endforeach
+          LibBlockPWork(StatusByte,"","",sigIdx))>
+      %<RegisterEtherCATSlave(block, "%<Input_PDO>%<sigIdx+1>", \
+          LibBlockPWork(AD_Word,"","",sigIdx))>
+    %endforeach
+  %else
+    %foreach sigIdx = Width
+        %<RegisterEtherCATSimplePDO(block, DeviceModel, "%<Input_PDO>%<sigIdx+1>", \
+            MasterId, SlaveAddr, 0, LibBlockPWork(AD_Word,"","",sigIdx))>
+    %endforeach
+  %endif
 %endfunction
 
 

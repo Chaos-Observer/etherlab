@@ -38,8 +38,8 @@
    * Registering analog output with EtherCAT Driver
    */
   %foreach sigIdx = Width
-    %<RegisterEtherCATSlave(block, "%<Output_PDO>%<sigIdx+1>", \
-        MasterId, SlaveAddr, LibBlockPWork(DA_Word,"","",sigIdx))>
+    %<RegisterEtherCATSimplePDO(block, DeviceModel, "%<Output_PDO>%<sigIdx+1>", \
+        MasterId, SlaveAddr, 1, LibBlockPWork(DA_Word,"","",sigIdx))>
   %endforeach
 %endfunction
 

@@ -27,14 +27,16 @@
 
 struct el2xxx_dev {
     int_T       max_channels;       /* Number of channels */
+    char_T      *device_model;      /* Device Model Number */
     char_T      *output_pdo;        /* Name for output pdo */
     char_T      *status_pdo;        /* Set if device has a status output */
 };
 
-struct el2xxx_dev el2002 = {2,"Beckhoff_EL2002_Outputs"};
-struct el2xxx_dev el2004 = {4,"Beckhoff_EL2004_Outputs"};
-struct el2xxx_dev el2008 = {8,"Beckhoff_EL2008_Outputs"};
-struct el2xxx_dev el2032 = {2,"Beckhoff_EL2032_Outputs","Beckhoff_EL2032_Status"};
+struct el2xxx_dev el2002 = {2,"Beckhoff_EL2002", "Beckhoff_EL2002_PDO_Outputs"};
+struct el2xxx_dev el2004 = {4,"Beckhoff_EL2004", "Beckhoff_EL2004_PDO_Outputs"};
+struct el2xxx_dev el2008 = {8,"Beckhoff_EL2008", "Beckhoff_EL2008_PDO_Outputs"};
+struct el2xxx_dev el2032 = {2,"Beckhoff_EL2032", "Beckhoff_EL2032_PDO_Outputs",
+                                        "Beckhoff_EL2032_PDO_Status"};
 
 struct supportedDevice supportedDevices[] = {
         {"EL2002", &el2002},
@@ -227,6 +229,8 @@ static void mdlRTW(SimStruct *S)
     if (!ssWriteRTWScalarParam(S, "MasterId", &master, SS_INT32))
         return;
     if (!ssWriteRTWStrParam(S, "SlaveAddr", addr))
+        return;
+    if (!ssWriteRTWStrParam(S, "DeviceModel", devInstance->device->device_model))
         return;
     if (!ssWriteRTWStrParam(S, "Output_PDO", devInstance->device->output_pdo))
         return;

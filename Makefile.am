@@ -25,7 +25,7 @@ install-data-hook:
 	@echo change into directory $(DESTDIR)/$(prefix) and execute
 	@echo setup_matlab.m
 	@echo This will compile some S-Functions for use with Matlab
-	@echo as well as adding paths to its search directory.
+	@echo as well as adding directories to its search path.
 	@echo
 	@echo
 	@echo '##############################################################'

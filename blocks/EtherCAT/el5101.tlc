@@ -32,15 +32,88 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %function Start(block, system) Output
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  %if FreqPort != -1 || PeriodPort != -1 || WindowPort != -1
+      %% If one of the above ports are used, we have to remap
+      %% the PDO's to make them available
+      %assign TxPDOMap = ["0x1A00", "0x1A02"]
+  %endif
+  %assign SlaveOutput = 0
+  %if ControlPort != -1 || PresetPort != -1
+    %assign SlaveOutput = 1
+  %endif
+  %%
+  %switch Gate
+    %case 2
+      %% Enable Positive Gate
+      %assign PosGate = 1
+      %assign NegGate = 0
+    %break
+    %case 3
+      %% Enable Negative Gate
+      %assign PosGate = 0
+      %assign NegGate = 1
+    %break
+    %default
+      %assign PosGate = 0
+      %assign NegGate = 0
+    %break
+  %endswitch
+  %%
+  %%
 
   /* %<Type> Block: %<Name> 
-   * Registering analog input with EtherCAT Driver
+   * Registering Incremental Encoder with EtherCAT Driver
    */
-  %<RegisterEtherCATSlave(block, "Beckhoff_EL5101_Value", \
-      MasterId, SlaveAddr, LibBlockPWork(INC_Word,"","",0))>
-  %if StatusOp
-    %<RegisterEtherCATSlave(block, "Beckhoff_EL5101_Status", \
-        MasterId, SlaveAddr, LibBlockPWork(StatusByte,"","",0))>
+  %<RegisterEtherCATSlaveBlock(block, "Beckhoff_EL5101", MasterId, \
+            SlaveAddr, SlaveOutput)>
+  %if EXISTS(TxPDOMap)
+    %<RegisterEtherCATSlavePDOMap(block, "T", TxPDOMap)>
+  %endif
+  /* Enable Register Reload */
+  %<RegisterEtherCATSlaveSDO(block, 8, "0x8000", 1, Reload)>
+  /* Enable Index Reset */
+  %<RegisterEtherCATSlaveSDO(block, 8, "0x8000", 2, IndexReset)>
+  /* Enable FWD Count */
+  %<RegisterEtherCATSlaveSDO(block, 8, "0x8000", 3, FwdCount)>
+  /* Enable Positive Gate */
+  %<RegisterEtherCATSlaveSDO(block, 8, "0x8000", 4, PosGate)>
+  /* Enable Negative Gate */
+  %<RegisterEtherCATSlaveSDO(block, 8, "0x8000", 5, NegGate)>
+  /* Frequency Window */
+  %<RegisterEtherCATSlaveSDO(block, 16, "0x8001", 1, FreqWin)>
+  /* Counter Reload Value */
+  %<RegisterEtherCATSlaveSDO(block, 16, "0x8001", 2, ReloadValue)>
+  %if ControlPort != -1
+    %<RegisterEtherCATSlavePDO(block, "Beckhoff_EL5101_PDO_Ctrl", \
+        LibBlockPWork(InPtr,"","",ControlPort))>
+  %endif
+  %if PresetPort != -1
+    %<RegisterEtherCATSlavePDO(block, "Beckhoff_EL5101_PDO_OutputValue", \
+        LibBlockPWork(InPtr,"","",PresetPort))>
+  %endif
+  %if ValuePort != -1
+    %<RegisterEtherCATSlavePDO(block, "Beckhoff_EL5101_PDO_Value", \
+        LibBlockPWork(OutPtr,"","",ValuePort))>
+  %endif
+  %if LatchPort != -1
+    %<RegisterEtherCATSlavePDO(block, "Beckhoff_EL5101_PDO_Latch", \
+        LibBlockPWork(OutPtr,"","",LatchPort))>
+  %endif
+  %if FreqPort != -1
+    %<RegisterEtherCATSlavePDO(block, "Beckhoff_EL5101_PDO_Frequency", \
+        LibBlockPWork(OutPtr,"","",FreqPort))>
+  %endif
+  %if PeriodPort != -1
+    %<RegisterEtherCATSlavePDO(block, "Beckhoff_EL5101_PDO_Period", \
+        LibBlockPWork(OutPtr,"","",PeriodPort))>
+  %endif
+  %if WindowPort != -1
+    %<RegisterEtherCATSlavePDO(block, "Beckhoff_EL5101_PDO_Window", \
+        LibBlockPWork(OutPtr,"","",WindowPort))>
+  %endif
+  %if StatusPort != -1
+    %<RegisterEtherCATSlavePDO(block, "Beckhoff_EL5101_PDO_Status", \
+        LibBlockPWork(OutPtr,"","",StatusPort))>
   %endif
 %endfunction
 
@@ -48,87 +121,45 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %function Outputs( block, system ) Output
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-  /* %<Type> Block: %<Name> 
+  /* %<Type> block: %<Name> 
    */
-  %%
-  %if StatusOp
-  /* %<Type> Block: %<Name> */
-  %assign s0 = LibBlockOutputSignal(1,"","",0)
-  %assign u0 = "*(uint8_T *)(%<LibBlockPWork(StatusByte,"","",0)>)"
-  %<s0> = %<u0>;  /* Status */
+  %if ValuePort != -1
+    %<LibBlockOutputSignal(ValuePort,"","",0)> = \
+        *(uint16_t *)%<LibBlockPWork(OutPtr,"","",ValuePort)>;
   %endif
-  %%
-  %assign y0 = LibBlockOutputSignal(0,"","",0)
-  %if RawOp
-    %assign u0 = "*(uint16_T *)(%<LibBlockPWork(INC_Word,"","",0)>)"
-  %else
-    %switch Filter
-      %case 0
-         %% No Filter
-         %assign s0 = "*(uint16_T *)(%<LibBlockPWork(INC_Word,"","",0)>)"
-        %break
-      %case 1
-        %% Continuous filter
-        %assign s0 = LibBlockContinuousState("","",0)
-        %break
-      %case 2
-        %% Discrete filter
-        %assign s0 =  LibBlockDiscreteState("","",0)
-        %break
-    %endswitch
-    %if ScaleOp
-      %assign m = "%<LibBlockParameter(FullScale,"","",0)>/65536"
-      %assign c = "+ %<LibBlockParameter(Offset,"","",0)>"
-    %else
-      %assign m = 1.0/65536
-      %assign c = ""
-    %endif
-    %assign u0 = "%<m>*%<s0> %<c>"
+  %if LatchPort != -1
+    %<LibBlockOutputSignal(LatchPort,"","",0)> = \
+        *(uint16_t *)%<LibBlockPWork(OutPtr,"","",LatchPort)>;
   %endif
-  %<y0> = %<u0>;  /* Data */
-  %return
-%endfunction
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%function Update(block, system) Output
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  %% Only do this in case of a discrete filter
-  %if Filter != 2
-    %return
+  %if FreqPort != -1
+    %<LibBlockOutputSignal(FreqPort,"","",0)> = \
+        *(uint32_t *)%<LibBlockPWork(OutPtr,"","",FreqPort)>;
   %endif
-  %%
-
-  /* %<Type> Block: %<Name> 
-   * Discrete Low Pass Filter
-   */
-  %%
-  %assign d0 = LibBlockDiscreteState("","",0)
-  %assign k  = LibBlockParameter(InputWeight,"","",0)
-  %%
-  %assign u0 = "*(uint16_T*)%<LibBlockPWork(INC_Word,"","",0)>"
-  %<d0> = %<k>*%<u0> 
-    + (1 - %<k>)*%<d0>;
+  %if PeriodPort != -1
+    %<LibBlockOutputSignal(PeriodPort,"","",0)> = \
+        *(uint16_t *)%<LibBlockPWork(OutPtr,"","",PeriodPort)>;
+  %endif
+  %if WindowPort != -1
+    %<LibBlockOutputSignal(WindowPort,"","",0)> = \
+        *(uint16_t *)%<LibBlockPWork(OutPtr,"","",WindowPort)>;
+  %endif
+  %if StatusPort != -1
+    %<LibBlockOutputSignal(StatusPort,"","",0)> = \
+        *(uint8_t *)%<LibBlockPWork(OutPtr,"","",StatusPort)>;
+  %endif
 %endfunction
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%function Derivatives(block, system) Output
+%function Update( block, system ) Output
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  %% Only do this in case of a continuous filter
-  %if Filter != 1
-    %return
-  %endif
-  %%
-
-  /* %<Type> Block: %<Name> 
-   * Continuous Low Pass Filter
+  /* %<Type> block: %<Name> 
    */
-  %%
-  %assign y0 = LibBlockContinuousState("","",0)
-  %assign d0 = LibBlockContinuousStateDerivative("","",0)
-  %assign k  = LibBlockParameter(Omega,"","",0)
-  %%
-  %assign u0 = "*(uint16_T*)%<LibBlockPWork(INC_Word,"","",0)>"
-  %<d0> = %<k>*(%<u0> - %<y0>);
+  %if ControlPort != -1
+    *(uint8_t *)%<LibBlockPWork(InPtr,"","",ControlPort)> = \
+       %<LibBlockInputSignal(ControlPort,"","",0)>;
+  %endif
+  %if PresetPort != -1
+    *(uint16_t *)%<LibBlockPWork(InPtr,"","",PresetPort)> = \
+       %<LibBlockInputSignal(PresetPort,"","",0)>;
+  %endif
 %endfunction

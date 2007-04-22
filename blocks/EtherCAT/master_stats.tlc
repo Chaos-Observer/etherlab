@@ -1,14 +1,15 @@
-%implements "master_info" "C"
+%implements "master_stats" "C"
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %function BlockTypeSetup( block, system) void
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%<LibAddToCommonIncludes("mdl_time.h")>
+  %<InitEtherCAT()>
 %endfunction
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %function BlockInstanceSetup( block, system) void
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  %<InitEtherCATTask(block, system)>
 %endfunction
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -17,8 +18,15 @@
 
   /* %<Type> Block: %<Name>
    */
-%%  %<LibBlockPWork(TimeSrc,"","",0)> = \
-%%    etl_get_world_time_ptr(%<LibGetGlobalTIDFromLocalSFcnTID(0)>);
+  %<LibBlockPWork(MasterPtr, "", "", 0)> = 
+        ecs_get_master_ptr(%<MasterId>, &%<ETL.ErrStr>);
+  if (!%<LibBlockPWork(MasterPtr, "", "", 0)>) {
+        snprintf(%<ETL.ErrMsg>, sizeof(%<ETL.ErrMsg>), 
+           "Getting master pointer in %<LibGetFormattedBlockPath(block)> "
+           "failed: %s", %<ETL.ErrStr>);
+        %<LibSetRTModelErrorStatus("%<ETL.ErrMsg>")>;
+        return;
+  }
 %endfunction
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -28,9 +36,12 @@
   /* %<Type> Block: %<Name>
    */
   {
-     int_T cycles;
+     ec_master_status_t status;
 
-     ecrt_get_stats(&cycles);
-    %<LibBlockOutputSignal(0,"","",0)> = cycles;
+     ecrt_master_get_status(\
+        (ec_master_t*)%<LibBlockPWork(MasterPtr, "", "", 0)>, &status);
+    %<LibBlockOutputSignal(0,"","",0)> = status.bus_status ? 1 : 0;
+    %<LibBlockOutputSignal(1,"","",0)> = status.bus_tainted ? 1 : 0;
+    %<LibBlockOutputSignal(2,"","",0)> = status.slaves_responding;
   }
 %endfunction

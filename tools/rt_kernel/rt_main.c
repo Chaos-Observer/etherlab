@@ -257,7 +257,7 @@ static void mdl_main_thread(long priv_data)
         /* Wait until next call */
         if (rt_task_wait_period()) {
             if (overrun++) {
-                pr_info(".");
+                printk(".");
             } else {
                 pr_info("Model overrun on main task ... "
                         "tick %lu took %luus, allowed are %luus ",
@@ -268,6 +268,7 @@ static void mdl_main_thread(long priv_data)
             }
 
             if (overrun == rtw_model->max_overrun) {
+                printk("\n");
                 errmsg = "Too many overruns";
                 rtw_model->set_error_msg("Abort");
                 break;
@@ -275,7 +276,7 @@ static void mdl_main_thread(long priv_data)
         } else {
             if (overrun)
                 if (!--overrun)
-                    pr_info("\n");
+                    printk("\n");
         }
 
         if (mdl_task->master) {

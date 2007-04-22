@@ -10,7 +10,7 @@
  */
 
 
-#define S_FUNCTION_NAME  master_info
+#define S_FUNCTION_NAME  master_stats
 #define S_FUNCTION_LEVEL 2
 
 #include "simstruc.h"
@@ -43,16 +43,20 @@ static void mdlInitializeSizes(SimStruct *S)
 
     if (!ssSetNumInputPorts(S, 0)) return;
 
-    if (!ssSetNumOutputPorts(S, 1)) return;
+    if (!ssSetNumOutputPorts(S, 3)) return;
     ssSetOutputPortWidth(S, 0, 1);
-    ssSetOutputPortDataType(S, 0, SS_DOUBLE);
+    ssSetOutputPortDataType(S, 0, SS_BOOLEAN);
+    ssSetOutputPortWidth(S, 1, 1);
+    ssSetOutputPortDataType(S, 1, SS_BOOLEAN);
+    ssSetOutputPortWidth(S, 2, 1);
+    ssSetOutputPortDataType(S, 2, SS_UINT16);
 
     ssSetNumSampleTimes(S, 1);
     ssSetNumContStates(S, 0);
     ssSetNumDiscStates(S, 0);
     ssSetNumRWork(S, 0);
     ssSetNumIWork(S, 0);
-    ssSetNumPWork(S, 0);
+    ssSetNumPWork(S, 1);
     ssSetNumModes(S, 0);
     ssSetNumNonsampledZCs(S, 0);
 
@@ -98,6 +102,8 @@ static void mdlRTW(SimStruct *S)
     int32_T master = MASTER;
 
     if (!ssWriteRTWScalarParam(S, "MasterId", &master, SS_INT32))
+        return;
+    if (!ssWriteRTWWorkVect(S, "PWork", 1, "MasterPtr", 1))
         return;
 }
 

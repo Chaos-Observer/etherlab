@@ -37,11 +37,16 @@
   /* %<Type> Block: %<Name> 
    * Registering digital output with EtherCAT Driver
    */
-  %<RegisterEtherCATSlave(block, Output_PDO, \
-        MasterId, SlaveAddr, LibBlockPWork(OutputByte,"","",0))>
   %if StatusOp
+    %<RegisterEtherCATSlaveBlock(block, DeviceModel, \
+        MasterId, SlaveAddr, 1)>
+    %<RegisterEtherCATSlavePDO(block, Output_PDO, \
+        LibBlockPWork(OutputByte,"","",0))>
     %<RegisterEtherCATSlave(block, Status_PDO, \
-        MasterId, SlaveAddr, LibBlockPWork(StatusByte,"","",0))>
+        LibBlockPWork(StatusByte,"","",0))>
+  %else
+     %<RegisterEtherCATSimplePDO(block, DeviceModel, Output_PDO, \
+        MasterId, SlaveAddr, 1, LibBlockPWork(OutputByte,"","",0))>
   %endif
 %endfunction
 

@@ -33,6 +33,8 @@
     %addtorecord CompiledModel EtherCAT { ...
                 NumTasks 0 ...
                 Pdo "pdo" ...
+                Slave "slave" ...
+                SlaveOwner "" ...
                 Tid01Eq %<Tid01Eq> ...
                 }
 
@@ -41,7 +43,7 @@
       %<LibAddToCommonIncludes("ecrt_support.h")>
   
       %openfile buf
-      struct ecat_pdo *%<EtherCAT.Pdo>;
+      struct ecat_slave_block *%<EtherCAT.Slave>;
       %closefile buf
       %<LibMdlStartCustomCode(buf, "header")>
   
@@ -194,13 +196,140 @@
 %endfunction
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%function RegisterEtherCATSlave( block, DeviceModel, ...
-        MasterId, SlaveAddr, DataPtr) Output
+%function CheckSlaveOwner( block ) void
+%%
+%% Complex blocks that repeatedly call functions from this library 
+%% at different times rely on the fact that the global 
+%% variable %<EtherCAT.Slave> is initialised by it.
+%% 
+%% This internal function should be called from every function that relies on
+%% the fact that the global variable %<EtherCAT.Slave> is initialised correctly
+%%
+%% Parameters:
+%%      block:          block pointer as passed by TLC itself
+%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  if (!(%<EtherCAT.Pdo> = ecs_reg_pdo( \
+  %if EtherCAT.SlaveOwner != "%<LibGetFormattedBlockPath(block)>"
+     %if EtherCAT.SlaveOwner == ""
+       %error ############# Internal TLC Error for block ...
+              %<LibGetFormattedBlockPath(block)>: ...
+              EtherCAT slave identifier %<EtherCAT.Slave> is not initialised. ...
+              First call RegisterEtherCATSlaveBlock() to register the slave ...
+              #############
+     %else
+       %error ############# Internal TLC Error for block ...
+              %<LibGetFormattedBlockPath(block)>: ...
+              EtherCAT slave identifier %<EtherCAT.Slave> was initialised ...
+              by block %<EtherCAT.SlaveOwner>. ...
+              First call RegisterEtherCATSlaveBlock() for this block. ...
+              #############
+     %endif
+  %endif
+%endfunction
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function RegisterEtherCATSlaveBlock( block, DeviceModel, ...
+        MasterId, SlaveAddr, SlaveOutput) Output
+%% 
+%% This is the first call for complex blocks.
+%% 
+%% Complex EtherCAT blocks are those that have multiple inputs/outputs or
+%% those that get parameterised. This function initialises %<EtherCAT.Slave>
+%% for this block.
+%%
+%% Parameters:
+%%      block:          block pointer as passed by TLC itself
+%%      DeviceModel:    Model Name of the EtherCAT slave; found in ecdb.h
+%%      MasterId:       <int> Master Id (passed directly to the EtherCAT
+%%                      driver
+%%      SlaveAddr:      <string> Address with which the slave is identified
+%%      SlaveOutput:    0 = Slave is a simulink source block
+%%                      1 = Slave is a simulink sink block
+%%                      This parameter is used to make sure that sink blocks
+%%                      are not used repeatedly. Slaves that get configured
+%%                      (using SDO) should also have this flag set, even though
+%%                      they are source blocks.
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  if (!(%<EtherCAT.Slave> = ecs_reg_slave_block( \
+        %<block.EtherCATTid>, %<MasterId>, "%<SlaveAddr>", \
+        %<DeviceModel>, %<SlaveOutput>, &%<ETL.ErrStr>))) {
+    snprintf(%<ETL.ErrMsg>, sizeof(%<ETL.ErrMsg>), 
+       "Registering of EtherCAT slave %<LibGetFormattedBlockPath(block)> "
+       "failed: %s", %<ETL.ErrStr>);
+    %<LibSetRTModelErrorStatus( "%<ETL.ErrMsg>")>;
+    return;
+  }
+  %assign EtherCAT.SlaveOwner = "%<LibGetFormattedBlockPath(block)>"
+%endfunction
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function RegisterEtherCATSlavePDOMap( block, PDODirection, Map ) Output
+%% 
+%% Change the PDO Mapping of an EtherCAT slave
+%% 
+%% Intelligent EtherCAT slaves have the ability to change the mapping of
+%% their PDO's.
+%% 
+%% Parameters:
+%%      block:          block pointer as passed by TLC itself
+%%      PDODirection:   <string> The direction as seen by the slave 
+%%                      "T" = remap TxPDO
+%%                      "R" = remap RxPDO
+%%      Map:            An array of the map values
+%% 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  %<CheckSlaveOwner(block)>
+  %switch PDODirection
+    %case "T"
+    %case "t"
+    %case "R"
+    %case "r"
+    %break
+    %default
+       %error ############# Internal TLC Error for ...
+           block %<LibGetFormattedBlockPath(block)>: ...
+         PDODirection = '%<PDODirection>'; PDO Direction can only be one of [TtRr]
+  %endswitch
+  %assign ArrayId = "%<PDODirection>xPDOMap"
+  { 
+    uint16_t %<ArrayId>[] =  {
+    %foreach i = SIZE(Map)[1]
+       %<Map[i]>, \
+    %endforeach
+    0 };
+    if ((%<ETL.ErrStr> = ecs_reg_slave_pdomapping(%<EtherCAT.Slave>, \
+          '%<PDODirection>', %<ArrayId>))) {
+      snprintf(%<ETL.ErrMsg>, sizeof(%<ETL.ErrMsg>), 
+         "Remapping PDO's on EtherCAT slave %<LibGetFormattedBlockPath(block)> "
+         "failed: %s", %<ETL.ErrStr>);
+      %<LibSetRTModelErrorStatus( "%<ETL.ErrMsg>")>;
+      return;
+    }
+  }
+%endfunction
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function RegisterEtherCATSlavePDO( block, PDOEntry, DataPtr) Output
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  if ((%<ETL.ErrStr> = ecs_reg_slave_pdo( %<EtherCAT.Slave>, \
+           %<PDOEntry>, &%<DataPtr>))) {
+        snprintf(%<ETL.ErrMsg>, sizeof(%<ETL.ErrMsg>), 
+           "EtherCAT slave %<LibGetFormattedBlockPath(block)> register "
+           "failed: %s", %<ETL.ErrStr>);
+        %<LibSetRTModelErrorStatus( "%<ETL.ErrMsg>")>;
+        return;
+  }
+%endfunction
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function RegisterEtherCATSimplePDO( block, DeviceModel, PDOEntry, ...
+        MasterId, SlaveAddr, Output, DataPtr) Output
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  if ((%<ETL.ErrStr> = ecs_reg_pdo( \
            %<block.EtherCATTid>, \
            %<MasterId>, "%<SlaveAddr>", \
-           %<DeviceModel>, &%<DataPtr>, &%<ETL.ErrStr>))) {
+           %<DeviceModel>, %<PDOEntry>, %<Output>, &%<DataPtr>))) {
         snprintf(%<ETL.ErrMsg>, sizeof(%<ETL.ErrMsg>), 
            "EtherCAT slave %<LibGetFormattedBlockPath(block)> register "
            "failed: %s", %<ETL.ErrStr>);
@@ -213,7 +342,18 @@
 %function RegisterEtherCATSlaveSDO( block, DataType, Index, Subindex, ...
         Value) Output
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  if ((%<ETL.ErrStr> = ecs_reg_sdo( %<EtherCAT.Pdo>, \
+  %<CheckSlaveOwner(block)>
+  %switch DataType
+    %case 8
+    %case 16
+    %case 32
+    %break
+    %default
+       %error ############# Internal TLC Error for ...
+           block %<LibGetFormattedBlockPath(block)>: ...
+           DataType = %<DataType>; Choose one of 8,16,32
+  %endswitch
+  if ((%<ETL.ErrStr> = ecs_reg_slave_sdo( %<EtherCAT.Slave>, \
            %<DataType>, %<Index>, %<Subindex>, %<Value>))) {
         snprintf(%<ETL.ErrMsg>, sizeof(%<ETL.ErrMsg>), 
            "EtherCAT slave %<LibGetFormattedBlockPath(block)> SDO register "
@@ -227,15 +367,20 @@
 %function RegisterEtherCATSlaveAddrRange( block, DeviceModel, ...
         MasterId, SlaveAddr, RdWr, ImageOffset, ImageLength, DataPtr) Output
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  if ( !(%<EtherCAT.Pdo> = ecs_reg_pdo_range( 
+  if ((%<ETL.ErrStr> = ecs_reg_pdo_range( 
            %<block.EtherCATTid>, \
            %<MasterId>, "%<SlaveAddr>", \
            %<DeviceModel>, %<RdWr>, %<ImageOffset>, %<ImageLength>, \
-           &%<DataPtr>, &%<ETL.ErrStr>))) {
+           &%<DataPtr>))) {
         snprintf(%<ETL.ErrMsg>, sizeof(%<ETL.ErrMsg>), 
            "EtherCAT slave %<LibGetFormattedBlockPath(block)> range register "
            "failed: %s", %<ETL.ErrStr>);
         %<LibSetRTModelErrorStatus( "%<ETL.ErrMsg>")>;
         return;
   }
+%endfunction
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function RegisterPDOMapping( block, dir, PDOMap) Output
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %endfunction

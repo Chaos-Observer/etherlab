@@ -35,11 +35,13 @@
   /* %<Type> Block: %<Name> 
    * Registering counter input with EtherCAT Driver
    */
-  %<RegisterEtherCATSlave(block, "Beckhoff_EL5001_Value", \
-      MasterId, SlaveAddr, LibBlockPWork(SSI_Long,"","",0))>
+  %<RegisterEtherCATSlaveBlock(block, "Beckhoff_EL5001", \
+      MasterId, SlaveAddr, 1)>
+  %<RegisterEtherCATSlavePDO(block, "Beckhoff_EL5001_PDO_Value", \
+      LibBlockPWork(SSI_Long,"","",0))>
   %if StatusOp
-    %<RegisterEtherCATSlave(block, "Beckhoff_EL5001_Status", \
-      MasterId, SlaveAddr, LibBlockPWork(StatusByte,"","",0))>
+    %<RegisterEtherCATSlavePDO(block, "Beckhoff_EL5001_PDO_Status", \
+      LibBlockPWork(StatusByte,"","",0))>
   %endif
 
   /* %<Type> Block: %<Name> 
@@ -58,11 +60,11 @@
   %<RegisterEtherCATSlaveSDO(block, 8, "0x4061", 2, PowerFail)>
   %<RegisterEtherCATSlaveSDO(block, 8, "0x4061", 3, EnableInhibit)>
   %<RegisterEtherCATSlaveSDO(block, 8, "0x4066", 0, SSICode)>
-  %<RegisterEtherCATSlaveSDO(block, 8, "0x4067", 0, BaudRate)>
+  %<RegisterEtherCATSlaveSDO(block, 16, "0x4067", 0, BaudRate)>
   %<RegisterEtherCATSlaveSDO(block, 8, "0x4068", 0, FrameType)>
-  %<RegisterEtherCATSlaveSDO(block, 8, "0x4069", 0, FrameSize)>
-  %<RegisterEtherCATSlaveSDO(block, 8, "0x406A", 0, DataLength)>
-  %<RegisterEtherCATSlaveSDO(block, 8, "0x406B", 0, InhibitTime)>
+  %<RegisterEtherCATSlaveSDO(block, 16, "0x4069", 0, FrameSize)>
+  %<RegisterEtherCATSlaveSDO(block, 16, "0x406A", 0, DataLength)>
+  %<RegisterEtherCATSlaveSDO(block, 16, "0x406B", 0, InhibitTime)>
 %endfunction
 
 

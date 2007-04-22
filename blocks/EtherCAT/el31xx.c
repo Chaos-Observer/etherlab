@@ -36,47 +36,48 @@ struct el31xx_dev {
     real_T rawOffset;
     int_T sign;
     uint_T width;
+    char_T *device_model;
     char_T *input_pdo;
     char_T *status_pdo;
 };
 
 struct el31xx_dev el3102_dev = {10.0, 0.0,   1, 2, 
-    "Beckhoff_EL3102_Input", "Beckhoff_EL3102_Status" };
+    "Beckhoff_EL3102","Beckhoff_EL3102_PDO_Input", "Beckhoff_EL3102_PDO_Status" };
 struct el31xx_dev el3104_dev = {10.0, 0.0,   1, 4, 
-    "Beckhoff_EL3104_Input", "Beckhoff_EL3104_Status"};
+    "Beckhoff_EL3104", "Beckhoff_EL3104_PDO_Input", "Beckhoff_EL3104_PDO_Status"};
 struct el31xx_dev el3108_dev = {10.0, 0.0,   1, 8, 
-    "Beckhoff_EL3108_Input", "Beckhoff_EL3108_Status" };
+    "Beckhoff_EL3108", "Beckhoff_EL3108_PDO_Input", "Beckhoff_EL3108_PDO_Status" };
 
 struct el31xx_dev el3112_dev = {0.02, 0.0,   0, 2, 
-    "Beckhoff_EL3112_Input", "Beckhoff_EL3112_Status"};
+    "Beckhoff_EL3112", "Beckhoff_EL3112_PDO_Input", "Beckhoff_EL3112_PDO_Status"};
 struct el31xx_dev el3114_dev = {0.02, 0.0,   0, 4, 
-    "Beckhoff_EL3114_Input", "Beckhoff_EL3114_Status"};
+    "Beckhoff_EL3114", "Beckhoff_EL3114_PDO_Input", "Beckhoff_EL3114_PDO_Status"};
 
 struct el31xx_dev el3122_dev = {0.16, 0.004, 0, 2, 
-    "Beckhoff_EL3122_Input", "Beckhoff_EL3122_Status"};
+    "Beckhoff_EL3122", "Beckhoff_EL3122_PDO_Input", "Beckhoff_EL3122_PDO_Status"};
 struct el31xx_dev el3124_dev = {0.16, 0.004, 0, 4, 
-    "Beckhoff_EL3124_Input", "Beckhoff_EL3124_Status"};
+    "Beckhoff_EL3124", "Beckhoff_EL3124_PDO_Input", "Beckhoff_EL3124_PDO_Status"};
 
 struct el31xx_dev el3142_dev = {0.02, 0.0,   0, 2, 
-    "Beckhoff_EL3142_Input", "Beckhoff_EL3142_Status"};
+    "Beckhoff_EL3142", "Beckhoff_EL3142_PDO_Input", "Beckhoff_EL3142_PDO_Status"};
 struct el31xx_dev el3144_dev = {0.02, 0.0,   0, 4, 
-    "Beckhoff_EL3144_Input", "Beckhoff_EL3144_Status"};
+    "Beckhoff_EL3144", "Beckhoff_EL3144_PDO_Input", "Beckhoff_EL3144_PDO_Status"};
 struct el31xx_dev el3148_dev = {0.02, 0.0,   0, 8, 
-    "Beckhoff_EL3148_Input", "Beckhoff_EL3148_Status"};
+    "Beckhoff_EL3148", "Beckhoff_EL3148_PDO_Input", "Beckhoff_EL3148_PDO_Status"};
 
 struct el31xx_dev el3152_dev = {0.16, 0.004, 0, 2, 
-    "Beckhoff_EL3152_Input", "Beckhoff_EL3152_Status"};
+    "Beckhoff_EL3152", "Beckhoff_EL3152_PDO_Input", "Beckhoff_EL3152_PDO_Status"};
 struct el31xx_dev el3154_dev = {0.16, 0.004, 0, 4, 
-    "Beckhoff_EL3154_Input", "Beckhoff_EL3154_Status"};
+    "Beckhoff_EL3154", "Beckhoff_EL3154_PDO_Input", "Beckhoff_EL3154_PDO_Status"};
 struct el31xx_dev el3158_dev = {0.16, 0.004, 0, 8, 
-    "Beckhoff_EL3158_Input", "Beckhoff_EL3158_Status"};
+    "Beckhoff_EL3158", "Beckhoff_EL3158_PDO_Input", "Beckhoff_EL3158_PDO_Status"};
 
 struct el31xx_dev el3162_dev = {10.0, 0.0,   0, 2,
-    "Beckhoff_EL3162_Input", "Beckhoff_EL3162_Status"};
+    "Beckhoff_EL3162", "Beckhoff_EL3162_PDO_Input", "Beckhoff_EL3162_PDO_Status"};
 struct el31xx_dev el3164_dev = {10.0, 0.0,   0, 4,
-    "Beckhoff_EL3164_Input", "Beckhoff_EL3164_Status"};
+    "Beckhoff_EL3164", "Beckhoff_EL3164_PDO_Input", "Beckhoff_EL3164_PDO_Status"};
 struct el31xx_dev el3168_dev = {10.0, 0.0,   0, 8,
-    "Beckhoff_EL3168_Input", "Beckhoff_EL3168_Status"};
+    "Beckhoff_EL3168", "Beckhoff_EL3168_PDO_Input", "Beckhoff_EL3168_PDO_Status"};
 
 struct supportedDevice supportedDevices[] = {
     {"EL3102", &el3102_dev},
@@ -341,6 +342,9 @@ static void mdlRTW(SimStruct *S)
     if (!ssWriteRTWScalarParam(S, "MasterId", &master, SS_INT32))
         return;
     if (!ssWriteRTWStrParam(S, "SlaveAddr", addr))
+        return;
+    if (!ssWriteRTWStrParam(S, "DeviceModel", 
+                devInstance->device->device_model))
         return;
     if (!ssWriteRTWStrParam(S, "Input_PDO", 
                 devInstance->device->input_pdo))

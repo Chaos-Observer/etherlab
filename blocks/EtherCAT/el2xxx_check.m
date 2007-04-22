@@ -9,9 +9,9 @@ function el2xxx_check(section)
             );
 
     switch section
-    case 'device'
+    case 'model'
         % Presumably all EL203x will provide a status output
-        if strncmp(values.device, 'EL203',5) && ...
+        if strncmp(values.model, 'EL203',5) && ...
                 ~strcmp(values.input_type,'Separate Inputs')
             en.status = 'on';
         else
@@ -19,7 +19,7 @@ function el2xxx_check(section)
             set_param(gcb, 'status', 'off');
         end
     case 'input_type'
-        if strncmp(values.device, 'EL203',5) && ...
+        if strncmp(values.model, 'EL203',5) && ...
                 ~strcmp(values.input_type,'Separate Inputs')
             en.status = 'on';
         else

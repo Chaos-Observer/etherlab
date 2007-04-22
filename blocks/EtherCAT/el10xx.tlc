@@ -37,8 +37,8 @@
   /* %<Type> Block: %<Name> 
    * Registering digital input with EtherCAT Driver
    */
-  %<RegisterEtherCATSlave(block, Input_PDO, \
-      MasterId, SlaveAddr, LibBlockPWork(InputByte,"","",0))>
+  %<RegisterEtherCATSimplePDO(block, DeviceModel, Input_PDO, \
+      MasterId, SlaveAddr, 0, LibBlockPWork(InputByte,"","",0))>
 %endfunction
 
 
