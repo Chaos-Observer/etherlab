@@ -21,7 +21,7 @@
 #error "Don't have config.h"
 #endif
 
-#define DEBUG 1
+//#define DEBUG 1
 
 #include <linux/types.h>
 #include <linux/list.h>
@@ -193,6 +193,68 @@ kzalloc(size_t len, int type)
 #endif
 /////////////////////////////////////////////////
 
+LIST_HEAD(temp_page_list);
+LIST_HEAD(temp_mem_list);
+struct temp_mem {
+    struct list_head list;
+
+    unsigned int free_ptr;
+
+    char data[];
+};
+
+
+/* This function returns a zero'ed section of memory similar to malloc() */
+void *
+__init get_temp_mem(size_t len)
+{
+    struct temp_mem *page, *mem;
+    void *ptr;
+
+    if (len > PAGE_SIZE - sizeof(struct temp_mem)) {
+        mem = (struct temp_mem *)kzalloc(sizeof(struct temp_mem) + len, 
+                GFP_KERNEL);
+        if (!mem)
+            return NULL;
+        list_add(&mem->list, &temp_mem_list);
+        return &mem->data[0];
+    }
+
+    page = (struct temp_mem *)temp_page_list.next;
+
+    if (list_empty(&temp_page_list) || (page->free_ptr + len > PAGE_SIZE)) {
+        page = (struct temp_mem *)__get_free_page(GFP_KERNEL);
+        if (!page)
+            return NULL;
+        memset(page, 0, PAGE_SIZE);
+        list_add(&page->list, &temp_page_list);
+        pr_debug("Got a new page %p\n", page);
+    }
+    ptr = &page->data[page->free_ptr];
+    pr_debug("New Temp mem from %u to %u\n", page->free_ptr, 
+            page->free_ptr + ALIGN(len,4));
+    page->free_ptr += ALIGN(len,4);
+    pr_debug("returning %p\n", ptr);
+    return ptr;
+}
+
+void
+free_temp_mem(void)
+{
+    struct temp_mem *page, *n1;
+
+    pr_debug("Freeing pages...\n");
+    list_for_each_entry_safe(page, n1, &temp_page_list, list) {
+        pr_debug("Freeing temp mem page %p\n", page);
+        free_page((unsigned long)page);
+    }
+
+    list_for_each_entry_safe(page, n1, &temp_mem_list, list) {
+        pr_debug("Freeing overlarge mem page %p\n", page);
+        kfree(page);
+    }
+}
+
 /* Do input processing for a RTW task. It does the following:
  *      - calls ecrt_master_receive() for every master whose fastest 
  *        domain is in this task. 
@@ -301,44 +363,22 @@ ecs_release_cb(void *p)
  * Release all memory and free EtherCAT master
  */
 void
-ecs_end(void)
+__exit ecs_end(void)
 {
     unsigned int i, j;
     void *st_data = NULL;
     struct ecat_master *master, *n1;
-    struct ecat_domain *domain, *n2;
-    struct ecat_pdo *pdo, *n3;
-    struct ecat_slave_block *slave_block, *n4;
-    struct sdo_init *sdo, *n5;
 
     if (!ecat_data)
         return;
+
+    free_temp_mem();
 
     list_for_each_entry_safe(master, n1, &ecat_data->master_list, list) {
         if (master->handle) {
             pr_debug("\tManually releasing master %p\n", master->handle);
             ecrt_release_master(master->handle);
         }
-        list_for_each_entry_safe(domain, n2, &master->domain_list, list) {
-            list_for_each_entry_safe(pdo, n3, &domain->simple_pdo_list, list) {
-                pr_debug("Freeing PDO %p\n", pdo);
-                kfree(pdo);
-            }
-            list_for_each_entry_safe(slave_block, n4, 
-                    &domain->slave_block_list, list) {
-                list_for_each_entry_safe(sdo, n5, 
-                        &slave_block->sdo_list, list) {
-                    pr_debug("Freeing SDO %p\n", sdo);
-                    kfree(sdo);
-                }
-                pr_debug("Freeing SlaveBlock %p\n", slave_block);
-                kfree(slave_block);
-            }
-            pr_debug("Freeing Domain %p\n", domain);
-            kfree(domain);
-        }
-        pr_debug("Freeing Master %p\n", master);
-        kfree(master);
     }
 
     pr_debug("going through %u sample times to find masters to release\n", 
@@ -384,7 +424,7 @@ ecs_end(void)
  * the subsystem.
  */
 const char *
-ecs_start(void)
+__init ecs_start(void)
 {
     struct ecat_master *master, *n1;
     struct ecat_domain *domain, *n2;
@@ -573,10 +613,6 @@ ecs_start(void)
                             pdo->slave_address, master->id);
                     goto out_register_pdo;
                 }
-
-                /* Don't need the pdo any more */
-                list_del(&pdo->list);
-                kfree(pdo);
             }
 
             /* Now go through the domain's slave_block_list. This list contains
@@ -759,24 +795,16 @@ ecs_start(void)
                                     sdo->value.u32);
                             break;
                     }
-                    /* Don't need the sdo any more */
-                    list_del(&sdo->list);
-                    kfree(sdo);
                 }
-
-                list_del(&slave_block->list);
-                kfree(slave_block);
             }
 
             /* Move the domain to the sample time list */
-            list_del(&domain->list);
             tid = domain->tid;
             domain_idx = ecat_data->st[tid].domain_count++;
             memcpy(&ecat_data->st[tid].domain[domain_idx],
                     list_entry(&domain->list, struct ecat_domain, list),
                     sizeof(struct ecat_domain));
             /* Free the old domain and set domain to the new address */
-            kfree(domain);
             domain = &ecat_data->st[tid].domain[domain_idx];
 
             /* Master has moved. Update pointer */
@@ -789,11 +817,10 @@ ecs_start(void)
         memcpy(new_master, 
                 list_entry(&master->list, struct ecat_master, list),
                 sizeof(struct ecat_master));
-
-        /* Free the old master */
         kfree(slaves);
-        kfree(master);
     }
+
+    free_temp_mem();
 
     /* Now that everything is set up, let the master activate itself */
     for( i = 0; i < ecat_data->nst; i++) {
@@ -847,7 +874,7 @@ out_master_activate:
  * NOTE: pointer map MUST be non-volatile (i.e. NOT on the stack)
  * */
 const char *
-ecs_reg_slave_pdomapping( struct ecat_slave_block *slave,
+__init ecs_reg_slave_pdomapping( struct ecat_slave_block *slave,
         char dir, /* 'T' = Transmit; 'R' = Receive */
         uint16_t *map)
 {
@@ -869,13 +896,13 @@ ecs_reg_slave_pdomapping( struct ecat_slave_block *slave,
 /* This function queues SDO's after a EtherCAT slave is 
  * registered */
 const char *
-ecs_reg_slave_sdo( struct ecat_slave_block *slave,
+__init ecs_reg_slave_sdo( struct ecat_slave_block *slave,
         int sdo_type, uint16_t sdo_index,
         uint8_t sdo_subindex, uint32_t value)
 {
     struct sdo_init *sdo;
 
-    if (!(sdo = kmalloc(sizeof(struct sdo_init), GFP_KERNEL))) {
+    if (!(sdo = get_temp_mem(sizeof(struct sdo_init)))) {
         return no_mem_msg;
     }
     list_add_tail(&sdo->list, &slave->sdo_list);
@@ -905,7 +932,7 @@ ecs_reg_slave_sdo( struct ecat_slave_block *slave,
 /* An internal function to return a master pointer.
  * If the master does not exist, one is created */
 struct ecat_master *
-get_master(
+__init get_master(
         unsigned int master_id,
 
         const char **errmsg
@@ -920,7 +947,7 @@ get_master(
         }
     }
     if (master == (typeof(master))&ecat_data->master_list) {
-        if (!(master = kzalloc(sizeof(struct ecat_master), GFP_KERNEL))) {
+        if (!(master = get_temp_mem(sizeof(struct ecat_master)))) {
             *errmsg = no_mem_msg;
             return NULL;
         }
@@ -950,7 +977,7 @@ get_master(
  * time tid.
  * If the domain does not exist, one is created */
 struct ecat_domain *
-get_domain(
+__init get_domain(
         struct ecat_master *master,
         unsigned int tid,
 
@@ -974,7 +1001,7 @@ get_domain(
         }
     }
     if (domain == (typeof(domain))&master->domain_list) {
-        if (!(domain = kzalloc(sizeof(struct ecat_domain), GFP_KERNEL))) {
+        if (!(domain = get_temp_mem(sizeof(struct ecat_domain)))) {
             *errmsg = no_mem_msg;
             return NULL;
         }
@@ -1010,7 +1037,7 @@ get_domain(
  * slaves - those that can be parameterised, etc.
  */
 struct ecat_slave_block *
-ecs_reg_slave_block(
+__init ecs_reg_slave_block(
         unsigned int tid,
         unsigned int master_id,
 
@@ -1033,7 +1060,7 @@ ecs_reg_slave_block(
 
     /* Now the pointers to master and domain are set up. Register the pdo
      * with the master */
-    if (!(slave = kzalloc(sizeof(struct ecat_slave_block), GFP_KERNEL))) {
+    if (!(slave = get_temp_mem(sizeof(struct ecat_slave_block)))) {
         goto out_slave_alloc;
     }
     list_add_tail( &slave->list, &domain->slave_block_list);
@@ -1073,7 +1100,7 @@ out_slave_alloc:
  * for enhanced slaves.
  */
 const char *
-ecs_reg_slave_pdo(
+__init ecs_reg_slave_pdo(
         struct ecat_slave_block *slave,
 
         uint16_t pdo_index, /**< PDO index */
@@ -1085,7 +1112,7 @@ ecs_reg_slave_pdo(
 
     /* Now the pointers to master and domain are set up. Register the pdo
      * with the master */
-    if (!(pdo = kzalloc(sizeof(struct ecat_pdo), GFP_KERNEL))) {
+    if (!(pdo = get_temp_mem(sizeof(struct ecat_pdo)))) {
         return no_mem_msg;
     }
     list_add_tail( &pdo->list, &slave->pdo_entry_list);
@@ -1105,7 +1132,7 @@ ecs_reg_slave_pdo(
 
 
 ec_master_t *
-ecs_get_master_ptr(unsigned int master_id, const char **errmsg)
+__init ecs_get_master_ptr(unsigned int master_id, const char **errmsg)
 {
     struct ecat_master *master;
 
@@ -1122,7 +1149,7 @@ ecs_get_master_ptr(unsigned int master_id, const char **errmsg)
  * a slave.
  */
 const char *
-ecs_reg_pdo(
+__init ecs_reg_pdo(
         unsigned int tid,
         unsigned int master_id,
 
@@ -1149,7 +1176,7 @@ ecs_reg_pdo(
 
     /* Now the pointers to master and domain are set up. Register the pdo
      * with the master */
-    if (!(pdo = kzalloc(sizeof(struct ecat_pdo), GFP_KERNEL))) {
+    if (!(pdo = get_temp_mem(sizeof(struct ecat_pdo)))) {
         return no_mem_msg;
     }
     list_add_tail( &pdo->list, &domain->simple_pdo_list);
@@ -1176,7 +1203,7 @@ ecs_reg_pdo(
  * from the EtherCAT image.
  */
 const char *
-ecs_reg_pdo_range(
+__init ecs_reg_pdo_range(
         unsigned int tid,
         unsigned int master_id,
 
@@ -1202,7 +1229,7 @@ ecs_reg_pdo_range(
 
     /* Now the pointers to master and domain are set up. Register the pdo
      * with the master */
-    if (!(pdo = kzalloc(sizeof(struct ecat_pdo), GFP_KERNEL))) {
+    if (!(pdo = get_temp_mem(sizeof(struct ecat_pdo)))) {
         return no_mem_msg;
     }
     list_add_tail( &pdo->list, &domain->simple_pdo_list);
@@ -1231,7 +1258,7 @@ ecs_reg_pdo_range(
  * Compatability with the EtherCAT interface is also checked.
  */
 const char *
-ecs_init( 
+__init ecs_init( 
         unsigned int *st    /* a 0 terminated list of sample times */
         )
 {
