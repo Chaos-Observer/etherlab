@@ -289,7 +289,8 @@
     %default
        %error ############# Internal TLC Error for ...
            block %<LibGetFormattedBlockPath(block)>: ...
-         PDODirection = '%<PDODirection>'; PDO Direction can only be one of [TtRr]
+           PDODirection = '%<PDODirection>'; ...
+           PDO Direction can only be one of [TtRr]
   %endswitch
   %assign ArrayId = "%<PDODirection>xPDOMap"
   { 
@@ -316,7 +317,7 @@
            %<PDOEntry>, &%<DataPtr>))) {
         snprintf(%<ETL.ErrMsg>, sizeof(%<ETL.ErrMsg>), 
            "EtherCAT slave %<LibGetFormattedBlockPath(block)> register "
-           "failed: %s", %<ETL.ErrStr>);
+           "PDO failed: %s", %<ETL.ErrStr>);
         %<LibSetRTModelErrorStatus( "%<ETL.ErrMsg>")>;
         return;
   }
