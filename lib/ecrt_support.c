@@ -246,11 +246,13 @@ free_temp_mem(void)
     pr_debug("Freeing pages...\n");
     list_for_each_entry_safe(page, n1, &temp_page_list, list) {
         pr_debug("Freeing temp mem page %p\n", page);
+        list_del(&page->list);
         free_page((unsigned long)page);
     }
 
     list_for_each_entry_safe(page, n1, &temp_mem_list, list) {
         pr_debug("Freeing overlarge mem page %p\n", page);
+        list_del(&page->list);
         kfree(page);
     }
 }
