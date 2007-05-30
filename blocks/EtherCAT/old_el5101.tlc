@@ -1,4 +1,4 @@
-%implements "el5101" "C"
+%implements "old_el5101" "C"
 
 %%
 %% Hardware Driver for Beckhoff's EtherCAT Incremental Encoder Input 

@@ -11,7 +11,7 @@
  */
 
 
-#define S_FUNCTION_NAME  el5101
+#define S_FUNCTION_NAME  old_el5101
 #define S_FUNCTION_LEVEL 2
 
 #include "simstruc.h"
