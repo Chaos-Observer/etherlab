@@ -91,6 +91,7 @@ AC_SUBST(LINUX_DIR,$linux_dir)
 fi
 
 dnl When kernel is selected, EtherCat can be switched off
+AM_CONDITIONAL(ETHERCAT, test x$ethercat = x1)
 if test "x$kernel" = "x1"; then
 AC_ARG_ENABLE([ethercat],
     AS_HELP_STRING(
@@ -109,7 +110,6 @@ test -r "${ETHERLAB_DIR}/include/ecrt.h" || \
         AC_MSG_ERROR([ecrt.h found in ${ETHERLAB_DIR}/include])
 AC_MSG_RESULT(${ETHERLAB_DIR}/include/ecrt.h)
 fi
-AM_CONDITIONAL(ETHERCAT, test x$ethercat = x1)
 AC_SUBST(ETHERCAT,${ethercat})
 fi
 
