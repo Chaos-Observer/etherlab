@@ -34,8 +34,8 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "rich"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Mon Apr 23 00:39:07 2007"
-  ModelVersionFormat	  "1.%<AutoIncrement:270>"
+  LastModifiedDate	  "Wed May 30 14:32:31 2007"
+  ModelVersionFormat	  "1.%<AutoIncrement:271>"
   ConfigurationManager	  "rcs"
   LinearizationMsg	  "none"
   Profile		  off
@@ -129,7 +129,7 @@ Library {
   }
   System {
     Name		    "etherlab_lib"
-    Location		    [800, 590, 1395, 983]
+    Location		    [800, 601, 1395, 994]
     Open		    on
     ModelBrowserVisibility  off
     ModelBrowserWidth	    200
@@ -154,8 +154,8 @@ Library {
       MaskHideContents	      off
       System {
 	Name			"EtherCAT"
-	Location		[898, 564, 1395, 932]
-	Open			off
+	Location		[898, 616, 1395, 984]
+	Open			on
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
 	ScreenColor		"white"
@@ -676,6 +676,111 @@ Library {
 	  MaskIconUnits		  "autoscale"
 	  MaskValueString	  "0|1"
 	  MaskTabNameString	  ","
+	}
+	Block {
+	  BlockType		  SubSystem
+	  Name			  "Obsolete"
+	  Ports			  []
+	  Position		  [330, 259, 430, 301]
+	  OpenFcn		  "errordlg('Do not use these obsolete blocks'"
+");"
+	  MinAlgLoopOccurrences	  off
+	  RTWSystemCode		  "Auto"
+	  FunctionWithSeparateData off
+	  MaskHideContents	  off
+	  System {
+	    Name		    "Obsolete"
+	    Location		    [441, 455, 939, 755]
+	    Open		    off
+	    ModelBrowserVisibility  off
+	    ModelBrowserWidth	    200
+	    ScreenColor		    "white"
+	    PaperOrientation	    "landscape"
+	    PaperPositionMode	    "auto"
+	    PaperType		    "A4"
+	    PaperUnits		    "centimeters"
+	    TiledPaperMargins	    [0.500000, 0.500000, 0.500000, 0.500000]
+	    TiledPageScale	    1
+	    ShowPageBoundaries	    off
+	    ZoomFactor		    "100"
+	    Block {
+	      BlockType		      "S-Function"
+	      Name		      "INC_0"
+	      Ports		      [0, 1]
+	      Position		      [40, 40, 120, 80]
+	      BackgroundColor	      "yellow"
+	      FunctionName	      "old_el5101"
+	      Parameters	      "master,index,scale,offset,dtype,status,"
+"filter,omega,tsample"
+	      MaskType		      "EL5101"
+	      MaskDescription	      "Beckhoff EtherCAT Incremental Encoder I"
+"nput"
+	      MaskHelp		      "This block implements the EtherCAT Incr"
+"emental Encoder Input Terminal EL5101.\n\nThe first output is data, the secon"
+"d optional output is a Status Byte. Various options affect the behaviour of t"
+"he terminal and the block's output:\n\n<h4>Master:</h4>\nSet the EtherCAT Mas"
+"ter of this terminal.\n\n<h4>Slave Index:</h4>\nSet the EtherCAT slave index."
+" Following address formats are allowed:\n<ol>\n<li> Absolute addressing: a nu"
+"mber <<b><tt>n</tt></b>> representing the (zero based) absolute index. <b><tt"
+">n</tt></b> is typically larger than 0 because the first coupler has that add"
+"ress.\n\n<li> Field addressing: Has the form <<b><tt>f:n</tt></b>> where <b><"
+"tt>f</tt></b> is the (zero based) EtherCAT coupler field and \n<b><tt>n</tt><"
+"/b> is the terminal offset in that field. Take note that <b><tt>n</tt></b> is"
+" also greater than 0.\n\n<li> SSId addressing: the Secondary Slave Addressing"
+" has the form <<b><tt>#s:n</tt></b>> where <b><tt>s</tt></b> is the Secondary"
+" Slave Id of the EtherCAT coupler and <b><tt>n</tt></b> is the offset in that"
+" field. The SSId has to be preprogrammed into the coupler with other service "
+"tools.\n</ol>\n\n<h4>Output Full Scale</h4>\nWhen <b>Output Data Type</b> is "
+"set to <b>Double with scale and offset</b>, the block's output value at full "
+"scale terminal input can be set here. This value  directly affects the output"
+" despite a possible output LPF filter.\n\n<h4>Output Offset</h4>\nWhen <b>Out"
+"put Data Type</b> is set to <b>Double with scale and offset</b>, the blocks o"
+"utput at zero terminal input can be set here. Note that the Full Scale above "
+"is also increased by this amount. This value  directly affects the output des"
+"pite a possible output LPF filter.\n\n<h4>Output Data Type</h4>\nChoose the b"
+"lock's output data type for the output signal. Available are:\n<ul>\n<li><b><"
+"tt>Raw</tt></b> outputting the internal raw value as <tt>uint32_T</tt> as app"
+"ropriate\n<li><b><tt>Double</tt></b> outputting 0..1 corresponding to the Ful"
+"l Scale. Full Scale is affected by the Frame Type, SSI Frame Size and Data Le"
+"ngth. Refer to manufactuer's documentation.\n<li><b><tt>Double with scale and"
+" offset</tt></b>, allowing the output to be scaled with an offset.\n</ul>\n\n"
+"<p> \nChoosing <b>Status Output</b> provides a port of type <tt>uint8_T</tt> "
+"where the status is presented. Refer to manufacturors documentation for the u"
+"sed coding.\n This is only enabled when <b>Vector Output</b> is selected. \n"
+"\n<h4>Output Filter</h4>\nWhen not in <b>Raw</b> mode, the <b>Output Filter</"
+"b> checkbox becomes available, allowing the use of an internal low pass filte"
+"r. Enter the <b>LPF Time Constant</b> for the filter in the field below.\n<br"
+">For continuous sample time systems (0 in Sample Time), the filter is also co"
+"ntinuous. Discrete samples systems (Sample Time > 0) uses an equivalent discr"
+"ete low pass filter with a similar time constant.\n\n<p>\nSet the <b>Sample T"
+"ime</b> for the block. <tt>0</tt> is continuous sample time (runs at the mode"
+"l's base rate). Setting <tt>-1</tt> will try to set the time using back propa"
+"gation.\n"
+	      MaskPromptString	      "Master|Slave Index|Output Full Scale|Ou"
+"tput Offset|Output Data Type|Status Output|Output Filter|LPF Time Constant (s"
+"ec)|Sample Time"
+	      MaskStyleString	      "edit,edit,edit,edit,popup(Raw bits|Doub"
+"le|Double with scale and offset),checkbox,checkbox,edit,edit"
+	      MaskTunableValueString  "off,off,on,on,off,off,off,on,off"
+	      MaskCallbackString      "||||old_el5101_check('dtype');||old_el5"
+"101_check('filter');||"
+	      MaskEnableString	      "on,on,off,off,on,off,on,off,on"
+	      MaskVisibilityString    "on,on,on,on,on,on,on,on,on"
+	      MaskToolTipString	      "on,on,on,on,on,on,on,on,on"
+	      MaskVarAliasString      ",,,,,,,,"
+	      MaskVariables	      "master=@1;index=&2;scale=@3;offset=@4;d"
+"type=@5;status=@6;filter=@7;tau=@8;tsample=@9;"
+	      MaskInitialization      "omega=1/tau;"
+	      MaskDisplay	      "fprintf(...\n    'EL5101\\nIncr.-Enc. I"
+"nput\\nM:%i Idx:%s',...\n    master,...\n    index)\n"
+	      MaskIconFrame	      on
+	      MaskIconOpaque	      on
+	      MaskIconRotate	      "none"
+	      MaskIconUnits	      "autoscale"
+	      MaskValueString	      "0|1|1|0|Double|off|off|0.1|0"
+	      MaskTabNameString	      ",,,,,,,,"
+	    }
+	  }
 	}
 	Block {
 	  BlockType		  "S-Function"
