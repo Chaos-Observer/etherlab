@@ -1,3 +1,21 @@
+2007-05-30      Richard Hacker (lerich_at_gmx.net)
+	Released Version 1.1-rc6
+
+	* tools/buddy/msr_lib: updated to version 6.0.8
+	* blocks/etherlab_lib.mdl:
+	  - Moved EtherCAT/INC_0 to Obsolete
+	  - Changed mask parameter device_model name of EtherCAT/DIN_0 and 
+	    EtherCAT/DOUT_0 to model. This will have detrimental effects 
+	    on old Simulink models.
+	  - Added new block "EtherCAT/Master Stats"
+	  - Added new block "EtherCAT/ENC_0" that implements full 
+	    functionality of the EL5101 terminal.
+	* tools/buddy: etherlab_buddy now automatically detaches and
+	  becomes a daemon. To stop this, use the -n command line switch
+	* blocks/EtherCAT: Now uses new version 1.3 of EtherCAT
+
+	As usual, bugfixes
+
 2007-02-09      Richard Hacker (lerich_at_gmx.net)
 	Released Version 1.0!
 

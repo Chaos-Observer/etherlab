@@ -70,7 +70,7 @@ AC_ARG_WITH([linux-dir],
     AS_HELP_STRING(
         [--with-linux-dir=<linux-dir>],
         [Kernel directory (rtai-config --linux-dir)]),
-    [ linux_dir=$(withval) ],
+    [ linux_dir=${withval} ],
     [
         linux_dir=$(${RTAI_DIR}/bin/rtai-config --linux-dir)
     ])
