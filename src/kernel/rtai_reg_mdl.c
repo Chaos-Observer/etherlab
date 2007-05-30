@@ -29,7 +29,7 @@
 #include <linux/module.h>
 #include <linux/init.h>
 #include <linux/moduleparam.h>
-#include <linux/config.h>
+#include <linux/autoconf.h>
 #include "rt_kernel.h"
 
 struct rtw_model rtw_model;
