@@ -56,6 +56,7 @@
 #define MSR_P 0x80 /* Persistente Variable, wird beim beenden des Moduls gespeichert und beim Start wieder beschrieben wird */
 #define MSR_DEP 0x100 /* Andere Variablen sind von dieser abhängig, z.B. ist die Variable ein Ausschnitt aus einem Simulinkarray
 			 dieses Flag sorgt dafür, das beim beschreiben auch gemeldet wird das sich andere Parameter geändert haben */ 
+#define MSR_AIC 0x200 /* Parameter ist ein asynchroner Eingangskanal */
 
 /* ein paar Kombinationen */
 #define MSR_RWS (MSR_R | MSR_W | MSR_S)
@@ -278,6 +279,7 @@ struct msr_param_list
     void *cbuf;                  /* Speicherbereich für den Vergleich des Variableninhaltes mit vorherigem Wert, 
 				    um bestimmen zu können ob sich die Variable geändert hat */ 
     unsigned int p_flags;        /* Berechtigungen */
+    struct timeval mtime;        // letzter Schreibzugriff auf den Parameter
     void (*p_write)(struct msr_param_list *self);           /* Zeiger auf eine Funktion, die nach dem Beschreiben des Parameters
 							       aufgerufen werden soll. */
     void (*p_read)(struct msr_param_list *self);            /* Zeiger auf eine Funktion, die vor dem Lesen des Parameters
@@ -327,43 +329,6 @@ struct msr_meta_list
 /*--public data----------------------------------------------------------------------------------*/
 
 /*--prototypes-----------------------------------------------------------------------------------*/
-
-
-/*
-***************************************************************************************************
-*
-* Function: msr_reg_meta
-*
-* Beschreibung: Funktion für die Verwendung der msr_lib unter Simulink. Die Metainformationen, wie z.B. 
-*               Limits oder Einheiten können nicht bei der Registrierung der Parameter oder Kanäle
-*               mit übergeben werden, sondern müssen vorab über diese Funktion registriert werden.
-*               Beim nachfolgenden Registrierung von Parametern und Kanälen wird dann durch die Liste aller
-*               metatags gelaufen, überprüft, ob der Pfad im path der metatags enthalten ist und der Tag dann für
-*               die Registierung verwendet. Gibt es mehrere Pfade, die zutreffen und wiedersprechende Attribut im Tag
-*               haben, gewinnt das letzte Attribut. Beispiel:
-*               path = /system/eingänge,              tag = <meta ll="10" ul="20" unit="s"\>
-*               path = /system/eingänge/digital,      tag = <meta unit="h"\>
-*               path = /system/eingänge/digital/bus1, tag = <meta ll="5" range="eins,zwei,drei"\>
-*              
-*               Parameterregistierung von /system/eingänge/digital/bus1/p1 erhält dann als meta:
-*                                         <meta ll="5" unit="h" ul="20" range="eins,zwei,drei"\>
-*
-*               Parameterregistierung von /system/eingänge/analog/p1 erhält dann als meta:
-*                                         <meta ll="10" unit="s" ul="20"\>
-*
-*
-* Parameter: siehe Beschreibung
-*
-* Rückgabe:  keine
-*               
-* Status: dev
-*
-***************************************************************************************************
-*/
-
-void msr_reg_meta(char *path,char *tag);
-
-void msr_clean_meta_list(void);
 
 /*
 ***************************************************************************************************
@@ -468,14 +433,6 @@ int msr_cfi_reg_param(char *bez,char *einh,void *adr,int rnum, int cnum,int orie
     } while (0)
 
 
-int msr_reg_str_param(char *bez,char *einh,//char **adr,  FIXME strings werden nicht aus Kernelcode her beschrieben
-		      unsigned int flags,
-		      char *init,
-		      void (*write)(struct msr_param_list *self),
-		      void (*read)(struct msr_param_list *self));
-
-int msr_reg_funktion_call(char *bez,void (*write)(struct msr_param_list *self));
-
 /*
 ***************************************************************************************************
 *
@@ -547,6 +504,7 @@ int msr_print_param_valuelist(char *buf,int mode);
 *            avalue: der Wert als String        
 *            si: Startindex
 *            mode: Schreibmodus CODEASCII, oder CODEHEX
+*            aic: 1 = asynchroner-input-Kanal 
 *
 * Rückgabe: 
 *               
@@ -555,7 +513,7 @@ int msr_print_param_valuelist(char *buf,int mode);
 ***************************************************************************************************
 */
 
-void msr_write_param(struct msr_dev *dev/*struct msr_char_buf *buf*/,char *aname,char* avalue,unsigned int si,int mode);
+void msr_write_param(struct msr_dev *dev/*struct msr_char_buf *buf*/,char *aname,char* avalue,unsigned int si,int mode,int aic);
 
 /*
 ***************************************************************************************************

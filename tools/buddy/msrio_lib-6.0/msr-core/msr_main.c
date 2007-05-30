@@ -115,15 +115,12 @@ extern struct msr_char_buf *msr_kanal_puffer;
 
 extern unsigned int msr_kanal_write_pointer; /* Schreibzeiger auf den Kanalringpuffer */
 
-static double msr_sample_freq = 1.0;
+double msr_sample_freq = 1.0;
 
 void msr_rtlib_cleanup(void)
 {
 
     /* Einträge in den Listen löschen */
-    msr_print_info("msr_control: cleanup metas...");
-    msr_clean_meta_list();
-
     msr_print_info("msr_control: cleanup parameters...");
     msr_clean_param_list();
 

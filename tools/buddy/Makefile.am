@@ -8,7 +8,6 @@ libmsr_a_SOURCES = \
         msrio_lib/msr-core/msr_messages.c \
         msrio_lib/msr-core/msr_lists.c \
         msrio_lib/msr-core/msr_attributelist.c \
-        msrio_lib/msr-utils/msr_utils.c \
         msrio_lib/msr-math/msr_base64.c \
         msrio_lib/msr-math/msr_hex_bin.c \
         msrio_lib/include/msr_base64.h \

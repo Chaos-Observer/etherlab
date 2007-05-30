@@ -329,7 +329,7 @@ char *alisttostr(struct talist *head){
     if(DBG > 1)
 	printf("Listsize: %d\n",ecnt);
     buf = (char *)malloc(size+1); //die Null am Ende nicht vergessen              
-    FOR_THE_LIST(element,head) {  //erst durch die Liste laufen und zählen, wie groß der String sein muß
+    FOR_THE_LIST(element,head) {  
 	if(cnt > 0)
 	    cnt+=sprintf(buf+cnt," %s=\"%s\"",element->name,element->value);
 	else  //der erste
@@ -476,7 +476,7 @@ char *extractalist(struct talist **head,char *buf) {
 		}
 		break;
 
-	    case '"':
+	    case '"':  //FIXME, hier fehlt noch die Unterschiedung in/out xmlframe ??...
 		switch(substate) {
 		    case INEQUAL:
 			substate = INVALUE;

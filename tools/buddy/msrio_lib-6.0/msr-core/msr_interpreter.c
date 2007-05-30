@@ -225,7 +225,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <asm/param.h> //Für HZ
 
 
 #include <msr_interpreter.h>
@@ -247,6 +246,7 @@ char *msr_get_attrib(char *buf,char *parbuf);
 static void msr_com_read_parameter(struct msr_dev *dev,char *params);
 static void msr_com_read_parameter_values(struct msr_dev *dev,char *params);
 static void msr_com_write_parameter(struct msr_dev *dev,char *params);
+static void msr_com_write_aic(struct msr_dev *dev,char *params);              //write input channel
 static void msr_com_read_kanaele(struct msr_dev *dev,char *params);
 static void msr_com_ping(struct msr_dev *dev,char *params);
 static void msr_dec_mod_use_count(struct msr_dev *dev,char *params);
@@ -270,6 +270,7 @@ extern struct msr_param_list *msr_param_head; /* Parameterliste */
 extern struct msr_kanal_list *msr_kanal_head; /* Kanalliste */
 struct msr_dev *msr_dev_head;  
 
+extern double msr_sample_freq;
 
 extern int  k_buflen;
 /*--public data----------------------------------------------------------------------------------*/
@@ -422,9 +423,12 @@ static void msr_com_write_parameter(struct msr_dev *dev,char *params)
     char *indexbuf; 
     char *valuebuf;
     char *sibuf;
+    char *aicbuf;
+
     unsigned int si = 0;
     int index = 0;
     int mode = MSR_CODEHEX;
+    int aic = 0;
 
     if (dev->write_access != 1) {
 	msr_buf_printf(dev->read_buffer,"<warn text=\"Kein Schreibzugriff fuer diesen Rechner(%u)!\"/>\n",dev->filp);
@@ -446,6 +450,12 @@ static void msr_com_write_parameter(struct msr_dev *dev,char *params)
 	freemem(sibuf);
     }
 
+    aicbuf = msr_get_attrib(params,"aic");
+    if(aicbuf) {
+	aic = simple_strtol(aicbuf,NULL,10);
+	freemem(aicbuf);
+    }
+
     //printk("write_parameter%s filp: %u\n",params+1,dev->filp);  /* geschriebenen Parameter loggen */
 
     if(namebuf && valuebuf){
@@ -454,7 +464,7 @@ static void msr_com_write_parameter(struct msr_dev *dev,char *params)
 	MSR_INTERPR_PRINT("msr_module: interpreter: parameter=value wert=%s \n",valuebuf);
 	MSR_INTERPR_PRINT("msr_module: interpreter: parameter=si wert=%d \n",si);
 
-	msr_write_param(dev/*->read_buffer*/,namebuf,valuebuf,si,mode);
+	msr_write_param(dev/*->read_buffer*/,namebuf,valuebuf,si,mode,aic);
     }
     else {
 	if(indexbuf && valuebuf) {
@@ -462,7 +472,7 @@ static void msr_com_write_parameter(struct msr_dev *dev,char *params)
 	    index = simple_strtol(indexbuf,NULL,10);
 	    FOR_THE_LIST(element,msr_param_head) {
 		if (element->index == index) {
-		    msr_write_param(dev/*->read_buffer*/,element->p_bez,valuebuf,si,mode);
+		    msr_write_param(dev/*->read_buffer*/,element->p_bez,valuebuf,si,mode,aic);
 		    break;
 		}
 	    }
@@ -474,6 +484,7 @@ static void msr_com_write_parameter(struct msr_dev *dev,char *params)
     if(valuebuf) freemem(valuebuf);
     if(indexbuf) freemem(indexbuf);
 }
+
 
 /*-----------------------------------------------------------------------------*/
 static void msr_com_read_kanaele(struct msr_dev *dev,char *params)
@@ -557,8 +568,8 @@ static void msr_com_startdata(struct msr_dev *dev,char *params)
 	freemem(reductionbuf);
     }
     else {
-	dev->reduction = HZ; /* wenn reduction nicht angegeben, wird Abtastrate für die Daten auf 1 sec gesetzt */
-	MSR_INTERPR_PRINT("msr_module: interpreter: startdata reduction=%u \n",HZ);
+	dev->reduction = (unsigned int)msr_sample_freq; /* wenn reduction nicht angegeben, wird Abtastrate für die Daten auf 1 sec gesetzt */
+	MSR_INTERPR_PRINT("msr_module: interpreter: startdata reduction=%d \n",msr_sample_freq);
     }
     /*------------*/
 
@@ -713,7 +724,7 @@ static void msr_com_startdata2(struct msr_dev *dev,char *params)
 	freemem(reductionbuf);
     }
     else 
-	reduction = HZ; /* wenn reduction nicht angegeben, wird Abtastrate für die Daten auf 1 sec gesetzt */
+	reduction = (unsigned int)msr_sample_freq; /* wenn reduction nicht angegeben, wird Abtastrate für die Daten auf 1 sec gesetzt */
 
     if(bs_buf) {
 	bs = simple_strtol(bs_buf,NULL,10); 
@@ -727,7 +738,7 @@ static void msr_com_startdata2(struct msr_dev *dev,char *params)
 	freemem(bs_buf);
     }
     else 
-	bs = HZ; //FIXME HZ ist 100 Hz .... nicht MSR_HZ
+	bs = (int)msr_sample_freq; //FIXME HZ ist 100 Hz .... nicht MSR_HZ
 
     if(codmode_buf) {
 	if(strcmp(codmode_buf,"Base64") == 0)
@@ -1052,23 +1063,25 @@ char *msr_get_attrib(char *buf,char *parbuf)
     char *pind,*open_ind,*close_ind;
     char *retbuf = NULL;
 
+    //FIXME
     pind=strstr(buf, parbuf); 
+
     MSR_INTERPR_PRINT("msr_module: interpreter: suche parameter %s... ",parbuf);
     if(pind) {  /* Parameter ist schon mal vorhanden */
 	MSR_INTERPR_PRINT("found ...");
 	if((*(pind+strlen(parbuf)) == '=') &&  /* Parameter wird durch ein = gefolgt */
 	   (*(pind+strlen(parbuf)+1)= '"')) {    /* " steht nach dem = */
-	    open_ind = pind+strlen(parbuf)+1;
-	    close_ind = estrchr(open_ind+1,'"');
-	    if((close_ind) && (close_ind > open_ind/* +1*/)){ /* String hat mindestens die Länge 0 */
-		retbuf = (char *)getmem(close_ind-open_ind);
-		if(!retbuf) return NULL;                      /* kein Speicherplatz ??? */
-		memset(retbuf,0,close_ind-open_ind);     /* nullen */
-		memcpy(retbuf,open_ind+1,close_ind-open_ind-1); // -1 dadurch steht hinten immer ne 0
-		/* retbuf = open_ind+1;
-		*lw = close_ind-open_ind-1;
-		MSR_INTERPR_PRINT("value found ... l%d",*lw); */
-	    }
+	open_ind = pind+strlen(parbuf)+1;
+
+//	printf("open_ind  %s\n",open_ind);
+
+	close_ind = strchr(open_ind+1,'"');
+	if((close_ind) && (close_ind > open_ind/* +1*/)){ /* String hat mindestens die Länge 0 */
+	    retbuf = (char *)getmem(close_ind-open_ind);
+	    if(!retbuf) return NULL;                      /* kein Speicherplatz ??? */
+	    memset(retbuf,0,close_ind-open_ind);     /* nullen */
+	    memcpy(retbuf,open_ind+1,close_ind-open_ind-1); // -1 dadurch steht hinten immer ne 0
+	}
 	}
     }
     MSR_INTERPR_PRINT("\n");
@@ -1102,10 +1115,10 @@ int msr_interpreter(struct msr_dev *dev)
     msr_charbuf_lin(dev->write_buffer,dev->wp_read_pointer); /* Besser für Stringoperationen siehe msr_charbuf.c */
 
     /* jetzt einen Bereich rausschneiden, der in "<...>" steht */
-    open_ind = estrchr(dev->write_buffer->buf+dev->wp_read_pointer,'<');
+    open_ind = strchr(dev->write_buffer->buf+dev->wp_read_pointer,'<');
     if (open_ind) {
 	MSR_INTERPR_PRINT("msr_module: interpreter open_ind: %d\n",open_ind-dev->write_buffer->buf);
-	close_ind = estrchr(open_ind,'>'); /* ab da weitersuchen */
+	close_ind = strchr(open_ind,'>'); /* ab da weitersuchen */
 	/* jetzt Verifikation */
 	if(close_ind) {   /* geschlossenen Klammer gefunden */
 	    MSR_INTERPR_PRINT("msr_module: interpreter close_ind: %d\n",close_ind-dev->write_buffer->buf);
@@ -1113,7 +1126,7 @@ int msr_interpreter(struct msr_dev *dev)
 	    dev->wp_read_pointer = (close_ind - dev->write_buffer->buf) % dev->write_buffer->bufsize; 
 	    result = 1;
 
-            /* jetzt die geschlossene Klammer zu null setzten um zu zeigen, daß dort der String zu Ende ist */
+            /* jetzt die geschlossene Klammer zu null setzten, um zu zeigen, daß dort der String zu Ende ist */
 	    *close_ind = '\0';
 
 	    /* echo, wenn gewünscht */

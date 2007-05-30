@@ -70,198 +70,10 @@
 #ifndef _MSR_MAIN_H_
 #define _MSR_MAIN_H_
 
-#ifndef __KERNEL__
+
 #include <stdlib.h>
-#endif 
-
-#define    MSR_INTERRUPT_CODE(ICODE)                           \
-    static unsigned long old_j = 0;                            \
-    unsigned long j,k;                                         \
-    extern volatile int rt_in_interrupt;                       \
-                                                               \
-                                                               \
-    unsigned long cr0;                                         \
-    static unsigned long linux_fpe[27];                        \
-                                                               \
-    rt_in_interrupt = 1;                                       \
-    rdtscl(j); /* read the timestamp-register of the CPU */    \
-                                                               \
-	{                                                      \
-	    extern unsigned long int volatile msr_jiffies;     \
-	    msr_jiffies++;                                     \
-	}						       \
-							       \
-/*   Register sichern */				       \
-     save_cr0_and_clts(cr0);   				       \
-     save_fpenv(linux_fpe);  				       \
-							       \
-							       \
-							       \
-    /* aktuelle Zeit ermitteln */                              \
-    {                                                          \
-	extern struct timeval process_time;           \
-        extern double process_time_dbl;               \
-        extern struct rt_time_sync msr_time_sync;     \
-  	rt_time_inc_run(&msr_time_sync);              \
-        process_time = msr_time_sync.rt_time;         \
-        process_time_dbl = msr_time_sync.drt_time;    \
-                                                               \
-    }                                                          \
-    /* ab hier Echtzeitcode -auch in float...------*/	       \
-    do{ ICODE } while(0);				       \
-							       \
-							       \
-    /* bis hier Echtzeitcode ----------------------*/	       \
-    rdtscl(k); /* read the timestamp-register of the CPU */    \
-    {							       \
-	extern unsigned long msr_controller_execution_time;    \
-	extern unsigned long msr_controller_call_time;         \
-	/* calculate execution time of controller in us */     \
-	msr_controller_execution_time = ((unsigned long)(100000/HZ)*(k-j))/(current_cpu_data.loops_per_jiffy/10);  \
-	/* differenz zum vorherigen Aufruf FIXME ŽÜberlauf auf schnellen Prozessoren und langsamer Abtastrate*/     \
-	msr_controller_call_time = ((unsigned long)(100000/HZ)*(j-old_j))/(current_cpu_data.loops_per_jiffy/10);   \
-	old_j = j;                                             \
-    }							       \
-							       \
-    {                                                          \
-	/* und die read_waitqueue wieder aktivieren */	       \
-       extern wait_queue_head_t msr_read_waitqueue;            \
-       static int count_wakeup = 0;                            \
-       if(++count_wakeup >= MSR_ABTASTFREQUENZ/10) {	       \
-       /*	msr_check_param_list();  */		       \
-	 wake_up_interruptible(&msr_read_waitqueue);	       \
-	 count_wakeup = 0;				       \
-       }						       \
-   }                                                           \
-							       \
-    rt_in_interrupt = 0;                                       \
-    restore_fpenv(linux_fpe);                                  \
-    restore_cr0(cr0)
-
-#define    MSR_ADEOS_INTERRUPT_CODE(ICODE)                           \
-do {      \
-    static unsigned long old_j = 0;                            \
-    unsigned long j,k;                                         \
-    extern volatile int rt_in_interrupt;                       \
-                                                               \
-                                                               \
-    unsigned long cr0;                                         \
-    static unsigned long linux_fpe[27];                        \
-                                                               \
-    rt_in_interrupt = 1;                                       \
-    rdtscl(j); /* read the timestamp-register of the CPU */    \
-                                                               \
-	{                                                      \
-	    extern unsigned long int volatile msr_jiffies;     \
-	    msr_jiffies++;                                     \
-	}						       \
-							       \
-/*   Register sichern */				       \
-     save_cr0_and_clts(cr0);   				       \
-     save_fpenv(linux_fpe);  				       \
-							       \
-							       \
-							       \
-    /* aktuelle Zeit ermitteln */                              \
-    {                                                          \
-	extern struct timeval process_time;           \
-        extern double process_time_dbl;               \
-        extern struct rt_time_sync msr_time_sync;     \
-  	rt_time_inc_run(&msr_time_sync);              \
-        process_time = msr_time_sync.rt_time;         \
-        process_time_dbl = msr_time_sync.drt_time;    \
-                                                               \
-    }                                                          \
-    /* ab hier Echtzeitcode -auch in float...------*/	       \
-    do{ ICODE } while(0);				       \
-							       \
-							       \
-    /* bis hier Echtzeitcode ----------------------*/	       \
-    rdtscl(k); /* read the timestamp-register of the CPU */    \
-    {							       \
-	extern unsigned long msr_controller_execution_time;    \
-	extern unsigned long msr_controller_call_time;         \
-	/* calculate execution time of controller in us */     \
-	msr_controller_execution_time = ((unsigned long)(100000/HZ)*(k-j))/(current_cpu_data.loops_per_jiffy/10);  \
-	/* differenz zum vorherigen Aufruf FIXME ŽÜberlauf auf schnellen Prozessoren und langsamer Abtastrate*/     \
-	msr_controller_call_time = ((unsigned long)(100000/HZ)*(j-old_j))/(current_cpu_data.loops_per_jiffy/10);   \
-	old_j = j;                                             \
-    }							       \
-							       \
-    {                                                          \
-	/* und die read_waitqueue wieder aktivieren */	       \
-       extern wait_queue_head_t msr_read_waitqueue;            \
-       static int count_wakeup = 0;                            \
-       if(++count_wakeup >= MSR_ABTASTFREQUENZ/10) {	       \
-       /*	msr_check_param_list();  */		       \
-	 wake_up_interruptible(&msr_read_waitqueue);	       \
-	 count_wakeup = 0;				       \
-       }						       \
-   }                                                           \
-							       \
-    rt_in_interrupt = 0;                                       \
-    restore_fpenv(linux_fpe);                                  \
-    restore_cr0(cr0);                                          \
-} while (0)
 
 
-#define    MSR_RTAITHREAD_CODE(ICODE)                          \
-do { \
-    static unsigned long old_j = 0;                            \
-    unsigned long j,k;                                         \
-    extern volatile int rt_in_interrupt;                       \
-                                                               \
-                                                               \
-                                                               \
-    rt_in_interrupt = 1;                                       \
-    rdtscl(j); /* read the timestamp-register of the CPU */    \
-                                                               \
-	{                                                      \
-	    extern unsigned long int volatile msr_jiffies;     \
-	    msr_jiffies++;                                     \
-	}						       \
-							       \
-							       \
-							       \
-    /* aktuelle Zeit ermitteln */                              \
-    {                                                          \
-	extern struct timeval process_time;           \
-        extern double process_time_dbl;               \
-        extern struct rt_time_sync msr_time_sync;     \
-  	rt_time_inc_run(&msr_time_sync);              \
-        process_time = msr_time_sync.rt_time;         \
-        process_time_dbl = msr_time_sync.drt_time;    \
-                                                               \
-    }                                                          \
-    /* ab hier Echtzeitcode -auch in float...------*/	       \
-    do{ ICODE } while(0);				       \
-							       \
-							       \
-    /* bis hier Echtzeitcode ----------------------*/	       \
-    rdtscl(k); /* read the timestamp-register of the CPU */    \
-    {							       \
-	extern unsigned long msr_controller_execution_time;    \
-	extern unsigned long msr_controller_call_time;         \
-	/* calculate execution time of controller in us */     \
-	msr_controller_execution_time = ((unsigned long)(100000/HZ)*(k-j))/(current_cpu_data.loops_per_jiffy/10);  \
-	/* differenz zum vorherigen Aufruf FIXME ŽÜberlauf auf schnellen Prozessoren und langsamer Abtastrate*/     \
-	msr_controller_call_time = ((unsigned long)(100000/HZ)*(j-old_j))/(current_cpu_data.loops_per_jiffy/10);   \
-	old_j = j;                                             \
-    }							       \
-							       \
-    {                                                          \
-	/* und die read_waitqueue wieder aktivieren */	       \
-       extern wait_queue_head_t msr_read_waitqueue;            \
-       static int count_wakeup = 0;                            \
-       if(++count_wakeup >= MSR_ABTASTFREQUENZ/10) {	       \
-       /*	msr_check_param_list();  */		       \
-	 wake_up_interruptible(&msr_read_waitqueue);	       \
-	 count_wakeup = 0;				       \
-       }						       \
-    rt_in_interrupt = 0;                                       \
-   } \
-} while (0)
-							       
 							       
 /*							       
 ***************************************************************************************************
@@ -287,7 +99,6 @@ int msr_rtlib_init(int red,double hz,int tbuf,int (*prj_init)(void));
 
 void msr_rtlib_cleanup(void);
 
-#ifndef __KERNEL__
 
 //Ab hier User Space Schnittstelle
 
@@ -374,8 +185,6 @@ void msr_cleanup(void);
  * for a client, tell dispatcher by calling set_wfd(client_privdata) */
 int msr_update(unsigned int wp);
 
-#endif
- 
 #endif
 
 

@@ -27,7 +27,9 @@
 *                 Floatformatierung auf ffloat() umbauen
 *
 *           Floats werden mit %.16g formatiert, damit die Epochenzeit noch auf eine usec reinpasst!
+*           Strings funktionieren wieder
 *
+*           2007.05.24: beim Überschreiten von Parameterlimits werden die Werte ignoriert
 *
 *
 *
@@ -39,34 +41,12 @@
 
 #include <msr_target.h> 
 
-#ifdef __KERNEL__
-/* hier die Kernelbiblotheken */
-#include <linux/config.h>
-#include <linux/module.h>
-
-#include <linux/sched.h>
-#include <linux/kernel.h>
-//#include <linux/malloc.h> 
-#include <linux/slab.h> 
-#include <linux/vmalloc.h> 
-#include <linux/fs.h>     /* everything... */
-#include <linux/proc_fs.h>
-#include <linux/interrupt.h> /* intr_count */
-#include <linux/mm.h>
-#include <asm/msr.h> /* maschine-specific registers */
-#include <asm/segment.h>
-#include <asm/uaccess.h>
-#include <asm/semaphore.h>  /* für das Locking von Stringvariablen */
-
-
-#else
 /* hier die Userbibliotheken */
 #include <linux/a.out.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stddef.h>
-#endif
 
 #include <linux/errno.h>  /* error codes */
 
@@ -81,10 +61,6 @@
 #include <msr_hex_bin.h>
 #include <msr_interpreter.h>
 #include <msr_attributelist.h>
-
-#include <msr_rcsinfo.h>
-
-RCS_ID("$Header: /vol/projekte/msr_messen_steuern_regeln/linux/kernel_space/msrio_lib-0.9/msr-core/RCS/msr_reg.c,v 1.34 2006/08/09 12:40:52 hm Exp hm $");
 
 #define DBG 0
 /*--external functions---------------------------------------------------------------------------*/
@@ -123,37 +99,8 @@ extern struct msr_char_buf *msr_in_int_charbuffer;  /* in diesen Puffer darf aus
 
 extern struct msr_char_buf *msr_user_charbuffer;    /* in diesen Puffer wird aus Userroutinen read,write,... */
 
-#ifdef __KERNEL__
-DECLARE_MUTEX(strwrlock);  /* String-Read-Write-Lock */
-
-#else
 extern void *prtp;
 extern int (*newparamflag)(void*, void*, size_t);  //Funktion, die aufgerufen werden muß, wenn ein Parameter beschrieben wurde
-
-#endif
-
-void msr_reg_meta(char *path,char *tag){ //opsolete
-}
-
-
-/*
-***************************************************************************************************
-*
-* Function: msr_clean_meta_list
-*
-* Beschreibung: Gibt Speicherplatz wieder frei
-*
-* Parameter: 
-*
-* Rückgabe:  
-*               
-* Status: exp
-*
-***************************************************************************************************
-*/
-
-void msr_clean_meta_list(void){ //opsolete
-}
 
 
 #define MSR_CALC_ADR(_START,_DATASIZE,_ORIENTATION,_RNUM,_CNUM)   \
@@ -206,19 +153,11 @@ int r_p_ushort(struct msr_param_list *self,char *buf) {
 }
 
 int r_p_dbl(struct msr_param_list *self,char *buf) {
-#ifdef __KERNEL__
-    FPARAM(double,"%s%i.%.6i",F_FLOAT);
-#else
     FPARAM(double,"%.16g",);
-#endif
 }
 
 int r_p_flt(struct msr_param_list *self,char *buf) {
-#ifdef __KERNEL__
-    FPARAM(float,"%s%i.%.6i",F_FLOAT);
-#else
     FPARAM(float,"%.16g",);
-#endif
 }
 
 
@@ -233,17 +172,7 @@ int r_p_uchar(struct msr_param_list *self,char *buf) {
 #undef FPARAM
 
 int r_p_str(struct msr_param_list *self,char *buf) {
-    int len;
-#ifdef __KERNEL__
-    down(&strwrlock);
-//    len=sprintf(buf,"%s",*(char **)self->p_adr);
-    len=sprintf(buf,"%s",(char *)self->p_adr);
-    up(&strwrlock);
-#else
-//    len=sprintf(buf,"%s",*(char **)self->p_adr);
-    len=sprintf(buf,"%s",(char *)self->p_adr);
-#endif
-    return len;
+    return sprintf(buf,"%s",(char *)self->p_adr);
 }
 
 
@@ -261,6 +190,7 @@ do {                                                                            
     char *ogbuf;                                                                      \
     char *next = buf-1;                                                               \
     int result = 0;                                                                   \
+    int dirty = 0;                                                                    \
     int index = si;                                                                   \
     VTYP tmp_data,ug=0,og=0;                                                          \
     int anz = self->cnum*self->rnum;                                                  \
@@ -280,21 +210,26 @@ do {                                                                            
 	og = (VTYP)VFUNKTION(ogbuf,NULL);                                             \
                                                                                       \
     do {									      \
+          dirty = 0;                                                                  \
   	  tmp_data = (VTYP)VFUNKTION(next+1,&next);				      \
   	  if(index>= anz) {							      \
   	      result|=4;							      \
+              dirty = 1;                                                              \
   	      break;								      \
   	  }									      \
   	  /* Test auf Limits */							      \
   	  if(ugbuf && (tmp_data < ug)) {					      \
   	      tmp_data = ug;		               				      \
   	      result|=1;							      \
+              dirty = 1;                                                              \
   	  }									      \
   	  if(ogbuf && (tmp_data > og)) {					      \
   	      tmp_data = og;							      \
   	      result|=2;							      \
+              dirty = 1;                                                              \
   	  }									      \
-  	  *(VTYP *)(self->p_adr+index*self->dataSize) = tmp_data; /* und zuweisen */  \
+          if (dirty == 0)                                                             \
+  	    *(VTYP *)(self->p_adr+index*self->dataSize) = tmp_data; /* und zuweisen */\
   	  index++;								      \
     } while(*next);                                                                   \
                                                                                       \
@@ -310,6 +245,7 @@ do {                                                                            
     char *ugbuf;                                                                      \
     char *ogbuf;                                                                      \
     int result = 0;                                                                   \
+    int dirty = 0;                                                                    \
     int index = si;                                                                   \
     int i;                                                                            \
     VTYP tmp_data,ug=0,og=0;                                                          \
@@ -330,21 +266,26 @@ do {                                                                            
 	og = (VTYP)VFUNKTION(ogbuf,NULL);                                             \
                                                                                       \
     for(i=0;i<(strlen(buf)/2/self->dataSize);i++) {			              \
+          dirty = 0;                                                                  \
   	  hex_to_bin(buf+(i*2*self->dataSize),(unsigned char*)&tmp_data,self->dataSize*2,sizeof(tmp_data));  \
   	  if(index>= anz) {							      \
   	      result|=4;							      \
+              dirty = 1;                                                              \
   	      break;								      \
   	  }									      \
   	  /* Test auf Limits */							      \
   	  if(ugbuf && (tmp_data < ug)) {					      \
   	      tmp_data = ug;		               				      \
   	      result|=1;							      \
+              dirty = 1;                                                              \
   	  }									      \
   	  if(ogbuf && (tmp_data > og)) {					      \
   	      tmp_data = og;							      \
   	      result|=2;							      \
+              dirty = 1;                                                              \
   	  }									      \
-  	  *(VTYP *)(self->p_adr+index*self->dataSize) = tmp_data; /* und zuweisen */  \
+          if (dirty == 0)                                                             \
+    	    *(VTYP *)(self->p_adr+index*self->dataSize) = tmp_data; /* und zuweisen */\
   	  index++;								      \
     }                                                                                 \
                                                                                       \
@@ -435,33 +376,13 @@ int w_p_dbl(struct msr_param_list *self,char *buf,unsigned int si,int mode) {
 
 
 int w_p_str(struct msr_param_list *self,char *buf,unsigned int si,int mode) {
-    char *tmpstr;
 
-#ifdef __KERNEL__
-    down(&strwrlock);
-#endif
-//    tmpstr = *(char **)self->p_adr;
-    tmpstr = (char*)self->p_adr;
-    if(tmpstr != NULL) 
-	freemem(tmpstr);
-    if(strlen(buf) > 0){
-	tmpstr = getmem(strlen(buf)+1);
-	strcpy(tmpstr,buf);
-    }
-    else { // String hat die Länge Null
-	tmpstr = getmem(1);
-	strcpy(tmpstr,"");
-    }
-//    *(char **)self->p_adr = tmpstr;
-    self->p_adr = (void *)tmpstr;
-#ifdef __KERNEL__
-    up(&strwrlock);
-#endif
-    //jetzt noch den geänderten String an alle anderen Clients melden
-    msr_dev_printf("<pu index=\"%i\"/>",self->index);
+    int anz = self->cnum * self->rnum;
 
-//    cnt = msr_print_param_list(msr_getb(msr_user_charbuffer),self->p_bez,NULL,0,0);  //an alle Clients...
-//    msr_incb(cnt,msr_user_charbuffer);
+    memset(self->p_adr, 0, anz); //Nullen
+
+    //und neu beschreiben
+    snprintf((char*)self->p_adr,anz,"%s",buf); //hinten immer eine Null stehen lassen
     return 0;
 }
 
@@ -472,7 +393,7 @@ int w_p_str(struct msr_param_list *self,char *buf,unsigned int si,int mode) {
 
 
 
-//Vergleichsfunktion mit cbuf für Numerische Werte
+//Vergleichsfunktion mit cbuf für numerische Werte
 int p_num_chk(struct msr_param_list *self) {
 
     int i;
@@ -503,18 +424,6 @@ void num_free(struct msr_param_list *self) {
     }
 }
 
-//und für Strings
-void str_free(struct msr_param_list *self) {
-    char *tmpstr;
-    if(DBG > 0) printk("Free on %s\n",self->p_bez);
-//    tmpstr = *(char **)self->p_adr;
-    tmpstr = (char *)self->p_adr;
-    if(tmpstr != NULL) 
-	freemem(tmpstr);
-}
-
-
-
 
 int msr_cfi_reg_param(char *bez,char *einh,void *adr,int rnum, int cnum,int orientation,enum enum_var_typ typ,
 		      char *info,
@@ -537,6 +446,8 @@ int msr_cfi_reg_param(char *bez,char *einh,void *adr,int rnum, int cnum,int orie
     element->orientation = orientation;
     element->free = num_free;
     element->p_chk = p_num_chk;
+
+    do_gettimeofday(&element->mtime);
 
     if(DBG > 0) printk("done...\n");
     switch(typ) {
@@ -585,8 +496,9 @@ int msr_cfi_reg_param(char *bez,char *einh,void *adr,int rnum, int cnum,int orie
 	    element->w_p = w_p_dbl;
 	    break;
 	case TSTR:
-	    printk("Strings können mit dieser Funktion nicht registriert werden.\n");
-	    return 0;
+	    element->dataSize = sizeof(char);
+	    element->r_p = r_p_str;
+	    element->w_p = w_p_str;
 	    break;
 	case TTIMEVAL:
 	    printk("noch nicht implementiert.\n");
@@ -621,78 +533,6 @@ int msr_cfi_reg_param(char *bez,char *einh,void *adr,int rnum, int cnum,int orie
 }
 
 
-
-/* wichtig, Vorbelegungen von **adr werden immer durch den Wert in *init überschrieben !!!*/
-
-int msr_reg_str_param(char *bez,char *einh,//char **adr,  FIXME 
-		      unsigned int flags,
-		      char *init,
-		      void (*write)(struct msr_param_list *self),
-		      void (*read)(struct msr_param_list *self))
-{
-    char *tmpstr;
-    char *info = "";
-    void *adr = NULL;
-    struct msr_param_list *element = NULL, *prev = NULL;                                                 
-    MSR_INIT_LIST_HEADER(msr_param_head,msr_param_list);  //Wichtig, strings werden per Definition nicht aus Interruptroutinen heraus beschrieben
-                                                            //d.h. die Aktualisierung an alle Clients wird vorgenommen, falls der String von irgendeinem
-                                                            //Client beschrieben wird
-    element->p_flags = flags;                                                                    
-    element->p_write = write;                                                                    
-    element->p_read = read;                                                                      
-    element->dataSize = 0;  //das variabel
-    element->rnum = 0;
-    element->cnum = 0;
-    element->r_p = r_p_str;
-    element->w_p = w_p_str;
-    element->free = str_free;
-    element->p_chk = NULL;   //wird beim Beschreiben schon zurückgeschickt
-
-    /* und direkt initialisieren */
-    element->p_var_typ = TSTR; 
-
-    /*if(element->p_adr != NULL) */          /* falls der Speicher schon belegt ist, 
-                                                freigeben geht nicht bei statische belegtem Speicherplatz */
-/*	freemem(element->p_adr); */
-
-    if(strlen(init) > 0){
-	tmpstr =  getmem(strlen(init)+1);
-	strcpy((char *)tmpstr,init);
-    }
-    else { // String hat die Länge Null
-      tmpstr = getmem(1);
-      strcpy(tmpstr,"");
-    }
-
-//alt    *(char **)element->p_adr = tmpstr;  //und noch die übergebende Variable aktualisieren 
-                                        //hierüber darf man nur Morgens zwischen 9 u 11 nachdenken Hm
-    element->p_adr = (void *)tmpstr;
-
-
-    /* else element->p_adr = NULL; HM 3.6.02 ausgeklammert, da ja in element->p_adr was ordentliches drinstehen kann*/
-    return (int)element;
-}
-
-
-int msr_reg_funktion_call(char *bez,void (*write)(struct msr_param_list *self))
-{
-    char *einh = "";  //für MSR_INIT_LIST_HEADER
-    char *info = "";  //für MSR_INIT_LIST_HEADER
-    void *adr = NULL;
-    struct msr_param_list *element = NULL, *prev = NULL;                                                 
-
-    MSR_INIT_LIST_HEADER(msr_param_head,msr_param_list);
-    element->p_flags = MSR_W | MSR_R;                                                                    
-    element->p_write = write;      //FIXME, hier muß noch was passieren... da Fehlermeldung des Compilers 
-    element->p_read = NULL;                                                                      
-    element->dataSize = 0;
-    element->p_var_typ = TFCALL; 
-    element->r_p = NULL;
-    element->w_p = NULL;
-    element->free = NULL;
-    element->p_chk = NULL;
-    return (int)element;
-}
 
 /*
 ***************************************************************************************************
@@ -808,8 +648,8 @@ int msr_print_param_list(char *buf,char *aname,char *id,int shrt,int mode)
 	    }
 	    else {
 
-		len+=sprintf(buf+len,"<parameter name=\"%s\" index=\"%i\" flags=\"%u\" datasize=\"%i\"",
-			     element->p_bez,element->index,element->p_flags,element->dataSize);
+		len+=sprintf(buf+len,"<parameter name=\"%s\" index=\"%i\" flags=\"%u\" mtime=\"%u.%.6u\" datasize=\"%i\"",
+			     element->p_bez,element->index,element->p_flags,(unsigned int)element->mtime.tv_sec,(unsigned int)element->mtime.tv_usec,element->dataSize);
 
 
 		if(strlen(element->p_einh) > 0)
@@ -823,7 +663,8 @@ int msr_print_param_list(char *buf,char *aname,char *id,int shrt,int mode)
 
 		//Kompatibilität zu alten Version in der Behandlung von Listen und Matrizen
 		len+=sprintf(buf+len," typ=\"%s",enum_var_str[element->p_var_typ]); 
-		if(element->cnum + element->rnum > 2) {  //Vektor oder Matrize
+
+		if(element->cnum + element->rnum > 2 && element->p_var_typ != TSTR) {  //Vektor oder Matrize aber kein String
 		    if(element->cnum == 1 || element->rnum == 1) {
 			len+=sprintf(buf+len,"_LIST\"");
 		    }
@@ -922,11 +763,14 @@ int msr_print_param_valuelist(char *buf,int mode)
 *
 * Function: msr_write_param
 *
-* Beschreibung: beschreibt einen Wert 
+* Beschreibung: beschreibt einen Wert
 *                      
-* Parameter: buf:    Ringpuffer in dem Meldungen an die Applikation zurückgeschickt werden
-*            aname:  der Name eines Parameters der beschrieben werden soll
+* Parameter: dev: devicezeiger
+*            aname:  der Name eines Kanals der beschrieben  werden soll
 *            avalue: der Wert als String        
+*            si: Startindex
+*            mode: Schreibmodus CODEASCII, oder CODEHEX
+*            aic: 1 = asynchroner-input-Kanal 
 *
 * Rückgabe: 
 *               
@@ -935,30 +779,10 @@ int msr_print_param_valuelist(char *buf,int mode)
 ***************************************************************************************************
 */
 
-#ifdef __KERNEL__
-int check_loading_interval(void)
-{
-    int result;
-    struct timeval now;
-    do_gettimeofday((struct timeval*)&now);
-
-    result=(now.tv_sec-msr_loading_time.tv_sec < MSR_PERSISTENT_LOADINGINTERVAL);
-    if (!result) {
-	msr_print_info("Time for persistent loading exceeded");
-    }
-    return result;
-
-}
-#else
-int check_loading_interval(void) {
-    return 0;
-}
-#endif
-
-void msr_write_param(struct msr_dev *dev/*struct msr_char_buf *buf*/,char *aname,char* avalue,unsigned int si,int mode)
+void msr_write_param(struct msr_dev *dev/*struct msr_char_buf *buf*/,char *aname,char* avalue,unsigned int si,int mode,int aic)
 {
     struct msr_param_list *element;
-
+    struct timeval now;
     int result;
 
     struct msr_char_buf *buf = NULL;
@@ -971,7 +795,8 @@ void msr_write_param(struct msr_dev *dev/*struct msr_char_buf *buf*/,char *aname
 	if (element && (strcmp(aname,element->p_bez) == 0)) {  /* gefunden */
 
 	    if((element->p_flags & MSR_W) == MSR_W || 
-	       ((element->p_flags & MSR_P) == MSR_P && check_loading_interval())) {
+	       ((element->p_flags & MSR_P) == MSR_P) ||
+	       (((element->p_flags & MSR_AIC) == MSR_AIC) && (aic == 1))) {
 
 		if(element->p_adr && element->w_p) {
 
@@ -981,27 +806,33 @@ void msr_write_param(struct msr_dev *dev/*struct msr_char_buf *buf*/,char *aname
 			msr_buf_printf(buf,"<%s text=\"%s: Fehler beim Beschreiben eines Parameters. (%d)\"/>\n",
 						    MSR_WARN,aname,result);
 
-#ifndef __KERNEL__   
 		    if(element->p_write !=NULL) /* noch die Aktualisierungsfunktion aufrufen */
 			element->p_write(element);
+
 
 		    if(newparamflag)  //FIXME Teile eines Arrays beschreiben mit si > 0 muß noch berücksichtigt werden
 			newparamflag(prtp,element->p_adr,element->dataSize*element->rnum*element->cnum); 
 
-		    //im Userspace auch die Checkfunktion für dieses Element aufrufen
-		    if((element->p_flags & MSR_DEP) == MSR_DEP) //alle Parameter überprüfen
-			msr_check_param_list(NULL);
-		    else
-			msr_check_param_list(element);
-//		    if(element->p_chk && (element->p_chk(element) == 1))
-//			msr_dev_printf("<pu index=\"%i\"/>",element->index);  //Atomarer Aufruf
-#endif
+
+		    do_gettimeofday(&now); 
+
+		    //die Inputchannels in der Updaterate auf max alle 2 Sec begrenzen
+		    if((element->p_flags & MSR_AIC) == MSR_AIC && now.tv_sec < 2 + element->mtime.tv_sec) {
+			//nix tun
+		    }
+		    else {
+			//im Userspace auch die Checkfunktion für dieses Element aufrufen
+			if((element->p_flags & MSR_DEP) == MSR_DEP) //alle Parameter überprüfen
+			    msr_check_param_list(NULL);
+			else
+			    msr_check_param_list(element);
+			element->mtime = now; //und die Modifikationszeit/bei aic = Meldezeit merken
+		    }
+			
+
+
 		}
-#ifdef __KERNEL__
-		/* behandelt auch FCALL !!!!!!!!!!!!!! */
-		if(element->p_write !=NULL) /* noch die Aktualisierungsfunktion aufrufen */
-		    element->p_write(element);
-#endif
+
 		return;
 	    }
 	    else {
@@ -1072,17 +903,7 @@ int msr_reg_kanal(char *bez,char *einh,void *adr,enum enum_var_typ typ)
 
 
 
-int getorder(unsigned int size) 
-{
-    unsigned int k=1;
-    int i;
-    for(i=0;i<=9;i++) {
-	if(PAGE_SIZE*k >= size) 
-	    return i;
-	k*=2;
-    }
-    return -1;  //zu viel memoryangefordert
-}
+
 
 int msr_reg_kanal2(char *bez,void *alias,char *einh,void *adr,enum enum_var_typ typ,int red) {
     return msr_reg_kanal3(bez,alias,einh,adr,typ,"",red);
@@ -1134,29 +955,7 @@ int msr_reg_kanal3(char *bez,void *alias,char *einh,void *adr,enum enum_var_typ 
     }
 
 
-/*     element->order = getorder(s); */
-    
-/*     if(element->order >=0) */
-/* 	element->kbuf = (void *)__get_free_pages(GFP_KERNEL,element->order); */
-/*     else { */
-/* 	element->kbuf = 0;  //order zu groß */
-/* 	printk("Out of Memory for Channel allokation: %s\n",bez); */
-/* 	msr_kanal_error_no = -1; */
-/*     } */
 
-/* nicht mehr nötig, da auf Richards speicher zugegriffen wird
-    element->kbuf = (void *)getmem(element->dataSize * element->bufsize); //vmalloc geht auch ?? ja geht auch, aber der Speicherzugriff dauert länger, 
-                                         //da Virtueller Speicher noch umgerechnet werden muß 26.07.2005 Ab/Hm
-
-    if (!element->kbuf) {
-	element->bufsize = 0;
-	printk("Out of Memory for Channel allokation: %s\n",bez);
-	msr_kanal_error_no = -1;
-    }
-    else
-	msr_allocated_channel_memory+=element->dataSize * element->bufsize;
-
-*/
     //und noch den alias FIXME, hier noch eine Überprüfung
     element->alias = (char *)getmem(strlen(alias)+1);
     if(!element->alias) {
@@ -1861,15 +1660,17 @@ do {                                                             \
 } while(0)
 
 int msr_reg_rtw_param( const char *path, const char *name, const char *cTypeName,
-                   void *data,
-                   unsigned int rnum, unsigned int cnum,
-                   unsigned int dataType, unsigned int orientation,
+		       void *data,
+		       unsigned int rnum, unsigned int cnum,
+		       unsigned int dataType, unsigned int orientation,
 		       unsigned int dataSize){
     char *buf;
     char *rbuf,*info;
     char *value;
     int result=1;
     int dohide = 0;
+    int isstring = 0;
+    unsigned int pflag = 0;
 
     struct talist *alist = NULL;
 
@@ -1906,12 +1707,24 @@ int msr_reg_rtw_param( const char *path, const char *name, const char *cTypeName
 	}
     }
 
-    if(!dohide) {
-	    result = msr_cfi_reg_param(rbuf,"",data,rnum,cnum,orientation,RTW_to_MSR(dataType),info,MSR_R | MSR_W,NULL,NULL);
 
-	    //jetzt noch die einzelnen Elemente registrieren aber nur bis zu einer Obergrenze von ?? Stck 2006.11.06
-	    if (!hasattribute(alist,"hideelements")) {
-		if(rnum+cnum > 2 && rnum+cnum<100) {  //sonst werden es zu viele Parameter
+    if(hasattribute(alist,"aic"))
+	pflag = MSR_R | MSR_AIC;  //Input Channels sind ro und werden über <wpic> beschrieben
+    else 
+	pflag = MSR_R | MSR_W;
+
+
+    if(!dohide) {
+	if(hasattribute(alist,"isstring") && (RTW_to_MSR(dataType) == TUCHAR || RTW_to_MSR(dataType) == TCHAR)) {
+	    result = msr_cfi_reg_param(rbuf,"",data,rnum,cnum,orientation,TSTR,info,pflag,NULL,NULL);
+	    isstring = 1;
+	}
+	else
+	    result = msr_cfi_reg_param(rbuf,"",data,rnum,cnum,orientation,RTW_to_MSR(dataType),info,pflag,NULL,NULL);
+
+	    //jetzt noch die einzelnen Elemente registrieren 
+	    if (!hasattribute(alist,"hideelements") && isstring == 0) {
+		if(rnum+cnum > 2) { 
 		    int r,c;
 		    void *p;
 		    char *buf2 = (char *)getmem(strlen(rbuf)+2+100); //warum 100 ??
@@ -1924,7 +1737,7 @@ int msr_reg_rtw_param( const char *path, const char *name, const char *cTypeName
 			    else                         //Matrize
 				sprintf(buf2,"%s/%i,%i",rbuf,r,c);
 			    //p wird in MSR_CALC_ADR berechnet !!!!!!!!!!!
-			    result = msr_cfi_reg_param(buf2,"",p,1,1,orientation,RTW_to_MSR(dataType),info,MSR_R | MSR_W | MSR_DEP,NULL,NULL);
+			    result = msr_cfi_reg_param(buf2,"",p,1,1,orientation,RTW_to_MSR(dataType),info,pflag | MSR_DEP,NULL,NULL);
 			}
 		    }
 		    freemem(buf2);

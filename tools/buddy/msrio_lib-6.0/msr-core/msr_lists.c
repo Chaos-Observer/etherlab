@@ -326,7 +326,7 @@ int msr_read_block_char_buffer(struct msr_char_buf *charbuf,struct msr_dev *dev,
     /* jetzt einen Bereich rausschneiden, der in "<...>" steht */
     open_ind = strchr(charbuf->buf+*read_pointer,'<');
     if (open_ind) {
-	close_ind = estrchr(open_ind,'>'); /* ab da weitersuchen */
+	close_ind = strchr(open_ind,'>'); /* ab da weitersuchen */
 	/* jetzt Verifikation */
 	if(close_ind) {   /* geschlossenen Klammer gefunden */
 	    *read_pointer = (close_ind-charbuf->buf) % charbuf->bufsize; 
@@ -373,15 +373,6 @@ unsigned int msr_dev_read_data(struct msr_dev *dev, unsigned int count)
        MSR_PRINT("msr_module:dev_read_data: LEV_read_buffer: %d\n",lev_read_puffer); */
 
     /* scheinbar doch nicht, dann... */
-
-#ifdef __KERNEL__
-    //erst nachsehen, ob sich parameter geändert haben (Meldung geht dann an alle Clients)
-    if(jiffies-old_jiffies >= HZ/10) /*Update 10x die Sekunde*/
-    {
-	msr_check_param_list();
-	old_jiffies = jiffies; 
-    }
-#endif
 
     /* dann die Meldung aus dem Userringpuffer */
     while(msr_read_block_char_buffer(msr_user_charbuffer,dev,&dev->user_read_pointer) && 
@@ -550,7 +541,7 @@ void *msr_open(int client_rfd, int client_wfd)
 
     gethostname (hostname, sizeof(hostname));
 
-    msr_buf_printf(dev->read_buffer,"<connected name=\"%s\" host=\"%s\" version=\"%d\" features=\"%s\" recievebufsize=\"%d\"/>\n",
+    msr_buf_printf(dev->read_buffer,"<connected name=\"%s\" host=\"%s\" version=\"%d\" features=\"%s\" recievebufsize=\"%d\">\n", //keep the connected tag open
 		   MSR_TASK_NAME,hostname,
 		   MSR_VERSION,
 		   MSR_FEATURES,   //steht auch in msr_version.h !!
