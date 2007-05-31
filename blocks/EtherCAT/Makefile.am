@@ -10,6 +10,7 @@ dist_ethercat_DATA = \
         el41xx.c el41xx.tlc el41xx_check.m \
         el5001.c el5001.tlc el5001_check.m \
         el5101.c el5101.tlc el5101_check.m \
+        old_el5101.c old_el5101.tlc old_el5101_check.m \
         bk1120_in.c  bk1120_in.tlc  bk1120_check.m \
         bk1120_out.c bk1120_out.tlc
 

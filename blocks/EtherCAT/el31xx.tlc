@@ -82,7 +82,7 @@
     %assign InputMax = 32768
   %else
     %assign InputType = "(uint16_T*)"
-    %assign InputMax = 65536
+    %assign InputMax = 32768
   %endif
   %%
   %foreach sigIdx = Width

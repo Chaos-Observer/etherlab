@@ -10,6 +10,8 @@
 	  - Added new block "EtherCAT/Master Stats"
 	  - Added new block "EtherCAT/ENC_0" that implements full 
 	    functionality of the EL5101 terminal.
+	  - Scaling of analog input terminals except EL310x has changed.
+	    Check the scaling in you model.
 	* tools/buddy: etherlab_buddy now automatically detaches and
 	  becomes a daemon. To stop this, use the -n command line switch
 	* blocks/EtherCAT: Now uses new version 1.3 of EtherCAT

@@ -53,9 +53,9 @@ struct el31xx_dev el3112_dev = {0.02, 0.0,   0, 2,
 struct el31xx_dev el3114_dev = {0.02, 0.0,   0, 4, 
     "Beckhoff_EL3114", "Beckhoff_EL3114_PDO_Input", "Beckhoff_EL3114_PDO_Status"};
 
-struct el31xx_dev el3122_dev = {0.16, 0.004, 0, 2, 
+struct el31xx_dev el3122_dev = {0.016, 0.004, 0, 2, 
     "Beckhoff_EL3122", "Beckhoff_EL3122_PDO_Input", "Beckhoff_EL3122_PDO_Status"};
-struct el31xx_dev el3124_dev = {0.16, 0.004, 0, 4, 
+struct el31xx_dev el3124_dev = {0.016, 0.004, 0, 4, 
     "Beckhoff_EL3124", "Beckhoff_EL3124_PDO_Input", "Beckhoff_EL3124_PDO_Status"};
 
 struct el31xx_dev el3142_dev = {0.02, 0.0,   0, 2, 
@@ -65,11 +65,11 @@ struct el31xx_dev el3144_dev = {0.02, 0.0,   0, 4,
 struct el31xx_dev el3148_dev = {0.02, 0.0,   0, 8, 
     "Beckhoff_EL3148", "Beckhoff_EL3148_PDO_Input", "Beckhoff_EL3148_PDO_Status"};
 
-struct el31xx_dev el3152_dev = {0.16, 0.004, 0, 2, 
+struct el31xx_dev el3152_dev = {0.016, 0.004, 0, 2, 
     "Beckhoff_EL3152", "Beckhoff_EL3152_PDO_Input", "Beckhoff_EL3152_PDO_Status"};
-struct el31xx_dev el3154_dev = {0.16, 0.004, 0, 4, 
+struct el31xx_dev el3154_dev = {0.016, 0.004, 0, 4, 
     "Beckhoff_EL3154", "Beckhoff_EL3154_PDO_Input", "Beckhoff_EL3154_PDO_Status"};
-struct el31xx_dev el3158_dev = {0.16, 0.004, 0, 8, 
+struct el31xx_dev el3158_dev = {0.016, 0.004, 0, 8, 
     "Beckhoff_EL3158", "Beckhoff_EL3158_PDO_Input", "Beckhoff_EL3158_PDO_Status"};
 
 struct el31xx_dev el3162_dev = {10.0, 0.0,   0, 2,
