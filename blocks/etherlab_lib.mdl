@@ -34,8 +34,8 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "rich"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Wed May 30 14:32:31 2007"
-  ModelVersionFormat	  "1.%<AutoIncrement:271>"
+  LastModifiedDate	  "Thu May 31 11:02:17 2007"
+  ModelVersionFormat	  "1.%<AutoIncrement:272>"
   ConfigurationManager	  "rcs"
   LinearizationMsg	  "none"
   Profile		  off
@@ -147,14 +147,14 @@ Library {
       BlockType		      SubSystem
       Name		      "EtherCAT"
       Ports		      []
-      Position		      [295, 39, 366, 100]
+      Position		      [295, 49, 366, 110]
       MinAlgLoopOccurrences   off
       RTWSystemCode	      "Auto"
       FunctionWithSeparateData off
       MaskHideContents	      off
       System {
 	Name			"EtherCAT"
-	Location		[898, 616, 1395, 984]
+	Location		[582, 145, 1079, 513]
 	Open			on
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
@@ -481,41 +481,41 @@ Library {
 "erminal and the block's output:\n\n<h4>Master:</h4>\nSet the EtherCAT Master "
 "of this terminal.\n\n<h4>Slave Index:</h4>\nSet the EtherCAT slave index. Fol"
 "lowing address formats are allowed:\n<ol>\n<li> Absolute addressing: a string"
-" '<<b><tt>n</tt></b>>' representing the (zero based) absolute index. <b><tt>n"
-"</tt></b> is typically larger than 0 because the first coupler has that addre"
-"ss.\n\n<li> SSId addressing: the Secondary Slave Addressing has the form <<b>"
-"<tt>#s:n</tt></b>> where <b><tt>s</tt></b> is the Secondary Slave Id of the E"
-"therCAT coupler and <b><tt>n</tt></b> is the offset in that field. The SSId h"
-"as to be preprogrammed into the coupler with other service tools.\n</ol>\n\n<"
-"h4>Configuration Parameters</h4>\n<dl>\n<dt><b><tt>Enable Register Reload</tt"
-"></b></dt> \n<dd>When the counter value wraps (either overflows or underflows"
-"), reload the value specified in <em>Counter Reload Value</em>. This option c"
-"annot be used together with <em>Enable Index Reset</em></dd>\n\n<dt><b><tt>En"
-"able Index Reset</tt></b></dt> \n<dd>activates terminal input \"C\", which re"
-"sets the counter value. This option cannot be used together with <em>Enable R"
-"egister Reload</em>.</dd>\n\n<dt><b><tt>Enable FWD Count</tt></b></dt> \n<dd>"
-"disables quadrature evaluation of the \"A\" and \"B\" terminal inputs. Counte"
-"r only counts up.</dd>\n\n<dt><b><tt>Gate</tt></b></dt> \n<dd>\nStops the cou"
-"nter on either <b>Rising</b> or <b>Falling</b> edge. This input is enabled wh"
-"en <em>Latch Output Port</en> is enabled.\n</dd>\n\n<dt><b><tt>Frequency Wind"
-"ow</tt></b></dt>\n<dd>Value determines the width of the Window variable in in"
-"crements of 16µs (whatever that means???) This input is enabled when <em>Freq"
-"uency Output Port</em> is selected</dd>\n\n<dt><b><tt>Counter Reload Value</t"
-"t></b></dt>\n<dd>The value with which the counter is reloaded in case of <em>"
-"Enable Register Reload</em> is activated</dd>\n</dl>\n\n<h4>Inputs</h4>\nEnab"
-"le <tt><b>Control Input Port</b></tt> or <tt><b>Preset Input Port</b></tt>. R"
-"efer to the documentation for these rather complex inputs. The ordering of th"
-"e inputs matches the ordering in the configuration mask.\n\n<h4>Output Data T"
-"ype</h4>\nChoose the block's output data type for the output signal. Availabl"
-"e are:\n<ul>\n<li><b><tt>Raw</tt></b> outputting the internal raw value as <t"
-"t>uint32_T</tt> as appropriate\n<li><b><tt>Double</tt></b> outputting 0..1 co"
-"rresponding to the Full Scale. Full Scale is affected by the Frame Type, SSI "
-"Frame Size and Data Length. Refer to manufactuer's documentation.\n</ul>\n\n<"
-"h4>Outputs</h4>\nSelect the desired outputs as presented int the configuratoi"
-"n mask. The ordering matches the ordering in the mask. Refer to manufacturors"
-" documentation.\n\n<p>\nSet the <b>Sample Time</b> for the block. <tt>0</tt> "
-"is continuous sample time (runs at the model's base rate). Setting <tt>-1</tt"
-"> will try to set the time using back propagation.\n"
+" '<b><tt>n</tt></b>' representing the (zero based) absolute index. <b><tt>n</"
+"tt></b> is typically larger than 0 because the first coupler has that address"
+".\n\n<li> SSId addressing: the Secondary Slave Addressing has the form '<b><t"
+"t>#s:n</tt></b>' where <b><tt>s</tt></b> is the Secondary Slave Id of the Eth"
+"erCAT coupler and <b><tt>n</tt></b> is the offset in that field. The SSId has"
+" to be preprogrammed into the coupler with other service tools.\n</ol>\n\n<h4"
+">Configuration Parameters</h4>\n<dl>\n<dt><b><tt>Enable Register Reload</tt><"
+"/b></dt> \n<dd>When the counter value wraps (either overflows or underflows),"
+" reload the value specified in <em>Counter Reload Value</em>. This option can"
+"not be used together with <em>Enable Index Reset</em></dd>\n\n<dt><b><tt>Enab"
+"le Index Reset</tt></b></dt> \n<dd>activates terminal input \"C\", which rese"
+"ts the counter value. This option cannot be used together with <em>Enable Reg"
+"ister Reload</em>.</dd>\n\n<dt><b><tt>Enable FWD Count</tt></b></dt> \n<dd>di"
+"sables quadrature evaluation of the \"A\" and \"B\" terminal inputs. Counter "
+"only counts up.</dd>\n\n<dt><b><tt>Gate</tt></b></dt> \n<dd>\nStops the count"
+"er on either <b>Rising</b> or <b>Falling</b> edge. This input is enabled when"
+" <em>Latch Output Port</en> is enabled.\n</dd>\n\n<dt><b><tt>Frequency Window"
+"</tt></b></dt>\n<dd>Value determines the width of the Window variable in incr"
+"ements of 16µs (whatever that means???) This input is enabled when <em>Freque"
+"ncy Output Port</em> is selected</dd>\n\n<dt><b><tt>Counter Reload Value</tt>"
+"</b></dt>\n<dd>The value with which the counter is reloaded in case of <em>En"
+"able Register Reload</em> is activated</dd>\n</dl>\n\n<h4>Inputs</h4>\nEnable"
+" <tt><b>Control Input Port</b></tt> or <tt><b>Preset Input Port</b></tt>. Ref"
+"er to the documentation for these rather complex inputs. The ordering of the "
+"inputs matches the ordering in the configuration mask.\n\n<h4>Output Data Typ"
+"e</h4>\nChoose the block's output data type for the output signal. Available "
+"are:\n<ul>\n<li><b><tt>Raw</tt></b> outputting the internal raw value as <tt>"
+"uint32_T</tt> as appropriate\n<li><b><tt>Double</tt></b> outputting 0..1 corr"
+"esponding to the Full Scale. Full Scale is affected by the Frame Type, SSI Fr"
+"ame Size and Data Length. Refer to manufactuer's documentation.\n</ul>\n\n<h4"
+">Outputs</h4>\nSelect the desired outputs as presented int the configuratoin "
+"mask. The ordering matches the ordering in the mask. Refer to manufacturors d"
+"ocumentation.\n\n<p>\nSet the <b>Sample Time</b> for the block. <tt>0</tt> is"
+" continuous sample time (runs at the model's base rate). Setting <tt>-1</tt> "
+"will try to set the time using back propagation.\n"
 	  MaskPromptString	  "Master|Slave Index|Enable Register Reload|E"
 "nable Index Reset|Enable FWD Count|Gate|Frequency Window (0..65535)|Counter R"
 "eload Value (0..65535)  |Control Input Port|Preset Input Port|Output Data Typ"
@@ -555,7 +555,7 @@ Library {
 	  Position		  [25, 259, 105, 301]
 	  BackgroundColor	  "yellow"
 	  FunctionName		  "bk1120_in"
-	  Parameters		  "master,slave,kbus_offset,ip_type,width,swap"
+	  Parameters		  "master,index,kbus_offset,ip_type,width,swap"
 ",op_dtype,scaling,scale,offset,filter,omega,tsample"
 	  MaskType		  "K-Bus Input"
 	  MaskDescription	  "Beckhoff EK1110 K-Bus to EtherCAT Converter"
@@ -564,10 +564,13 @@ Library {
 "us incoming process image for the EK1120 Coupler.\n<p>\nChoose and set the fo"
 "llowing options:\n<h4>Master:</h4>\nSet the EtherCAT Master of this terminal."
 "\n\n<h4>Slave Index:</h4>\nSet the EtherCAT slave index. Following address fo"
-"rmats are allowed:\n<ol>\n<li> Absolute addressing: a number <<b><tt>n</tt></"
-"b>> representing the (zero based) absolute index. <b><tt>n</tt></b> is typica"
-"lly larger than 0 because the first coupler has that address.\n\n<h4>Slave In"
-"dex:</h4>\n "
+"rmats are allowed:\n<ol>\n<li> Absolute addressing: a string '<b><tt>n</tt></"
+"b>' representing the (zero based) absolute index. <b><tt>n</tt></b> is typica"
+"lly larger than 0 because the first coupler has that address.\n\n<li> SSId ad"
+"dressing: the Secondary Slave Addressing has the form '<b><tt>#s:n</tt></b>' "
+"where <b><tt>s</tt></b> is the Secondary Slave Id of the EtherCAT coupler and"
+" <b><tt>n</tt></b> is the offset in that field. The SSId has to be preprogram"
+"med into the coupler with other service tools.\n</ol>\n\n"
 	  MaskPromptString	  "Master|Slave Index|K-Bus Address Offset|Inp"
 "ut Data Type|Swap Input Bytes|Vector Length|Output Data Type|Scale and Offset"
 "|Full Scale|Offset|Output Filter|LPF Time Constant (sec)|Sample Time"
@@ -583,7 +586,7 @@ Library {
 	  MaskVisibilityString	  "on,on,on,on,on,on,on,on,on,on,off,off,on"
 	  MaskToolTipString	  "on,on,on,on,on,on,on,on,on,on,on,on,on"
 	  MaskVarAliasString	  ",,,,,,,,,,,,"
-	  MaskVariables		  "master=@1;slave=&2;kbus_offset=@3;ip_type=@"
+	  MaskVariables		  "master=@1;index=@2;kbus_offset=@3;ip_type=@"
 "4;swap=@5;width=@6;op_dtype=@7;scaling=@8;scale=@9;offset=@10;filter=@11;tau="
 "@12;tsample=@13;"
 	  MaskInitialization	  "types = char(...\n    'Bit0', 'Bit1', 'Bit2"
@@ -591,14 +594,14 @@ Library {
 "', 'uint8_T', ...\n    'int16_T', 'uint16_T', ...\n    'int32_T', 'uint32_T')"
 ";\nfunc = strtrim(types(ip_type,:));\nomega = 1/tau;\n"
 	  MaskDisplay		  "fprintf(...\n    'BK1120\\n%s In\\nM:%i Idx"
-":%s',...\n    func,...\n    master,...\n    slave);"
+":%s',...\n    func,...\n    master,...\n    index);"
 	  MaskSelfModifiable	  on
 	  MaskIconFrame		  on
 	  MaskIconOpaque	  on
 	  MaskIconRotate	  "none"
 	  MaskIconUnits		  "autoscale"
-	  MaskValueString	  "0|1|0|int16_T|off|1|Same as Input|off|1|0|o"
-"ff|0.1|0"
+	  MaskValueString	  "0|'1'|0|int16_T|off|1|Same as Input|off|1|0"
+"|off|0.1|0"
 	  MaskTabNameString	  ",,,,,,,,,,,,"
 	}
 	Block {
@@ -608,7 +611,7 @@ Library {
 	  Position		  [180, 259, 260, 301]
 	  BackgroundColor	  "yellow"
 	  FunctionName		  "bk1120_out"
-	  Parameters		  "master,slave,kbus_offset,op_type,swap,tsamp"
+	  Parameters		  "master,index,kbus_offset,op_type,swap,tsamp"
 "le"
 	  MaskType		  "K-Bus Output"
 	  MaskDescription	  "Beckhoff EK1110 K-Bus to EtherCAT Converter"
@@ -617,10 +620,13 @@ Library {
 "us outging process image for the EK1120 Coupler.\n<p>\nChoose and set the fol"
 "lowing options:\n<h4>Master:</h4>\nSet the EtherCAT Master of this terminal."
 "\n\n<h4>Slave Index:</h4>\nSet the EtherCAT slave index. Following address fo"
-"rmats are allowed:\n<ol>\n<li> Absolute addressing: a number <<b><tt>n</tt></"
-"b>> representing the (zero based) absolute index. <b><tt>n</tt></b> is typica"
-"lly larger than 0 because the first coupler has that address.\n\n<h4>Slave In"
-"dex:</h4>\n "
+"rmats are allowed:\n<ol>\n<li> Absolute addressing: a string '<b><tt>n</tt></"
+"b>' representing the (zero based) absolute index. <b><tt>n</tt></b> is typica"
+"lly larger than 0 because the first coupler has that address.\n<li> SSId addr"
+"essing: the Secondary Slave Addressing has the form '<b><tt>#s:n</tt></b>' wh"
+"ere <b><tt>s</tt></b> is the Secondary Slave Id of the EtherCAT coupler and <"
+"b><tt>n</tt></b> is the offset in that field. The SSId has to be preprogramme"
+"d into the coupler with other service tools.\n</ol>\n "
 	  MaskPromptString	  "Master|Slave Index|K-Bus Address Offset|Act"
 "uator Data Type|Swap Output Bytes|Sample Time (-1 for inherited)"
 	  MaskStyleString	  "edit,edit,edit,popup(Bit0|Bit1|Bit2|Bit3|Bi"
@@ -632,20 +638,20 @@ Library {
 	  MaskVisibilityString	  "on,on,on,on,on,on"
 	  MaskToolTipString	  "on,on,on,on,on,on"
 	  MaskVarAliasString	  ",,,,,"
-	  MaskVariables		  "master=@1;slave=&2;kbus_offset=@3;op_type=@"
+	  MaskVariables		  "master=@1;index=@2;kbus_offset=@3;op_type=@"
 "4;swap=@5;tsample=@6;"
 	  MaskInitialization	  "types = char(...\n    'Bit0', 'Bit1', 'Bit2"
 "', ...\n    'Bit3', 'Bit4', 'Bit5', ...\n    'Bit6', 'Bit7', ...\n    'int8_T"
 "', 'uint8_T', ...\n    'int16_T', 'uint16_T', ...\n    'int32_T', 'uint32_T')"
 ";\nfunc = strtrim(types(op_type,:));\n"
 	  MaskDisplay		  "fprintf(...\n    'BK1120\\n%s Out\\nM:%i Id"
-"x:%s',...\n    func,...\n    master,...\n    slave);"
+"x:%s',...\n    func,...\n    master,...\n    index);"
 	  MaskSelfModifiable	  on
 	  MaskIconFrame		  on
 	  MaskIconOpaque	  on
 	  MaskIconRotate	  "none"
 	  MaskIconUnits		  "autoscale"
-	  MaskValueString	  "0|1|0|Bit0|off|-1"
+	  MaskValueString	  "0|'1'|0|Bit0|off|-1"
 	  MaskTabNameString	  ",,,,,"
 	}
 	Block {
@@ -681,7 +687,7 @@ Library {
 	  BlockType		  SubSystem
 	  Name			  "Obsolete"
 	  Ports			  []
-	  Position		  [330, 259, 430, 301]
+	  Position		  [325, 259, 425, 301]
 	  OpenFcn		  "errordlg('Do not use these obsolete blocks'"
 ");"
 	  MinAlgLoopOccurrences	  off
@@ -690,7 +696,7 @@ Library {
 	  MaskHideContents	  off
 	  System {
 	    Name		    "Obsolete"
-	    Location		    [441, 455, 939, 755]
+	    Location		    [445, 481, 943, 781]
 	    Open		    off
 	    ModelBrowserVisibility  off
 	    ModelBrowserWidth	    200

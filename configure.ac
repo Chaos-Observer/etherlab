@@ -3,7 +3,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT([etherlab_rtw], [1.1-rc7], [lerich@gmx.net])
+AC_INIT([etherlab_rtw], [1.1-rc8], [lerich@gmx.net])
 AC_CONFIG_AUX_DIR(config)
 AM_INIT_AUTOMAKE([-Wall -Werror])
 AC_CONFIG_SRCDIR([config.h.in])
@@ -91,7 +91,6 @@ AC_SUBST(LINUX_DIR,$linux_dir)
 fi
 
 dnl When kernel is selected, EtherCat can be switched off
-AM_CONDITIONAL(ETHERCAT, test x$ethercat = x1)
 if test "x$kernel" = "x1"; then
 AC_ARG_ENABLE([ethercat],
     AS_HELP_STRING(
@@ -100,18 +99,19 @@ AC_ARG_ENABLE([ethercat],
     [ case "${enableval}" in
         yes) ethercat=1 ;;
         no)  ethercat=0 ;;
-        *)   AC_MSG_ERROR([bad value for --enable-ethercat]) ;;
+        *)   AC_MSG_ERROR([bad value for --disable-ethercat]) ;;
       esac],
     [ ethercat=1 ]
 )
-if test "x$ethercat" = x1; then
+if test "x$ethercat" = "x1"; then
 AC_MSG_CHECKING(EtherCat header file)
 test -r "${ETHERLAB_DIR}/include/ecrt.h" || \
         AC_MSG_ERROR([ecrt.h found in ${ETHERLAB_DIR}/include])
 AC_MSG_RESULT(${ETHERLAB_DIR}/include/ecrt.h)
 fi
-AC_SUBST(ETHERCAT,${ethercat})
 fi
+AM_CONDITIONAL(ETHERCAT, test x$ethercat = x1)
+AC_SUBST(ETHERCAT,${ethercat})
 
 dnl Allow experimental stuff  for development
 AC_ARG_ENABLE([experimental],
