@@ -226,7 +226,7 @@ static void mdl_main_thread(long priv_data)
         /* Check for new parameters */
         if (model->new_rtP) {
                 rt_sem_wait(&model->rtP_sem);
-                rt_printk("Got new parameter set\n");
+                pr_debug("Got new parameter set\n");
                 memcpy(rtw_model->mdl_rtP, rtw_model->pend_rtP,
                                 rtw_model->rtP_size);
                 model->new_rtP = 0;
