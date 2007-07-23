@@ -629,62 +629,11 @@ void msr_check_param_list(struct msr_param_list *p)
 ***************************************************************************************************
 */
 
-char *toxml(char *from)
-{
-    int len = (strlen(from)+1)*3/2;
-    char *str = (char*) malloc(len);
-    char *ptr = str;
-    char *i, *s;
-
-    if (!str)
-        return NULL;
-
-    for (i = from; *i; i++) {
-        if (str + len < ptr + 7) {
-            s = str;
-            len *= 2;
-            str = (char*) realloc (str, len);
-            ptr = str + (ptr - s);
-            if (!str)
-                return NULL;
-        }
-        if (!strchr("<>\"'&", *i)) {
-            *ptr++ = *i;
-            continue;
-        }
-        switch (*i) {
-            case '<':
-                ptr = strcpy(ptr, "&lt;");
-                ptr += 4;
-                break;
-            case '>':
-                ptr = strcpy(ptr, "&gt;");
-                ptr += 4;
-                break;
-            case '"':
-                ptr = strcpy(ptr, "&quot;");
-                ptr += 6;
-                break;
-            case '\'':
-                ptr = strcpy(ptr, "&apos;");
-                ptr += 6;
-                break;
-            case '&':
-                ptr = strcpy(ptr, "&amp;");
-                ptr += 5;
-                break;
-        }
-    }
-    *ptr = '\0';
-    return str;
-}
-
 int msr_print_param_list(char *buf,char *aname,char *id,int shrt,int mode)
 {
     struct msr_param_list *element;
     unsigned int len = 0;
     char *or_str[] = {ENUM_OR_STR};
-    char *xml_name = NULL;
 
     /* Element in der Liste suchen */
     FOR_THE_LIST(element,msr_param_head) {
@@ -693,15 +642,14 @@ int msr_print_param_list(char *buf,char *aname,char *id,int shrt,int mode)
 	    if(element->p_read !=NULL) /* erst die Aktualisierungsfunktion aufrufen */
 		element->p_read(element);
 
-            xml_name = toxml(element->p_bez);
 	    if(shrt) {
 		len+=sprintf(buf+len,"<parameter name=\"%s\" index=\"%i\"",
-			     xml_name,element->index);
+			     element->p_bez,element->index);
 	    }
 	    else {
 
 		len+=sprintf(buf+len,"<parameter name=\"%s\" index=\"%i\" flags=\"%u\" mtime=\"%u.%.6u\" datasize=\"%i\"",
-			     xml_name,element->index,element->p_flags,(unsigned int)element->mtime.tv_sec,(unsigned int)element->mtime.tv_usec,element->dataSize);
+			     element->p_bez,element->index,element->p_flags,(unsigned int)element->mtime.tv_sec,(unsigned int)element->mtime.tv_usec,element->dataSize);
 
 
 		if(strlen(element->p_einh) > 0)
@@ -730,7 +678,6 @@ int msr_print_param_list(char *buf,char *aname,char *id,int shrt,int mode)
 		else
 		    len+=sprintf(buf+len,"\"");
 	    }
-            free(xml_name);
 
 	    //Id
 	    if(id)
@@ -1077,7 +1024,6 @@ int msr_print_kanal_list(char *buf,char *aname,int mode)
     unsigned int len = 0;
     int index = 0;
     int wp = msr_kanal_write_pointer;  //aktuellen Schreibzeiger merken 
-    char *xml_name = NULL;
 
     //und den Vorgänger bestimmen
 
@@ -1086,15 +1032,14 @@ int msr_print_kanal_list(char *buf,char *aname,int mode)
 
     FOR_THE_LIST(element,msr_kanal_head) {
 	if (element && ((aname == NULL) || (strcmp(aname,element->p_bez) == 0))) {
-            xml_name = toxml(element->p_bez);
 	    if(mode == 1) {
 		len+=sprintf(buf+len,"<channel index=\"%.3i\" name=\"%s\"/>\n",
 			     index,
-			     xml_name);
+			     element->p_bez);
 	    }
 	    else {
 		len+=sprintf(buf+len,"<channel name=\"%s\" alias=\"%s\" index=\"%i\" typ=\"%s\" datasize=\"%i\" bufsize=\"%i\" HZ=\"%.16g\"",
-			     xml_name,
+			     element->p_bez,
 			     element->alias,
 			     index,
 			     enum_var_str[element->p_var_typ],
@@ -1152,7 +1097,6 @@ int msr_print_kanal_list(char *buf,char *aname,int mode)
 		    default: break;
 		}
 	    }
-            free(xml_name);
 	}
 	index++;
     }
