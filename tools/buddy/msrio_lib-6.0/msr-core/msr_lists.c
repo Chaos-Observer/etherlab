@@ -541,7 +541,7 @@ void *msr_open(int client_rfd, int client_wfd)
 
     gethostname (hostname, sizeof(hostname));
 
-    msr_buf_printf(dev->read_buffer,"<connected name=\"%s\" host=\"%s\" version=\"%d\" features=\"%s\" recievebufsize=\"%d\">\n", //keep the connected tag open
+    msr_buf_printf(dev->read_buffer,"<connected name=\"%s\" host=\"%s\" version=\"%d\" features=\"%s\" recievebufsize=\"%d\"/>\n",
 		   MSR_TASK_NAME,hostname,
 		   MSR_VERSION,
 		   MSR_FEATURES,   //steht auch in msr_version.h !!
