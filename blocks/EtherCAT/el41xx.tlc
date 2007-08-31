@@ -48,15 +48,13 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %function Outputs( block, system ) Output
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  %assign InputScale = 32768.0
+  %assign InputMax = 32767.0
   %if Signed
     %assign InputType = "int16_T"
-    %assign InputScale = 32768.0
-    %assign InputMax = 32765.0
     %assign InputMin = -32768.0
   %else
     %assign InputType = "uint16_T"
-    %assign InputScale = 65536.0
-    %assign InputMax = 65535.0
     %assign InputMin = 0.0
   %endif
   %%
