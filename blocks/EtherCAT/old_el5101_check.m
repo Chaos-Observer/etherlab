@@ -32,19 +32,6 @@ function el5101_check(section)
                 set_param(gcb, 'offset', '0');
             end
         end
-        if strcmp(values.dtype, 'Raw bits')
-            set_param(gcb,'filter','off');
-            en.filter = 'off';
-            en.tau = 'off';
-        else
-            en.filter = 'on';
-        end
-    case 'filter'
-        if (strcmp(values.filter,'on'))
-            en.tau = 'on';
-        else
-            en.tau = 'off';
-        end
     end
 
     set_param(gcb,'MaskEnables',struct2cell(en));
