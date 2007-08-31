@@ -33,6 +33,7 @@ struct el10xx_dev {
 
 struct el10xx_dev el1002 = {2,"Beckhoff_EL1002", "Beckhoff_EL1002_PDO_Inputs"};
 struct el10xx_dev el1004 = {4,"Beckhoff_EL1004", "Beckhoff_EL1004_PDO_Inputs"};
+struct el10xx_dev el1004v2 = {4,"Beckhoff_EL1004", "Beckhoff_EL1004v2_PDO_Inputs"};
 struct el10xx_dev el1008 = {8,"Beckhoff_EL1008", "Beckhoff_EL1008_PDO_Inputs"};
 struct el10xx_dev el1012 = {2,"Beckhoff_EL1012", "Beckhoff_EL1012_PDO_Inputs"};
 struct el10xx_dev el1014 = {4,"Beckhoff_EL1014", "Beckhoff_EL1014_PDO_Inputs"};
@@ -41,6 +42,7 @@ struct el10xx_dev el1018 = {8,"Beckhoff_EL1018", "Beckhoff_EL1018_PDO_Inputs"};
 struct supportedDevice supportedDevices[] = {
         {"EL1002", &el1002},
         {"EL1004", &el1004},
+        {"EL1004v2", &el1004v2},
         {"EL1008", &el1008},
         {"EL1012", &el1012},
         {"EL1014", &el1014},
