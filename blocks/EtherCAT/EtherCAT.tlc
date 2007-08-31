@@ -43,11 +43,6 @@
       %<LibAddToCommonIncludes("ecrt_support.h")>
   
       %openfile buf
-      struct ecat_slave_block *%<EtherCAT.Slave>;
-      %closefile buf
-      %<LibMdlStartCustomCode(buf, "header")>
-  
-      %openfile buf
       /* Sample times for EtherCAT */
       unsigned int ec_st[] = {
       %foreach tid = LibNumDiscreteSampleTimes()
@@ -251,6 +246,12 @@
 %%                      they are source blocks.
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  %if CompiledModel.EtherCAT.SlaveOwner == ""
+      %openfile buf
+      struct ecat_slave_block *%<EtherCAT.Slave>;
+      %closefile buf
+      %<LibMdlStartCustomCode(buf, "header")>
+  %endif
   if (!(%<EtherCAT.Slave> = ecs_reg_slave_block( \
         %<block.EtherCATTid>, %<MasterId>, "%<SlaveAddr>", \
         %<DeviceModel>, %<SlaveOutput>, &%<ETL.ErrStr>))) {
