@@ -34,8 +34,8 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "rich"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Thu May 31 11:02:17 2007"
-  ModelVersionFormat	  "1.%<AutoIncrement:272>"
+  LastModifiedDate	  "Thu Aug 23 01:08:12 2007"
+  ModelVersionFormat	  "1.%<AutoIncrement:276>"
   ConfigurationManager	  "rcs"
   LinearizationMsg	  "none"
   Profile		  off
@@ -129,7 +129,7 @@ Library {
   }
   System {
     Name		    "etherlab_lib"
-    Location		    [800, 601, 1395, 994]
+    Location		    [800, 422, 1395, 815]
     Open		    on
     ModelBrowserVisibility  off
     ModelBrowserWidth	    200
@@ -147,14 +147,14 @@ Library {
       BlockType		      SubSystem
       Name		      "EtherCAT"
       Ports		      []
-      Position		      [295, 49, 366, 110]
+      Position		      [295, 39, 366, 100]
       MinAlgLoopOccurrences   off
       RTWSystemCode	      "Auto"
       FunctionWithSeparateData off
       MaskHideContents	      off
       System {
 	Name			"EtherCAT"
-	Location		[582, 145, 1079, 513]
+	Location		[763, 196, 1260, 564]
 	Open			on
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
@@ -346,9 +346,10 @@ Library {
 "e"
 	  MaskType		  "EL10xx"
 	  MaskDescription	  "Beckhoff EtherCAT Digital Input\nEL1002,4,8"
-":	3ms filter\nEL1012,4,8:	10us filter\n\nOutput Type:\n  1-Byte"
-" output: one bit coded output\n  Vector output: Output vector is <Channels> w"
-"ide\n  Separate outputs: have <Channels> number of outputs"
+":	3ms filter\nEL1012,4,8:	10us filter\nEL1004v2: Newer version "
+"with PDO at 0x6000\n\nOutput Type:\n  1-Byte output: one bit coded output\n  "
+"Vector output: Output vector is <Channels> wide\n  Separate outputs: have <Ch"
+"annels> number of outputs"
 	  MaskHelp		  "This block implements the Beckhoff's EtherC"
 "AT series of Digital Input Terminals.\n<p/>\nChoose or set the following opti"
 "ons:\n<h4>Master:</h4>\nSet the EtherCAT Master number that this terminal is "
@@ -377,9 +378,9 @@ Library {
 "rited sample time."
 	  MaskPromptString	  "Master|Slave Index|Device Model|Output Type"
 "|Output Data Type|Sample Time"
-	  MaskStyleString	  "edit,edit,popup(EL1002|EL1004|EL1008|EL1012"
-"|EL1014|EL1018),popup(1-Byte Output|Vector Output|Separate Outputs),popup(Sam"
-"e as Input|double|single|Inherited via back propagation),edit"
+	  MaskStyleString	  "edit,edit,popup(EL1002|EL1004|EL1004v2|EL10"
+"08|EL1012|EL1014|EL1018),popup(1-Byte Output|Vector Output|Separate Outputs),"
+"popup(Same as Input|double|single|Inherited via back propagation),edit"
 	  MaskTunableValueString  "off,off,off,off,off,off"
 	  MaskCallbackString	  "|||||"
 	  MaskEnableString	  "on,on,on,on,on,on"
@@ -394,7 +395,7 @@ Library {
 	  MaskIconOpaque	  on
 	  MaskIconRotate	  "none"
 	  MaskIconUnits		  "autoscale"
-	  MaskValueString	  "0|0|EL1004|Vector Output|Same as Input|0"
+	  MaskValueString	  "0|0|EL1004v2|Vector Output|Same as Input|0"
 	  MaskTabNameString	  ",,,,,"
 	}
 	Block {
@@ -696,7 +697,7 @@ Library {
 	  MaskHideContents	  off
 	  System {
 	    Name		    "Obsolete"
-	    Location		    [445, 481, 943, 781]
+	    Location		    [453, 533, 951, 833]
 	    Open		    off
 	    ModelBrowserVisibility  off
 	    ModelBrowserWidth	    200
@@ -717,7 +718,7 @@ Library {
 	      BackgroundColor	      "yellow"
 	      FunctionName	      "old_el5101"
 	      Parameters	      "master,index,scale,offset,dtype,status,"
-"filter,omega,tsample"
+"tsample"
 	      MaskType		      "EL5101"
 	      MaskDescription	      "Beckhoff EtherCAT Incremental Encoder I"
 "nput"
@@ -763,28 +764,25 @@ Library {
 "l's base rate). Setting <tt>-1</tt> will try to set the time using back propa"
 "gation.\n"
 	      MaskPromptString	      "Master|Slave Index|Output Full Scale|Ou"
-"tput Offset|Output Data Type|Status Output|Output Filter|LPF Time Constant (s"
-"ec)|Sample Time"
+"tput Offset|Output Data Type|Status Output|Sample Time"
 	      MaskStyleString	      "edit,edit,edit,edit,popup(Raw bits|Doub"
-"le|Double with scale and offset),checkbox,checkbox,edit,edit"
-	      MaskTunableValueString  "off,off,on,on,off,off,off,on,off"
-	      MaskCallbackString      "||||old_el5101_check('dtype');||old_el5"
-"101_check('filter');||"
-	      MaskEnableString	      "on,on,off,off,on,off,on,off,on"
-	      MaskVisibilityString    "on,on,on,on,on,on,on,on,on"
-	      MaskToolTipString	      "on,on,on,on,on,on,on,on,on"
-	      MaskVarAliasString      ",,,,,,,,"
+"le|Double with scale and offset),checkbox,edit"
+	      MaskTunableValueString  "off,off,on,on,off,off,off"
+	      MaskCallbackString      "||||old_el5101_check('dtype');||"
+	      MaskEnableString	      "on,on,off,off,on,off,on"
+	      MaskVisibilityString    "on,on,on,on,on,off,on"
+	      MaskToolTipString	      "on,on,on,on,on,on,on"
+	      MaskVarAliasString      ",,,,,,"
 	      MaskVariables	      "master=@1;index=&2;scale=@3;offset=@4;d"
-"type=@5;status=@6;filter=@7;tau=@8;tsample=@9;"
-	      MaskInitialization      "omega=1/tau;"
+"type=@5;status=@6;tsample=@7;"
 	      MaskDisplay	      "fprintf(...\n    'EL5101\\nIncr.-Enc. I"
 "nput\\nM:%i Idx:%s',...\n    master,...\n    index)\n"
 	      MaskIconFrame	      on
 	      MaskIconOpaque	      on
 	      MaskIconRotate	      "none"
 	      MaskIconUnits	      "autoscale"
-	      MaskValueString	      "0|1|1|0|Double|off|off|0.1|0"
-	      MaskTabNameString	      ",,,,,,,,"
+	      MaskValueString	      "0|1|1|0|Double|off|0"
+	      MaskTabNameString	      ",,,,,,"
 	    }
 	  }
 	}
