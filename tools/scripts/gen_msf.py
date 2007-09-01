@@ -26,7 +26,7 @@ g.write("""/* Model symbol file
  * 
  */
 
-#include "mdf.h"
+#include "msf.h"
 
 const char model_symbols[] =
 """)
