@@ -231,11 +231,7 @@ RUN	:= $(RELATIVE_PATH_TO_ANCHOR)/run
 RUNINFO	:= $(RELATIVE_PATH_TO_ANCHOR)/.runinfo
 
 # Shared object of the model that is loaded into the buddy
-MODEL_SO        := $(RELATIVE_PATH_TO_ANCHOR)/$(MODEL).so
-MODEL_SRCS      := $(filter %_capi.c,$(MODULES)) \
-                        $(filter %_data.c,$(MODULES)) \
-                        etherlab_buddy_data.c $(MODEL)_meta_data.c \
-                        model_reg.c
+MODEL_SO        := $(MODEL).so
 MODEL_SRCS      := $(filter %_capi.c,$(MODULES)) \
                         $(filter %_data.c,$(MODULES)) \
                         etherlab_buddy_data.c \
@@ -246,10 +242,10 @@ MODEL_OBJS	:= $(MODEL_SRCS:.c=.o)
 #   Model Referending: only create a library
 #   Standard: Make kernel modules and user helper process
 ifeq ($(MODELREF_TARGET_TYPE), NONE)
-    PRODUCT = $(RELATIVE_PATH_TO_ANCHOR)/$(KERNEL_MODULE) \
-              $(MODEL_SO) $(RUNINFO)
+    PRODUCT = $(RELATIVE_PATH_TO_ANCHOR)/$(KERNEL_MODULE) 
+#              $(MODEL_SO) $(RUNINFO)
 #              $(MODEL_SO) $(RUN) $(RUNINFO)
-    SRCS    += $(MODEL).$(TARGET_LANG_EXT) rt_sim.c $(SOLVER) mdl_wrapper.c
+    SRCS    += $(MODEL)_nocapi.$(TARGET_LANG_EXT) rt_sim.c $(SOLVER) mdl_wrapper.c
     BUILD_PRODUCT_TYPE = "kernel module and buddy"
 else
     # Model reference rtw target
@@ -378,6 +374,7 @@ $(MODEL_OBJ): $(OBJS) $(SHARED_LIB) $(LIBS) $(MODELREF_LINK_LIBS)
 %.c: $(ETHERLAB_DIR)/src/kernel/%.c
 	@cp $< $@
 
+# Generate model symbol file
 msf.c: $(MODEL_SO)
 	@#echo '#include "msf.h"' > $@
 	@#echo "const char model_description[] =" >> $@
@@ -394,15 +391,20 @@ $(MDF_O): $(MDF_C)
 $(MODEL_SO): $(MODEL_OBJS)
 	$(cc) -shared -fpic -nostartfiles -o $@ $^
 
-$(MODEL).o : $(MODEL).c .nocapi_interface
+$(MODEL).o : $(MODEL)_nocapi.c
 	@$(GCC_TEST_CMD) $< $(GCC_TEST_OUT)
 	$(cc) -c $(LOCAL_CFLAGS) $(GCC_WALL_FLAG) $<
 
-# Remove all traces to the C-API from model.
 # The C-API is required in the buddy process though, and not in <model>.c
-.nocapi_interface: $(MODEL).c
-	@echo -e "/capi.h/\nd\n/C API/\nd\nd\nw\nq" | ed -s $< >/dev/null
-	@touch $@
+capi.h: $(MODEL).c
+	@echo -e "e $<\n /capi.h/d\n 0x\n 2\n ;d\n w $@\n q\n" | ed -s >/dev/null
+
+# Remove all traces to the C-API from model.
+$(MODEL)_nocapi.c: $(MODEL).c
+	@echo -e "e $<\n /capi.h/d\n /C API/\n .,+d\n w $@\n q\n" | ed -s >/dev/null
+
+capi_init.c: $(MODEL).c
+	@echo -e "e $<\n /C API/\n .,+d\n 0x\n 3\n ;d\n w $@\n q\n" | ed -s >/dev/null
 
 %.o : %.c
 	@$(GCC_TEST_CMD) $< $(GCC_TEST_OUT)

@@ -31,10 +31,7 @@
 
 #define EXPAND_CONCAT(name1,name2) name1 ## name2
 #define CONCAT(name1,name2) EXPAND_CONCAT(name1,name2)
-#define HEADER CONCAT(MODEL,_capi.h)
-#define CAPI_HEADER STR(HEADER)
 
-#define CAPI_INIT       CONCAT(MODEL,_InitializeDataMapInfo)
 #define rtM	        CONCAT(MODEL,_M)
 #define RT_MODEL        CONCAT(MODEL,_rtModel)
 
