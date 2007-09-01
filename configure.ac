@@ -151,7 +151,7 @@ AC_PROG_LN_S
 AC_PATH_PROG(RM, rm)
 AC_PATH_PROG(SED, sed)
 AC_PATH_PROG(GREP, grep)
-#AC_PATH_PROG(XARGS, xargs)
+AC_PATH_PROG(PYTHON, python)
 
 # Checks for libraries
 AC_CHECK_LIB([dl],[dlopen],[:],[
