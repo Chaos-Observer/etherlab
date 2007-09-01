@@ -149,11 +149,16 @@ AC_PROG_RANLIB
 AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PATH_PROG(RM, rm)
+AC_PATH_PROG(SED, sed)
+AC_PATH_PROG(GREP, grep)
 #AC_PATH_PROG(XARGS, xargs)
 
 # Checks for libraries
 AC_CHECK_LIB([dl],[dlopen],[:],[
     AC_MSG_ERROR([dlopen() not found])
+])
+AC_CHECK_LIB([z],[deflate],[:],[
+    AC_MSG_ERROR([deflate() not found])
 ])
 
 # Checks for header files
@@ -163,7 +168,7 @@ AC_CHECK_HEADERS([ \
         fcntl.h  \
         limits.h \
         netinet/in.h  \
-        stdint.h  \
+        inttypes.h  \
         stdlib.h  \
         string.h  \
         sys/ioctl.h  \

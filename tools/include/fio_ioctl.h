@@ -1,4 +1,5 @@
 #include <linux/ioctl.h>
+#include <stddef.h>
 
 /* The maximum number of models that can be handled. The limit is due
  * to the data type that the bit operators (set_bit, clear_bit) can handle
@@ -20,7 +21,7 @@ struct task_stats {
 /* Here are the ioctl() commands to control the Process IO data stream 
  * between the Real-Time Process and the user space Buddy */
 
-#define FIO_MAGIC  'R'
+#define FIO_MAGIC  '1'
 
 /* Get the current write pointers in the blockIO and message buffers.
  * For the blockIO vector, data between this and the previous call to 
@@ -49,13 +50,16 @@ struct data_p {
 /* Pass a whole new parameter set to the real time process. */
 #define NEW_PARAM             _IOW(FIO_MAGIC, 10, void *)
 
-/* This command compares the version string of the model description file
+/* This command compares the version string of the model symbol file
  * with that of the running model. Only if these version strings match
  * are parameter changes allowed. */
-#define CHECK_VER_STR         _IOW(FIO_MAGIC, 13, char *)
+//#define CHECK_VER_STR         _IOW(FIO_MAGIC, 13, char *)
 
 /* Write the models current parameter set to the data pointer */
 #define GET_PARAM             _IOR(FIO_MAGIC, 14, void *)
+
+/* Get the model symbol file from the kernel */
+#define GET_MDL_DESCRIPTION   _IOR(FIO_MAGIC, 15, void *)
 
 /* The following structure is used by the CHANGE_PARAM ioctl to change the 
  * models parameter set by the buddy selectively */
@@ -86,7 +90,7 @@ struct mdl_properties {
     unsigned int numst;         // Number of sample times
     size_t rtP_size;            // Size of model parameter structure
     unsigned long base_rate;    // Model's base rate in microseconds
-    char so_path[PATH_MAX];     // Path to model description file
+    size_t symbol_len;          // Length of model symbol file
 };
 
 

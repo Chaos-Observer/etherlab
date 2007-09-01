@@ -35,6 +35,7 @@
 #include "mdl_wrapper.h"
 #include "mdl_taskinfo.h"
 #include "mdl_time.h"
+#include "msf.h"
 
 #include "rtmodel.h"
 #include "rt_sim.h"
@@ -340,6 +341,9 @@ mdl_start(void)
     rtw_model.max_overrun = OVERRUNMAX;
     rtw_model.buffer_time = BUFFER_TIME > 0 ? BUFFER_TIME*1e6 : 0;
     rtw_model.stack_size = STACKSIZE;
+
+    rtw_model.symbols = model_symbols;
+    rtw_model.symbol_len = model_symbol_len;
 
     /* Register model callbacks */
     rtw_model.set_error_msg = mdl_set_error_msg;

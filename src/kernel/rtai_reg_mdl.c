@@ -54,10 +54,6 @@ unsigned long tick = 0;
 module_param(tick, ulong, S_IRUGO);
 MODULE_PARM_DESC(tick,"Specify tick time in usec if you want to override the rate specified in the model.");
 
-module_param_string(so_path, rtw_model.so_path, 
-        sizeof(rtw_model.so_path), S_IRUGO);
-MODULE_PARM_DESC(so_path,"Specify path to the shared object (<model>.so) containing the variable descriptions.");
-
 static void __exit 
 mod_cleanup(void)
 {

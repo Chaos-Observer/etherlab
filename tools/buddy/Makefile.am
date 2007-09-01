@@ -48,6 +48,6 @@ etherlab_buddy_SOURCES = \
         rtp_module.c \
         command_module.c
 etherlab_buddy_LDADD = libmsr.a
-etherlab_buddy_LDFLAGS = -rdynamic -ldl
+etherlab_buddy_LDFLAGS = -rdynamic -ldl -lz
 etherlab_buddy_CFLAGS = -I$(top_srcdir)/src/include -Imsrio_lib/include \
         -DDEBUG=$(DEBUG) -I$(top_srcdir)/tools/include -Wall

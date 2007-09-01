@@ -103,8 +103,12 @@ DOWNSAMPLE           := |>DOWNSAMPLE<|
 VERBOSE              := |>VERBOSE_BUILD<|
 
 ETHERLAB_DIR         := @prefix@
+#GZIP                 := @GZIP@
+#OD                   := @OD@
+SED                  := @SED@
+GREP                 := @GREP@
 
-MODELVERSION 	     = $(shell grep -m1 "Model Version" $(MODEL).h | sed "s/.*: *\([^[:space:]]*\).*/\1/")
+MODELVERSION 	     = $(shell $(GREP) -m1 "Model Version" $(MODEL).h | $(SED) "s/.*: *\([^[:space:]]*\).*/\1/")
 
 #--------------------------- Model and reference models -----------------------
 MODELLIB                  = |>MODELLIB<|
@@ -211,7 +215,7 @@ USER_OBJS       = $(addsuffix .o, $(basename $(USER_SRCS)))
 LOCAL_USER_OBJS = $(notdir $(USER_SRCS))
 
 
-SRCS  = $(filter-out %_capi.c,$(MODULES)) $(S_FUNCTIONS)
+SRCS  = $(filter-out %_capi.c,$(MODULES)) $(S_FUNCTIONS) msf.c
 
 # Source for the module main ( module_init() and module_exit() )
 RTAI_MOD_SRC       := rtai_reg_mdl.c
@@ -373,6 +377,19 @@ $(MODEL_OBJ): $(OBJS) $(SHARED_LIB) $(LIBS) $(MODELREF_LINK_LIBS)
 # Copy $(RTAI_MOD_SRC) to local dir. KBuild needs it there
 %.c: $(ETHERLAB_DIR)/src/kernel/%.c
 	@cp $< $@
+
+msf.c: $(MODEL_SO)
+	@#echo '#include "msf.h"' > $@
+	@#echo "const char model_description[] =" >> $@
+	@#$(GZIP) < $(MODEL_SO) | \
+	        $(OD) -tx1 | \
+	        $(SED) -ne 's/[0-9]*\(.*\)/"\1"/' -e 's/ /\\x/gp' >> $@
+	@#echo ";" >> $@
+	@#echo "size_t model_description_len = sizeof(model_description);" >> $@
+	@$(ETHERLAB_DIR)/bin/gen_msf.py $< $@
+
+$(MDF_O): $(MDF_C)
+	$(cc) -shared -fpic -nostartfiles -o $@ $^
 
 $(MODEL_SO): $(MODEL_OBJS)
 	$(cc) -shared -fpic -nostartfiles -o $@ $^

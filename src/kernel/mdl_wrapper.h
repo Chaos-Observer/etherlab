@@ -1,4 +1,5 @@
 #include <linux/limits.h>       // PATH_MAX
+#include <stddef.h>             // size_t
 
 struct rtw_model {
 	/** Block IO
@@ -32,14 +33,16 @@ struct rtw_model {
 
         int model_id;
 
+        /* Variables used to pass model symbol to the buddy */
+        const char *symbols;
+        size_t symbol_len;
+
         const char *(*rt_OneStepMain)(double);
         const char *(*rt_OneStepTid)(unsigned int, double);
         void (*set_error_msg)(const char *);
 
         const char *modelVersion;
         const char *modelName;
-        char so_path[PATH_MAX]; /* Path where the shared object is
-                                   located for parameter and process io */
 };
 
 extern struct rtw_model rtw_model;

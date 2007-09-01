@@ -1,4 +1,4 @@
-#include <stdint.h>
+#include <inttypes.h>
 
 #include "defines.h"
 #include CAPI_HEADER

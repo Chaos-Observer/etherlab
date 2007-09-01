@@ -87,7 +87,6 @@ struct model {
 
     struct task_stats *task_stats; /* Array of stats with numst elements */
     size_t task_stats_len;
-    unsigned int version_checked;
 
     struct mdl_task task[];    /** Array of length equal to the number
                                  * of sample times the model has. */

@@ -195,7 +195,7 @@ static long rtp_ioctl(
                 properties.numst     = rtw_model->numst;
                 properties.rtP_size  = rtw_model->rtP_size;
                 properties.base_rate = rtw_model->sample_period;
-                strcpy(properties.so_path, rtw_model->so_path);
+                properties.symbol_len = rtw_model->symbol_len;
 
                 rv = copy_to_user((void *)data, &properties, 
                         sizeof(properties));
@@ -265,57 +265,16 @@ static long rtp_ioctl(
             rv = 0;
             break;
             
-        case CHECK_VER_STR:
-            {
-                size_t usr_ver_str_len, ver_str_len;
-                char *user_ver_str;
-
-                pr_debug("Checking ver str\n");
-
-                /* First check whether MAX_MODEL_NAME_LEN is long enough! */
-                ver_str_len = strlen(rtw_model->modelVersion) + 1;
-
-                /* Find out how long the buddy's version string is */
-                if ( !(usr_ver_str_len = strnlen_user((void *)data, 
-                            ver_str_len))) {
-                    pr_info("Internal error: Could not get version string "
-                            "length from user space\n");
-                    rv = -EFAULT;
-                    break;
-                }
-                if (usr_ver_str_len != ver_str_len) {
-                    /* The lengths don't match, so the versions can't be
-                     * the same */
-                    pr_info("Version string lengths do not match usr: "
-                            "%i, kernel %i\n",
-                            usr_ver_str_len, ver_str_len);
-                    rv = -EACCES;
-                    break;
-                }
-                if (!(user_ver_str = kmalloc(ver_str_len, GFP_KERNEL))) {
-                    pr_debug("no memory\n");
-                    rv = -ENOMEM;
-                    break;
-                }
-
-                /* Make a copy of it */
-                if ((rv = copy_from_user(user_ver_str, (void *)data, 
-                                ver_str_len))) {
-                    pr_info("Failed to copy %li bytes from user\n", rv);
-                    rv = -ENOMEM;
-                } else if (strcmp(user_ver_str, rtw_model->modelVersion)) {
-                    pr_info("Version check failed: user version %s, "
-                            "model version %s\n", 
-                            user_ver_str, rtw_model->modelVersion);
-                    rv = -EACCES;
-                } else {
-                    pr_debug("Version check worked\n");
-                    model->version_checked = 1;
-                }
-                kfree(user_ver_str);
-
+        case GET_MDL_DESCRIPTION:
+            pr_debug("Getting model symbol file\n");
+            pr_info("Getting model symbol file %u bytes\n", rtw_model->symbol_len);
+            if (copy_to_user((void *)data, rtw_model->symbols,
+                    rtw_model->symbol_len)) {
+                rv = -EFAULT;
                 break;
             }
+            break;
+
 
         case GET_PARAM:
             /* Buddy process wants to get the complete parameter
@@ -335,12 +294,6 @@ static long rtp_ioctl(
             /* Reject if the model has no parameter set */
             if (!rtw_model->rtP_size) {
                 rv = -ENODEV;
-                break;
-            }
-
-            if (!model->version_checked) {
-                pr_info("Model version numbers not verified.\n");
-                rv = -EACCES;
                 break;
             }
 
@@ -373,12 +326,6 @@ static long rtp_ioctl(
                 /* Reject if the model has no parameter set */
                 if (!rtw_model->rtP_size) {
                     rv = -ENODEV;
-                    break;
-                }
-
-                if (!model->version_checked) {
-                    pr_info("Model version numbers not verified.\n");
-                    rv = -EACCES;
                     break;
                 }
 

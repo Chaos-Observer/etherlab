@@ -11,7 +11,7 @@
  * are freed up.
  * 
  */
-#include <stdint.h>	// uint32_t
+#include <inttypes.h>	// uint32_t
 #include <stdio.h>	// printf()
 #include <unistd.h>	// close(), sleep()
 #include <fcntl.h>	// open(), O_RDONLY, etc
@@ -24,6 +24,7 @@
 #include <sys/mman.h>	// mmap()
 #include <syslog.h>	// syslog()
 #include <errno.h>	// errno
+#include <zlib.h>
 
 //#include "defines.h"
 #include "fio_ioctl.h"
@@ -34,6 +35,12 @@
 #include "modules.h"
 #include "net_io.h"
 
+#define CHECK_ERR(condition, position, msg, goto_label) { \
+    if (condition) { \
+        syslog(LOG_CRIT, "%s error: %s\n", position, msg); \
+        goto goto_label; \
+    } \
+}
 int msr_port = 2345;
 uint32_t active_models = 0;
 
@@ -157,85 +164,120 @@ static void update_rtB(int fd, void *priv_data)
         return;
 }
 
-/* Find the model description file. The description file has the name
- * <model_name>.so
- * If the real time model is loaded with a command line parameter 
- * so_path=<path-to-so.file>, the file is located using that path.
- * If so_path is not given, it is located in the current working directory.
- *
- * Parameters:
- *      filename: pointer to buffer where the filename is stored.
- *      so_path: parameter passed when loading the rt_model
- *      model_name: Model name
+
+/* This funtion fetches the compressed model symbol file from the
+ * real time process, decompresses it and writes it to a file. 
+ * The caller should unlink() the file to prevent polluting /tmp
+ * Returns: filename of the decompressed file - the caller must free() it
+ *          NULL on error
  */
-static int find_so_file(char *filename, size_t len, 
-        const char *so_path, const char *model_name) 
+static char *get_model_symbol( struct model *model)
 {
-    char *path_prefix;
-    int rv = 0;
+    Bytef dst[4096];
+    void *in_buf;
+    char so_filename[] = "/tmp/msf_so_XXXXXX";
+    char *ret_filename;
+    int fd_so;
+    int err;
+    z_stream d_stream;
+    size_t len;
 
-    if (!strlen(so_path)) {
-        /* No file name was supplied by the model, so try to locate
-         * it in the working directory where the buddy was started */
-        snprintf(filename, len, "%s/%s.so", cwd, model_name);
+    /* Open a temporary file where the uncompressed file will be stored */
+    fd_so = mkstemp(so_filename);
+    CHECK_ERR(fd_so < 0, "mkstemp()", strerror(errno), out_mkstemp_so_file);
+    syslog(LOG_DEBUG,
+            "Created temporary file for model symbol file: %s\n",
+            so_filename);
 
-        if (access(filename, R_OK | X_OK)) {
-            /* File was not found, give up */
-            rv = -errno;
-            syslog(LOG_ERR, 
-                    "Could not locate model description file "
-                    "%s/%s.so. Either start the buddy from the model's "
-                    "working directory, or pass the path as an argument to "
-                    "insmod:\n"
-                    "\tinsmod <mdl>_kmod.ko so_path=<path_to_dir>\n",
-                    so_path, model_name);
-            return rv;
-        } else {
-            syslog(LOG_DEBUG, "Found model description file: %s",
-                    filename);
-            return 0;
-        }
+    /* Make a copy of the filename, the caller has to free() it */
+    ret_filename = strdup(so_filename);
+    CHECK_ERR(!ret_filename, "strdup()", "No memory", out_strdup);
+
+#undef TEST
+
+#ifdef TEST
+    {
+        int fd;
+        in_buf = malloc(10000);
+        CHECK_ERR(!in_buf, "malloc()", "No memory", out_inflate_malloc);
+
+        fd = open("/home/rich/matlab/osc.so.c", O_RDONLY);
+        len = read(fd, in_buf, 10000);
+        close(fd);
+
+        printf("Read %i bytes\n", len);
     }
+#else
+    /* Make some space for the model symbol file */
+    len = model->properties.symbol_len;
+    in_buf = malloc(len);
+    CHECK_ERR(!in_buf, "malloc()", "No memory", out_inflate_malloc);
+    syslog(LOG_DEBUG, "Compressed model symbol file is %i bytes", len);
 
-    /* Some path was supplied.
-     * First check whether an the name starts with "/" or "./"
-     * dl_open searches LD_SO_PATH if the name does not start with
-     * these sequences, but this is not required here */
-    path_prefix = (so_path[0] == '/' || strcmp("./", so_path) != 1) 
-        ? "" : "./";
+    /* Fetch the compressed model symbol file into in_buf */
+    err = ioctl(model->rtp_fd, GET_MDL_DESCRIPTION, in_buf);
+    CHECK_ERR(err, "ioctl()", strerror(errno), out_ioctl);
+#endif
 
-    do {
-        /* First try: use the name that was supplied as the path to
-         * the file's directory */
-        snprintf(filename, len, "%s%s/%s.so", 
-                path_prefix, so_path, model_name);
-        if (!access(filename, R_OK | X_OK))
-            break;
+    /* Setup data structure for inflateInit() function */
+    d_stream.zalloc = (alloc_func)0;
+    d_stream.zfree = (free_func)0;
+    d_stream.opaque = (voidpf)0;
+    err = inflateInit(&d_stream);
+    CHECK_ERR(err != Z_OK, "inflateInit()", d_stream.msg, out_inflate_init);
 
-        /* Now try whether just the .so was not supplied */
-        snprintf(filename, len, "%s%s.so", path_prefix, so_path);
-        if (!access(filename, R_OK | X_OK))
-            break;
+    /* Make d_stream pointers point to the compressed data */
+    d_stream.next_in  = in_buf;
+    d_stream.avail_in = len;
+ 
+    /* Decompress the data in chunks */
+    while (d_stream.avail_in && err != Z_STREAM_END) {
+        d_stream.next_out = dst;
+        d_stream.avail_out = sizeof(dst);
 
-        /* Last, try if this points directly to a file */
-        snprintf(filename, len, "%s%s", 
-                path_prefix, so_path);
-        if (!access(filename, R_OK | X_OK))
-            break;
+        err = inflate(&d_stream, Z_NO_FLUSH);
+        len = sizeof(dst) - d_stream.avail_out;
 
-        syslog(LOG_ERR, "Could not locate model description file %s/%s.so"
-                " - check the path passed to insmod\n", so_path, model_name);
-        return -ENOENT;
-    } while (1);
+        /* Filter out Z_STREAM_END from the errors. This is not a real error
+         * and this case is handled in the while() statement */
+        CHECK_ERR(err != Z_STREAM_END && err != Z_OK, 
+                "inflate()", d_stream.msg, out_inflate);
 
-    syslog(LOG_DEBUG, "Found model description file as %s", filename);
-    return 0;
+        /* write() the data to the output file */
+        CHECK_ERR(len != write(fd_so, dst, len), "write()", strerror(errno), 
+                out_write);
+    }
+    syslog(LOG_INFO, "Decompressed model symbol file: %s, length %lu",
+            ret_filename, d_stream.total_out);
+
+    close(fd_so);
+
+    err = inflateEnd(&d_stream);
+    CHECK_ERR(err != Z_OK, "inflateInit()", d_stream.msg, out_inflate_end);
+
+    return ret_filename;
+
+out_inflate_end:
+out_write:
+out_inflate:
+    inflateEnd(&d_stream);
+out_inflate_init:
+out_ioctl:
+    free(in_buf);
+out_inflate_malloc:
+    free(ret_filename);
+out_strdup:
+    close(fd_so);
+    unlink(so_filename);
+out_mkstemp_so_file:
+    return NULL;
 }
 
 static int start_model(const char *model_name, unsigned int model_num)
 {
     int rv = 0;
     char filename[PATH_MAX];
+    char *model_symbol_file;
     void *dlhandle;
     struct model *model;
     int (*model_init)(void *);
@@ -304,56 +346,31 @@ static int start_model(const char *model_name, unsigned int model_num)
      * all the model specific details. It has the form ./<model>.so 
      * The ./ is needed otherwise the dynamic loader only searches in
      * the library paths */
-    if ((rv = find_so_file(filename, sizeof(filename), 
-                    model->properties.so_path, model_name))) {
-        goto out_get_mdl_so_path;
+    if (!(model_symbol_file = get_model_symbol(model))) {
+        goto out_get_model_symbol_file;
     }
 
     /* Now load the shared object. This also additionally executes the function
      * having __attribute__((constructor)) */
-    syslog(LOG_DEBUG, "Loading model symbol file %s\n", filename);
-    dlhandle = dlopen(filename, RTLD_LAZY);
+    syslog(LOG_DEBUG, "Loading model symbol file %s\n", model_symbol_file);
+    dlhandle = dlopen(model_symbol_file, RTLD_LAZY);
     if (!dlhandle) {
-        syslog(LOG_ERR, "Could not open model description file %s: %s",
-                filename, dlerror());
+        syslog(LOG_ERR, "Could not open model symbol file %s: %s",
+                model_symbol_file, dlerror());
         rv = -errno;
         goto out_dlopen;
     }
     if (!(version_string = dlsym(dlhandle, "version_string"))) {
         syslog(LOG_ERR, "Symbol \"version_string\" is not exported in %s: %s",
-                filename, dlerror());
+                model_symbol_file, dlerror());
         rv = -errno;
         goto out_init_sym;
     }
     if (!(model_init = dlsym(dlhandle, "model_init"))) {
         syslog(LOG_ERR, "Symbol \"model_init\" is not exported in %s: %s",
-                filename, dlerror());
+                model_symbol_file, dlerror());
         rv = -errno;
         goto out_init_sym;
-    }
-
-    /* Make sure that the versions are the same! */
-    if ((rv = ioctl(model->rtp_fd, CHECK_VER_STR, version_string)) < 0) {
-        switch (errno) {
-            case EFAULT:
-                syslog(LOG_ERR, "ERROR: Could not verify model and "
-                        "description file versions due to an internal "
-                        "error\n");
-                break;
-            case EACCES:
-                syslog(LOG_ERR, "Error loading model description file %s: "
-                        "Real Time Module and description files do not "
-                        "match. Recompile and retry\n", version_string);
-                break;
-            case ENOMEM:
-                syslog(LOG_ERR, "ERROR: Low on memory\n");
-                break;
-            default:
-                syslog(LOG_ERR, "ERROR: An unexpected error occurred.\n");
-                break;
-        }
-        rv = -errno;
-        goto out_wrong_version;
     }
 
     /*======================================================================
@@ -393,6 +410,8 @@ static int start_model(const char *model_name, unsigned int model_num)
 
     /* Free unused memory */
     dlclose(dlhandle);
+    unlink(model_symbol_file);
+    free(model_symbol_file);
 
     syslog(LOG_DEBUG, "Finished registering model with buddy");
     return 0;
@@ -400,11 +419,13 @@ static int start_model(const char *model_name, unsigned int model_num)
 out_prepare_tcp:
     msr_cleanup();
 out_msr_init:
-out_wrong_version:
+//out_wrong_version:
 out_init_sym:
     dlclose(dlhandle);
 out_dlopen:
-out_get_mdl_so_path:
+    unlink(model_symbol_file);
+    free(model_symbol_file);
+out_get_model_symbol_file:
     munmap(model->blockio_start, 
             model->properties.rtB_len * model->properties.rtB_cnt);
 out_mmap:
