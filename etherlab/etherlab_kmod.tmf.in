@@ -231,9 +231,8 @@ RUNINFO	:= $(RELATIVE_PATH_TO_ANCHOR)/.runinfo
 
 # Files needed for Model Symbols
 SYMBOL_SRCS      := $(filter %_capi.c,$(MODULES)) \
-                        $(filter %_data.c,$(MODULES)) \
-                        etherlab_buddy_data.c
-SYMBOL_OBJS      := $(MODEL_SRCS:.c=.o)
+                        $(filter %_data.c,$(MODULES))
+SYMBOL_OBJS      := $(SYMBOL_SRCS:.c=.o)
 
 # Differentiate between builds for Model Referencing and Standard
 #   Model Referending: only create a library
@@ -380,7 +379,7 @@ $(MODEL).o : $(MODEL)_nocapi.c
 	@$(GCC_TEST_CMD) $< $(GCC_TEST_OUT)
 	$(cc) -c $(LOCAL_CFLAGS) $(GCC_WALL_FLAG) $<
 
-$(MODEL).so: $(SYMBOL_OBJS) model_reg.o
+$(MODEL).so: $(SYMBOL_OBJS) etherlab_buddy_data.o model_reg.o
 	$(cc) -shared -fpic -nostartfiles -o $@ $^
 
 ###################
