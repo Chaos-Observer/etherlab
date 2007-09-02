@@ -61,6 +61,8 @@ function etherlab_config(hDlg,hSrc)
   slConfigUISetVal(hDlg,hSrc,'RetainRTWFile','on');
   slConfigUISetEnabled(hDlg,hSrc,'RetainRTWFile','off');
 
+%slConfigUISetVal(hDlg, hSrc, 'ModelReferenceCompliant', 'on');
+
   if ~@KERNEL@
        set_param(bdroot,'GenCodeOnly','on');
   end

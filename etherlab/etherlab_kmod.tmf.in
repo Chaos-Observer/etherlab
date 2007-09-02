@@ -104,7 +104,7 @@ VERBOSE              := |>VERBOSE_BUILD<|
 
 ETHERLAB_DIR         := @prefix@
 #GZIP                 := @GZIP@
-#OD                   := @OD@
+ED                   := @ED@
 SED                  := @SED@
 GREP                 := @GREP@
 
@@ -212,31 +212,28 @@ LIBS += $(S_FUNCTIONS_LIB) $(INSTRUMENT_LIBS)
 USER_SRCS = 
 
 USER_OBJS       = $(addsuffix .o, $(basename $(USER_SRCS)))
-LOCAL_USER_OBJS = $(notdir $(USER_SRCS))
+LOCAL_USER_OBJS = $(notdir $(USER_OBJS))
 
 
-SRCS  = $(filter-out %_capi.c,$(MODULES)) $(S_FUNCTIONS) msf.c
+SRCS  = $(filter-out %_capi.c,$(MODULES)) $(S_FUNCTIONS)
+
+# Object target that will be used together with $(MODULE_MAIN_SRC) to
+# become a kernel object (.ko) during the KBuild process
+MODEL_BINARY       := $(MODEL)_obj.o_shipped
 
 # Source for the module main ( module_init() and module_exit() )
-RTAI_MOD_SRC       := rtai_reg_mdl.c
-
-# Object target that will be used together with $(RTAI_MOD_SRC) to
-# become a kernel object (.ko) during the KBuild process
-MODEL_OBJ          := $(MODEL)_obj.o_shipped
+MODULE_MAIN_SRC    := rtai_reg_mdl.c
 
 KERNEL_MODULE      := $(MODEL)_kmod.ko
-RT_MANAGER         := rt_kernel.ko
 
 RUN	:= $(RELATIVE_PATH_TO_ANCHOR)/run
 RUNINFO	:= $(RELATIVE_PATH_TO_ANCHOR)/.runinfo
 
-# Shared object of the model that is loaded into the buddy
-MODEL_SO        := $(MODEL).so
-MODEL_SRCS      := $(filter %_capi.c,$(MODULES)) \
+# Files needed for Model Symbols
+SYMBOL_SRCS      := $(filter %_capi.c,$(MODULES)) \
                         $(filter %_data.c,$(MODULES)) \
-                        etherlab_buddy_data.c \
-                        model_reg.c
-MODEL_OBJS	:= $(MODEL_SRCS:.c=.o)
+                        etherlab_buddy_data.c
+SYMBOL_OBJS      := $(MODEL_SRCS:.c=.o)
 
 # Differentiate between builds for Model Referencing and Standard
 #   Model Referending: only create a library
@@ -245,15 +242,14 @@ ifeq ($(MODELREF_TARGET_TYPE), NONE)
     PRODUCT = $(RELATIVE_PATH_TO_ANCHOR)/$(KERNEL_MODULE) 
 #              $(MODEL_SO) $(RUNINFO)
 #              $(MODEL_SO) $(RUN) $(RUNINFO)
-    SRCS    += $(MODEL)_nocapi.$(TARGET_LANG_EXT) rt_sim.c $(SOLVER) mdl_wrapper.c
-    BUILD_PRODUCT_TYPE = "kernel module and buddy"
+    SRCS    += $(MODEL)_nocapi.$(TARGET_LANG_EXT) rt_sim.c $(SOLVER)
+    BUILD_PRODUCT_TYPE = "kernel module"
 else
     # Model reference rtw target
     PRODUCT            = $(MODELLIB)
     BUILD_PRODUCT_TYPE = "library"
 endif
 
-OBJS      = $(addsuffix .o, $(basename $(SRCS))) $(USER_OBJS)
 LINK_OBJS = $(addsuffix .o, $(basename $(SRCS))) $(LOCAL_USER_OBJS)
 
 SHARED_SRC := $(wildcard $(SHARED_SRC))
@@ -302,7 +298,7 @@ ifneq ($(KERNELRELEASE),)
 EXTRA_CFLAGS	:= $(CODE_DEBUG) $(RTAI_FLAGS) -I$(ETHERLAB_DIR)/include \
 		-I$(ETHERLAB_DIR)/src/kernel
 obj-m		:= $(KERNEL_MODULE:.ko=.o)
-$(KERNEL_MODULE:.ko=)-y := $(RTAI_MOD_SRC:.c=.o) $(MODEL_OBJ)
+$(KERNEL_MODULE:.ko=)-y := $(MODULE_MAIN_SRC:.c=.o) $(MODEL_BINARY) msf.o
 
 #######################################################################
 #  >>>> END OF KBUILD PART <<<<
@@ -314,7 +310,7 @@ ifeq ($(MODELREF_TARGET_TYPE),NONE)
 all: $(PRODUCT)
 	@echo "### Created $(BUILD_PRODUCT_TYPE): $^"
 else
-$(PRODUCT) : $(OBJS) $(SHARED_LIB) $(LIBS)
+$(PRODUCT) : $(LINK_OBJS) $(SHARED_LIB) $(LIBS)
 	@rm -f $(MODELLIB)
 	ar ruvs $(MODELLIB) $(LINK_OBJS)
 	@echo "### Created $(MODELLIB)"
@@ -330,82 +326,93 @@ cc = @echo -e "  CC\t" $@ && $(CC)
 ld = @echo -e "  LD\t" $@ && $(LD)
 ar = @echo -e "  AR\t" $@ && $(AR)
 endif
+ed = "  ED\t" $@
 
 DEPFILES := $(wildcard .*.dep)
 ifneq ($(DEPFILES),)
 include $(DEPFILES)
 endif
 
+###################
+# Level 1 targets
+###################
 $(RUN): $(ETHERLAB_DIR)/tools/rt_kernel/$(notdir $(RUN))
 	@cp $< $@
 	@chmod 755 $@
 
 $(RUNINFO)::
-	@echo "$(MODEL):up+sem:push $(RT_MANAGER:.ko=);push $(KERNEL_MODULE:.ko=);:" > $@
-
-# KBuild leaves kernel module in current directory. Target directory
-# is somewhere else
-#$(RELATIVE_PATH_TO_ANCHOR)/$(RT_MANAGER): $(ETHERLAB_DIR)/src/kernel/$(RT_MANAGER)
-#	@cp $< $@
+	@echo "$(MODEL):up+sem:push rt_kernel;push $(KERNEL_MODULE:.ko=);:" > $@
 
 .INTERMEDIATE: $(KERNEL_MODULE)
 $(RELATIVE_PATH_TO_ANCHOR)/$(KERNEL_MODULE): $(KERNEL_MODULE)
 	@mv $< $@
 
-#$(ETHERLAB_DIR)/src/kernel/$(RT_MANAGER)::
-#	@sh -c "unset ARCH; make -C $(dir $@) V=$(VERBOSE) RTAI_FLAGS=\"$(RTAI_FLAGS)\" KERNEL_DIR=$(KERNEL_DIR) INCLUDES=-I$(ETHERLAB_DIR)/src/include"
-
-$(KERNEL_MODULE): $(RTAI_MOD_SRC) $(MODEL_OBJ) Makefile
+$(KERNEL_MODULE): $(MODULE_MAIN_SRC) $(MODEL_BINARY) Makefile msf.c
 	# Call KBuild process
 	@sh -c "unset ARCH; make -C $(KERNEL_DIR) V=$(VERBOSE) M=$(shell pwd) modules"
 
+###################
+# Level 2 targets
+###################
+# Copy $(MODULE_MAIN_SRC) to local dir. KBuild needs it there
+$(MODULE_MAIN_SRC): $(ETHERLAB_DIR)/src/kernel/$(MODULE_MAIN_SRC)
+	@cp $< $@
+
+# Create <model>.o_shipped object for use in KBuild
+$(MODEL_BINARY): $(LINK_OBJS) $(SHARED_LIB) $(LIBS) $(MODELREF_LINK_LIBS) mdl_wrapper.o
+	$(ld) $(LDFLAGS) -r -o $@ $^
+	@echo "### Created $@"
+
+# Link $(MODEL).mk -> Makefile for easier making by hand
 Makefile: $(MAKEFILE)
 	# Creating link to $(MAKEFILE)
 	@rm -f $@
 	@ln -sf $< $@
 
-# Create <model>.o_shipped object for use in KBuild
-$(MODEL_OBJ): $(OBJS) $(SHARED_LIB) $(LIBS) $(MODELREF_LINK_LIBS)
-	$(ld) $(LDFLAGS) -r -o $@ $(LINK_OBJS) $(MODELREF_LINK_LIBS) \
-		$(SHARED_LIB) $(LIBS)
-	@echo "### Created $@"
-
-# Copy $(RTAI_MOD_SRC) to local dir. KBuild needs it there
-%.c: $(ETHERLAB_DIR)/src/kernel/%.c
-	@cp $< $@
-
 # Generate model symbol file
-msf.c: $(MODEL_SO)
-	@#echo '#include "msf.h"' > $@
-	@#echo "const char model_description[] =" >> $@
-	@#$(GZIP) < $(MODEL_SO) | \
-	        $(OD) -tx1 | \
-	        $(SED) -ne 's/[0-9]*\(.*\)/"\1"/' -e 's/ /\\x/gp' >> $@
-	@#echo ";" >> $@
-	@#echo "size_t model_description_len = sizeof(model_description);" >> $@
+msf.c: $(MODEL).so
 	@$(ETHERLAB_DIR)/bin/gen_msf.py $< $@
 
-$(MDF_O): $(MDF_C)
-	$(cc) -shared -fpic -nostartfiles -o $@ $^
-
-$(MODEL_SO): $(MODEL_OBJS)
-	$(cc) -shared -fpic -nostartfiles -o $@ $^
-
+###################
+# Level 3 targets
+###################
 $(MODEL).o : $(MODEL)_nocapi.c
 	@$(GCC_TEST_CMD) $< $(GCC_TEST_OUT)
 	$(cc) -c $(LOCAL_CFLAGS) $(GCC_WALL_FLAG) $<
 
-# The C-API is required in the buddy process though, and not in <model>.c
-capi.h: $(MODEL).c
-	@echo -e "e $<\n /capi.h/d\n 0x\n 2\n ;d\n w $@\n q\n" | ed -s >/dev/null
+$(MODEL).so: $(SYMBOL_OBJS) model_reg.o
+	$(cc) -shared -fpic -nostartfiles -o $@ $^
+
+###################
+# Level 4 targets
+###################
+model_reg.o: $(ETHERLAB_DIR)/src/buddy/model_reg.c capi_init.c capi.h
+	@$(GCC_TEST_CMD) $< $(GCC_TEST_OUT)
+	$(cc) $(DEP) -c $(LOCAL_CFLAGS) $(GCC_WALL_FLAG_MAX) -o $@ $<
 
 # Remove all traces to the C-API from model.
 $(MODEL)_nocapi.c: $(MODEL).c
-	@echo -e "e $<\n /capi.h/d\n /C API/\n .,+d\n w $@\n q\n" | ed -s >/dev/null
+	@echo -e $(ed)
+	@echo -e "e $<\n /capi.h/d\n /C API/\n .,+d\n w $@\n q\n" | \
+                $(ED) -s >/dev/null
 
+###################
+# Level 5 targets
+###################
+# The C-API is required in the buddy process though, and not in <model>.c
 capi_init.c: $(MODEL).c
-	@echo -e "e $<\n /C API/\n .,+d\n 0x\n 3\n ;d\n w $@\n q\n" | ed -s >/dev/null
+	@echo -e $(ed)
+	@echo -e "e $<\n /C API/\n .,+d\n 0x\n 3\n ;d\n w $@\n q\n" | \
+                $(ED) -s >/dev/null
 
+capi.h: $(MODEL).c
+	@echo -e $(ed)
+	@echo -e "e $<\n /capi.h/d\n 0x\n 2\n ;d\n w $@\n q\n" | \
+                $(ED) -s >/dev/null
+
+###################
+# Various targets on demand
+###################
 %.o : %.c
 	@$(GCC_TEST_CMD) $< $(GCC_TEST_OUT)
 	$(cc) -c $(LOCAL_CFLAGS) $(GCC_WALL_FLAG) $<
@@ -419,8 +426,10 @@ capi_init.c: $(MODEL).c
 	$(cc) $(DEP) -c $(LOCAL_CFLAGS) $(GCC_WALL_FLAG_MAX) $<
 
 %.o : $(ETHERLAB_DIR)/src/buddy/%.c
-	@$(GCC_TEST_CMD) $(LOCAL_CFLAGS) -I$(ETHERLAB_DIR)/include $(RTAI_FLAGS) $< $(GCC_TEST_OUT)
-	$(cc) $(DEP) -c $(LOCAL_CFLAGS) -I$(ETHERLAB_DIR)/include $(GCC_WALL_FLAG_MAX) $<
+	@$(GCC_TEST_CMD) $(LOCAL_CFLAGS) -I$(ETHERLAB_DIR)/include \
+                $(RTAI_FLAGS) $< $(GCC_TEST_OUT)
+	$(cc) $(DEP) -c $(LOCAL_CFLAGS) -I$(ETHERLAB_DIR)/include \
+                $(GCC_WALL_FLAG_MAX) $<
 
 %.o : $(ETHERLAB_DIR)/src/kernel/%.c
 	@$(GCC_TEST_CMD) $(LOCAL_CFLAGS) $(RTAI_FLAGS) $< $(GCC_TEST_OUT)
@@ -480,7 +489,7 @@ capi_init.c: $(MODEL).c
 
 #----------------------------- Dependencies ------------------------------------
 
-$(OBJS) : $(MAKEFILE) rtw_proj.tmw
+$(LINK_OBJS) : $(MAKEFILE) rtw_proj.tmw
 
 $(SHARED_LIB) : $(SHARED_SRC)
 	@echo "### Creating $@ "
