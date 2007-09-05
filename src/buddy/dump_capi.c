@@ -33,18 +33,16 @@ xmlChar *my_convert(const char *str)
     static xmlChar *buf = NULL;
     static ssize_t buf_len = 0;
     ssize_t new_buf_len;
-    int tmp;
+    int inlen = strlen(str);
     int ret;
 
-    return NULL;
-
-    new_buf_len = 2*strlen(str)+1;
+    new_buf_len = 2*inlen+1;
     if (buf_len < new_buf_len) {
         buf_len = new_buf_len > 1000 ? new_buf_len : 1000;
         buf = xmlRealloc(buf, new_buf_len);
         CHECK_ERR(!buf, "xmlRealloc", err_no_mem);
     }
-    ret = handler->input(buf, &buf_len, (const xmlChar *)str, &tmp);
+    ret = handler->input(buf, &buf_len, (const xmlChar *)str, &inlen);
     CHECK_ERR(ret == -1, "xmlCharEncodingHandler", err_no_mem);
     CHECK_ERR(ret == -2, "xmlCharEncodingHandler", "Transcoding failed");
     return buf;
@@ -143,13 +141,15 @@ void dump_rtBlockSignals(xmlNodePtr root_node)
 
         utf8name = my_convert(blockPath);
         path_node = xmlNewChild(signal_node, NULL, BAD_CAST "path", 
-                BAD_CAST blockPath);
+                utf8name);
+//                BAD_CAST blockPath);
         CHECK_ERR(!path_node, "xmlNewChild", err_no_mem);
 
         if (strlen(signalName)) {
             utf8name = my_convert(signalName);
             name_node = xmlNewTextChild(signal_node, NULL, BAD_CAST "name",  
-                    BAD_CAST signalName);
+                utf8name);
+//                    BAD_CAST signalName);
             CHECK_ERR(!name_node, "xmlNewChild", err_no_mem);
         }
     }
@@ -210,7 +210,9 @@ void dump_rtBlockParameters(xmlNodePtr root_node)
 
         utf8name = my_convert(path);
         parameter_node = xmlNewChild(parameters_node, NULL, 
-                BAD_CAST "parameter", BAD_CAST path);
+                BAD_CAST "parameter", 
+                utf8name);
+//                BAD_CAST path);
         CHECK_ERR(!parameter_node, "xmlNewChild", err_no_mem);
 
         snprintf(buf, sizeof(buf), "%u", paramIdx);
