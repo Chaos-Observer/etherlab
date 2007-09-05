@@ -35,14 +35,16 @@ xmlChar *my_convert(const char *str)
     ssize_t new_buf_len;
     int inlen = strlen(str);
     int ret;
+    int out_len;
 
     new_buf_len = 2*inlen+1;
     if (buf_len < new_buf_len) {
         buf_len = new_buf_len > 1000 ? new_buf_len : 1000;
-        buf = xmlRealloc(buf, new_buf_len);
+        buf = xmlRealloc(buf, buf_len);
         CHECK_ERR(!buf, "xmlRealloc", err_no_mem);
     }
-    ret = handler->input(buf, &buf_len, (const xmlChar *)str, &inlen);
+    out_len = buf_len;
+    ret = handler->input(buf, &out_len, (const xmlChar *)str, &inlen);
     CHECK_ERR(ret == -1, "xmlCharEncodingHandler", err_no_mem);
     CHECK_ERR(ret == -2, "xmlCharEncodingHandler", "Transcoding failed");
     return buf;
