@@ -369,7 +369,8 @@ Makefile: $(MAKEFILE)
 	@ln -sf $< $@
 
 # Generate model symbol file
-msf.c: $(MODEL).so
+msf.c: $(MODEL).xml
+	@echo Generating $@
 	@$(ETHERLAB_DIR)/bin/gen_msf.py $< $@
 
 ###################
@@ -379,21 +380,26 @@ $(MODEL).o : $(MODEL)_nocapi.c
 	@$(GCC_TEST_CMD) $< $(GCC_TEST_OUT)
 	$(cc) -c $(LOCAL_CFLAGS) $(GCC_WALL_FLAG) $<
 
-$(MODEL).so: $(SYMBOL_OBJS) etherlab_buddy_data.o model_reg.o
-	$(cc) -shared -fpic -nostartfiles -o $@ $^
+$(MODEL).xml: gen_msf
+	@echo Generating XML Model Symbol File $(MODEL).xml
+	@./$< > $@
 
 ###################
 # Level 4 targets
 ###################
-model_reg.o: $(ETHERLAB_DIR)/src/buddy/model_reg.c capi_init.c capi.h
+dump_capi.o: $(ETHERLAB_DIR)/src/buddy/dump_capi.c capi_init.c capi.h
 	@$(GCC_TEST_CMD) $< $(GCC_TEST_OUT)
-	$(cc) $(DEP) -c $(LOCAL_CFLAGS) $(GCC_WALL_FLAG_MAX) -o $@ $<
+	$(cc) $(DEP) -c $(LOCAL_CFLAGS) \
+                `xml2-config --cflags` $(GCC_WALL_FLAG_MAX) -o $@ $<
 
 # Remove all traces to the C-API from model.
 $(MODEL)_nocapi.c: $(MODEL).c
 	@echo -e $(ed)
 	@echo -e "e $<\n /capi.h/d\n /C API/\n .,+d\n w $@\n q\n" | \
                 $(ED) -s >/dev/null
+
+gen_msf: $(SYMBOL_OBJS) etherlab_buddy_data.o dump_capi.o
+	$(cc) -o $@ $^ `xml2-config --libs`
 
 ###################
 # Level 5 targets
