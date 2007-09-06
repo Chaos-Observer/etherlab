@@ -47,6 +47,7 @@ xmlChar *my_convert(const char *str)
     ret = handler->input(buf, &out_len, (const xmlChar *)str, &inlen);
     CHECK_ERR(ret == -1, "xmlCharEncodingHandler", err_no_mem);
     CHECK_ERR(ret == -2, "xmlCharEncodingHandler", "Transcoding failed");
+    buf[ret] = '\0';
     return buf;
 }
 
