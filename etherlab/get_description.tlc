@@ -31,32 +31,29 @@
 
 %assign Accelerator = 0
 %openfile meta = "%<cFile>"
-/* EtherLab target specific file
- *
- * This file is created to augment additional informatioin
- * to the <model>_capi.c file. 
- */
+# EtherLab target specific file
+#
+# This file is created to augment additional informatioin
+# to the <model>_capi.c file. 
+#
+# List of <meta .../> tags that were found in the Description fields
+# of blocks. These are passed on verbatim to the msr kernel
 
-#include "model_meta.h"
-
-/* List of <meta .../> tags that were found in the Description fields
- * of blocks. These are passed on verbatim to the msr kernel */
-paramMeta_t paramMeta[] = {
 %with CompiledModel 
   %with BlockHierarchyMap
     %foreach ss = NumSubsystems
       %foreach block = Subsystem[ss].NumBlocks
         %assign x = [%<ss>, %<block>]
         %if ISFIELD(Subsystem[ss].Block[block], "Description") && \
-              Subsystem[ss].Block[block].Description != ""
+              !ISEMPTY(Subsystem[ss].Block[block].Description)
           %assign descr = STRING(Subsystem[ss].Block[block].Description)
           %assign y = FEVAL("get_meta_tag",descr)
-          {"%<SLibMangledGrBlockPath(x)>", "%<y>"},
+          %if !ISEMPTY(y)
+"%<SLibMangledGrBlockPath(x)>", %<y>
+          %endif
         %endif
       %endforeach
     %endforeach
   %endwith
 %endwith
-        {"",""}
-};
 %closefile meta

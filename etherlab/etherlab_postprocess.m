@@ -10,9 +10,15 @@ function etherlab_postprocess(modelName,buildInfo)
 % The following .tlc command parses <model>.rtw to gather parameter
 % specific information from the Description field of the blocks,
 % such as a Read-Only flag, ENUMerations,
-tlcCmd = ['tlc -r ' modelName '.rtw' ...
+fprintf('### Generating parameter meta information: %s_meta.txt\n', modelName);
+
+% Remove lines with Simulink's stored internal data
+sysCmd = ['sed "/Value.*SLData([0-9]*)/d" ' modelName '.rtw ' ...
+        ' > ' modelName '_mod.rtw'];
+system(sysCmd);
+
+tlcCmd = ['tlc -r ' modelName '_mod.rtw' ...
         ' ' which('get_description.tlc') ...
-        ' -acFile="' modelName '_meta_data.c"'...
+        ' -acFile="' modelName '_meta.txt"'...
         ' -aMatlabRoot="' matlabroot '"'];
-fprintf('### Generating parameter meta information\n%s\n', tlcCmd);
-%eval(tlcCmd);
+eval(tlcCmd);
