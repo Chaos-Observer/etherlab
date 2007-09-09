@@ -1,7 +1,7 @@
 moduledir = $(prefix)/modules
-module_DATA = rt_kernel.ko
+module_DATA = rt_kernel.ko rt_test.ko
 
-EXTRA_DIST = rt_main.c rt_main.h rt_fio.c
+EXTRA_DIST = rt_main.c rt_main.h rt_fio.c rt_vars.c rt_vars.h test_vars.c
 
 all: $(module_DATA)
 
