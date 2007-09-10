@@ -14,6 +14,8 @@ dist_ethercat_DATA = \
         bk1120_in.c  bk1120_in.tlc  bk1120_check.m \
         bk1120_out.c bk1120_out.tlc
 
+include_HEADERS = ecdb_private.h
+
 if EXPERIMENTAL
 dist_ethercat_DATA += 
 #        bk1120_out.c bk1120_out.tlc
