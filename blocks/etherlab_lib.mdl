@@ -1,6 +1,6 @@
 Library {
   Name			  "etherlab_lib"
-  Version		  6.4
+  Version		  6.5
   MdlSubVersion		  0
   SavedCharacterEncoding  "ISO-8859-1"
   LibraryType		  "BlockLibrary"
@@ -32,10 +32,10 @@ Library {
   Creator		  "rich"
   UpdateHistory		  "UpdateHistoryNever"
   ModifiedByFormat	  "%<Auto>"
-  LastModifiedBy	  "rich"
+  LastModifiedBy	  "etl"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Thu Aug 23 01:08:12 2007"
-  ModelVersionFormat	  "1.%<AutoIncrement:276>"
+  LastModifiedDate	  "Mon Sep 10 10:16:31 2007"
+  ModelVersionFormat	  "1.%<AutoIncrement:279>"
   ConfigurationManager	  "rcs"
   LinearizationMsg	  "none"
   Profile		  off
@@ -129,7 +129,7 @@ Library {
   }
   System {
     Name		    "etherlab_lib"
-    Location		    [800, 422, 1395, 815]
+    Location		    [660, 559, 1297, 715]
     Open		    on
     ModelBrowserVisibility  off
     ModelBrowserWidth	    200
@@ -154,7 +154,7 @@ Library {
       MaskHideContents	      off
       System {
 	Name			"EtherCAT"
-	Location		[763, 196, 1260, 564]
+	Location		[603, 223, 1100, 591]
 	Open			on
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
@@ -235,10 +235,9 @@ Library {
 	  MaskPromptString	  "Master|Slave Index|Device Model |Output Typ"
 "e |Output Full Scale|Output Offset|Output Data Type|Status Output|Output Filt"
 "er|LPF Time Constant (sec)|Sample Time"
-	  MaskStyleString	  "edit,edit,popup(EL3102|EL3104|EL3108|EL3112"
-"|EL3114|EL3122|EL3124|EL3142|EL3144|EL3148|EL3152|EL3154|EL3158|EL3162|EL3164"
-"|EL3168),popup(Vector Output|Separate Outputs),edit,edit,popup(Raw bits|Doubl"
-"e|Double with scale and offset),checkbox,checkbox,edit,edit"
+	  MaskStyleString	  "edit,edit,popup(EL3102|EL3152|EL3162),popup"
+"(Vector Output|Separate Outputs),edit,edit,popup(Raw bits|Double|Double with "
+"scale and offset),checkbox,checkbox,edit,edit"
 	  MaskTunableValueString  "off,off,off,off,off,off,off,off,off,off,off"
 	  MaskCallbackString	  "|||el31xx_check('output_type');\n|||el31xx_"
 "check('dtype');||el31xx_check('filter');||"
@@ -312,9 +311,8 @@ Library {
 "g <tt>-1</tt> will try to set the time using back propagation.\n"
 	  MaskPromptString	  "Master|Slave Index|Device Model |Input Type"
 " |Status Output|Sample Time (-1 for inherited)"
-	  MaskStyleString	  "edit,edit,popup(EL4102|EL4104|EL4108|EL4112"
-"|EL4114|EL4118|EL4122|EL4124|EL4128|EL4132|EL4134|EL4138),popup(Vector Input|"
-"Separate Inputs),checkbox,edit"
+	  MaskStyleString	  "edit,edit,popup(EL4102|EL4132),popup(Vector"
+" Input|Separate Inputs),checkbox,edit"
 	  MaskTunableValueString  "off,off,off,off,off,off"
 	  MaskCallbackString	  "|||el41xx_check('input_type');\n||"
 	  MaskEnableString	  "on,on,on,on,off,on"
@@ -323,8 +321,8 @@ Library {
 	  MaskVarAliasString	  ",,,,,"
 	  MaskVariables		  "master=@1;index=&2;model=&3;input_type=@4;s"
 "tatus=@5;tsample=@6;"
-	  MaskInitialization	  "f = {'10V','4..20mA', ...\n    '0..20mA','±"
-"10V'};\nfunc = char(f(str2num(model(5))+1));\n"
+	  MaskInitialization	  "f = {'10V','4..20mA', ...\n    '0..20mA','"
+"±10V'};\nfunc = char(f(str2num(model(5))+1));\n"
 	  MaskDisplay		  "fprintf(...\n    '%s\\n%s AOut\\nM:%i Idx:%"
 "s',...\n    model,...\n    func,...\n    master,...\n    index)\n\nport_label"
 "('input',1,'D')\n"
@@ -378,9 +376,9 @@ Library {
 "rited sample time."
 	  MaskPromptString	  "Master|Slave Index|Device Model|Output Type"
 "|Output Data Type|Sample Time"
-	  MaskStyleString	  "edit,edit,popup(EL1002|EL1004|EL1004v2|EL10"
-"08|EL1012|EL1014|EL1018),popup(1-Byte Output|Vector Output|Separate Outputs),"
-"popup(Same as Input|double|single|Inherited via back propagation),edit"
+	  MaskStyleString	  "edit,edit,popup(EL1004v2|EL1014v2|EL1004|EL"
+"1014),popup(1-Byte Output|Vector Output|Separate Outputs),popup(Same as Input"
+"|double|single|Inherited via back propagation),edit"
 	  MaskTunableValueString  "off,off,off,off,off,off"
 	  MaskCallbackString	  "|||||"
 	  MaskEnableString	  "on,on,on,on,on,on"
@@ -444,8 +442,8 @@ Library {
 "le time, choose -1 for inherited sample time."
 	  MaskPromptString	  "Master|Slave Index|Device Model |Input Type"
 " |Status Output |Sample Time (-1 for inherited)"
-	  MaskStyleString	  "edit,edit,popup(EL2002|EL2004|EL2032),popup"
-"(1-Byte Input|Vector Input|Separate Inputs),checkbox,edit"
+	  MaskStyleString	  "edit,edit,popup(EL2004v2|EL2032v2|EL2004|EL"
+"2032),popup(1-Byte Input|Vector Input|Separate Inputs),checkbox,edit"
 	  MaskTunableValueString  "off,off,off,off,off,off"
 	  MaskCallbackString	  "||el2xxx_check('model');|el2xxx_check('inpu"
 "t_type');||"
@@ -461,7 +459,7 @@ Library {
 	  MaskIconOpaque	  on
 	  MaskIconRotate	  "none"
 	  MaskIconUnits		  "autoscale"
-	  MaskValueString	  "0|0|EL2004|Vector Input|off|-1"
+	  MaskValueString	  "0|0|EL2004v2|Vector Input|off|-1"
 	  MaskTabNameString	  ",,,,,"
 	}
 	Block {

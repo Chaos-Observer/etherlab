@@ -38,7 +38,17 @@ struct el2xxx_dev el2008 = {8,"Beckhoff_EL2008", "Beckhoff_EL2008_PDO_Outputs"};
 struct el2xxx_dev el2032 = {2,"Beckhoff_EL2032", "Beckhoff_EL2032_PDO_Outputs",
                                         "Beckhoff_EL2032_PDO_Status"};
 
+struct el2xxx_dev el2002v2 = {2,"Beckhoff_EL2002", "Beckhoff_EL2002v2_PDO_Outputs"};
+struct el2xxx_dev el2004v2 = {4,"Beckhoff_EL2004", "Beckhoff_EL2004v2_PDO_Outputs"};
+struct el2xxx_dev el2008v2 = {8,"Beckhoff_EL2008", "Beckhoff_EL2008v2_PDO_Outputs"};
+struct el2xxx_dev el2032v2 = {2,"Beckhoff_EL2032", "Beckhoff_EL2032v2_PDO_Outputs",
+                                        "Beckhoff_EL2032v2_PDO_Status"};
+
 struct supportedDevice supportedDevices[] = {
+        {"EL2002v2", &el2002v2},
+        {"EL2004v2", &el2004v2},
+        {"EL2008v2", &el2008v2},
+        {"EL2032v2", &el2032v2},
         {"EL2002", &el2002},
         {"EL2004", &el2004},
         {"EL2008", &el2008},
