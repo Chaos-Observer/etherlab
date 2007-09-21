@@ -34,8 +34,8 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "ml"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Thu Sep 13 09:54:33 2007"
-  ModelVersionFormat	  "1.%<AutoIncrement:280>"
+  LastModifiedDate	  "Fri Sep 21 14:47:03 2007"
+  ModelVersionFormat	  "1.%<AutoIncrement:296>"
   ConfigurationManager	  "rcs"
   LinearizationMsg	  "none"
   Profile		  off
@@ -129,7 +129,7 @@ Library {
   }
   System {
     Name		    "etherlab_lib"
-    Location		    [660, 559, 1297, 715]
+    Location		    [85, 382, 712, 541]
     Open		    on
     ModelBrowserVisibility  off
     ModelBrowserWidth	    200
@@ -154,7 +154,7 @@ Library {
       MaskHideContents	      off
       System {
 	Name			"EtherCAT"
-	Location		[603, 223, 1100, 591]
+	Location		[261, 227, 758, 595]
 	Open			on
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
@@ -264,7 +264,7 @@ Library {
 	  BlockType		  "S-Function"
 	  Name			  "AOUT_0"
 	  Ports			  [1]
-	  Position		  [180, 80, 260, 120]
+	  Position		  [185, 80, 265, 120]
 	  BackgroundColor	  "yellow"
 	  FunctionName		  "el41xx"
 	  Parameters		  "master,index,model,input_type,status,tsampl"
@@ -321,8 +321,8 @@ Library {
 	  MaskVarAliasString	  ",,,,,"
 	  MaskVariables		  "master=@1;index=&2;model=&3;input_type=@4;s"
 "tatus=@5;tsample=@6;"
-	  MaskInitialization	  "f = {'10V','4..20mA', ...\n    '0..20mA','±"
-"10V'};\nfunc = char(f(str2num(model(5))+1));\n"
+	  MaskInitialization	  "f = {'10V','4..20mA', ...\n    '0..20mA','"
+"±10V'};\nfunc = char(f(str2num(model(5))+1));\n"
 	  MaskDisplay		  "fprintf(...\n    '%s\\n%s AOut\\nM:%i Idx:%"
 "s',...\n    model,...\n    func,...\n    master,...\n    index)\n\nport_label"
 "('input',1,'D')\n"
@@ -607,7 +607,7 @@ Library {
 	  BlockType		  "S-Function"
 	  Name			  "K-Bus Out"
 	  Ports			  [1]
-	  Position		  [180, 259, 260, 301]
+	  Position		  [185, 259, 265, 301]
 	  BackgroundColor	  "yellow"
 	  FunctionName		  "bk1120_out"
 	  Parameters		  "master,index,kbus_offset,op_type,swap,tsamp"
@@ -652,6 +652,40 @@ Library {
 	  MaskIconUnits		  "autoscale"
 	  MaskValueString	  "0|'1'|0|Bit0|off|-1"
 	  MaskTabNameString	  ",,,,,"
+	}
+	Block {
+	  BlockType		  "S-Function"
+	  Name			  "MSD_0"
+	  Ports			  [2, 2]
+	  Position		  [185, 154, 305, 221]
+	  BackgroundColor	  "yellow"
+	  FunctionName		  "moog_msd"
+	  Parameters		  "master,index,tsample,iomode"
+	  MaskType		  "Moog MSC"
+	  MaskDescription	  "Moog Servodrive Controller"
+	  MaskPromptString	  "Master|Slave Index|Sample Time|Input/Output"
+" Mode"
+	  MaskStyleString	  "edit,edit,edit,popup(Inputs and Outputs|Inp"
+"uts only|Outputs only)"
+	  MaskTunableValueString  "off,off,off,off"
+	  MaskCallbackString	  "|||moog_msd_callback('display_callback',gcb"
+")"
+	  MaskEnableString	  "on,on,on,on"
+	  MaskVisibilityString	  "on,on,on,on"
+	  MaskToolTipString	  "on,on,on,on"
+	  MaskVarAliasString	  ",,,"
+	  MaskVariables		  "master=@1;index=&2;tsample=@3;iomode=@4;"
+	  MaskInitialization	  "moog_msd_callback('display_callback',gcb)"
+	  MaskDisplay		  "fprintf('Moog Servo Drive\\nM:%i Idx:%s', m"
+"aster, index)port_label('input', 1, 'ctl') port_label('input', 2, 'v')port_la"
+"bel('output', 1, 'sts') port_label('output', 2, 'v')"
+	  MaskSelfModifiable	  on
+	  MaskIconFrame		  on
+	  MaskIconOpaque	  on
+	  MaskIconRotate	  "none"
+	  MaskIconUnits		  "autoscale"
+	  MaskValueString	  "0|0|0|Inputs and Outputs"
+	  MaskTabNameString	  ",,,"
 	}
 	Block {
 	  BlockType		  "S-Function"

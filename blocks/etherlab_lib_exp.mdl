@@ -34,8 +34,8 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "ml"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Fri Sep 21 14:26:53 2007"
-  ModelVersionFormat	  "1.%<AutoIncrement:293>"
+  LastModifiedDate	  "Fri Sep 21 14:45:15 2007"
+  ModelVersionFormat	  "1.%<AutoIncrement:295>"
   ConfigurationManager	  "rcs"
   LinearizationMsg	  "none"
   Profile		  off
@@ -372,7 +372,7 @@ Library {
       MaskHideContents	      off
       System {
 	Name			"EtherCAT"
-	Location		[264, 227, 761, 595]
+	Location		[468, 105, 965, 473]
 	Open			on
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
@@ -482,7 +482,7 @@ Library {
 	  BlockType		  "S-Function"
 	  Name			  "AOUT_0"
 	  Ports			  [1]
-	  Position		  [180, 80, 260, 120]
+	  Position		  [185, 80, 265, 120]
 	  BackgroundColor	  "yellow"
 	  FunctionName		  "el41xx"
 	  Parameters		  "master,index,model,input_type,status,tsampl"
@@ -825,7 +825,7 @@ Library {
 	  BlockType		  "S-Function"
 	  Name			  "K-Bus Out"
 	  Ports			  [1]
-	  Position		  [180, 259, 260, 301]
+	  Position		  [185, 259, 265, 301]
 	  BackgroundColor	  "yellow"
 	  FunctionName		  "bk1120_out"
 	  Parameters		  "master,index,kbus_offset,op_type,swap,tsamp"
@@ -875,7 +875,7 @@ Library {
 	  BlockType		  "S-Function"
 	  Name			  "MSD_0"
 	  Ports			  [2, 2]
-	  Position		  [190, 151, 405, 209]
+	  Position		  [185, 154, 305, 221]
 	  BackgroundColor	  "yellow"
 	  FunctionName		  "moog_msd"
 	  Parameters		  "master,index,tsample,iomode"
