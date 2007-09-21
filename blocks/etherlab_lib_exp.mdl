@@ -34,8 +34,8 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "ml"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Fri Sep 21 10:20:01 2007"
-  ModelVersionFormat	  "1.%<AutoIncrement:285>"
+  LastModifiedDate	  "Fri Sep 21 14:26:53 2007"
+  ModelVersionFormat	  "1.%<AutoIncrement:293>"
   ConfigurationManager	  "rcs"
   LinearizationMsg	  "none"
   Profile		  off
@@ -156,7 +156,7 @@ Library {
   }
   System {
     Name		    "etherlab_lib_exp"
-    Location		    [821, 500, 1416, 893]
+    Location		    [234, 429, 829, 822]
     Open		    on
     ModelBrowserVisibility  off
     ModelBrowserWidth	    200
@@ -372,7 +372,7 @@ Library {
       MaskHideContents	      off
       System {
 	Name			"EtherCAT"
-	Location		[837, 440, 1334, 808]
+	Location		[264, 227, 761, 595]
 	Open			on
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
@@ -875,29 +875,35 @@ Library {
 	  BlockType		  "S-Function"
 	  Name			  "MSD_0"
 	  Ports			  [2, 2]
-	  Position		  [180, 164, 280, 211]
+	  Position		  [190, 151, 405, 209]
 	  BackgroundColor	  "yellow"
 	  FunctionName		  "moog_msd"
-	  Parameters		  "master,index,tsample"
+	  Parameters		  "master,index,tsample,iomode"
 	  MaskType		  "Moog MSC"
 	  MaskDescription	  "Moog Servodrive Controller"
-	  MaskPromptString	  "Master|Slave Index|Sample Time"
-	  MaskStyleString	  "edit,edit,edit"
-	  MaskTunableValueString  "off,off,off"
-	  MaskCallbackString	  "||"
-	  MaskEnableString	  "on,on,on"
-	  MaskVisibilityString	  "on,on,on"
-	  MaskToolTipString	  "on,on,on"
-	  MaskVarAliasString	  ",,"
-	  MaskVariables		  "master=@1;index=&2;tsample=@3;"
-	  MaskDisplay		  "fprintf(...\n    'Moog Servo Drive\\nM:%i I"
-"dx:%s',...\n    master,...\n    index)\n"
+	  MaskPromptString	  "Master|Slave Index|Sample Time|Input/Output"
+" Mode"
+	  MaskStyleString	  "edit,edit,edit,popup(Inputs and Outputs|Inp"
+"uts only|Outputs only)"
+	  MaskTunableValueString  "off,off,off,off"
+	  MaskCallbackString	  "|||moog_msd_callback('display_callback',gcb"
+")"
+	  MaskEnableString	  "on,on,on,on"
+	  MaskVisibilityString	  "on,on,on,on"
+	  MaskToolTipString	  "on,on,on,on"
+	  MaskVarAliasString	  ",,,"
+	  MaskVariables		  "master=@1;index=&2;tsample=@3;iomode=@4;"
+	  MaskInitialization	  "moog_msd_callback('display_callback',gcb)"
+	  MaskDisplay		  "fprintf('Moog Servo Drive\\nM:%i Idx:%s', m"
+"aster, index)port_label('input', 1, 'ctl') port_label('input', 2, 'v')port_la"
+"bel('output', 1, 'sts') port_label('output', 2, 'v')"
+	  MaskSelfModifiable	  on
 	  MaskIconFrame		  on
 	  MaskIconOpaque	  on
 	  MaskIconRotate	  "none"
 	  MaskIconUnits		  "autoscale"
-	  MaskValueString	  "0|0|0"
-	  MaskTabNameString	  ",,"
+	  MaskValueString	  "0|0|0|Inputs and Outputs"
+	  MaskTabNameString	  ",,,"
 	}
 	Block {
 	  BlockType		  "S-Function"

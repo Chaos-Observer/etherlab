@@ -15,10 +15,11 @@
 #include "ethercat_ss_funcs.h"
 #include "ss_analog_in_funcs.c"
 
-#define PARAM_COUNT 3
+#define PARAM_COUNT 4
 #define MASTER     ((uint_T)mxGetScalar(ssGetSFcnParam(S, 0)))
 #define INDEX                          (ssGetSFcnParam(S, 1))
 #define TSAMPLE            (mxGetScalar(ssGetSFcnParam(S, 2)))
+#define IOMODE    ((uint_T)(mxGetScalar(ssGetSFcnParam(S, 3))))
 
 /*====================*
  * S-function methods *
@@ -45,33 +46,38 @@ static void mdlInitializeSizes(SimStruct *S)
     /*
      * Set Inputs and Outputs
      */
-    if (!ssSetNumInputPorts(S, 2)) return;
-    if (!ssSetNumOutputPorts(S, 2)) return;
 
-    /* control word */
-    ssSetInputPortDataType(S, 0, SS_UINT16);
-    ssSetInputPortWidth(S, 0, 1);
-    ssSetInputPortDirectFeedThrough(S, 0, 0);
+    if (IOMODE == 1 || IOMODE == 2) {
 
-    /* target velocity */
-    ssSetInputPortDataType(S, 1, SS_INT32);
-    ssSetInputPortWidth(S, 1, 1);
-    ssSetInputPortDirectFeedThrough(S, 1, 0);
+        if (!ssSetNumInputPorts(S, 2)) return;
+        /* control word */
+        ssSetInputPortDataType(S, 0, SS_UINT16);
+        ssSetInputPortWidth(S, 0, 1);
+        ssSetInputPortDirectFeedThrough(S, 0, 0);
 
-    /* status word */
-    ssSetOutputPortDataType(S, 0, SS_UINT16);
-    ssSetOutputPortWidth(S, 0, 1);
+        /* target velocity */
+        ssSetInputPortDataType(S, 1, SS_INT32);
+        ssSetInputPortWidth(S, 1, 1);
+        ssSetInputPortDirectFeedThrough(S, 1, 0);
+    }
+    if (IOMODE == 1 || IOMODE == 3) {
+        if (!ssSetNumOutputPorts(S, 2)) return;
 
-    /* current velocity */
-    ssSetOutputPortDataType(S, 1, SS_INT32);
-    ssSetOutputPortWidth(S, 1, 1);
+        /* status word */
+        ssSetOutputPortDataType(S, 0, SS_UINT16);
+        ssSetOutputPortWidth(S, 0, 1);
+
+        /* current velocity */
+        ssSetOutputPortDataType(S, 1, SS_INT32);
+        ssSetOutputPortWidth(S, 1, 1);
+    }
 
     ssSetNumSampleTimes(S, 1);
     ssSetNumContStates(S, 0);
     ssSetNumDiscStates(S, 0);
     ssSetNumRWork(S, 0);
     ssSetNumIWork(S, 0);
-    ssSetNumPWork(S, 4);
+    ssSetNumPWork(S, IOMODE == 1 ? 4 : 2); /* must always be 4 */
     ssSetNumModes(S, 0);
     ssSetNumNonsampledZCs(S, 0);
 
@@ -129,18 +135,44 @@ static void mdlRTW(SimStruct *S)
 {
     int32_T master = MASTER;
     const char *addr = getString(S, INDEX);
+    uint8_T ioMode = IOMODE;
+    uint8_T inputs = ioMode == 1 || ioMode == 2;
+    uint8_T outputs = ioMode == 1 || ioMode == 3;
 
     if (!ssWriteRTWScalarParam(S, "MasterId", &master, SS_INT32))
         return;
     if (!ssWriteRTWStrParam(S, "SlaveAddr", addr))
         return;
-    if (!ssWriteRTWWorkVect(S, "PWork", 4,
-                "ControlWord", 1,
-                "TargetVelocity", 1,
-                "StatusWord", 1,
-                "CurrentVelocity", 1
-                ))
+    if (!ssWriteRTWScalarParam(S, "Inputs", &inputs, SS_UINT8))
         return;
+    if (!ssWriteRTWScalarParam(S, "Outputs", &outputs, SS_UINT8))
+        return;
+
+    switch (ioMode) {
+        case 1: /* in and out */
+            if (!ssWriteRTWWorkVect(S, "PWork", 4,
+                        "ControlWord", 1,
+                        "TargetVelocity", 1,
+                        "StatusWord", 1,
+                        "CurrentVelocity", 1
+                        ))
+                return;
+            break;
+        case 2: /* in only */
+            if (!ssWriteRTWWorkVect(S, "PWork", 2,
+                        "StatusWord", 1,
+                        "CurrentVelocity", 1
+                        ))
+                return;
+            break;
+        case 3: /* out only */
+            if (!ssWriteRTWWorkVect(S, "PWork", 2,
+                        "ControlWord", 1,
+                        "TargetVelocity", 1
+                        ))
+                return;
+            break;
+    }
 }
 
 /*======================================================*

@@ -34,14 +34,18 @@
    */
   %<RegisterEtherCATSlaveBlock(block, "0x00000016, 0x00000000", \
       MasterId, SlaveAddr, 1)>
-  %<RegisterEtherCATSlavePDO(block, "0x6040, 0", \
-      LibBlockPWork(ControlWord,"","",0))>
-  %<RegisterEtherCATSlavePDO(block, "0x60FF, 0", \
-      LibBlockPWork(TargetVelocity,"","",0))>
-  %<RegisterEtherCATSlavePDO(block, "0x6041, 0", \
-      LibBlockPWork(StatusWord,"","",0))>
-  %<RegisterEtherCATSlavePDO(block, "0x606C, 0", \
-      LibBlockPWork(CurrentVelocity,"","",0))>
+  %if Inputs
+    %<RegisterEtherCATSlavePDO(block, "0x6041, 0", \
+        LibBlockPWork(StatusWord,"","",0))>
+    %<RegisterEtherCATSlavePDO(block, "0x606C, 0", \
+        LibBlockPWork(CurrentVelocity,"","",0))>
+  %endif
+  %if Outputs
+    %<RegisterEtherCATSlavePDO(block, "0x6040, 0", \
+        LibBlockPWork(ControlWord,"","",0))>
+    %<RegisterEtherCATSlavePDO(block, "0x60FF, 0", \
+        LibBlockPWork(TargetVelocity,"","",0))>
+  %endif
 %endfunction
 
 
@@ -52,31 +56,35 @@
   /*
    * %<Type> Block: %<Name> 
    */
-  %%
-  %% First the control outputs
-  %%
-  /* %<Type> Block: %<Name> */
-  %assign in = LibBlockInputSignal(0,"","",0)
-  %assign out = "*(uint16_T *)(%<LibBlockPWork(ControlWord,"","",0)>)"
-  %<out> = %<in>; /* write control word */
-  %%
-  %% Now for the data outputs
-  %%
-  %assign in = LibBlockInputSignal(1,"","",0)
-  %assign out = "*(int32_T *)(%<LibBlockPWork(TargetVelocity,"","",0)>)"
-  %<out> = %<in>; /* write target velocity */
-  %%
-  %% Read the status word
-  %%
-  %assign in = "*(uint16_T *)(%<LibBlockPWork(StatusWord,"","",0)>)"
-  %assign out = LibBlockOutputSignal(0,"","",0)
-  %<out> = %<in>; /* read status word */
-  %%
-  %% Read the current velocity
-  %%
-  %assign in = "*(int32_T *)(%<LibBlockPWork(CurrentVelocity,"","",0)>)"
-  %assign out = LibBlockOutputSignal(1,"","",0)
-  %<out> = %<in>; /* read current velocity */
+  %if Inputs
+    %%
+    %% Read the status word
+    %%
+    %assign in = "*(uint16_T *)(%<LibBlockPWork(StatusWord,"","",0)>)"
+    %assign out = LibBlockOutputSignal(0,"","",0)
+    %<out> = %<in>; /* read status word */
+    %%
+    %% Read the current velocity
+    %%
+    %assign in = "*(int32_T *)(%<LibBlockPWork(CurrentVelocity,"","",0)>)"
+    %assign out = LibBlockOutputSignal(1,"","",0)
+    %<out> = %<in>; /* read current velocity */
+  %endif  
+  %if Outputs
+    %%
+    %% First the control outputs
+    %%
+    /* %<Type> Block: %<Name> */
+    %assign in = LibBlockInputSignal(0,"","",0)
+    %assign out = "*(uint16_T *)(%<LibBlockPWork(ControlWord,"","",0)>)"
+    %<out> = %<in>; /* write control word */
+    %%
+    %% Now for the data outputs
+    %%
+    %assign in = LibBlockInputSignal(1,"","",0)
+    %assign out = "*(int32_T *)(%<LibBlockPWork(TargetVelocity,"","",0)>)"
+    %<out> = %<in>; /* write target velocity */
+  %endif
 %endfunction
 
 
