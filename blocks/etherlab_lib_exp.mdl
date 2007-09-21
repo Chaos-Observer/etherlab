@@ -34,8 +34,8 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "ml"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Thu Sep 13 09:55:00 2007"
-  ModelVersionFormat	  "1.%<AutoIncrement:279>"
+  LastModifiedDate	  "Fri Sep 21 10:20:01 2007"
+  ModelVersionFormat	  "1.%<AutoIncrement:285>"
   ConfigurationManager	  "rcs"
   LinearizationMsg	  "none"
   Profile		  off
@@ -372,7 +372,7 @@ Library {
       MaskHideContents	      off
       System {
 	Name			"EtherCAT"
-	Location		[603, 223, 1100, 591]
+	Location		[837, 440, 1334, 808]
 	Open			on
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
@@ -539,8 +539,8 @@ Library {
 	  MaskVarAliasString	  ",,,,,"
 	  MaskVariables		  "master=@1;index=&2;model=&3;input_type=@4;s"
 "tatus=@5;tsample=@6;"
-	  MaskInitialization	  "f = {'10V','4..20mA', ...\n    '0..20mA','±"
-"10V'};\nfunc = char(f(str2num(model(5))+1));\n"
+	  MaskInitialization	  "f = {'10V','4..20mA', ...\n    '0..20mA','"
+"±10V'};\nfunc = char(f(str2num(model(5))+1));\n"
 	  MaskDisplay		  "fprintf(...\n    '%s\\n%s AOut\\nM:%i Idx:%"
 "s',...\n    model,...\n    func,...\n    master,...\n    index)\n\nport_label"
 "('input',1,'D')\n"
@@ -870,6 +870,34 @@ Library {
 	  MaskIconUnits		  "autoscale"
 	  MaskValueString	  "0|'1'|0|Bit0|off|-1"
 	  MaskTabNameString	  ",,,,,"
+	}
+	Block {
+	  BlockType		  "S-Function"
+	  Name			  "MSD_0"
+	  Ports			  [2, 2]
+	  Position		  [180, 164, 280, 211]
+	  BackgroundColor	  "yellow"
+	  FunctionName		  "moog_msd"
+	  Parameters		  "master,index,tsample"
+	  MaskType		  "Moog MSC"
+	  MaskDescription	  "Moog Servodrive Controller"
+	  MaskPromptString	  "Master|Slave Index|Sample Time"
+	  MaskStyleString	  "edit,edit,edit"
+	  MaskTunableValueString  "off,off,off"
+	  MaskCallbackString	  "||"
+	  MaskEnableString	  "on,on,on"
+	  MaskVisibilityString	  "on,on,on"
+	  MaskToolTipString	  "on,on,on"
+	  MaskVarAliasString	  ",,"
+	  MaskVariables		  "master=@1;index=&2;tsample=@3;"
+	  MaskDisplay		  "fprintf(...\n    'Moog Servo Drive\\nM:%i I"
+"dx:%s',...\n    master,...\n    index)\n"
+	  MaskIconFrame		  on
+	  MaskIconOpaque	  on
+	  MaskIconRotate	  "none"
+	  MaskIconUnits		  "autoscale"
+	  MaskValueString	  "0|0|0"
+	  MaskTabNameString	  ",,"
 	}
 	Block {
 	  BlockType		  "S-Function"
