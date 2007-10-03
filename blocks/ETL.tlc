@@ -35,7 +35,7 @@
       %<LibSetSourceFileSection(model_c, "Declarations", buf)>
 
       %openfile buf
-      const char *%<ETL.ErrStr>;
+      const char __attribute__((unused)) *%<ETL.ErrStr>;
       %closefile buf
       %<LibMdlStartCustomCode(buf, "header")>
   
