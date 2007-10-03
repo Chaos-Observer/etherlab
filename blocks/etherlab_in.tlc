@@ -1,0 +1,65 @@
+%implements "etherlab_in" "C"
+
+%%
+%% This TLC Implements the necessary IO Functions to communicate
+%% with the EtherLAB Generic IO Layer
+%%
+%% Copyright (C) 2006
+%% Richard Hacker
+%% IgH Essen GmbH
+%% 
+%% License: GPL
+
+%include "EtherLAB_IO.tlc"
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function BlockTypeSetup( block, system ) void
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  %<InitEtherLABIO()>
+%endfunction
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function BlockInstanceSetup( block, system ) void
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  %<InitEtherLABIOTask(block, system)>
+%endfunction
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function Start(block, system) Output
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  /* Input RT Variable %<Type> Block: %<VarName> 
+   * Registering destination variable with EtherLAB IO Signal Layer
+   */
+  %<GetEtherLABIO_Output(block, VarName, CTypeName)>
+%endfunction
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function Outputs( block, system ) Output
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  %if !EXISTS(Buffer)
+    %return
+  %endif
+
+  /* Input RT Variable %<Type> Block: %<VarName> 
+   */
+  %%
+  %assign rollVars = ["Y"]
+  %roll sigIdx = RollRegions, lcv = RollThreshold, block, ...
+        "Roller", rollVars
+    %if lcv == ""
+      %assign paramSettingIdx = sigIdx
+    %else
+      %if sigIdx == 0
+        %assign paramSettingIdx = lcv
+      %else
+        %assign paramSettingIdx = "%<lcv> + %<sigIdx>"
+      %endif
+    %endif
+    %<LibBlockOutputSignal(0,"",lcv,sigIdx)> =
+      ((%<CTypeName>*)&%<LibBlockPWork(Buffer,"","",0)>)[%<paramSettingIdx>];
+  %endroll
+%endfunction

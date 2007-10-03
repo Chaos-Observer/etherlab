@@ -34,8 +34,8 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "rich"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Sat Sep  8 17:12:37 2007"
-  ModelVersionFormat	  "1.%<AutoIncrement:276>"
+  LastModifiedDate	  "Sun Sep 30 19:51:07 2007"
+  ModelVersionFormat	  "1.%<AutoIncrement:282>"
   ConfigurationManager	  "rcs"
   LinearizationMsg	  "none"
   Profile		  off
@@ -156,7 +156,7 @@ Library {
   }
   System {
     Name		    "etherlab_lib_exp"
-    Location		    [800, 448, 1395, 841]
+    Location		    [800, 552, 1395, 945]
     Open		    on
     ModelBrowserVisibility  off
     ModelBrowserWidth	    200
@@ -372,7 +372,7 @@ Library {
       MaskHideContents	      off
       System {
 	Name			"EtherCAT"
-	Location		[586, 171, 1083, 539]
+	Location		[898, 132, 1395, 500]
 	Open			on
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
@@ -747,8 +747,8 @@ Library {
 ",off,off,off,off,off,off,off"
 	  MaskCallbackString	  "||el5101_check('Reload');|el5101_check('Ind"
 "exReset');|||||||||el5101_check('Latch');|el5101_check('Freq');||||"
-	  MaskEnableString	  "on,on,on,on,on,on,off,off,on,on,on,on,on,on"
-",on,on,on,on"
+	  MaskEnableString	  "on,on,on,on,on,off,off,off,on,on,on,on,on,o"
+"n,on,on,on,on"
 	  MaskVisibilityString	  "on,on,on,on,on,on,on,on,on,on,on,on,on,on,o"
 "n,on,on,on"
 	  MaskToolTipString	  "on,on,on,on,on,on,on,on,on,on,on,on,on,on,o"
@@ -1238,29 +1238,61 @@ Library {
     }
     Block {
       BlockType		      "S-Function"
+      Name		      "In"
+      Ports		      [0, 1]
+      Position		      [445, 210, 525, 250]
+      BackgroundColor	      "yellow"
+      FunctionName	      "etherlab_in"
+      Parameters	      "varname,src_dtype,len,scale,offset,out_dtype,ts"
+"ample"
+      MaskType		      "Generic Output Port"
+      MaskPromptString	      "Signal Name|Source Data Type|Array Length|Outpu"
+"t Scale|Output Offset|Block Output Data Type|Sample Time (-1 for inherited)"
+      MaskStyleString	      "edit,popup(boolean|int8|uint8|int16|uint16|int3"
+"2|uint32|single|double),edit,edit,edit,popup(Same as Source|Double|Double wit"
+"h Scale and Offset),edit"
+      MaskTunableValueString  "off,off,off,off,off,off,off"
+      MaskCallbackString      "||||||"
+      MaskEnableString	      "on,on,on,on,on,on,on"
+      MaskVisibilityString    "on,on,on,on,on,on,on"
+      MaskToolTipString	      "on,on,on,on,on,on,on"
+      MaskVarAliasString      ",,,,,,"
+      MaskVariables	      "varname=@1;src_dtype=@2;len=@3;scale=@4;offset="
+"@5;out_dtype=@6;tsample=@7;"
+      MaskDisplay	      "fprintf(varname)\n"
+      MaskIconFrame	      on
+      MaskIconOpaque	      on
+      MaskIconRotate	      "none"
+      MaskIconUnits	      "autoscale"
+      MaskValueString	      "'SIG01'|boolean|1|0|0|Same as Source|0"
+      MaskTabNameString	      ",,,,,,"
+    }
+    Block {
+      BlockType		      "S-Function"
       Name		      "Out"
       Ports		      [1]
       Position		      [445, 145, 525, 185]
       BackgroundColor	      "yellow"
       FunctionName	      "etherlab_out"
-      Parameters	      "name,optional,tsample"
+      Parameters	      "varname,dtype,tsample"
       MaskType		      "Generic Output Port"
-      MaskPromptString	      "Signal Name|Optional|Sample Time (-1 for inheri"
-"ted)"
-      MaskStyleString	      "edit,checkbox,edit"
+      MaskPromptString	      "Signal Name|Output Data Type|Sample Time (-1 fo"
+"r inherited)"
+      MaskStyleString	      "edit,popup(Inherited|boolean|int8|uint8|int16|u"
+"int16|int32|uint32|int64|uint64|single|double),edit"
       MaskTunableValueString  "off,off,off"
       MaskCallbackString      "||"
       MaskEnableString	      "on,on,on"
       MaskVisibilityString    "on,on,on"
       MaskToolTipString	      "on,on,on"
       MaskVarAliasString      ",,"
-      MaskVariables	      "name=@1;optional=@2;tsample=@3;"
-      MaskDisplay	      "fprintf(name)\n"
+      MaskVariables	      "varname=@1;dtype=@2;tsample=@3;"
+      MaskDisplay	      "fprintf(varname)\n"
       MaskIconFrame	      on
       MaskIconOpaque	      on
       MaskIconRotate	      "none"
       MaskIconUnits	      "autoscale"
-      MaskValueString	      "'SIG01'|off|-1"
+      MaskValueString	      "'SIG01'|Inherited|-1"
       MaskTabNameString	      ",,"
     }
     Block {

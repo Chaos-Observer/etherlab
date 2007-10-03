@@ -4,4 +4,6 @@ disp(['Precompiling functions in ' pwd]);
 mex taskinfo.c
 mex world_time.c
 mex -I@prefix@/include raise.c
+mex -I@prefix@/include etherlab_in.c
+mex -I@prefix@/include etherlab_out.c
 return
