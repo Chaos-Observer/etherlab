@@ -369,9 +369,9 @@ Makefile: $(MAKEFILE)
 	@ln -sf $< $@
 
 # Generate model symbol file
-msf.c: $(MODEL).xml
+msf.c: $(MODEL).xml $(MODEL).so
 	@echo Generating $@
-	@$(ETHERLAB_DIR)/bin/gen_msf.py $< $@
+	@$(ETHERLAB_DIR)/bin/gen_msf.py XML $(MODEL).xml SO_FILE $(MODEL).so $@
 
 ###################
 # Level 3 targets
@@ -384,6 +384,9 @@ $(MODEL).xml: gen_msf
 	@echo Generating XML Model Symbol File $(MODEL).xml
 	@./$< > $@
 
+$(MODEL).so: $(SYMBOL_OBJS) etherlab_buddy_data.o model_reg.o
+	$(cc) -shared -fpic -nostartfiles -o $@ $^
+
 ###################
 # Level 4 targets
 ###################
@@ -391,6 +394,10 @@ dump_capi.o: $(ETHERLAB_DIR)/src/buddy/dump_capi.c capi_init.c capi.h
 	@$(GCC_TEST_CMD) $< $(GCC_TEST_OUT)
 	$(cc) $(DEP) -c $(LOCAL_CFLAGS) \
                 `xml2-config --cflags` $(GCC_WALL_FLAG_MAX) -o $@ $<
+
+model_reg.o: $(ETHERLAB_DIR)/src/buddy/model_reg.c capi_init.c capi.h
+	@$(GCC_TEST_CMD) $< $(GCC_TEST_OUT)
+	$(cc) $(DEP) -c $(LOCAL_CFLAGS) $(GCC_WALL_FLAG_MAX) -o $@ $<
 
 # Remove all traces to the C-API from model.
 $(MODEL)_nocapi.c: $(MODEL).c

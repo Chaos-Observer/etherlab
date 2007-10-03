@@ -189,13 +189,25 @@ static long rtp_ioctl(
         case GET_MDL_PROPERTIES:
             {
                 struct mdl_properties properties;
+                int i;
+                int symbol_cnt = 0;
+
+                for (i = 0; i < rtw_model->model_symbols_cnt; i++) {
+                    symbol_cnt++;
+                }
+
+                for (i = 0; rtw_model->model_symbols_cnt; i++) {
+                    if (!strcmp(rtw_model->model_symbols[i].key, "SO_FILE"))
+                        break;
+                }
 
                 properties.rtB_len   = model->rtB_len;
                 properties.rtB_cnt   = model->rtB_cnt;
                 properties.numst     = rtw_model->numst;
                 properties.rtP_size  = rtw_model->rtP_size;
                 properties.base_rate = rtw_model->sample_period;
-                properties.symbol_len = rtw_model->symbol_len;
+                properties.symbol_len = rtw_model->model_symbols[i].len;
+                properties.symbol_cnt = symbol_cnt;
 
                 rv = copy_to_user((void *)data, &properties, 
                         sizeof(properties));
@@ -266,12 +278,27 @@ static long rtp_ioctl(
             break;
             
         case GET_MDL_DESCRIPTION:
-            pr_debug("Getting model symbol file\n");
-            pr_info("Getting model symbol file %u bytes\n", rtw_model->symbol_len);
-            if (copy_to_user((void *)data, rtw_model->symbols,
-                    rtw_model->symbol_len)) {
-                rv = -EFAULT;
-                break;
+            {
+                int i;
+
+                for (i = 0; i < rtw_model->model_symbols_cnt; i++) {
+                    if (!strcmp(rtw_model->model_symbols[i].key, "SO_FILE"))
+                        break;
+                }
+
+                if (i == rtw_model->model_symbols_cnt) {
+                    rv = -ENOENT;
+                    break;
+                }
+
+                pr_info("Getting model symbol file %s: %u bytes\n", 
+                        rtw_model->model_symbols[i].file_name,
+                        rtw_model->model_symbols[i].len);
+                if (copy_to_user((void *)data, rtw_model->model_symbols[i].data,
+                            rtw_model->model_symbols[i].len)) {
+                    rv = -EFAULT;
+                    break;
+                }
             }
             break;
 

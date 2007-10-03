@@ -21,7 +21,7 @@ struct task_stats {
 /* Here are the ioctl() commands to control the Process IO data stream 
  * between the Real-Time Process and the user space Buddy */
 
-#define FIO_MAGIC  '1'
+#define FIO_MAGIC  '2'
 
 /* Get the current write pointers in the blockIO and message buffers.
  * For the blockIO vector, data between this and the previous call to 
@@ -91,8 +91,8 @@ struct mdl_properties {
     size_t rtP_size;            // Size of model parameter structure
     unsigned long base_rate;    // Model's base rate in microseconds
     size_t symbol_len;          // Length of model symbol file
+    size_t symbol_cnt;          // Number of model symbol files
 };
-
 
 /***************************************************
  * The following ioctl commands are used by the 

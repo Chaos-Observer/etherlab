@@ -3,16 +3,30 @@
 import zlib
 import sys
 
-if len(sys.argv) < 3:
+# Need 3 + 2*n arguments
+if len(sys.argv) < 4 or (len(sys.argv) - 2) % 2:
     print """
-usage: %s <shared object> <model symbol file>
+usage: %s <model symbol file> \\
+             <object1_name> <object1_file> <object2_name> <object2_file> ...
+
+where: <model symbol file> is the name of the generated file
+       <objectX_name> is the name of the object to be included
+       <objectX_file> is the file name that will be compressed and included
 """ % sys.argv[0]
     sys.exit(0)
 
-f = open(sys.argv[1])
-z = zlib.compress(f.read())
+# Reverse argument list. Then we can use pop()
+sys.argv.reverse()
 
-g = open(sys.argv[2], 'w')
+sys.argv.pop()
+dest_file = sys.argv.pop()
+
+files = {}
+while len(sys.argv):
+    name, f = sys.argv.pop(), sys.argv.pop()
+    files[name] = f
+
+g = open(dest_file, 'w')
 
 g.write("""/* Model symbol file
  *
@@ -27,18 +41,23 @@ g.write("""/* Model symbol file
  */
 
 #include "msf.h"
-
-const char model_symbols[] =
 """)
 
-for i in xrange(len(z)):
-    if not i % 16: 
-        if i:
-            g.write('\"\n')
-        g.write('\t\"')
-    g.write('\\x%02x' % ord(z[i]))
-g.write('";\n\n')
-g.write(
-  'size_t model_symbol_len = sizeof(model_symbols)-1; /* %u */\n' 
-  % len(z)
-)
+g.write('\n')
+g.write('const int model_symbols_cnt = %i;\n\n' % len(files))
+g.write('const struct model_symbols model_symbols[] = {\n')
+
+for n in files.keys():
+    z = zlib.compress(open(files[n]).read())
+    g.write('\t{ "%s", "%s", %i, \n' % (n, files[n], len(z)))
+
+    g.write('\t  /* %s */\n' % files[n])
+    for i in xrange(len(z)):
+        if not i % 16: 
+            if i:
+                g.write('"\n')
+            g.write('\t  "')
+        g.write('\\x%02x' % ord(z[i]))
+    g.write('" },\n')
+g.write('\t  {NULL,},\n')
+g.write('};\n')

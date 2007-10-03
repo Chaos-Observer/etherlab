@@ -1,5 +1,6 @@
 #include <linux/limits.h>       // PATH_MAX
 #include <stddef.h>             // size_t
+#include "msf.h"
 
 struct rtw_model {
 	/** Block IO
@@ -34,8 +35,8 @@ struct rtw_model {
         int model_id;
 
         /* Variables used to pass model symbol to the buddy */
-        const char *symbols;
-        size_t symbol_len;
+        const struct model_symbols *model_symbols;
+        int model_symbols_cnt;
 
         const char *(*rt_OneStepMain)(double);
         const char *(*rt_OneStepTid)(unsigned int, double);
