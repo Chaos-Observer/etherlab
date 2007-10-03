@@ -52,7 +52,7 @@ xmlChar *my_convert(const char *str)
 }
 
 /* Creates a structure to describe block signals */
-void dump_rtBlockSignals(xmlNodePtr root_node)
+void dump_rtBlockSignals(xmlNodePtr root_node, unsigned int *maxSampTimeIndex)
 {
     char buf[10];
     unsigned sigIdx;
@@ -87,6 +87,9 @@ void dump_rtBlockSignals(xmlNodePtr root_node)
         dimIndex        = rtwCAPI_GetSignalDimensionIdx(bio, sigIdx);
         fxpIndex        = rtwCAPI_GetSignalFixPtIdx(bio, sigIdx);
         sampleTimeIndex = rtwCAPI_GetSignalSampleTimeIdx(bio, sigIdx);
+
+        if (sampleTimeIndex > *maxSampTimeIndex)
+            *maxSampTimeIndex = sampleTimeIndex;
 
         numDims = dimIndex > numDims ? dimIndex : numDims;
         numDataTypeMaps = 
@@ -163,12 +166,9 @@ void dump_rtBlockParameters(xmlNodePtr root_node)
 {
     char buf[10];
     unsigned paramIdx;
-    xmlNodePtr parameters_node, parameter_node;
+    xmlNodePtr parameters_node;
     rtwCAPI_ModelMappingInfo* mmi = &(rtmGetDataMapInfo(rtM).mmi);
-    const rtwCAPI_BlockParameters* prm = rtwCAPI_GetBlockParameters(mmi);
     char *path = NULL;
-    size_t max_path_len = 0;
-    xmlChar *utf8name;
 
     parameters_node = xmlNewChild(root_node, NULL, BAD_CAST "parameters", NULL);
     CHECK_ERR(!parameters_node, "xmlNewChild", err_no_mem);
@@ -179,6 +179,7 @@ void dump_rtBlockParameters(xmlNodePtr root_node)
 
     for (paramIdx = 0; paramIdx < rtwCAPI_GetNumBlockParameters(mmi); 
             paramIdx++) {
+#ifdef rtP
         const char *blockPath;
         const char *paramName;
         unsigned int dataTypeIndex;
@@ -186,6 +187,10 @@ void dump_rtBlockParameters(xmlNodePtr root_node)
         unsigned int fxpIndex;
         uintptr_t addr;
         size_t path_len;
+        size_t max_path_len = 0;
+        xmlChar *utf8name;
+        const rtwCAPI_BlockParameters* prm = rtwCAPI_GetBlockParameters(mmi);
+        xmlNodePtr parameter_node;
 
         blockPath = rtwCAPI_GetBlockParameterBlockPath(prm, paramIdx);
         paramName = rtwCAPI_GetBlockParameterName(prm, paramIdx);
@@ -242,6 +247,7 @@ void dump_rtBlockParameters(xmlNodePtr root_node)
         CHECK_ERR( 
                 !xmlNewProp(parameter_node, BAD_CAST "addrOffset", BAD_CAST buf),
                 "xmlNewProp", err_no_mem);
+#endif
     }
     free(path);
 }
@@ -411,7 +417,7 @@ void dump_dimensionMap(xmlNodePtr root_node)
     }
 }
 
-void dump_sampleTime(xmlNodePtr root_node)
+void dump_sampleTime(xmlNodePtr root_node, unsigned int maxSampTimeIndex)
 {
     char buf[20];
     unsigned idx;
@@ -424,7 +430,7 @@ void dump_sampleTime(xmlNodePtr root_node)
             BAD_CAST "sampleTimes", NULL);
     CHECK_ERR(!sampletimes_node, "xmlNewChild", err_no_mem);
 
-    snprintf(buf, sizeof(buf), "%u", NUMST);
+    snprintf(buf, sizeof(buf), "%u", maxSampTimeIndex);
     CHECK_ERR( !xmlNewProp(sampletimes_node, BAD_CAST "count", BAD_CAST buf),
             "xmlNewProp", err_no_mem);
 
@@ -432,7 +438,7 @@ void dump_sampleTime(xmlNodePtr root_node)
     CHECK_ERR( !xmlNewProp(sampletimes_node, BAD_CAST "tid01eq", BAD_CAST buf),
             "xmlNewProp", err_no_mem);
 
-    for (idx = 0; idx < NUMST; idx++) {
+    for (idx = 0; idx < maxSampTimeIndex; idx++) {
         real_T  *samplePeriodPtr;  /* pointer to sample time period value       */
         real_T  *sampleOffsetPtr;  /* pointer to sample time Offset value       */
         int8_T    tid;              /* task identifier  */
@@ -482,6 +488,7 @@ int main(int argc, char **argv)
 {
     xmlDocPtr doc = NULL;       /* document pointer */
     xmlNodePtr root_node;
+    unsigned int maxSampTimeIndex;
 
 #include "capi_init.c"
 
@@ -501,11 +508,11 @@ int main(int argc, char **argv)
             !xmlNewProp(root_node, BAD_CAST "modelname", BAD_CAST STR(MODEL)),
             "xmlNewProp", err_no_mem);
 
-    dump_rtBlockSignals(root_node);
+    dump_rtBlockSignals(root_node, &maxSampTimeIndex);
     dump_rtBlockParameters(root_node);
     dump_dataTypeMap(root_node);
     dump_dimensionMap(root_node);
-    dump_sampleTime(root_node);
+    dump_sampleTime(root_node, maxSampTimeIndex);
 
     xmlSaveFormatFileEnc(argc > 1 ? argv[1] : "-", doc, "UTF-8", 1);
     xmlFreeDoc(doc);
