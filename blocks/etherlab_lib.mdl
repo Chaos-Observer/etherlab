@@ -34,8 +34,8 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "ml"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Fri Sep 21 14:47:03 2007"
-  ModelVersionFormat	  "1.%<AutoIncrement:296>"
+  LastModifiedDate	  "Mon Oct  8 10:38:06 2007"
+  ModelVersionFormat	  "1.%<AutoIncrement:299>"
   ConfigurationManager	  "rcs"
   LinearizationMsg	  "none"
   Profile		  off
@@ -129,7 +129,7 @@ Library {
   }
   System {
     Name		    "etherlab_lib"
-    Location		    [85, 382, 712, 541]
+    Location		    [216, 705, 843, 864]
     Open		    on
     ModelBrowserVisibility  off
     ModelBrowserWidth	    200
@@ -154,7 +154,7 @@ Library {
       MaskHideContents	      off
       System {
 	Name			"EtherCAT"
-	Location		[261, 227, 758, 595]
+	Location		[999, 503, 1496, 871]
 	Open			on
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
@@ -657,7 +657,7 @@ Library {
 	  BlockType		  "S-Function"
 	  Name			  "MSD_0"
 	  Ports			  [2, 2]
-	  Position		  [185, 154, 305, 221]
+	  Position		  [325, 147, 460, 218]
 	  BackgroundColor	  "yellow"
 	  FunctionName		  "moog_msd"
 	  Parameters		  "master,index,tsample,iomode"
@@ -677,13 +677,14 @@ Library {
 	  MaskVariables		  "master=@1;index=&2;tsample=@3;iomode=@4;"
 	  MaskInitialization	  "moog_msd_callback('display_callback',gcb)"
 	  MaskDisplay		  "fprintf('Moog Servo Drive\\nM:%i Idx:%s', m"
-"aster, index)port_label('input', 1, 'ctl') port_label('input', 2, 'v')port_la"
-"bel('output', 1, 'sts') port_label('output', 2, 'v')"
+"aster, index) image(imread('moog.png'), [.3, .7, .4, .2]) port_label('input',"
+" 1, 'control') port_label('input', 2, 'v_tgt') port_label('output', 1, 'statu"
+"s') port_label('output', 2, 'v_cur')"
 	  MaskSelfModifiable	  on
 	  MaskIconFrame		  on
 	  MaskIconOpaque	  on
 	  MaskIconRotate	  "none"
-	  MaskIconUnits		  "autoscale"
+	  MaskIconUnits		  "normalized"
 	  MaskValueString	  "0|0|0|Inputs and Outputs"
 	  MaskTabNameString	  ",,,"
 	}
