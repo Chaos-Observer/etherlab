@@ -396,11 +396,11 @@ static int start_model(const char *model_name, unsigned int model_num)
                 &task_stats[st].time_step, &task_stats[st].overrun);
     }
 
-    syslog(LOG_DEBUG, "Preparing msr module socket port: %i\n", msr_port);
-    model->net_fd = prepare_tcp(msr_port, new_msr_client, msr_read, 
+    syslog(LOG_DEBUG, "Preparing msr module socket port: %i\n", msr_port + model_num);
+    model->net_fd = prepare_tcp(msr_port + model_num, new_msr_client, msr_read, 
                 msr_write, NULL);
     if (model->net_fd < 0) {
-        syslog(LOG_ERR, "Could not register network port %i", msr_port);
+        syslog(LOG_ERR, "Could not register network port %i", msr_port + model_num);
         goto out_prepare_tcp;
     }
 
@@ -481,6 +481,7 @@ static void open_model(int fd, void *d)
             }
             if (start_model(rtp_model_name.name, i))
                 exit(-1);
+            return;
         } else if (pid > 0) {
             // parent
 
