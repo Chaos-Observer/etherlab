@@ -1,34 +1,42 @@
 #!/usr/bin/env python
 
 import zlib
+import os.path
 import sys
 
-# Need 3 + 2*n arguments
-if len(sys.argv) < 4 or (len(sys.argv) - 2) % 2:
-    print """
-usage: %s <model symbol file> \\
-             <object1_name> <object1_file> <object2_name> <object2_file> ...
+def dump_file(dest, z, line_prefix):
+    for i in xrange(len(z)):
+        # Insert new line every 16 characters
+        if not i % 16: 
+            if i:
+                dest.write('"\n')
+            dest.write('%s"' % line_prefix)
 
-where: <model symbol file> is the name of the generated file
-       <objectX_name> is the name of the object to be included
-       <objectX_file> is the file name that will be compressed and included
+        # Insert character
+        dest.write('\\x%02x' % ord(z[i]))
+    dest.write('"')
+
+# Need at least 3
+if len(sys.argv) < 3:
+    print """
+Usage: %s <dest file> <model symbol file> <other files> ...
+
+where: <dest file> is the name of the generated file
+       <model symbol file> filename of the symbol file
+       <other files> are 0 or more files that to be included (for later use)
 """ % sys.argv[0]
-    sys.exit(0)
+    sys.exit(1)
 
 # Reverse argument list. Then we can use pop()
 sys.argv.reverse()
 
+# Remove exec file name
 sys.argv.pop()
-dest_file = sys.argv.pop()
 
-files = {}
-while len(sys.argv):
-    name, f = sys.argv.pop(), sys.argv.pop()
-    files[name] = f
+g = open(sys.argv.pop(), 'w')
 
-g = open(dest_file, 'w')
-
-g.write("""/* Model symbol file
+g.write("""\
+/* Model symbol file
  *
  * The string below contains a compressed version of the shared object that
  * that describes the model with all its signals.
@@ -41,23 +49,21 @@ g.write("""/* Model symbol file
  */
 
 #include "msf.h"
+
 """)
 
-g.write('\n')
-g.write('const int model_symbols_cnt = %i;\n\n' % len(files))
-g.write('const struct model_symbols model_symbols[] = {\n')
+z = zlib.compress(open(sys.argv.pop()).read())
+g.write('const size_t model_symbols_len = %i;\n' % len(z))
+g.write('const char model_symbols[] = \n')
+dump_file(g, z, "\t")
+g.write(';\n\n')
 
-for n in files.keys():
-    z = zlib.compress(open(files[n]).read())
-    g.write('\t{ "%s", "%s", %i, \n' % (n, files[n], len(z)))
-
-    g.write('\t  /* %s */\n' % files[n])
-    for i in xrange(len(z)):
-        if not i % 16: 
-            if i:
-                g.write('"\n')
-            g.write('\t  "')
-        g.write('\\x%02x' % ord(z[i]))
-    g.write('" },\n')
-g.write('\t  {NULL,},\n')
+g.write('const size_t other_files_count = %i;\n' % len(sys.argv))
+g.write('const struct other_files other_files[] = {\n')
+for f in sys.argv:
+    z = zlib.compress(open(sys.argv.pop()).read())
+    g.write('\t{ "%s", %i,\n' % (os.path.basename(f), len(z)))
+    dump_file(g, z, "\t  ")
+    g.write(' },\n')
+g.write('\t{NULL,},\n')
 g.write('};\n')

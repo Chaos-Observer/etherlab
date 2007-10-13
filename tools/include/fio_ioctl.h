@@ -91,8 +91,8 @@ struct mdl_properties {
     size_t rtP_size;            // Size of model parameter structure
     unsigned long base_rate;    // Model's base rate in microseconds
     size_t symbol_len;          // Length of model symbol file
-    size_t symbol_cnt;          // Number of model symbol files
 };
+
 
 /***************************************************
  * The following ioctl commands are used by the 

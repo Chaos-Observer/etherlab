@@ -35,8 +35,8 @@ struct rtw_model {
         int model_id;
 
         /* Variables used to pass model symbol to the buddy */
-        const struct model_symbols *model_symbols;
-        int model_symbols_cnt;
+        const char *symbols;
+        size_t symbol_len;
 
         const char *(*rt_OneStepMain)(double);
         const char *(*rt_OneStepTid)(unsigned int, double);

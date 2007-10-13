@@ -371,7 +371,7 @@ Makefile: $(MAKEFILE)
 # Generate model symbol file
 msf.c: $(MODEL).xml $(MODEL).so
 	@echo Generating $@
-	@$(ETHERLAB_DIR)/bin/gen_msf.py XML $(MODEL).xml SO_FILE $(MODEL).so $@
+	@$(ETHERLAB_DIR)/bin/gen_msf.py $@ $(MODEL).so $(MODEL).xml
 
 ###################
 # Level 3 targets

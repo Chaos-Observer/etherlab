@@ -341,8 +341,8 @@ mdl_start(void)
     rtw_model.buffer_time = BUFFER_TIME > 0 ? BUFFER_TIME*1e6 : 0;
     rtw_model.stack_size = STACKSIZE;
 
-    rtw_model.model_symbols = model_symbols;
-    rtw_model.model_symbols_cnt = model_symbols_cnt;
+    rtw_model.symbols = model_symbols;
+    rtw_model.symbol_len = model_symbols_len;
 
     /* Register model callbacks */
     rtw_model.set_error_msg = mdl_set_error_msg;
