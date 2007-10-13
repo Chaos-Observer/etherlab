@@ -498,6 +498,18 @@ int register_rtw_model(const struct rtw_model *rtw_model,
         model->task[0].master = 1;
         pr_info("Started RT timer at a rate of %luus\n", 
                 rt_kernel.base_period);
+    } else {
+        if (rtw_model->base_period < rt_kernel.base_period) {
+            printk("ERROR: Period of model faster than rt_kernel's base "
+                    "period. Load fastest model first.\n");
+            goto out_incompatible_ticks;
+        } 
+
+        if (rtw_model->base_period % rt_kernel.base_period) {
+            printk("ERROR: Period of model not an integral multiple "
+                    "of rt_kernel's base period.\n");
+            goto out_incompatible_ticks;
+        } 
     }
 
     /* Now setup the external
@@ -514,6 +526,7 @@ int register_rtw_model(const struct rtw_model *rtw_model,
     model->photo_sample = 1;           /* Take a photo of next calculation */
     for (i = 0; i < rtw_model->numst; i++) {
         multiplier = rtw_model->get_sample_time_multiplier(i);
+        multiplier *= rtw_model->base_period/rt_kernel.base_period;
         model->task[i].period = multiplier*rt_kernel.base_period;
         pr_info("RTW Model tid %i running at %luus\n", 
                 i, model->task[i].period);
@@ -534,6 +547,7 @@ int register_rtw_model(const struct rtw_model *rtw_model,
 out_make_periodic:
     rtp_fio_clear_mdl(model);
 out_fio_init:
+out_incompatible_ticks:
     for (i--; i > rtw_model->numst; i--) {
         rt_task_suspend(&model->task[i].rtai_thread);
         rt_task_delete(&model->task[i].rtai_thread);
