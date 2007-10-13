@@ -190,7 +190,7 @@
 %%      Name:           Name of the output signal
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  %if EXISTS(Buffer)
+  %if UseBuffer == 1
     %assign DstAddr = "&%<LibBlockPWork(Buffer,"","",0)>"
   %else
     %assign DstAddr = LibBlockOutputSignalAddr(0,"","",0)

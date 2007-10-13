@@ -141,6 +141,7 @@ static void mdlRTW(SimStruct *S)
 {
     const char *id      = getString(S,ID);
     uint32_T len = LEN;
+    uint32_T use_buffer;
 
     if (!ssWriteRTWStrParam(S, "VarName", id))
         return;
@@ -150,10 +151,17 @@ static void mdlRTW(SimStruct *S)
     if (!ssWriteRTWScalarParam(S, "VectorLen", &len, SS_UINT32))
         return;
     if (OUT_DTYPE != 1) {
+        use_buffer = 1;
+        if (!ssWriteRTWScalarParam(S, "UseBuffer", &use_buffer, SS_UINT32))
+            return;
         if (!ssWriteRTWWorkVect(S, "PWork", 1, 
                     "Buffer", 
                     (LEN * ss_dtype_properties[SRC_DTYPE].len 
                      / sizeof(void*) + 1)));
+            return;
+    } else {
+        use_buffer = 0;
+        if (!ssWriteRTWScalarParam(S, "UseBuffer", &use_buffer, SS_UINT32))
             return;
     }
 }
