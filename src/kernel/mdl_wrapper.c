@@ -336,7 +336,7 @@ mdl_start(void)
     rtw_model.base_period = (unsigned long)(rtmGetStepSize(S)*1.0e6 + 0.5);
     rtw_model.get_sample_time_multiplier = mdl_get_sample_time_multiplier;
 
-    rtw_model.downsample = DOWNSAMPLE > 1 ? DOWNSAMPLE : 1;
+    rtw_model.decimation = DECIMATION > 1 ? DECIMATION : 1;
     rtw_model.max_overrun = OVERRUNMAX;
     rtw_model.buffer_time = BUFFER_TIME > 0 ? BUFFER_TIME*1e6 : 0;
     rtw_model.stack_size = STACKSIZE;

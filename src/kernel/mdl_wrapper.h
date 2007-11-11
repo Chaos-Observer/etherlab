@@ -30,7 +30,7 @@ struct rtw_model {
 
 	void *pend_rtP;         /* Pointer to a new set of parameters */
 
-        unsigned int downsample;  /* The downsampling rate at which photos are taken */
+        unsigned int decimation;  /* The downsampling rate at which photos are taken */
 
         int model_id;
 

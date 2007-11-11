@@ -77,11 +77,11 @@
      'model is unloaded. The stack utilization is printed then.',sprintf('\n'), ...
      'Keep ~500 bytes free.' ];
 
-  rtwoptions(5).prompt       = 'Process Image Downsampling rate';
+  rtwoptions(5).prompt       = 'Process Image decimation rate';
   rtwoptions(5).type         = 'Edit';
   rtwoptions(5).default      = '1';
-  rtwoptions(5).tlcvariable  = 'Downsample';
-  rtwoptions(5).makevariable = 'DOWNSAMPLE';
+  rtwoptions(5).tlcvariable  = 'ETLDecimation';
+  rtwoptions(5).makevariable = 'DECIMATION';
   rtwoptions(5).tooltip      = ...
     ['The number of simulation runs between which', sprintf('\n'), ...
      'snapshots are made of the process image.'];

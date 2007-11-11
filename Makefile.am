@@ -12,7 +12,7 @@ SUBDIRS += \
         blocks
 endif
         
-EXTRA_DIST = bootstrap
+EXTRA_DIST = bootstrap ReleaseNotes
 
 include_HEADERS = config.h
 

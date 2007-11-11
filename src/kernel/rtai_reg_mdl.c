@@ -38,9 +38,9 @@ unsigned long stack_size = 0;
 module_param(stack_size, ulong, S_IRUGO);
 MODULE_PARM_DESC(stack_size,"Override the stack size specified in the model.");
 
-unsigned long downsample = 0;
-module_param(downsample, ulong, S_IRUGO);
-MODULE_PARM_DESC(downsample,"Override the downsampling rate in the model.");
+unsigned long decimation = 0;
+module_param(decimation, ulong, S_IRUGO);
+MODULE_PARM_DESC(decimation, "Override the photo decimation rate in the model.");
 
 unsigned long overrun = 0;
 module_param(overrun, ulong, S_IRUGO);
@@ -48,11 +48,11 @@ MODULE_PARM_DESC(overrun,"Override the model's overrun count.");
 
 unsigned long buffer_time = 0;
 module_param(buffer_time, ulong, S_IRUGO);
-MODULE_PARM_DESC(buffer_time,"Specify time in usec you want to buffer the BlockIO sent to user space from the model.");
+MODULE_PARM_DESC(buffer_time,"Override BlockIO buffer time specified in the model.");
 
 unsigned long tick = 0;
 module_param(tick, ulong, S_IRUGO);
-MODULE_PARM_DESC(tick,"Specify tick time in usec if you want to override the rate specified in the model.");
+MODULE_PARM_DESC(tick,"Override tick rate specified in the model.");
 
 static void __exit 
 mod_cleanup(void)
@@ -81,13 +81,13 @@ mod_init(void)
     }
 
     rtw_model.base_period = tick ? tick : rtw_model.base_period;
-    rtw_model.downsample = downsample ? downsample : rtw_model.downsample;
+    rtw_model.decimation = decimation ? decimation : rtw_model.decimation;
     rtw_model.max_overrun = overrun ? overrun : rtw_model.max_overrun;
     rtw_model.buffer_time = buffer_time ? buffer_time : rtw_model.buffer_time;
     rtw_model.stack_size = stack_size ? stack_size : rtw_model.stack_size;
 
     /* Work out how fast the model is sampled by test_manager */
-    rtw_model.sample_period = rtw_model.base_period*rtw_model.downsample;
+    rtw_model.sample_period = rtw_model.base_period*rtw_model.decimation;
     rtw_model.sample_period = 
         rtw_model.sample_period ? rtw_model.sample_period : 1;
 

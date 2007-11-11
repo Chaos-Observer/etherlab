@@ -99,7 +99,7 @@ TARGET_LANG_EXT      = |>TARGET_LANG_EXT<|
 OVERRUNMAX	     := |>OVERRUNMAX<|
 BUFFER_TIME	     := |>BUFFER_TIME<|
 STACKSIZE            := |>STACKSIZE<|
-DOWNSAMPLE           := |>DOWNSAMPLE<|
+DECIMATION           := |>DECIMATION<|
 VERBOSE              := |>VERBOSE_BUILD<|
 
 ETHERLAB_DIR         := @prefix@
@@ -180,7 +180,7 @@ endif
 # General User Options
 OPTS = -DOVERRUNMAX=$(OVERRUNMAX) -DMODELVERSION=$(MODELVERSION) \
 		-DBUFFER_TIME=$(BUFFER_TIME) -DSTACKSIZE=$(STACKSIZE) \
-                -DDOWNSAMPLE=$(DOWNSAMPLE)
+                -DDECIMATION=$(DECIMATION)
 
 # Compiler options, etc:
 CC_OPTS = $(CODE_DEBUG) $(OPT_OPTS) $(OPTS) $(EXT_CC_OPTS) $(RTM_CC_OPTS)

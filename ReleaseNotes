@@ -1,0 +1,8 @@
+* The misnomer 'Downsample' has been changed to Decimation.
+  When upgrading an existing model, re-enter the required decimation
+  rate in 
+  Configuration Parameters -> Real-Time Workshop -> EtherLab C code generation ->
+  Process Image decimation rate
+
+  The decimation rate defines how many model calculation steps are skipped
+  by the buddy when transferring BlockIO data to the Model Visualisation.
