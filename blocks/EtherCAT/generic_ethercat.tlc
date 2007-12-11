@@ -1,0 +1,67 @@
+%implements "generic_ethercat" "C"
+
+%%
+%% Generic EtherCAT slave
+%%
+%% Copyright (C) 2007, Florian Pose
+%% 
+%% License: GPL
+%%
+
+%include "EtherCAT.tlc"
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function BlockTypeSetup( block, system ) void
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  %<InitEtherCAT()>
+%endfunction
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function BlockInstanceSetup( block, system ) void
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  %<InitEtherCATTask(block, system)>
+%endfunction
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function Start(block, system) Output
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  /* %<Type> Block: %<Name> 
+   * Registering Generic EtherCAT slave with EtherCAT Driver
+   */
+  %<RegisterEtherCATSlaveBlock(block, "%<Vendor>, %<Product>", \
+        MasterIndex, SlaveAddress, 0)>
+  %foreach portIdx = NumberOfOutputs
+    /* Register output %<portIdx> */
+    %<RegisterEtherCATSlavePDO(block, \
+        "%<OutputIndices[portIdx]>, %<OutputSubIndices[portIdx]>", \
+        LibBlockPWork("", "", "", portIdx))>
+  %endforeach
+%endfunction
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function Outputs( block, system ) Output
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  /* %<Type> Block: %<Name> 
+   * Number of outputs: %<NumberOfOutputs>
+   * OutputTypes: %<OutputTypes>
+   */
+  %foreach portIdx = NumberOfOutputs
+    /* output %<portIdx> */
+    %assign s0 = LibBlockOutputSignal(portIdx, "", "", 0)
+    %<s0> = *((%<OutputTypes[portIdx]> *) %<LibBlockPWork("", "", "", portIdx)>);
+  %endforeach
+%endfunction
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function Update(block, system) Output
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  %return
+%endfunction
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function Derivatives(block, system) Output
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  %return
+%endfunction

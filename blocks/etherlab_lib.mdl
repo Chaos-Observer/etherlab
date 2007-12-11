@@ -34,8 +34,8 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "ml"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Mon Oct  8 10:38:06 2007"
-  ModelVersionFormat	  "1.%<AutoIncrement:299>"
+  LastModifiedDate	  "Tue Dec 11 17:43:11 2007"
+  ModelVersionFormat	  "1.%<AutoIncrement:302>"
   ConfigurationManager	  "rcs"
   LinearizationMsg	  "none"
   Profile		  off
@@ -129,7 +129,7 @@ Library {
   }
   System {
     Name		    "etherlab_lib"
-    Location		    [216, 705, 843, 864]
+    Location		    [99, 111, 726, 270]
     Open		    on
     ModelBrowserVisibility  off
     ModelBrowserWidth	    200
@@ -154,7 +154,7 @@ Library {
       MaskHideContents	      off
       System {
 	Name			"EtherCAT"
-	Location		[999, 503, 1496, 871]
+	Location		[171, 277, 668, 645]
 	Open			on
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
@@ -546,6 +546,37 @@ Library {
 	  MaskValueString	  "0|'1'|off|off|off|None|100|65535|off|off|Do"
 "uble|on|off|off|off|off|off|0"
 	  MaskTabNameString	  ",,,,,,,,,,,,,,,,,"
+	}
+	Block {
+	  BlockType		  "S-Function"
+	  Name			  "GenericEtherCAT"
+	  Ports			  [0, 2]
+	  Position		  [180, 163, 265, 212]
+	  BackgroundColor	  "yellow"
+	  FunctionName		  "generic_ethercat"
+	  Parameters		  "master,slave,vendor,product,inputs,outputs,"
+"config,tsample"
+	  MaskPromptString	  "Master index|Slave address|Sample time"
+	  MaskStyleString	  "edit,edit,edit"
+	  MaskTunableValueString  "off,off,off"
+	  MaskCallbackString	  "||"
+	  MaskEnableString	  "on,on,on"
+	  MaskVisibilityString	  "on,on,on"
+	  MaskToolTipString	  "on,on,on"
+	  MaskVarAliasString	  ",,"
+	  MaskVariables		  "master=@1;slave=@2;tsample=@3;"
+	  MaskInitialization	  "vendor = hex2dec('00000002');\nproduct = he"
+"x2dec('ffffffff');\n\noutputs(1).index = hex2dec('7000');\noutputs(1).subinde"
+"x = hex2dec('00');\noutputs(1).type = 'uint16_T';\n\noutputs(2).index = hex2d"
+"ec('7001');\noutputs(2).subindex = hex2dec('00');\noutputs(2).type = 'uint8_T"
+"';\n\ninputs = {};\nconfig = {};"
+	  MaskDisplay		  "disp('EtherCAT')"
+	  MaskIconFrame		  on
+	  MaskIconOpaque	  on
+	  MaskIconRotate	  "none"
+	  MaskIconUnits		  "autoscale"
+	  MaskValueString	  "0|0|0"
+	  MaskTabNameString	  ",,"
 	}
 	Block {
 	  BlockType		  "S-Function"
