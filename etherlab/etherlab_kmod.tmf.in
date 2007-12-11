@@ -366,7 +366,7 @@ Makefile: $(MAKEFILE)
 	@ln -sf $< $@
 
 # Create <model>.o_shipped object for use in KBuild
-$(MODEL_OBJ): $(OBJS) $(SHARED_LIB) $(LIBS) $(MODELREF_LINK_LIBS)
+$(MODEL_OBJ): $(OBJS) $(SHARED_LIB) $(LIBS) $(MODELREF_LINK_LIBS) $(ARCHIVE)
 	$(ld) $(LDFLAGS) -r -o $@ $(MODELREF_LINK_LIBS) \
 		$(SHARED_LIB) $(LIBS) $(ARCHIVE)
 	@echo "### Created $@"
