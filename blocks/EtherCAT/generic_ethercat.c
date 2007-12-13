@@ -26,8 +26,6 @@
 #define TSAMPLE      (mxGetScalar(ssGetSFcnParam(S, 7)))
 #define PARAM_COUNT                                 8
 
-#undef DEBUG
-
 struct PdoType {
     const int_T matlabType;
     const char *typeStr;
@@ -45,7 +43,7 @@ static const struct PdoType typeTable[] = {
     {}
 };
 
-struct Pdos {
+struct PdoList {
     uint_T count;
     uint16_T *indices;
     uint8_T *subIndices;
@@ -54,55 +52,85 @@ struct Pdos {
 };
 
 struct Slave {
-    struct Pdos inputs;
-    struct Pdos outputs;
+    struct PdoList inputs;
+    struct PdoList outputs;
 };
 
-/* Function: lookupPdoType ===================================================
+/****************************************************************************/
+
+/**
+ * PdoList constructor.
  */
 
-static int lookupPdoType(
+static void initPdoList(struct PdoList *p)
+{
+    p->count = 0;
+    p->indices = NULL;
+    p->subIndices = NULL;
+    p->matlabTypes = NULL;
+    p->typeStrings = NULL;
+}
+
+/****************************************************************************/
+
+/**
+ * Clears a Pdo list and frees all allocated memory.
+ */
+
+static void clearPdoList(struct PdoList *p)
+{
+    if (p->indices)
+        free(p->indices);
+    if (p->subIndices)
+        free(p->subIndices);
+    if (p->matlabTypes)
+        free(p->matlabTypes);
+    if (p->typeStrings)
+        free(p->typeStrings);
+}
+
+/****************************************************************************/
+
+/**
+ * Looks up a data type, given a type string.
+ */
+
+static const struct PdoType *lookupPdoType(
         SimStruct *S,
-        int *matlabType,
-        const char **typeStr,
         const mxArray *typeInfo)
 {
     const struct PdoType *t;
-    const char *str = getString(S, typeInfo);
-    char *cpy;
+    const char *str;
 
-    if (!str)
-        return -1;
-
-    if (!(cpy = calloc(strlen(str), sizeof(char))))
-        return -1;
-
-    strcpy(cpy, str);
+    if (!(str = getString(S, typeInfo)))
+        return NULL;
 
     for (t = typeTable; t->typeStr; t++) {
         if (!(strcmp(str, t->typeStr))) {
-            *matlabType = t->matlabType;
-            *typeStr = cpy;
-            return 0;
+            return t;
         }
     }
 
     ssSetErrorStatus(S, "Unknown type string");
-    return -1;
+    return NULL;
 }
 
-/* Function: initializePdos ==================================================
+/****************************************************************************/
+
+/**
+ * Fills a Pdo list from a matlab struct.
  */
 
-static int initializePdos(
+static int fillPdoList(
         SimStruct *S,
-        struct Pdos *pdos,
+        struct PdoList *p,
         const mxArray *pdoInfo)
 {
     uint_T fieldCount, i;
     int_T indexField = -1, subIndexField = -1, typeField = -1;
     const char *name;
     const mxArray *tmp;
+    const struct PdoType *t;
 
     if (!mxIsStruct(pdoInfo)) {
         ssSetErrorStatus(S,
@@ -110,11 +138,7 @@ static int initializePdos(
         return -1;
     }
 
-    pdos->count = mxGetNumberOfElements(pdoInfo);
-#ifdef DEBUG
-    printf("%u Pdos.\n", pdos->count);
-#endif
-    if (!pdos->count)
+    if (!(p->count = mxGetNumberOfElements(pdoInfo)))
         return 0;
 
     fieldCount = mxGetNumberOfFields(pdoInfo);
@@ -129,6 +153,7 @@ static int initializePdos(
         } else {
             ssSetErrorStatus(S,
                     "Unknown field in inputs or outputs parameter.\n");
+            return -1;
         }
     }
 
@@ -151,163 +176,74 @@ static int initializePdos(
         return -1;
     }
 
-    if (!(pdos->indices = (uint16_T *)
-                calloc(pdos->count, sizeof(uint16_T)))) {
+    if (!(p->indices = (uint16_T *)
+                calloc(p->count, sizeof(uint16_T)))) {
         ssSetErrorStatus(S, "Could not allocate memory");
         return -1;
     }
 
-    if (!(pdos->subIndices = (uint8_T *)
-                calloc(pdos->count, sizeof(uint8_T)))) {
+    if (!(p->subIndices = (uint8_T *)
+                calloc(p->count, sizeof(uint8_T)))) {
         ssSetErrorStatus(S, "Could not allocate memory");
         return -1;
     }
 
-    if (!(pdos->matlabTypes = (int_T *)
-                calloc(pdos->count, sizeof(int_T)))) {
+    if (!(p->matlabTypes = (int_T *)
+                calloc(p->count, sizeof(int_T)))) {
         ssSetErrorStatus(S, "Could not allocate memory");
         return -1;
     }
 
-    if (!(pdos->typeStrings = (const char **)
-                calloc(pdos->count, sizeof(const char *)))) {
+    if (!(p->typeStrings = (const char **)
+                calloc(p->count, sizeof(const char *)))) {
         ssSetErrorStatus(S, "Could not allocate memory");
         return -1;
     }
 
-    for (i = 0; i < pdos->count; i++) {
+    for (i = 0; i < p->count; i++) {
         tmp = mxGetFieldByNumber(pdoInfo, i, indexField);
-        pdos->indices[i] = (uint16_T) mxGetScalar(tmp);
+        p->indices[i] = (uint16_T) mxGetScalar(tmp);
         tmp = mxGetFieldByNumber(pdoInfo, i, subIndexField);
-        pdos->subIndices[i] = (uint8_T) mxGetScalar(tmp);
+        p->subIndices[i] = (uint8_T) mxGetScalar(tmp);
         tmp = mxGetFieldByNumber(pdoInfo, i, typeField);
-        if (lookupPdoType(S, &pdos->matlabTypes[i],
-                    &pdos->typeStrings[i], tmp))
+        if (!(t = lookupPdoType(S, tmp)))
             return -1;
+        p->matlabTypes[i] = t->matlabType;
+        p->typeStrings[i] = t->typeStr; 
     }
 
     return 0;
 }
 
-/* Function: mdlInitializeSizes ===============================================
- * Abstract:
- *    The sizes information is used by Simulink to determine the S-function
- *    block's characteristics (number of inputs, outputs, states, etc.).
+/****************************************************************************/
+
+/**
+ * Slave constructor.
  */
 
-static void mdlInitializeSizes(SimStruct *S)
+static void initSlave(struct Slave *slave)
 {
-    int_T i;
-    struct Slave *slave;
-    
-    ssSetNumSFcnParams(S, PARAM_COUNT);  /* Number of expected parameters */
-    if (ssGetNumSFcnParams(S) != ssGetSFcnParamsCount(S)) {
-        /* Return if number of expected != number of actual parameters */
-        return;
-    }
-    for (i = 0; i < PARAM_COUNT; i++) 
-        ssSetSFcnParamTunable(S, i, SS_PRM_NOT_TUNABLE);
-
-    /* Allocate slave struct */
-
-    if (!(slave = (struct Slave *) calloc(1, sizeof(struct Slave)))) {
-        ssSetErrorStatus(S, "Could not allocate memory");
-        return;
-    }
-    ssSetUserData(S, slave);
-
-    /* Evaluate outputs */
-
-    if (initializePdos(S, &slave->outputs, OUTPUTS))
-        return;
-
-    if (!ssSetNumOutputPorts(S, slave->outputs.count))
-        return;
-
-#ifdef DEBUG
-    printf("%u outputs.\n", slave->outputs.count);
-#endif
-
-    for (i = 0; i < slave->outputs.count; i++) {
-#ifdef DEBUG
-        printf("Pdo 0x%4X:%u: '%s'.\n",
-                slave->outputs.indices[i],
-                slave->outputs.subIndices[i],
-                slave->outputs.typeStrings[i]);
-#endif
-        ssSetOutputPortWidth(S, i, 1);
-        ssSetOutputPortDataType(S, i, slave->outputs.matlabTypes[i]);
-    }
-
-    /* Evaluate inputs */
-
-    slave->inputs.count = 0;
-    if (!ssSetNumInputPorts(S, slave->inputs.count)) return;
-
-    ssSetNumSampleTimes(S, 1);
-    ssSetNumContStates(S, 0);
-    ssSetNumDiscStates(S, 0);
-
-    ssSetNumRWork(S, 0);
-    ssSetNumIWork(S, 0);
-    ssSetNumPWork(S, slave->outputs.count + slave->inputs.count);
-    ssSetNumModes(S, 0);
-    ssSetNumNonsampledZCs(S, 0);
-
-    ssSetOptions(S, 
-            SS_OPTION_WORKS_WITH_CODE_REUSE | 
-            SS_OPTION_RUNTIME_EXCEPTION_FREE_CODE);
+    initPdoList(&slave->outputs);
+    initPdoList(&slave->inputs);
 }
 
-/* Function: mdlInitializeSampleTimes =========================================
- * Abstract:
- *    This function is used to specify the sample time(s) for your
- *    S-function. You must register the same number of sample times as
- *    specified in ssSetNumSampleTimes.
+/****************************************************************************/
+
+/**
+ * Slave destructor.
  */
 
-static void mdlInitializeSampleTimes(SimStruct *S)
+static void clearSlave(struct Slave *slave)
 {
-    ssSetSampleTime(S, 0, TSAMPLE);
-    ssSetOffsetTime(S, 0, 0.0);
+    clearPdoList(&slave->outputs);
+    clearPdoList(&slave->inputs);
 }
 
-#define MDL_SET_WORK_WIDTHS
-static void mdlSetWorkWidths(SimStruct *S)
-{
-}
+/****************************************************************************/
 
-/* Function: mdlOutputs =======================================================
- * Abstract:
- *    In this function, you compute the outputs of your S-function
- *    block. Generally outputs are placed in the output vector, ssGetY(S).
+/**
+ * Create a string suitable for ssWriteRTWStrVectParam().
  */
-static void mdlOutputs(SimStruct *S, int_T tid)
-{
-}
-
-#define MDL_DERIVATIVES
-static void mdlDerivatives(SimStruct *S)
-{
-    /* Required, otherwise Simulink complains if the filter is chosen
-     * while in continuous sample time */
-}
-
-/* Function: mdlTerminate =====================================================
- * Abstract:
- *    In this function, you should perform any actions that are necessary
- *    at the termination of a simulation.  For example, if memory was
- *    allocated in mdlStart, this is the place to free it.
- */
-static void mdlTerminate(SimStruct *S)
-{
-    struct Slave *slave = (struct Slave *) ssGetUserData(S);
-
-    if (!slave)
-        return;
-
-    free(slave);
-}
 
 char *createStrVect(SimStruct *S, const char **strings, unsigned int count)
 {
@@ -343,6 +279,121 @@ char *createStrVect(SimStruct *S, const char **strings, unsigned int count)
     return str;
 }
 
+/* Function: mdlInitializeSizes ===============================================
+ * Abstract:
+ *    The sizes information is used by Simulink to determine the S-function
+ *    block's characteristics (number of inputs, outputs, states, etc.).
+ */
+
+static void mdlInitializeSizes(SimStruct *S)
+{
+    int_T i;
+    struct Slave *slave;
+    
+    ssSetNumSFcnParams(S, PARAM_COUNT);  /* Number of expected parameters */
+    if (ssGetNumSFcnParams(S) != ssGetSFcnParamsCount(S)) {
+        /* Return if number of expected != number of actual parameters */
+        return;
+    }
+    for (i = 0; i < PARAM_COUNT; i++) 
+        ssSetSFcnParamTunable(S, i, SS_PRM_NOT_TUNABLE);
+
+    /* Allocate slave struct */
+
+    if (!(slave = (struct Slave *) calloc(1, sizeof(struct Slave)))) {
+        ssSetErrorStatus(S, "Could not allocate memory");
+        return;
+    }
+    initSlave(slave);
+    ssSetUserData(S, slave);
+
+    /* Evaluate outputs */
+
+    if (fillPdoList(S, &slave->outputs, OUTPUTS))
+        goto clear_slave;
+
+    if (!ssSetNumOutputPorts(S, slave->outputs.count))
+        goto clear_slave;
+
+    for (i = 0; i < slave->outputs.count; i++) {
+        ssSetOutputPortWidth(S, i, 1);
+        ssSetOutputPortDataType(S, i, slave->outputs.matlabTypes[i]);
+    }
+
+    /* Evaluate inputs */
+
+    if (fillPdoList(S, &slave->inputs, INPUTS))
+        goto clear_slave;
+
+    if (!ssSetNumInputPorts(S, slave->inputs.count))
+        goto clear_slave;
+
+    for (i = 0; i < slave->inputs.count; i++) {
+        ssSetInputPortWidth(S, i, 1);
+        ssSetInputPortDataType(S, i, slave->inputs.matlabTypes[i]);
+    }
+
+    ssSetNumSampleTimes(S, 1);
+    ssSetNumContStates(S, 0);
+    ssSetNumDiscStates(S, 0);
+
+    ssSetNumRWork(S, 0);
+    ssSetNumIWork(S, 0);
+    ssSetNumPWork(S, slave->outputs.count + slave->inputs.count);
+    ssSetNumModes(S, 0);
+    ssSetNumNonsampledZCs(S, 0);
+
+    ssSetOptions(S, 
+            SS_OPTION_WORKS_WITH_CODE_REUSE | 
+            SS_OPTION_RUNTIME_EXCEPTION_FREE_CODE);
+    return;
+
+clear_slave:
+    clearSlave(slave);
+    free(slave);
+    ssSetUserData(S, NULL);
+}
+
+/* Function: mdlInitializeSampleTimes =========================================
+ * Abstract:
+ *    This function is used to specify the sample time(s) for your
+ *    S-function. You must register the same number of sample times as
+ *    specified in ssSetNumSampleTimes.
+ */
+
+static void mdlInitializeSampleTimes(SimStruct *S)
+{
+    ssSetSampleTime(S, 0, TSAMPLE);
+    ssSetOffsetTime(S, 0, 0.0);
+}
+
+/* Function: mdlOutputs =======================================================
+ * Abstract:
+ *    In this function, you compute the outputs of your S-function
+ *    block. Generally outputs are placed in the output vector, ssGetY(S).
+ */
+static void mdlOutputs(SimStruct *S, int_T tid)
+{
+    /* all output work is done inline via TLC */
+}
+
+/* Function: mdlTerminate =====================================================
+ * Abstract:
+ *    In this function, you should perform any actions that are necessary
+ *    at the termination of a simulation.  For example, if memory was
+ *    allocated in mdlStart, this is the place to free it.
+ */
+static void mdlTerminate(SimStruct *S)
+{
+    struct Slave *slave = (struct Slave *) ssGetUserData(S);
+
+    if (!slave)
+        return;
+
+    clearSlave(slave);
+    free(slave);
+}
+
 #define MDL_RTW
 static void mdlRTW(SimStruct *S)
 {
@@ -359,6 +410,9 @@ static void mdlRTW(SimStruct *S)
         return;
     if (!ssWriteRTWScalarParam(S, "Product", &product, SS_UINT32))
         return;
+
+    /* Write output information */
+
     if (!ssWriteRTWScalarParam(S, "NumberOfOutputs",
                 &slave->outputs.count, SS_UINT32))
         return;
@@ -376,6 +430,32 @@ static void mdlRTW(SimStruct *S)
         return;
     }
     free(strVect);
+
+    /* Write input information */
+
+    if (!ssWriteRTWScalarParam(S, "NumberOfInputs",
+                &slave->inputs.count, SS_UINT32))
+        return;
+    if (!ssWriteRTWVectParam(S, "InputIndices",
+                slave->inputs.indices, SS_UINT16, slave->inputs.count))
+        return;
+    if (!ssWriteRTWVectParam(S, "InputSubIndices",
+                slave->inputs.subIndices, SS_UINT8, slave->inputs.count))
+        return;
+    if (!(strVect = createStrVect(S, slave->inputs.typeStrings, slave->inputs.count)))
+        return;
+    if (!ssWriteRTWStrVectParam(S, "InputTypes",
+                strVect, slave->inputs.count)) {
+        free(strVect);
+        return;
+    }
+    free(strVect);
+
+    if (!ssWriteRTWWorkVect(S, "PWork", 2,
+                "TxPdo", slave->outputs.count,
+                "RxPdo", slave->inputs.count)) {
+        return;
+    }
 }
 
 /*======================================================*

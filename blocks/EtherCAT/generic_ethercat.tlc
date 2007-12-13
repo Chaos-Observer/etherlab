@@ -31,11 +31,19 @@
    */
   %<RegisterEtherCATSlaveBlock(block, "%<Vendor>, %<Product>", \
         MasterIndex, SlaveAddress, 0)>
+
   %foreach portIdx = NumberOfOutputs
-    /* Register output %<portIdx> */
+    /* Register block output %<portIdx> */
     %<RegisterEtherCATSlavePDO(block, \
         "%<OutputIndices[portIdx]>, %<OutputSubIndices[portIdx]>", \
-        LibBlockPWork("", "", "", portIdx))>
+        LibBlockPWork(TxPdo, "", "", portIdx))>
+  %endforeach
+
+  %foreach portIdx = NumberOfInputs
+    /* Register block input %<portIdx> */
+    %<RegisterEtherCATSlavePDO(block, \
+        "%<InputIndices[portIdx]>, %<InputSubIndices[portIdx]>", \
+        LibBlockPWork(RxPdo, "", "", portIdx))>
   %endforeach
 %endfunction
 
@@ -44,13 +52,23 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   /* %<Type> Block: %<Name> 
-   * Number of outputs: %<NumberOfOutputs>
-   * OutputTypes: %<OutputTypes>
+   * Generic EtherCAT slave I/O.
    */
+
   %foreach portIdx = NumberOfOutputs
-    /* output %<portIdx> */
-    %assign s0 = LibBlockOutputSignal(portIdx, "", "", 0)
-    %<s0> = *((%<OutputTypes[portIdx]> *) %<LibBlockPWork("", "", "", portIdx)>);
+    /* Output %<portIdx> */
+    %assign BlockOutput = LibBlockOutputSignal(portIdx, "", "", 0)
+    %assign DataType = OutputTypes[portIdx]
+    %assign TxPdoPtr = LibBlockPWork(TxPdo, "", "", portIdx)
+    %<BlockOutput> = *((%<DataType> *) %<TxPdoPtr>);
+  %endforeach
+
+  %foreach portIdx = NumberOfInputs
+    /* Input %<portIdx> */
+    %assign DataType = InputTypes[portIdx]
+    %assign RxPdoPtr = LibBlockPWork(RxPdo, "", "", portIdx)
+    %assign BlockInput = LibBlockInputSignal(portIdx, "", "", 0)
+    *(%<DataType> *) %<RxPdoPtr> = %<BlockInput>;
   %endforeach
 %endfunction
 
