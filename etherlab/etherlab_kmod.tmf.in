@@ -211,7 +211,7 @@ USER_OBJS       = $(addsuffix .o, $(basename $(USER_SRCS)))
 LOCAL_USER_OBJS = $(notdir $(USER_SRCS))
 
 
-SRCS  = $(filter-out %_capi.c,$(MODULES)) $(S_FUNCTIONS)
+ARCHIVE_SRCS  = $(filter-out %_capi.c,$(MODULES)) $(S_FUNCTIONS)
 
 # Source for the module main ( module_init() and module_exit() )
 RTAI_MOD_SRC       := rtai_reg_mdl.c
@@ -245,7 +245,7 @@ ifeq ($(MODELREF_TARGET_TYPE), NONE)
     PRODUCT = $(RELATIVE_PATH_TO_ANCHOR)/$(KERNEL_MODULE) \
               $(MODEL_SO) $(RUNINFO)
 #              $(MODEL_SO) $(RUN) $(RUNINFO)
-    SRCS    += $(MODEL).$(TARGET_LANG_EXT) rt_sim.c $(SOLVER) mdl_wrapper.c
+    SRCS    = $(MODEL).$(TARGET_LANG_EXT) rt_sim.c $(SOLVER) mdl_wrapper.c
     BUILD_PRODUCT_TYPE = "kernel module and buddy"
 else
     # Model reference rtw target
@@ -254,7 +254,7 @@ else
 endif
 
 OBJS      = $(addsuffix .o, $(basename $(SRCS))) $(USER_OBJS)
-LINK_OBJS = $(addsuffix .o, $(basename $(SRCS))) $(LOCAL_USER_OBJS)
+ARCHIVE_OBJS = $(addsuffix .o, $(basename $(ARCHIVE_SRCS))) $(LOCAL_USER_OBJS)
 ARCHIVE   = $(MODEL).a
 
 SHARED_SRC := $(wildcard $(SHARED_SRC))
@@ -317,7 +317,7 @@ all: $(PRODUCT)
 else
 $(PRODUCT) : $(OBJS) $(SHARED_LIB) $(LIBS)
 	@rm -f $(MODELLIB)
-	ar ruvs $(MODELLIB) $(LINK_OBJS)
+	ar ruvs $(MODELLIB) $(ARCHIVE_OBJS)
 	@echo "### Created $(MODELLIB)"
 	@echo "### Created $(BUILD_PRODUCT_TYPE): $@"
 endif
@@ -366,12 +366,12 @@ Makefile: $(MAKEFILE)
 	@ln -sf $< $@
 
 # Create <model>.o_shipped object for use in KBuild
-$(MODEL_OBJ): $(OBJS) $(SHARED_LIB) $(LIBS) $(MODELREF_LINK_LIBS) $(ARCHIVE)
-	$(ld) $(LDFLAGS) -r -o $@ $(MODELREF_LINK_LIBS) \
-		$(SHARED_LIB) $(LIBS) $(ARCHIVE)
+$(MODEL_OBJ): $(OBJS) $(ARCHIVE) $(LIBS) $(SHARED_LIB) $(MODELREF_LINK_LIBS)
+	@echo "### Creating $@ from $^"
+	$(ld) $(LDFLAGS) -r -o $@ $^
 	@echo "### Created $@"
 
-$(ARCHIVE): $(LINK_OBJS) 
+$(ARCHIVE): $(ARCHIVE_OBJS) 
 	ar ruvs $@ $^
 
 # Copy $(RTAI_MOD_SRC) to local dir. KBuild needs it there
@@ -483,7 +483,7 @@ purge : clean
 
 clean :
 	@echo "### Deleting the objects and $(PRODUCT)"
-	@\rm -f $(LINK_OBJS) $(PRODUCT) .*.dep $(ARCHIVE)
+	@\rm -f $(OBJS) $(ARCHIVE_OBJS) $(PRODUCT) .*.dep $(ARCHIVE)
 
 endif # ($(KERNELRELEASE))
 
