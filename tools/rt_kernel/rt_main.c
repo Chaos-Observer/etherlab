@@ -241,7 +241,7 @@ static void mdl_main_thread(long priv_data)
         /* Send a copy of rtB to the buddy process */
         if (!--model->photo_sample) {
             rtp_make_photo(model);
-            model->photo_sample = rtw_model->downsample;
+            model->photo_sample = rtw_model->decimation;
         }
 
         /* Calculate and report execution statistics */
@@ -401,11 +401,23 @@ int register_rtw_model(const struct rtw_model *rtw_model,
     int err = -1;
     struct model *model;
 
-    if ((struct_len != sizeof(struct rtw_model))
-            || strcmp(revision_str, REVISION)) {
-        pr_info("Error: The header file revisions and lengths do not match.\n"
+    if (strcmp(revision_str, REVISION)) {
+        pr_info("Error: The header file revisions do not match.\n"
+                "Model has: %s\n"
+                "Expected: " REVISION "\n"
                 "You have probably updated and are using an old rt_kernel.\n"
-                "Recompile and reinstall all parts of " PACKAGE_NAME ".\n");
+                "Recompile and reinstall all parts of " PACKAGE_NAME ".\n",
+                revision_str);
+        return -1;
+    }
+
+    if (struct_len != sizeof(struct rtw_model)) {
+        pr_info("Error: The header file lengths do not match.\n"
+                "Model has: %i\n"
+                "Expected: %i\n"
+                "You have probably updated and are using an old rt_kernel.\n"
+                "Recompile and reinstall all parts of " PACKAGE_NAME ".\n",
+                struct_len, sizeof(struct rtw_model));
         return -1;
     }
 
