@@ -107,6 +107,7 @@ ETHERLAB_DIR         := @prefix@
 ED                   := @ED@
 SED                  := @SED@
 GREP                 := @GREP@
+AR                   := @AR@
 
 MODELVERSION 	     = $(shell $(GREP) -m1 "Model Version" $(MODEL).h | $(SED) "s/.*: *\([^[:space:]]*\).*/\1/")
 
@@ -209,12 +210,7 @@ LIBS += $(S_FUNCTIONS_LIB) $(INSTRUMENT_LIBS)
 
 #----------------------------- Source Files ------------------------------------
 
-USER_SRCS = 
-
-USER_OBJS       = $(addsuffix .o, $(basename $(USER_SRCS)))
-LOCAL_USER_OBJS = $(notdir $(USER_OBJS))
-
-
+# The <model>_capi.c must be removed from the sources
 SRCS  = $(filter-out %_capi.c,$(MODULES)) $(S_FUNCTIONS)
 
 # Object target that will be used together with $(MODULE_MAIN_SRC) to
@@ -249,7 +245,8 @@ else
     BUILD_PRODUCT_TYPE = "library"
 endif
 
-LINK_OBJS = $(addsuffix .o, $(basename $(SRCS))) $(LOCAL_USER_OBJS)
+LINK_OBJS = $(addsuffix .o, $(basename $(SRCS)))
+ARCHIVE = $(MODEL).a
 
 SHARED_SRC := $(wildcard $(SHARED_SRC))
 SHARED_OBJS = $(addsuffix .o, $(basename $(SHARED_SRC)))
@@ -358,7 +355,7 @@ $(MODULE_MAIN_SRC): $(ETHERLAB_DIR)/src/kernel/$(MODULE_MAIN_SRC)
 	@cp $< $@
 
 # Create <model>.o_shipped object for use in KBuild
-$(MODEL_BINARY): $(LINK_OBJS) $(SHARED_LIB) $(LIBS) $(MODELREF_LINK_LIBS) mdl_wrapper.o
+$(MODEL_BINARY): $(SHARED_LIB) $(LIBS) $(MODELREF_LINK_LIBS) mdl_wrapper.o $(ARCHIVE)
 	$(ld) $(LDFLAGS) -r -o $@ $^
 	@echo "### Created $@"
 
@@ -386,6 +383,9 @@ $(MODEL).xml: gen_msf
 
 $(MODEL).so: $(SYMBOL_OBJS) etherlab_buddy_data.o model_reg.o
 	$(cc) -shared -fpic -nostartfiles -o $@ $^
+
+$(ARCHIVE): $(LINK_OBJS)
+	$(ar) rs $@ $^
 
 ###################
 # Level 4 targets
@@ -481,7 +481,7 @@ capi.h: $(MODEL).c
 
 |>EXPAND_LIBRARY_NAME<|.a : $(MAKEFILE) rtw_proj.tmw $(MODULES_|>EXPAND_LIBRARY_NAME<|)
 	@echo "### Creating $@ "
-	ar rs $@ $(MODULES_|>EXPAND_LIBRARY_NAME<|)
+	$(ar) rs $@ $(MODULES_|>EXPAND_LIBRARY_NAME<|)
 	@echo "### $@ Created "
 
 |>END_EXPAND_LIBRARIES<|
@@ -494,7 +494,7 @@ capi.h: $(MODEL).c
 |>EXPAND_LIBRARY_NAME<|.a : rtw_proj.tmw $(MODULES_|>EXPAND_LIBRARY_NAME<|)
 #|>EXPAND_LIBRARY_NAME<|.a : $(MAKEFILE) rtw_proj.tmw $(MODULES_|>EXPAND_LIBRARY_NAME<|)
 	@echo "### Creating $@ "
-	ar rs $@ $(MODULES_|>EXPAND_LIBRARY_NAME<|)
+	$(ar) rs $@ $(MODULES_|>EXPAND_LIBRARY_NAME<|)
 	@echo "### $@ Created "
 
 |>END_PRECOMP_LIBRARIES<|
@@ -506,7 +506,7 @@ $(LINK_OBJS) : $(MAKEFILE) rtw_proj.tmw
 $(SHARED_LIB) : $(SHARED_SRC)
 	@echo "### Creating $@ "
 	cd $(SHARED_BIN_DIR); $(CC) -c $(LOCAL_CFLAGS) $(GCC_WALL_FLAG_MAX) $(notdir $?)
-	ar ruvs $@ $(SHARED_OBJS)
+	$(ar) ruvs $@ $(SHARED_OBJS)
 	@echo "### $@ Created  "
 
 
@@ -519,7 +519,7 @@ purge : clean
 
 clean :
 	@echo "### Deleting the objects and $(PRODUCT)"
-	@\rm -f $(LINK_OBJS) $(PRODUCT) .*.dep
+	@\rm -f $(LINK_OBJS) $(PRODUCT) $(ARCHIVE) .*.dep
 
 endif # ($(KERNELRELEASE))
 

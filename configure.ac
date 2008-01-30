@@ -153,6 +153,7 @@ AC_PATH_PROG(SED, sed)
 AC_PATH_PROG(ED, ed)
 AC_PATH_PROG(GREP, grep)
 AC_PATH_PROG(PYTHON, python)
+AC_PATH_PROG(AR, ar)
 
 # Checks for libraries
 AC_CHECK_LIB([dl],[dlopen],[:],[
