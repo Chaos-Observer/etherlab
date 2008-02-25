@@ -28,14 +28,14 @@ libmsr_a_SOURCES = \
 libmsr_a_CFLAGS = -Imsrio_lib/include -I$(top_srcdir)/src/include \
         -DRTW_BUDDY -Wall
 
-#include_HEADERS = \
-#        msrio_lib/include/msr_lists.h \
-#        msrio_lib/include/msr_reg.h \
-#        msrio_lib/include/msr_target.h \
-#        msrio_lib/include/msr_mem.h \
-#        msrio_lib/include/msr_charbuf.h \
-#        msrio_lib/include/msr_attributelist.h \
-#        msrio_lib/include/msr_main.h
+include_HEADERS = \
+        msrio_lib/include/msr_main.h \
+        msrio_lib/include/msr_lists.h \
+        msrio_lib/include/msr_charbuf.h \
+        msrio_lib/include/msr_mem.h \
+        msrio_lib/include/msr_target.h \
+        msrio_lib/include/msr_reg.h
+#        msrio_lib/include/msr_attributelist.h
 
 # Here comes etherlab_buddy
 bin_PROGRAMS = etherlab_buddy
