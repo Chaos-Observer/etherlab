@@ -488,7 +488,7 @@ int main(int argc, char **argv)
 {
     xmlDocPtr doc = NULL;       /* document pointer */
     xmlNodePtr root_node;
-    unsigned int maxSampTimeIndex;
+    unsigned int maxSampTimeIndex = 0;
 
 #include "capi_init.c"
 
