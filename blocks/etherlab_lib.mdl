@@ -34,8 +34,8 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "rich"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Thu Aug 23 01:08:12 2007"
-  ModelVersionFormat	  "1.%<AutoIncrement:276>"
+  LastModifiedDate	  "Mon Feb 25 13:10:01 2008"
+  ModelVersionFormat	  "1.%<AutoIncrement:283>"
   ConfigurationManager	  "rcs"
   LinearizationMsg	  "none"
   Profile		  off
@@ -129,7 +129,7 @@ Library {
   }
   System {
     Name		    "etherlab_lib"
-    Location		    [800, 422, 1395, 815]
+    Location		    [800, 572, 1395, 965]
     Open		    on
     ModelBrowserVisibility  off
     ModelBrowserWidth	    200
@@ -154,8 +154,8 @@ Library {
       MaskHideContents	      off
       System {
 	Name			"EtherCAT"
-	Location		[763, 196, 1260, 564]
-	Open			on
+	Location		[898, 152, 1395, 520]
+	Open			off
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
 	ScreenColor		"white"
@@ -323,8 +323,8 @@ Library {
 	  MaskVarAliasString	  ",,,,,"
 	  MaskVariables		  "master=@1;index=&2;model=&3;input_type=@4;s"
 "tatus=@5;tsample=@6;"
-	  MaskInitialization	  "f = {'10V','4..20mA', ...\n    '0..20mA','±"
-"10V'};\nfunc = char(f(str2num(model(5))+1));\n"
+	  MaskInitialization	  "f = {'10V','4..20mA', ...\n    '0..20mA','+"
+"-10V'};\nfunc = char(f(str2num(model(5))+1));\n"
 	  MaskDisplay		  "fprintf(...\n    '%s\\n%s AOut\\nM:%i Idx:%"
 "s',...\n    model,...\n    func,...\n    master,...\n    index)\n\nport_label"
 "('input',1,'D')\n"
@@ -500,7 +500,7 @@ Library {
 "er on either <b>Rising</b> or <b>Falling</b> edge. This input is enabled when"
 " <em>Latch Output Port</en> is enabled.\n</dd>\n\n<dt><b><tt>Frequency Window"
 "</tt></b></dt>\n<dd>Value determines the width of the Window variable in incr"
-"ements of 16µs (whatever that means???) This input is enabled when <em>Freque"
+"ements of 16us (whatever that means???) This input is enabled when <em>Freque"
 "ncy Output Port</em> is selected</dd>\n\n<dt><b><tt>Counter Reload Value</tt>"
 "</b></dt>\n<dd>The value with which the counter is reloaded in case of <em>En"
 "able Register Reload</em> is activated</dd>\n</dl>\n\n<h4>Inputs</h4>\nEnable"
@@ -529,8 +529,8 @@ Library {
 ",off,off,off,off,off,off,off"
 	  MaskCallbackString	  "||el5101_check('Reload');|el5101_check('Ind"
 "exReset');|||||||||el5101_check('Latch');|el5101_check('Freq');||||"
-	  MaskEnableString	  "on,on,on,on,on,on,off,off,on,on,on,on,on,on"
-",on,on,on,on"
+	  MaskEnableString	  "on,on,on,on,on,off,off,off,on,on,on,on,on,o"
+"n,on,on,on,on"
 	  MaskVisibilityString	  "on,on,on,on,on,on,on,on,on,on,on,on,on,on,o"
 "n,on,on,on"
 	  MaskToolTipString	  "on,on,on,on,on,on,on,on,on,on,on,on,on,on,o"
