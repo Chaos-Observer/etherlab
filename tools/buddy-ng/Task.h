@@ -32,21 +32,25 @@
 #include <list>
 
 class Task {
+    friend class Dispatcher;
+
     public:
         Task(Task* parent);
         virtual ~Task();
 
         Task* getParent() const;
-        void kill(Task* child, int rv);
+        virtual void kill(Task* child, int rv);
 
+    protected:
         virtual int read(int fd);
         virtual int write(int fd);
 
-    protected:
         Dispatcher* getDispatcher() const;
 
         void enableRead(int fd);
         void enableWrite(int fd);
+        void disableRead();
+        void disableWrite();
 
     private:
         Task * const parent;
@@ -54,6 +58,7 @@ class Task {
 
         std::list<Task*> children;
         void adopt(Task* child);
+        void release(Task* child);
 
         void* readRef;
         void* writeRef;

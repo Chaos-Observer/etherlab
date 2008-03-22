@@ -3,7 +3,7 @@
  * **********************************************************************/
 
 /*
- * @note Copyright (C) 2008 Richard Hacker
+ * Copyright (C) 2008 Richard Hacker
  * <lerichi@gmx.net>
  *
  *  License: GPL
@@ -24,42 +24,22 @@
  *
  */
 
-#ifndef SOCKETSERVERTASK_H
-#define SOCKETSERVERTASK_H
+#ifndef RTCOMOSTREAM_H
+#define RTCOMOSTREAM_H
 
 #include "Task.h"
-#include "SocketExcept.h"
 
-#include <string>
+#include <ostream>
 
-#include <sys/socket.h>
-#include <sasl/sasl.h>
-
-class SocketServerTask: public Task {
+class RTComOStream: public std::ostream {
     public:
-        SocketServerTask(Task* parent);
-        ~SocketServerTask();
+        RTComOStream(std::streambuf*);
 
-    protected:
-        int fd;
-
-        void bindAndListen(struct sockaddr *addr, socklen_t sun_len)
-            throw(SocketExcept);
-
-        int accept(struct sockaddr *addr, size_t size)
-            throw(SocketExcept);
-
-    private:
-        void setNonblock(int fd) throw(SocketExcept);
-
-        sasl_callback_t *sasl_callbacks;
-        std::list<std::string> sasl_options;
-
-        static int sasl_getopt(void *context, const char *plugin_name,
-                const char *option, const char **result, unsigned *len);
-
-
+        void stdOut(const std::string& s);
+        void stdErr(const std::string& s);
+        void processLog(const std::string& s);
+        void eventStream(const char* s, size_t n);
+        void dataStream(unsigned int decimation, const char* s, size_t n);
 };
 
-#endif // SOCKETSERVERTASK_H
-
+#endif // RTCOMOSTREAM_H

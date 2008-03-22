@@ -38,7 +38,7 @@ class TCPServerTask: public SocketServerTask {
         ~TCPServerTask();
 
     protected:
-        void open(const char* s_addr, int port) throw(SocketExcept);
+        void open(const std::string& s_addr, int port) throw(SocketExcept);
         void close();
 
     private:

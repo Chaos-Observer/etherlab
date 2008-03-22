@@ -62,13 +62,13 @@ void TCPServerTask::close()
 }
 
 //************************************************************************
-void TCPServerTask::open(const char* s_addr, int port) throw(SocketExcept)
+void TCPServerTask::open(const string& s_addr, int port) throw(SocketExcept)
 //************************************************************************
 {
     string msg;
     struct hostent *hostent;
 
-    if (!(hostent = ::gethostbyname(s_addr))) {
+    if (!(hostent = ::gethostbyname(s_addr.c_str()))) {
         msg = "Could not resolve hostname: ";
         switch (h_errno) {
             case HOST_NOT_FOUND:
@@ -97,13 +97,13 @@ void TCPServerTask::open(const char* s_addr, int port) throw(SocketExcept)
     ::memcpy((char *)&addr.sin_addr, hostent->h_addr,
             sizeof(struct in_addr));
 
-    if (0 > (fd = socket(PF_INET, SOCK_STREAM, 0))) {
+    if (0 > (fd = ::socket(PF_INET, SOCK_STREAM, 0))) {
         msg = "Error creating tcp socket: ";
         goto tcp_out2;
     }
 
     sockopt = 1;
-    if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, 
+    if (::setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, 
                 &sockopt, sizeof(sockopt))) {
         msg = "Error setting socket options: ";
         goto tcp_out3;
@@ -117,7 +117,7 @@ void TCPServerTask::open(const char* s_addr, int port) throw(SocketExcept)
 tcp_out3:
     close();
 tcp_out2:
-tcp_out1:
     msg.append(strerror(errno));
-    throw msg;
+tcp_out1:
+    throw SocketExcept(msg);
 }

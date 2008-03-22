@@ -29,7 +29,7 @@
 
 #include "TCPServerTask.h"
 
-class ConfigFile;
+#include <string>
 
 class RTComServer: public TCPServerTask {
     public:
@@ -38,7 +38,7 @@ class RTComServer: public TCPServerTask {
     protected:
     private:
         int port;
-        uint32_t s_addr;
+        std::string s_addr;
 
         int read(int fd);
 };

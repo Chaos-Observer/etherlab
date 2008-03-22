@@ -30,7 +30,7 @@
 #include "Exception.h"
 
 struct SocketExcept: public Exception {
-    SocketExcept(std::string& s): Exception(s) {}
+    SocketExcept(const std::string& s): Exception(s) {}
 };
 
 #endif // SOCKETEXCEPT_H

@@ -144,7 +144,9 @@ AC_ARG_ENABLE([debug],
 )
 
 # Checks for programs
+AC_PROG_CXX
 AC_PROG_CC
+AC_PROG_LIBTOOL
 AC_PROG_RANLIB
 AC_PROG_INSTALL
 AC_PROG_LN_S
@@ -216,6 +218,7 @@ AC_CONFIG_FILES([
         src/kernel/Makefile
         tools/Makefile
         tools/buddy/Makefile
+        tools/buddy-ng/Makefile
         tools/scripts/Makefile
         tools/scripts/etherlab
         tools/rt_kernel/Kbuild

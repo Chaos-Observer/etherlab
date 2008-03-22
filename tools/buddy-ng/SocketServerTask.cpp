@@ -25,6 +25,7 @@
  */
 
 #include "SocketServerTask.h"
+#include "ConfigFile.h"
 
 #include <sstream>
 
@@ -35,21 +36,70 @@
 #include <cstring>
 #include <cerrno>
 
-//#include <iostream>
+
+#include <iostream>
 
 using namespace std;
+
 
 //************************************************************************
 SocketServerTask::SocketServerTask(Task* parent): 
     Task(parent)
 //************************************************************************
 {
+    sasl_callback_t callbacks[] = {
+        {SASL_CB_GETOPT, (int (*)())sasl_getopt, this},
+        {SASL_CB_LIST_END, NULL, NULL},
+    };
+    sasl_callbacks = 
+        new sasl_callback_t[sizeof(callbacks)/sizeof(sasl_callback_t)];
+    memcpy(sasl_callbacks, callbacks, sizeof(callbacks));
+
+    if (SASL_OK != sasl_server_init(sasl_callbacks, "RTCom")) {
+        throw SocketExcept("Could not initialise SASL library");
+    }
+
 }
 
 //************************************************************************
 SocketServerTask::~SocketServerTask()
 //************************************************************************
 {
+    sasl_done();
+    delete[] sasl_callbacks;
+}
+
+//************************************************************************
+int SocketServerTask::sasl_getopt(void *context, const char *plugin_name,
+                const char *option, const char **result, unsigned *len)
+//************************************************************************
+{
+    SocketServerTask* instance = reinterpret_cast<SocketServerTask*>(context);
+    string key;
+
+    if (plugin_name)
+        key.append(plugin_name).append("_");
+
+    key.append(option);
+
+    cerr << "Requested " << " " << key << " " << result << " " << len << endl;
+
+    instance->sasl_options.push_front(
+            configFile->getString("sasl", key, ""));
+    list<string>::iterator i = instance->sasl_options.begin();
+
+    if (i->length()) {
+        *result = i->c_str();
+        cerr << "Returned configuration " << *i << endl;
+
+        if (len)
+            *len = i->length();
+        return SASL_OK;
+    }
+    else {
+        *result = NULL;
+        return SASL_FAIL;
+    }
 }
 
 //************************************************************************

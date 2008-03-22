@@ -24,45 +24,49 @@
  *
  */
 
-#include "RTComServer.h"
-#include "RTComTask.h"
-#include "ConfigFile.h"
+#include "RTComOStream.h"
 
-#include <iostream>
+#undef DEBUG
+#define DEBUG 0
 
 using namespace std;
 
 //************************************************************************
-RTComServer::RTComServer(Task* parent): TCPServerTask(parent)
-//************************************************************************
-{
-    port = configFile->getInt("general", "port", 2500);
-    s_addr = configFile->getString("general", "interface", "0.0.0.0");
-
-    // Open a TCP port
-    open(s_addr.c_str(), port);
-    enableRead(fd);
-}
-
-//************************************************************************
-RTComServer::~RTComServer()
+RTComOStream::RTComOStream(streambuf* sb): ostream(sb)
 //************************************************************************
 {
 }
 
 //************************************************************************
-int RTComServer::read(int)
+void RTComOStream::stdOut(const std::string& s)
 //************************************************************************
 {
-    struct sockaddr_in in_addr;
-    socklen_t size = sizeof(in_addr);
-    int new_fd;
+    *this << "+OK " << s << endl;
+}
 
-    new_fd = SocketServerTask::accept((struct sockaddr*)&in_addr, size);
-    if (new_fd >= 0)
-        new RTComTask(this, new_fd);
+//************************************************************************
+void RTComOStream::stdErr(const std::string& s)
+//************************************************************************
+{
+    *this << "-ERR " << s << endl;
+}
 
-    cerr << "New file descriptor" << new_fd << endl;
+//************************************************************************
+void RTComOStream::processLog(const std::string& s)
+//************************************************************************
+{
+}
 
-    return new_fd;
+//************************************************************************
+void RTComOStream::eventStream(const char* s, size_t n)
+//************************************************************************
+{
+    *this << "+EVENT" << endl;
+}
+
+//************************************************************************
+void RTComOStream::dataStream(unsigned int decimation, 
+        const char* s, size_t n)
+//************************************************************************
+{
 }

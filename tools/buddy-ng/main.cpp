@@ -58,6 +58,7 @@ The central dispatcher then calls the function that was registered when
 
 #include "ConfigFile.h"
 #include "RTComServer.h"
+#include "RT-Task.h"
 #include "Dispatcher.h"
 
 #include <iostream>
@@ -66,6 +67,7 @@ ConfigFile *configFile;
 
 struct MainTask: public Task {
     MainTask(): Task(NULL) {
+        new RTTask(this);
         new RTComServer(this);
         getDispatcher()->run();
     }
@@ -73,6 +75,8 @@ struct MainTask: public Task {
 
 int main(int argc, const char *argv[])
 {
+    configFile = new ConfigFile("buddy.conf");
+
     MainTask mainTask;
 
     std::cerr << "finishing" << std::endl;

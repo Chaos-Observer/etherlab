@@ -118,7 +118,10 @@ void Dispatcher::eventCallbackFunc(int fd, short event, void *priv_data)
         rv = task->read(fd);
         cerr << "Returnval from read: " << rv << endl;
         if (rv  <= 0) {
-            task->getParent()->kill(task, rv);
+            Task* parent = task->getParent();
+            cerr << "dispatcher read callling kill " << parent << endl;
+            if (parent)
+                parent->kill(task, rv);
         }
     }
 
@@ -126,7 +129,10 @@ void Dispatcher::eventCallbackFunc(int fd, short event, void *priv_data)
         rv = task->write(fd);
         cerr << "Returnval from write: " << rv << endl;
         if (rv <= 0) {
-            task->getParent()->kill(task, rv);
+            Task* parent = task->getParent();
+            cerr << "dispatcher write callling kill " << parent << endl;
+            if (parent)
+                parent->kill(task, rv);
         }
     }
 }

@@ -25,7 +25,6 @@
  */
 
 #include "Task.h"
-#include "ConfigFile.h"
 #include "Dispatcher.h"
 
 #include <iostream>
@@ -40,8 +39,9 @@ Task::Task(Task* parent):
             : new Dispatcher())
 //************************************************************************
 {
-    if (parent)
+    if (parent) {
         parent->adopt(this);
+    }
 
     cerr << "Born task " << this << endl;
 
@@ -52,12 +52,19 @@ Task::Task(Task* parent):
 Task::~Task()
 //************************************************************************
 {
-    for (list<Task*>::iterator it = children.begin(); 
-            it != children.end(); it++)
-        delete *it;
+    cerr << "Deleting Task" << this << endl;
 
-    dispatcher->remove(readRef);
-    dispatcher->remove(writeRef);
+    disableRead();
+    disableWrite();
+
+    list<Task*>::iterator it = children.begin(); 
+    while (it != children.end()) {
+        Task* child = *it++;
+        delete child;
+    }
+
+    if (parent)
+        parent->release(this);
 }
 
 //************************************************************************
@@ -80,8 +87,14 @@ void Task::kill(Task* child, int rv)
 //************************************************************************
 { 
     cerr << "killing " << child << endl;
-    children.remove(child);
     delete child;
+}
+
+//************************************************************************
+void Task::release(Task* child)
+//************************************************************************
+{ 
+    children.remove(child);
 }
 
 //************************************************************************
@@ -103,6 +116,24 @@ int Task::write(int)
 //************************************************************************
 {
     return -1;
+}
+
+//************************************************************************
+void Task::disableRead()
+//************************************************************************
+{
+    if (readRef)
+        dispatcher->remove(readRef);
+    readRef = NULL;
+}
+
+//************************************************************************
+void Task::disableWrite()
+//************************************************************************
+{
+    if (writeRef)
+        dispatcher->remove(writeRef);
+    writeRef = NULL;
 }
 
 //************************************************************************

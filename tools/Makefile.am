@@ -1,1 +1,1 @@
-SUBDIRS = buddy rt_kernel scripts include
+SUBDIRS = buddy buddy-ng rt_kernel scripts include

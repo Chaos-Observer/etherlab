@@ -28,8 +28,11 @@
 #define RTCOMTASK_H
 
 #include "Task.h"
+#include "RTComBufTask.h"
+#include "RTComOStream.h"
 
-class ConfigFile;
+#include <pcrecpp.h>
+#include <sasl/sasl.h>
 
 class RTComTask: public Task {
     public:
@@ -40,6 +43,40 @@ class RTComTask: public Task {
 
     private:
         const int fd;
+        RTComBufTask sb;
+        RTComOStream os;
+
+        void kill(Task*, int);
+
+        char inBuf[4096];
+        unsigned int inBufPos;
+
+        enum ParserState_t {Idle, LoginInit, LoginContinue, LoginFail,
+            //Unknown, Login, List, 
+            //Subscribe, Poll, Write
+        };
+
+        ParserState_t parserState;
+
+        bool checkPass(const std::string& user, const std::string& pass);
+        bool loggedIn;
+        std::string userName;
+
+        sasl_conn_t *sasl_connection;
+        const char* mechanisms;
+        unsigned int mechanism_len;
+        int mechanism_count;
+        sasl_callback_t *sasl_callbacks;
+        std::list<std::string> sasl_options;
+
+        static int sasl_getopt(void *context, const char *plugin_name,
+                const char *option, const char **result, unsigned *len);
+
+        const pcrecpp::RE login;
+        const pcrecpp::RE capabilities;
+        const pcrecpp::RE auth;
+        const pcrecpp::RE length;
+        const pcrecpp::RE empty;
 };
 
 #endif // RTCOMTASK_H

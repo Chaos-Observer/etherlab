@@ -32,8 +32,8 @@
 #include <sstream>
 
 struct Exception: public std::runtime_error {
-    Exception(std::string& s): std::runtime_error(s) {}
-    Exception(std::ostringstream& s): std::runtime_error(s.str()) {}
+    Exception(const std::string& s): std::runtime_error(s) {}
+    Exception(const std::ostringstream& s): std::runtime_error(s.str()) {}
 };
 
 #endif // EXCEPTION_H
