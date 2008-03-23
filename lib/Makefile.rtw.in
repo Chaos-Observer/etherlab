@@ -1,0 +1,66 @@
+##########################################################################
+#
+# $Id$
+# 
+# Copyright (C) 2008 Richard Hacker 
+# License: GPLv3
+# 
+# This Makefile is used to build a library of all RTW files found in
+# $(MATLAB_ROOT)/rtw/c/libsrc/*.c using the same CFLAGS that is used to
+# build the kernel.
+# 
+# Copyright (C) 2008  Richard Hacker
+# 
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+##########################################################################
+
+CC = @CC@
+AR = @AR@
+RTAI_FLAGS = @RTAI_FLAGS@
+MATLAB_ROOT = @MATLAB_ROOT@
+
+ARFLAGS = crus
+TGT = librtw.a
+
+ifeq ($V,)
+cc = @echo -e "  CC\t$@"; $(CC)
+ar = @echo -e "  AR\t$@"; $(AR)
+else
+cc = $(CC)
+ar = $(AR)
+endif
+
+RTW_CFLAGS = \
+        -I$(MATLAB_ROOT)/simulink/include \
+        -I$(MATLAB_ROOT)/extern/include \
+        -I$(MATLAB_ROOT)/rtw/c/src \
+        -I$(MATLAB_ROOT)/rtw/c/src/ext_mode/common \
+        -DRT -I.
+
+# Make a list of all *.c files int $(MATLAB_ROOT)/rtw/c/libsrc
+RTW_LIB_DIR = $(MATLAB_ROOT)/rtw/c/libsrc
+SRCS := $(wildcard $(RTW_LIB_DIR)/*.c)
+OBJS := $(patsubst %.c,%.o,$(notdir $(SRCS)))
+
+include @top_builddir@/tools/rt_kernel/kflags.mk
+KERNEL_CFLAGS = $(filter-out -Wundef, $(KERNEL_OPTS))
+
+$(TGT): $(OBJS)
+	$(ar) $(ARFLAGS) $@ $^
+
+.INTERMEDIATE: $(OBJS)
+$(OBJS): %.o: $(RTW_LIB_DIR)/%.c
+	$(cc) $(RTW_CFLAGS) $(KERNEL_CFLAGS) $(RTAI_FLAGS) -c -o $@ $<
+

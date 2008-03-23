@@ -101,15 +101,19 @@ BUFFER_TIME	     := |>BUFFER_TIME<|
 STACKSIZE            := |>STACKSIZE<|
 DECIMATION           := |>DECIMATION<|
 VERBOSE              := |>VERBOSE_BUILD<|
+MODULE_PAYLOAD       := |>MODULE_PAYLOAD<|
+STAGING_DIR          := |>STAGING_DIR<|
 
-ETHERLAB_DIR         := @prefix@
+ETHERLAB_DIR         := $(STAGING_DIR)/@prefix@
 #GZIP                 := @GZIP@
 ED                   := @ED@
-SED                  := @SED@
 GREP                 := @GREP@
 AR                   := @AR@
 
-MODELVERSION 	     = $(shell $(GREP) -m1 "Model Version" $(MODEL).h | $(SED) "s/.*: *\([^[:space:]]*\).*/\1/")
+ifeq ($(KERNELRELEASE),)
+MODELVERSION 	     = $(shell $(GREP) -m1 "Model Version" $(MODEL).h)
+MODELVERSION         := $(lastword $(MODELVERSION))
+endif
 
 #--------------------------- Model and reference models -----------------------
 MODELLIB                  = |>MODELLIB<|
@@ -125,6 +129,8 @@ MATLAB_ROOT := $(ALT_MATLAB_ROOT)
 endif
 
 #--------------------------- Tool Specifications -------------------------------
+
+#include $(MATLAB_ROOT)/rtw/c/tools/unixtools.mk
 
 include $(ETHERLAB_DIR)/etherlab/etherlab_tools.mk
 
@@ -154,19 +160,19 @@ INCLUDES = -I. -I$(RELATIVE_PATH_TO_ANCHOR) $(MATLAB_INCLUDES) \
 # Uncomment -DVERBOSE to have information printed to stdout
 # To add a new transport layer, see the comments in
 #   <matlabroot>/toolbox/simulink/simulink/extmode_transports.m
-ifeq ($(EXT_MODE),1)
-  EXT_CC_OPTS = -DEXT_MODE -D$(COMPUTER) #-DVERBOSE
-  EXT_LIB     =
-  EXT_SRC = ext_svr.c updown.c ext_work.c ext_svr_tcpip_transport.c
-  ifeq ($(TMW_EXTMODE_TESTING),1)
-    EXT_SRC     += ext_test.c
-    EXT_CC_OPTS += -DTMW_EXTMODE_TESTING
-  endif
-  ifeq ($(EXTMODE_STATIC),1)
-    EXT_SRC             += mem_mgr.c
-    EXT_CC_OPTS         += -DEXTMODE_STATIC -DEXTMODE_STATIC_SIZE=$(EXTMODE_STATIC_SIZE)
-  endif
-endif
+#ifeq ($(EXT_MODE),1)
+#  EXT_CC_OPTS = -DEXT_MODE -D$(COMPUTER) #-DVERBOSE
+#  EXT_LIB     =
+#  EXT_SRC = ext_svr.c updown.c ext_work.c ext_svr_tcpip_transport.c
+#  ifeq ($(TMW_EXTMODE_TESTING),1)
+#    EXT_SRC     += ext_test.c
+#    EXT_CC_OPTS += -DTMW_EXTMODE_TESTING
+#  endif
+#  ifeq ($(EXTMODE_STATIC),1)
+#    EXT_SRC             += mem_mgr.c
+#    EXT_CC_OPTS         += -DEXTMODE_STATIC -DEXTMODE_STATIC_SIZE=$(EXTMODE_STATIC_SIZE)
+#  endif
+#endif
 
 #----------------------------- Real-Time Model ---------------------------------
 RTM_CC_OPTS = -DUSE_RTMODEL
@@ -179,16 +185,16 @@ OPT_OPTS = $(DEFAULT_OPT_OPTS)
 endif
 
 # General User Options
-OPTS = -DOVERRUNMAX=$(OVERRUNMAX) -DMODELVERSION=$(MODELVERSION) \
-		-DBUFFER_TIME=$(BUFFER_TIME) -DSTACKSIZE=$(STACKSIZE) \
-                -DDECIMATION=$(DECIMATION)
+OPTS = -DOVERRUNMAX="$(OVERRUNMAX)" -DMODELVERSION="$(MODELVERSION)" \
+		-DBUFFER_TIME="$(BUFFER_TIME)" -DSTACKSIZE="$(STACKSIZE)" \
+                -DDECIMATION="$(DECIMATION)"
 
 # Compiler options, etc:
 CC_OPTS = $(CODE_DEBUG) $(OPT_OPTS) $(OPTS) $(EXT_CC_OPTS) $(RTM_CC_OPTS)
 
-CPP_REQ_DEFINES = -DMODEL=$(MODEL) -DRT -DNUMST=$(NUMST) \
-                  -DTID01EQ=$(TID01EQ) -DNCSTATES=$(NCSTATES) -DUNIX \
-                  -DMULTITASKING=$(MULTITASKING)
+CPP_REQ_DEFINES = -DMODEL="$(MODEL)" -DRT -DNUMST="$(NUMST)" \
+                  -DTID01EQ="$(TID01EQ)" -DNCSTATES="$(NCSTATES)" -DUNIX \
+                  -DMULTITASKING="$(MULTITASKING)"
 
 
 LOCAL_CFLAGS   = $(CC_OPTS) $(ANSI_OPTS) $(CPP_REQ_DEFINES) $(INCLUDES)
@@ -208,14 +214,18 @@ endif
 LIBS += |>EXPAND_LIBRARY_NAME<|.a |>END_EXPAND_LIBRARIES<|
 LIBS += $(S_FUNCTIONS_LIB) $(INSTRUMENT_LIBS)
 
+ifneq ($(PRECOMP_RTW_LIB),)
+LIBS := $(filter-out rtwlib.a,$(LIBS)) $(PRECOMP_RTW_LIB)
+endif
+
 #----------------------------- Source Files ------------------------------------
 
 # The <model>_capi.c must be removed from the sources
-SRCS  = $(filter-out %_capi.c,$(MODULES)) $(S_FUNCTIONS)
+SRCS  = $(MODULES) $(S_FUNCTIONS) rtw_data_info.c etl_data_types.c
 
 # Object target that will be used together with $(MODULE_MAIN_SRC) to
 # become a kernel object (.ko) during the KBuild process
-MODEL_BINARY       := $(MODEL)_obj.o_shipped
+SHIPPED_MODEL      := $(MODEL)_obj.o_shipped
 
 # Source for the module main ( module_init() and module_exit() )
 MODULE_MAIN_SRC    := rtai_reg_mdl.c
@@ -225,11 +235,6 @@ KERNEL_MODULE      := $(MODEL)_kmod.ko
 RUN	:= $(RELATIVE_PATH_TO_ANCHOR)/run
 RUNINFO	:= $(RELATIVE_PATH_TO_ANCHOR)/.runinfo
 
-# Files needed for Model Symbols
-SYMBOL_SRCS      := $(filter %_capi.c,$(MODULES)) \
-                        $(filter %_data.c,$(MODULES))
-SYMBOL_OBJS      := $(SYMBOL_SRCS:.c=.o)
-
 # Differentiate between builds for Model Referencing and Standard
 #   Model Referending: only create a library
 #   Standard: Make kernel modules and user helper process
@@ -237,7 +242,7 @@ ifeq ($(MODELREF_TARGET_TYPE), NONE)
     PRODUCT = $(RELATIVE_PATH_TO_ANCHOR)/$(KERNEL_MODULE) 
 #              $(MODEL_SO) $(RUNINFO)
 #              $(MODEL_SO) $(RUN) $(RUNINFO)
-    SRCS    += $(MODEL)_nocapi.$(TARGET_LANG_EXT) rt_sim.c $(SOLVER)
+    SRCS    += $(MODEL).$(TARGET_LANG_EXT) rt_sim.c $(SOLVER)
     BUILD_PRODUCT_TYPE = "kernel module"
 else
     # Model reference rtw target
@@ -246,12 +251,19 @@ else
 endif
 
 LINK_OBJS = $(addsuffix .o, $(basename $(SRCS)))
-ARCHIVE = $(MODEL).a
 
 SHARED_SRC := $(wildcard $(SHARED_SRC))
 SHARED_OBJS = $(addsuffix .o, $(basename $(SHARED_SRC)))
 
 DEP = -Wp,-MMD,.$@.dep
+
+# Add RELATIVE_PATH_TO_ANCHOR to non-absolute files
+MODULE_PAYLOAD := $(filter /%,$(MODULE_PAYLOAD)) \
+                  $(addprefix $(RELATIVE_PATH_TO_ANCHOR)/,\
+                          $(filter-out /%,$(MODULE_PAYLOAD)))
+
+# Filter out files that do not exist
+MODULE_PAYLOAD := $(wildcard $(MODULE_PAYLOAD))
 
 #------------- Test Compile using gcc -Wall to look for warnings ---------------
 #
@@ -291,10 +303,13 @@ ifneq ($(KERNELRELEASE),)
 #  kernel build part of the make
 #######################################################################
 
+EXTRA_SYMBOLS := $(STAGING_DIR)/$(RTAI_DIR)/modules/Module.symvers
+
 EXTRA_CFLAGS	:= $(CODE_DEBUG) $(RTAI_FLAGS) -I$(ETHERLAB_DIR)/include \
 		-I$(ETHERLAB_DIR)/src/kernel
 obj-m		:= $(KERNEL_MODULE:.ko=.o)
-$(KERNEL_MODULE:.ko=)-y := $(MODULE_MAIN_SRC:.c=.o) $(MODEL_BINARY) msf.o
+$(KERNEL_MODULE:.ko=)-y := $(MODULE_MAIN_SRC:.c=.o) $(SHIPPED_MODEL) \
+        module_payload.o
 
 #######################################################################
 #  >>>> END OF KBUILD PART <<<<
@@ -343,9 +358,9 @@ $(RUNINFO)::
 $(RELATIVE_PATH_TO_ANCHOR)/$(KERNEL_MODULE): $(KERNEL_MODULE)
 	@mv $< $@
 
-$(KERNEL_MODULE): $(MODULE_MAIN_SRC) $(MODEL_BINARY) Makefile msf.c
+$(KERNEL_MODULE): $(MODULE_MAIN_SRC) $(SHIPPED_MODEL) Makefile module_payload.c
 	# Call KBuild process
-	@sh -c "unset ARCH; make -C $(KERNEL_DIR) V=$(VERBOSE) M=$(shell pwd) modules"
+	@sh -c "unset ARCH; $(MAKE) -C $(KERNEL_DIR) V=$(VERBOSE) M=$(shell pwd) modules"
 
 ###################
 # Level 2 targets
@@ -355,7 +370,7 @@ $(MODULE_MAIN_SRC): $(ETHERLAB_DIR)/src/kernel/$(MODULE_MAIN_SRC)
 	@cp $< $@
 
 # Create <model>.o_shipped object for use in KBuild
-$(MODEL_BINARY): $(SHARED_LIB) $(LIBS) $(MODELREF_LINK_LIBS) mdl_wrapper.o $(ARCHIVE)
+$(SHIPPED_MODEL): mdl_wrapper.o $(MODELLIB) $(SHARED_LIB) $(LIBS) $(MODELREF_LINK_LIBS) 
 	$(ld) $(LDFLAGS) -r -o $@ $^
 	@echo "### Created $@"
 
@@ -366,16 +381,20 @@ Makefile: $(MAKEFILE)
 	@ln -sf $< $@
 
 # Generate model symbol file
-msf.c: $(MODEL).xml $(MODEL).so
+module_payload.c: $(MODULE_PAYLOAD)
 	@echo Generating $@
-	@$(ETHERLAB_DIR)/bin/gen_msf.py $@ $(MODEL).so $(MODEL).xml
+	@LD_LIBRARY_PATH= $(ETHERLAB_DIR)/bin/gen_payload.py $^ > $@ 
 
 ###################
 # Level 3 targets
 ###################
-$(MODEL).o : $(MODEL)_nocapi.c
+$(MODEL).o : $(MODEL).$(TARGET_LANG_EXT)
 	@$(GCC_TEST_CMD) $< $(GCC_TEST_OUT)
-	$(cc) -c $(LOCAL_CFLAGS) $(GCC_WALL_FLAG) $<
+	$(cc) -c $(LOCAL_CFLAGS) $(KERNEL_OPTS) $(GCC_WALL_FLAG) $<
+
+rtw_data_info.o: $(ETHERLAB_DIR)/src/kernel/rtw_data_info.c capi.h
+	@$(GCC_TEST_CMD) $< $(GCC_TEST_OUT)
+	$(cc) -c $(LOCAL_CFLAGS) $(KERNEL_OPTS) $(GCC_WALL_FLAG) $<
 
 $(MODEL).xml: gen_msf
 	@echo Generating XML Model Symbol File $(MODEL).xml
@@ -384,39 +403,12 @@ $(MODEL).xml: gen_msf
 $(MODEL).so: $(SYMBOL_OBJS) etherlab_buddy_data.o model_reg.o
 	$(cc) -shared -fpic -nostartfiles -o $@ $^
 
-$(ARCHIVE): $(LINK_OBJS)
+$(MODELLIB): $(LINK_OBJS)
 	$(ar) rs $@ $^
 
 ###################
 # Level 4 targets
 ###################
-dump_capi.o: $(ETHERLAB_DIR)/src/buddy/dump_capi.c capi_init.c capi.h
-	@$(GCC_TEST_CMD) $< $(GCC_TEST_OUT)
-	$(cc) $(DEP) -c $(LOCAL_CFLAGS) \
-                `xml2-config --cflags` $(GCC_WALL_FLAG_MAX) -o $@ $<
-
-model_reg.o: $(ETHERLAB_DIR)/src/buddy/model_reg.c capi_init.c capi.h
-	@$(GCC_TEST_CMD) $< $(GCC_TEST_OUT)
-	$(cc) $(DEP) -c $(LOCAL_CFLAGS) $(GCC_WALL_FLAG_MAX) -o $@ $<
-
-# Remove all traces to the C-API from model.
-$(MODEL)_nocapi.c: $(MODEL).c
-	@echo -e $(ed)
-	@echo -e "e $<\n /capi.h/d\n /C API/\n .,+d\n w $@\n q\n" | \
-                $(ED) -s >/dev/null
-
-gen_msf: $(SYMBOL_OBJS) etherlab_buddy_data.o dump_capi.o
-	$(cc) -o $@ $^ `xml2-config --libs`
-
-###################
-# Level 5 targets
-###################
-# The C-API is required in the buddy process though, and not in <model>.c
-capi_init.c: $(MODEL).c
-	@echo -e $(ed)
-	@echo -e "e $<\n /C API/\n .,+d\n 0x\n 3\n ;d\n w $@\n q\n" | \
-                $(ED) -s >/dev/null
-
 capi.h: $(MODEL).c
 	@echo -e $(ed)
 	@echo -e "e $<\n /capi.h/d\n 0x\n 2\n ;d\n w $@\n q\n" | \
@@ -427,51 +419,49 @@ capi.h: $(MODEL).c
 ###################
 %.o : %.c
 	@$(GCC_TEST_CMD) $< $(GCC_TEST_OUT)
-	$(cc) -c $(LOCAL_CFLAGS) $(GCC_WALL_FLAG) $<
+	$(cc) $(DEP) -c $(LOCAL_CFLAGS) $(KERNEL_OPTS) $(GCC_WALL_FLAG) $<
 
 %.o : $(RELATIVE_PATH_TO_ANCHOR)/%.c
 	@$(GCC_TEST_CMD) $< $(GCC_TEST_OUT)
-	$(cc) $(DEP) -c $(LOCAL_CFLAGS) $(GCC_WALL_FLAG) $<
+	$(cc) $(DEP) -c $(LOCAL_CFLAGS) $(KERNEL_OPTS) $(GCC_WALL_FLAG) $<
 
 %.o : $(ETHERLAB_DIR)/blocks/%.c
 	@$(GCC_TEST_CMD) $< $(GCC_TEST_OUT)
-	$(cc) $(DEP) -c $(LOCAL_CFLAGS) $(GCC_WALL_FLAG_MAX) $<
-
-%.o : $(ETHERLAB_DIR)/src/buddy/%.c
-	@$(GCC_TEST_CMD) $(LOCAL_CFLAGS) -I$(ETHERLAB_DIR)/include \
-                $(RTAI_FLAGS) $< $(GCC_TEST_OUT)
-	$(cc) $(DEP) -c $(LOCAL_CFLAGS) -I$(ETHERLAB_DIR)/include \
-                $(GCC_WALL_FLAG_MAX) $<
+	$(cc) $(DEP) -c $(LOCAL_CFLAGS) $(KERNEL_OPTS) $(GCC_WALL_FLAG_MAX) $<
 
 %.o : $(ETHERLAB_DIR)/src/kernel/%.c
-	@$(GCC_TEST_CMD) $(LOCAL_CFLAGS) $(RTAI_FLAGS) $< $(GCC_TEST_OUT)
-	$(cc) $(DEP) -c $(LOCAL_CFLAGS) $(RTAI_FLAGS) $(GCC_WALL_FLAG_MAX) $<
+	@$(GCC_TEST_CMD) $(LOCAL_CFLAGS) $(KERNEL_OPTS) $< $(GCC_TEST_OUT)
+	$(cc) $(DEP) -c $(LOCAL_CFLAGS) $(KERNEL_OPTS) $(GCC_WALL_FLAG_MAX) $<
 
 %.o : $(MATLAB_ROOT)/rtw/c/src/%.c
 	@$(GCC_TEST_CMD) $< $(GCC_TEST_OUT)
-	$(cc) -c $(LOCAL_CFLAGS) $(GCC_WALL_FLAG_MAX) $<
+	$(cc) -c $(LOCAL_CFLAGS) $(KERNEL_OPTS) $(GCC_WALL_FLAG_MAX) $<
 
 %.o : $(MATLAB_ROOT)/rtw/c/src/ext_mode/common/%.c
 	@$(GCC_TEST_CMD) $< $(GCC_TEST_OUT)
-	$(cc) -c $(LOCAL_CFLAGS) $(GCC_WALL_FLAG_MAX) $<
+	$(cc) -c $(LOCAL_CFLAGS) $(KERNEL_OPTS) $(GCC_WALL_FLAG_MAX) $<
 
 %.o : $(MATLAB_ROOT)/rtw/c/src/ext_mode/tcpip/%.c
 	@$(GCC_TEST_CMD) $< $(GCC_TEST_OUT)
-	$(cc) -c $(LOCAL_CFLAGS) $(GCC_WALL_FLAG_MAX) $<
+	$(cc) -c $(LOCAL_CFLAGS) $(KERNEL_OPTS) $(GCC_WALL_FLAG_MAX) $<
 
 %.o : $(MATLAB_ROOT)/rtw/c/src/ext_mode/custom/%.c
 	@$(GCC_TEST_CMD) $< $(GCC_TEST_OUT)
-	$(cc) -c $(LOCAL_CFLAGS) $(GCC_WALL_FLAG_MAX) $<
+	$(cc) -c $(LOCAL_CFLAGS) $(KERNEL_OPTS) $(GCC_WALL_FLAG_MAX) $<
+
+%.o : $(MATLAB_ROOT)/rtw/c/src/%.c
+	@$(GCC_TEST_CMD) $< $(GCC_TEST_OUT)
+	$(cc) -c $(LOCAL_CFLAGS) $(KERNEL_OPTS) $(GCC_WALL_FLAG_MAX) $<
 
 |>START_EXPAND_RULES<|%.o : |>EXPAND_DIR_NAME<|/%.c
 	@$(GCC_TEST_CMD) $< $(GCC_TEST_OUT)
-	$(cc) -c $(LOCAL_CFLAGS) $(GCC_WALL_FLAG_MAX) $<
+	$(cc) -c $(LOCAL_CFLAGS) $(KERNEL_OPTS) $(GCC_WALL_FLAG_MAX) $<
 
 |>END_EXPAND_RULES<|
 
 %.o : $(MATLAB_ROOT)/simulink/src/%.c
 	@$(GCC_TEST_CMD) $< $(GCC_TEST_OUT)
-	$(cc) -c $(LOCAL_CFLAGS) $(GCC_WALL_FLAG_MAX) $<
+	$(cc) -c $(LOCAL_CFLAGS) $(KERNEL_OPTS) $(GCC_WALL_FLAG_MAX) $<
 
 #------------------------------- Libraries -------------------------------------
 
@@ -519,7 +509,7 @@ purge : clean
 
 clean :
 	@echo "### Deleting the objects and $(PRODUCT)"
-	@\rm -f $(LINK_OBJS) $(PRODUCT) $(ARCHIVE) .*.dep
+	@\rm -f $(LINK_OBJS) $(PRODUCT) $(MODELLIB) .*.dep
 
 endif # ($(KERNELRELEASE))
 

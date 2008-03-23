@@ -32,7 +32,7 @@
 #include <linux/autoconf.h>
 #include "rt_kernel.h"
 
-struct rtw_model rtw_model;
+extern struct rtw_model rtw_model;
 
 unsigned long stack_size = 0;
 module_param(stack_size, ulong, S_IRUGO);
@@ -70,6 +70,7 @@ mod_init(void)
 {
     int err = -1;
     const char *errmsg;
+    unsigned int i;
 
     pr_debug("Inserting RTW model\n");
 
@@ -80,16 +81,20 @@ mod_init(void)
             goto out;
     }
 
-    rtw_model.base_period = tick ? tick : rtw_model.base_period;
+    // If a new tick is supplied, use it instead of the model's
+    for (i = rtw_model.numst; tick && i--; ) {
+        rtw_model.task_period[i] = 
+            rtw_model.task_period[i] / rtw_model.task_period[0] * tick;
+    }
     rtw_model.decimation = decimation ? decimation : rtw_model.decimation;
     rtw_model.max_overrun = overrun ? overrun : rtw_model.max_overrun;
     rtw_model.buffer_time = buffer_time ? buffer_time : rtw_model.buffer_time;
     rtw_model.stack_size = stack_size ? stack_size : rtw_model.stack_size;
 
     /* Work out how fast the model is sampled by test_manager */
-    rtw_model.sample_period = rtw_model.base_period*rtw_model.decimation;
-    rtw_model.sample_period = 
-        rtw_model.sample_period ? rtw_model.sample_period : 1;
+    rtw_model.sample_period = rtw_model.decimation 
+        ? rtw_model.task_period[0]*rtw_model.decimation
+        : rtw_model.task_period[0];
 
     rtw_model.rtB_count = rtw_model.buffer_time/rtw_model.sample_period;
     rtw_model.rtB_count = rtw_model.rtB_count ? rtw_model.rtB_count : 1;

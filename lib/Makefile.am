@@ -1,7 +1,8 @@
 lib_LIBRARIES = libetherlab.a
 
+#-----------------------------------------------------------------------
 libetherlab_a_SOURCES =
-libetherlab_a_LIBADD = raise_catch.o 
+libetherlab_a_LIBADD = raise_catch.o
 
 EXTRA_DIST = \
         ecrt_support.h ecrt_support.c \
@@ -25,3 +26,16 @@ ecrt_support.o: ecrt_support.h ecrt_support.c
 clean-local:
 	make -C "$(LINUX_DIR)" M="@abs_builddir@" \
 		V="$(VERBOSE)" DEFS="$(DEFS)" clean
+
+#-----------------------------------------------------------------------
+
+EXTRA_DIST += rtwtypes.h
+
+if MATLAB_ROOT
+librtw_adir = $(libdir)
+librtw_a_DATA = librtw.a
+
+librtw.a: Makefile.rtw
+	$(MAKE) -f Makefile.rtw V=$(VERBOSE) $(librtw_a_DATA)
+
+endif

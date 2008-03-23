@@ -193,6 +193,9 @@ void update_time(void)
      * rate */
     rt_sem_wait(&rt_kernel.time.lock);
     rt_kernel.time.value += rt_kernel.time.u;
+    rt_kernel.time.tv.tv_sec = rt_kernel.time.value;
+    rt_kernel.time.tv.tv_usec = 
+        1.0e6 * (rt_kernel.time.value - rt_kernel.time.tv.tv_sec);
     rt_sem_signal(&rt_kernel.time.lock);
 }
 
@@ -234,8 +237,10 @@ static void mdl_main_thread(long priv_data)
         }
 
         /* Do one calculation step of the model */
-        mdl_task->stats->time = rt_kernel.time.value;
-        if ((errmsg = rtw_model->rt_OneStepMain(mdl_task->stats->time)))
+        rt_sem_wait(&rt_kernel.time.lock);
+        mdl_task->stats->time = rt_kernel.time.tv;
+        rt_sem_signal(&rt_kernel.time.lock);
+        if ((errmsg = rtw_model->rt_OneStepMain()))
             break;
 
         /* Send a copy of rtB to the buddy process */
@@ -246,7 +251,6 @@ static void mdl_main_thread(long priv_data)
 
         /* Calculate and report execution statistics */
         rt_end = get_cycles();
-        mdl_task->stats->time = rt_kernel.time.value;
         cpu_mhz = cpu_khz/1000;  // cpu_khz is not constant
         mdl_task->stats->exec_time = 
             ((unsigned int)(rt_end - rt_start))/cpu_mhz;
@@ -260,11 +264,11 @@ static void mdl_main_thread(long priv_data)
                 printk(".");
             } else {
                 pr_info("Model overrun on main task ... "
-                        "tick %lu took %luus, allowed are %luus ",
+                        "tick %lu took %luus, allowed are %uus ",
                         counter,
                         (unsigned long)(get_cycles() - 
                                         rt_start)/(cpu_khz/1000),
-                        mdl_task->period);
+                        rtw_model->task_period[0]);
             }
 
             if (overrun == rtw_model->max_overrun) {
@@ -321,9 +325,10 @@ static void mdl_sec_thread(long priv_data)
         rt_start = get_cycles();
 
         /* Do one calculation step of the model */
-        mdl_task->stats->time = rt_kernel.time.value;
-        if ((errmsg = rtw_model->rt_OneStepTid(mdl_tid, 
-                        mdl_task->stats->time)))
+        rt_sem_wait(&rt_kernel.time.lock);
+        mdl_task->stats->time = rt_kernel.time.tv;
+        rt_sem_signal(&rt_kernel.time.lock);
+        if ((errmsg = rtw_model->rt_OneStepTid(mdl_tid))) 
             break;
 
         /* Calculate and report execution statistics */
@@ -338,11 +343,11 @@ static void mdl_sec_thread(long priv_data)
         /* Wait until next call */
         if (rt_task_wait_period()) {
             pr_info("Model overrun on tid %i ... "
-                    "tick %lu took %luus, allowed are %luus\n",
+                    "tick %lu took %luus, allowed are %uus\n",
                     mdl_tid,
                     counter,
                     (unsigned long)(get_cycles() - rt_start)/(cpu_khz/1000),
-                    mdl_task->period);
+                    rtw_model->task_period[mdl_tid]);
             if (++overrun == rtw_model->max_overrun) {
                 errmsg = "Too many overruns";
                 rtw_model->set_error_msg("Abort");
@@ -396,7 +401,7 @@ int register_rtw_model(const struct rtw_model *rtw_model,
 {
     unsigned int i;
     unsigned int model_id;
-    unsigned int multiplier;
+    unsigned int decimation;
     RTIME now;
     int err = -1;
     struct model *model;
@@ -434,10 +439,10 @@ int register_rtw_model(const struct rtw_model *rtw_model,
     /* If the ticker is already running, check that the base rates are
      * compatible */
     if (rt_kernel.base_period && 
-            rtw_model->base_period % rt_kernel.base_period) {
+            rtw_model->task_period[0] % rt_kernel.base_period) {
         pr_info("Model's base rate (%uns) is not an integer multiple of "
                 "RTAI baserate %luus\n", 
-                rtw_model->base_period, rt_kernel.base_period);
+                rtw_model->task_period[0], rt_kernel.base_period);
         err = -EINVAL;
         goto out;
     }
@@ -504,20 +509,21 @@ int register_rtw_model(const struct rtw_model *rtw_model,
     if (!rt_kernel.base_period) {
         /* Use global baserate if it has been passed as a module parameter
          * otherwise take that from the model */
-        rt_kernel.base_period = basetick ? basetick : rtw_model->base_period;
+        rt_kernel.base_period = 
+            basetick ? basetick : rtw_model->task_period[0];
         rt_kernel.tick_period = 
             start_rt_timer_ns(rt_kernel.base_period*1000);
         model->task[0].master = 1;
         pr_info("Started RT timer at a rate of %luus\n", 
                 rt_kernel.base_period);
     } else {
-        if (rtw_model->base_period < rt_kernel.base_period) {
+        if (rtw_model->task_period[0] < rt_kernel.base_period) {
             printk("ERROR: Period of model faster than rt_kernel's base "
                     "period. Load fastest model first.\n");
             goto out_incompatible_ticks;
         } 
 
-        if (rtw_model->base_period % rt_kernel.base_period) {
+        if (rtw_model->task_period[0] % rt_kernel.base_period) {
             printk("ERROR: Period of model not an integral multiple "
                     "of rt_kernel's base period.\n");
             goto out_incompatible_ticks;
@@ -537,15 +543,13 @@ int register_rtw_model(const struct rtw_model *rtw_model,
     now = rt_get_time();
     model->photo_sample = 1;           /* Take a photo of next calculation */
     for (i = 0; i < rtw_model->numst; i++) {
-        multiplier = rtw_model->get_sample_time_multiplier(i);
-        multiplier *= rtw_model->base_period/rt_kernel.base_period;
-        model->task[i].period = multiplier*rt_kernel.base_period;
-        pr_info("RTW Model tid %i running at %luus\n", 
-                i, model->task[i].period);
+        pr_info("RTW Model tid %i running at %uus\n", 
+                i, rtw_model->task_period[i]);
+        decimation = rtw_model->task_period[i] / rtw_model->task_period[0];
         if ((err = rt_task_make_periodic(
                         &model->task[i].rtai_thread, 
                         now + nano2count(1e7), //rt_kernel.tick_period,
-                        multiplier*rt_kernel.tick_period
+                        decimation*rt_kernel.tick_period
                         ))) {
                 printk("ERROR: Could not start periodic RTAI rask.\n");
                 goto out_make_periodic;

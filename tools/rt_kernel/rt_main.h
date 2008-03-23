@@ -45,7 +45,6 @@ struct mdl_task {
                                  * helper_thread */
 
     struct model *model;      /** Reference to the model */
-    unsigned long period;       /** Model task's period in microseconds */
     unsigned int mdl_tid;       /** The model's task id */
 
     struct task_stats *stats;
@@ -58,6 +57,7 @@ struct model {
     const struct rtw_model *rtw_model; /** Data structure for the RTW model. 
                                   * This gets passed to us when the model
                                   * is registered */
+    struct class_device *sysfs_dev;
 
     struct buddy_fio *buddy_fio; 
 
@@ -97,6 +97,8 @@ struct rt_kernel {
     struct cdev buddy_dev;      /**< Char dev struct for rt_kernel 
                                   * communication with the buddy */
     unsigned int chrdev_cnt;    /**< Count of character devices reserved */
+    struct class *sysfs_class;  /**< Pointer to SysFS class */
+    struct class_device *sysfs_dev; /**< Base device of rt_kernel */
 
     unsigned long loaded_models;  /**< The bits represent whether a RT model 
                                    * is loaded in this slot. Max no of RT 

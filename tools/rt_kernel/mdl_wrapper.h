@@ -1,6 +1,9 @@
 #include <linux/limits.h>       // PATH_MAX
 #include <stddef.h>             // size_t
-#include "msf.h"
+#include "mdl_taskstats.h"      // struct task_stats
+#include "module_payload.h"
+
+struct signal_info;
 
 struct rtw_model {
 	/** Block IO
@@ -13,7 +16,7 @@ struct rtw_model {
 
 	void *mdl_rtP;		/* Model parameters struct */
 	unsigned int rtP_size;
-	unsigned int base_period;	/* Ticker period in microsec */
+	unsigned int *task_period;	/* Array of task times in microsec */
 	unsigned int sample_period;	/* Photo period in microsec */
         unsigned int buffer_time;       /* Time in microsec of the BlockIO 
                                          * buffer */
@@ -22,11 +25,6 @@ struct rtw_model {
 	unsigned long stack_size;	/* RTAI Stack size */
 
         unsigned int numst;             /* Number of model sample times */
-        unsigned int (*get_sample_time_multiplier)(unsigned int);
-                                        /* Get the sample time in microsec
-                                         * for the specified index. Note that
-                                         * if tid01eq, then use sample time
-                                         * of index 1 for tid 0 and 1 */
 
 	void *pend_rtP;         /* Pointer to a new set of parameters */
 
@@ -35,12 +33,19 @@ struct rtw_model {
         int model_id;
 
         /* Variables used to pass model symbol to the buddy */
-        const char *symbols;
-        size_t symbol_len;
+        const struct payload_files *payload_files;
 
-        const char *(*rt_OneStepMain)(double);
-        const char *(*rt_OneStepTid)(unsigned int, double);
+        size_t signal_count;
+        size_t param_count;
+        size_t variable_path_len;
+
+        struct task_stats *task_stats;
+
+        const char *(*rt_OneStepMain)(void);
+        const char *(*rt_OneStepTid)(unsigned int);
         void (*set_error_msg)(const char *);
+        const char* (*get_signal_info)(struct signal_info*, const char**);
+        const char* (*get_param_info)(struct signal_info*, const char**);
 
         const char *modelVersion;
         const char *modelName;

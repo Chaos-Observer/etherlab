@@ -33,8 +33,9 @@
  *****************************************************************************/ 
 
 #include "mdl_wrapper.h"
-#include "mdl_taskinfo.h"
 #include "mdl_time.h"
+#include "fio_ioctl.h"
+#include "rtw_data_info.h"
 
 #include "rtmodel.h"
 #include "rt_sim.h"
@@ -69,7 +70,59 @@ extern void MdlOutputs(int_T tid);
 extern void MdlUpdate(int_T tid);
 extern void MdlTerminate(void);
 
-double world_time[NUMST];
+#ifdef MULTITASKING
+extern const char* rt_OneStepMain(void);
+extern const char* rt_OneStepTid(uint_T);
+#else
+extern const char* rt_OneStep(void);
+#endif
+extern void mdl_set_error_msg(const char *msg);
+
+double etl_world_time[NUMST];
+unsigned int task_period[NUMST - (TID01EQ ? 1 : 0)];
+struct task_stats task_stats[NUMST - (TID01EQ ? 1 : 0)];
+unsigned int get_signal_info(struct signal_info* si, char **name);
+unsigned int get_param_info(struct signal_info* si, char **name);
+
+/* Instantiate and initialise rtw_model here */
+struct rtw_model rtw_model = {
+    .mdl_rtB = &rtB,
+    .rtB_size = sizeof(rtB),
+
+#ifdef rtP
+    .mdl_rtP = &rtP,
+    .rtP_size = sizeof(rtP),
+#else
+    .mdl_rtP = NULL,
+    .rtP_size = 0,
+#endif
+
+    /* Some variables concerning sample times passed to the model */
+#ifdef MULTITASKING
+    .numst = TID01EQ ? NUMST-1 : NUMST,
+    .rt_OneStepMain = rt_OneStepMain,
+    .rt_OneStepTid = rt_OneStepTid,
+#else
+    .numst = 1,
+    .rt_OneStepMain = rt_OneStep,
+    .rt_OneStepTid = NULL,
+#endif
+
+    .task_period = task_period,
+
+    .decimation = DECIMATION > 1 ? DECIMATION : 1,
+    .max_overrun = OVERRUNMAX,
+    .buffer_time = BUFFER_TIME > 0 ? BUFFER_TIME*1e6 : 0,
+    .stack_size = STACKSIZE,
+    .task_stats = task_stats,
+
+    .payload_files = payload_files,
+
+    /* Register model callbacks */
+    .set_error_msg = mdl_set_error_msg,
+    .modelVersion = STR(MODELVERSION),
+    .modelName = STR(MODEL),
+};
 
 #if NCSTATES > 0
   extern void rt_ODECreateIntegrationData(RTWSolverInfo *si);
@@ -97,12 +150,13 @@ double world_time[NUMST];
  *      modifications.
  */
 const char *
-rt_OneStep(double time)
+rt_OneStep()
 {
     RT_MODEL *S = rtw_model.rt_model;
     real_T tnext;
 
-    world_time[0] = time;
+    etl_world_time[0] = (double)task_stats[0].time.tv_sec 
+        + (double)task_stats[0].time.tv_usec / 1.0e6;
 
     tnext = rt_SimGetNextSampleHit();
     rtsiSetSolverStopTime(rtmGetRTWSolverInfo(S),tnext);
@@ -121,12 +175,6 @@ rt_OneStep(double time)
 
     return rtmGetErrorStatusFlag(S);
 } /* end rtOneStep */
-
-double *
-etl_get_world_time_ptr(unsigned int tid)
-{
-    return &world_time[0];
-}
 
 #else /* MULTITASKING */
 
@@ -153,12 +201,15 @@ etl_get_world_time_ptr(unsigned int tid)
  *
  */
 const char *
-rt_OneStepMain(double time)
+rt_OneStepMain()
 {
     RT_MODEL *S = rtw_model.rt_model;
     real_T tnext;
 
-    world_time[FIRST_TID] = time;
+    etl_world_time[FIRST_TID] = (double)task_stats[0].time.tv_sec 
+        + (double)task_stats[0].time.tv_usec / 1.0e6;
+    etl_world_time[0] = etl_world_time[FIRST_TID];
+
 
     /*******************************************
      * Step the model for the base sample time *
@@ -192,42 +243,31 @@ rt_OneStepMain(double time)
 } /* end rtOneStepMain */
 
 const char *
-rt_OneStepTid(uint_T tid, double time)
+rt_OneStepTid(uint_T tid)
 {
     RT_MODEL *S = rtw_model.rt_model;
+    uint_T rtw_tid = tid + FIRST_TID;
 
-#if FIRST_TID == 1
-    tid += FIRST_TID;
-#endif
-
-    world_time[tid] = time;
+    etl_world_time[rtw_tid] = (double)task_stats[tid].time.tv_sec 
+        + (double)task_stats[tid].time.tv_usec / 1.0e6;
 
 /*
-    if (rtmGetSampleHitArray(S)[tid]) {
+    if (rtmGetSampleHitArray(S)[rtw_tid]) {
         rtmSetErrorStatusFlag(S, "Sample hit was not ready");
     }
 */
 
 
-    MdlOutputs(tid);
+    MdlOutputs(rtw_tid);
 
-    MdlUpdate(tid);
+    MdlUpdate(rtw_tid);
 
     rt_SimUpdateDiscreteTaskTime(rtmGetTPtr(S), 
-                                 rtmGetTimingData(S),tid);
+                                 rtmGetTimingData(S),rtw_tid);
 
     return rtmGetErrorStatusFlag(S);
 
 } /* end rtOneStepTid */
-
-double *
-etl_get_world_time_ptr(unsigned int tid)
-{
-    if (tid == 0) 
-        tid = FIRST_TID;
-
-    return &world_time[tid];
-}
 
 #endif /* MULTITASKING */
 
@@ -250,23 +290,6 @@ mdl_stop(void)
     MdlTerminate();
 }
 
-/* Function: mdl_get_sample_time_multiplier ==================================
- *
- * Abstact:
- *      Get the multiplier of the base sample time for sample index idx
- */
-unsigned int
-mdl_get_sample_time_multiplier(unsigned int idx)
-{
-    RT_MODEL  *S = rtw_model.rt_model;
-    unsigned int tid0 = TID01EQ ? 1 : 0;
-
-    idx += TID01EQ ? 1 : 0;
-    return (unsigned int)
-        (rtmGetSampleTime(S, idx)/rtmGetSampleTime(S, tid0)
-         + 0.5);
-}
-
 /* Function: main ============================================================
  *
  * Abstract:
@@ -277,6 +300,7 @@ mdl_start(void)
 {
     RT_MODEL  *S;
     const char *errmsg;
+    int i;
 
     /************************
      * Initialize the model *
@@ -310,44 +334,22 @@ mdl_start(void)
         return errmsg;
     }
 
+//    if ((errmsg = rtw_capi_init(S, 
+//                    &rtw_model.get_signal_info,
+//                    &rtw_model.get_param_info,
+//                    &rtw_model.signal_count,
+//                    &rtw_model.param_count,
+//                    &rtw_model.variable_path_len))) {
+//        return errmsg;
+//    }
 
-    rtw_model.mdl_rtB = &rtB;
-    rtw_model.rtB_size = sizeof(rtB);
+    for (i = 0; i < rtw_model.numst; i++) {
+        task_period[i] = (unsigned int)
+            (rtmGetSampleTime(S, i + (TID01EQ ? 1 : 0))*1.0e6 + 0.5);
+    }
 
-#ifdef rtP
-    rtw_model.mdl_rtP = &rtP;
-    rtw_model.rtP_size = sizeof(rtP);
-#else
-    rtw_model.mdl_rtP = NULL;
-    rtw_model.rtP_size = 0;
-#endif
-
-    /* Some variables concerning sample times passed to the model */
-#ifdef MULTITASKING
-    rtw_model.numst = TID01EQ ? NUMST-1 : NUMST;
-    rtw_model.rt_OneStepMain = rt_OneStepMain;
-    rtw_model.rt_OneStepTid = rt_OneStepTid;
-#else
-    rtw_model.numst = 1;
-    rtw_model.rt_OneStepMain = rt_OneStep;
-    rtw_model.rt_OneStepTid = NULL;
-#endif
-
-    rtw_model.base_period = (unsigned long)(rtmGetStepSize(S)*1.0e6 + 0.5);
-    rtw_model.get_sample_time_multiplier = mdl_get_sample_time_multiplier;
-
-    rtw_model.decimation = DECIMATION > 1 ? DECIMATION : 1;
-    rtw_model.max_overrun = OVERRUNMAX;
-    rtw_model.buffer_time = BUFFER_TIME > 0 ? BUFFER_TIME*1e6 : 0;
-    rtw_model.stack_size = STACKSIZE;
-
-    rtw_model.symbols = model_symbols;
-    rtw_model.symbol_len = model_symbols_len;
-
-    /* Register model callbacks */
-    rtw_model.set_error_msg = mdl_set_error_msg;
-    rtw_model.modelVersion = STR(MODELVERSION);
-    rtw_model.modelName = STR(MODEL);
+    // Cannot assign this in struct definition :(
+//    rtw_model.symbol_len = model_symbols_len;
 
     return NULL;
 

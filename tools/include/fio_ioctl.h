@@ -1,5 +1,10 @@
 #include <linux/ioctl.h>
 #include <stddef.h>
+#include "etl_data_info.h"
+
+#ifndef __KERNEL__
+#include <unistd.h>     // ssize_t
+#endif
 
 /* The maximum number of models that can be handled. The limit is due
  * to the data type that the bit operators (set_bit, clear_bit) can handle
@@ -9,14 +14,6 @@
 /* Arbitrary value */
 #define MAX_MODEL_NAME_LEN 256
 #define MAX_MODEL_VER_LEN  100
-
-struct task_stats {
-    double time;
-    unsigned int exec_time;
-    unsigned int time_step;
-    unsigned int overrun;
-};
-
 
 /* Here are the ioctl() commands to control the Process IO data stream 
  * between the Real-Time Process and the user space Buddy */
@@ -58,9 +55,6 @@ struct data_p {
 /* Write the models current parameter set to the data pointer */
 #define GET_PARAM             _IOR(FIO_MAGIC, 14, void *)
 
-/* Get the model symbol file from the kernel */
-#define GET_MDL_DESCRIPTION   _IOR(FIO_MAGIC, 15, void *)
-
 /* The following structure is used by the CHANGE_PARAM ioctl to change the 
  * models parameter set by the buddy selectively */
 #define CHANGE_PARAM          _IOW(FIO_MAGIC, 16, struct param_change *)
@@ -80,17 +74,26 @@ struct param_change {
     } changes[];
 };
 
+/* Get the model symbol file from the kernel */
+#define GET_SIGNAL_INFO       _IOR(FIO_MAGIC, 15, struct signal_info *)
+#define GET_PARAM_INFO        _IOR(FIO_MAGIC, 16, struct signal_info *)
+// struct signal_info is defined in etl_data_info.h
+
 /* This ioctl is used to return all the properties about the real time
  * process that the buddy needs. Pass it the address of a local 
  * struct mdl_properties */
 #define GET_MDL_PROPERTIES    _IOR(FIO_MAGIC, 19, struct mdl_properties *)
 struct mdl_properties {
-    size_t rtB_len;             // Total size of BlockIO buffer in the kernel
-    size_t rtB_cnt;             // Total count of block_io structs in kernel
+    size_t rtB_count;           // Total count of block_io structs in kernel
+    size_t rtB_size;            // Size of block IO structure
+    size_t rtP_size;            // Size of parameter structure
     unsigned int numst;         // Number of sample times
-    size_t rtP_size;            // Size of model parameter structure
     unsigned long base_rate;    // Model's base rate in microseconds
-    size_t symbol_len;          // Length of model symbol file
+
+    size_t param_count;         // Number of parameters
+    size_t signal_count;        // Number of signals
+    size_t variable_path_len;   // Memory requirements to store variable
+                                // path and alias, including \0
 };
 
 

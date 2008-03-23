@@ -38,7 +38,7 @@
   rtwoptions(1).prompt         = 'EtherLab C code generation options';
   rtwoptions(1).type           = 'Category';
   rtwoptions(1).enable         = 'on';  
-  rtwoptions(1).default        = 4;   % number of items under this category
+  rtwoptions(1).default        = 6;   % number of items under this category
                                       % excluding this one.
   rtwoptions(1).popupstrings  = '';
   rtwoptions(1).tlcvariable   = '';
@@ -48,7 +48,7 @@
   rtwoptions(1).closecallback = '';
   rtwoptions(1).makevariable  = '';
 
-  rtwoptions(2).prompt         = 'BIO Buffer time';
+  rtwoptions(2).prompt         = 'BIO Buffer time:	';
   rtwoptions(2).type           = 'Edit';
   rtwoptions(2).default        = '10';
   rtwoptions(2).tlcvariable    = 'BufferTime';
@@ -58,7 +58,7 @@
      'saved in the realtime process when the user buddy is',sprintf('\n'), ...
      'prevented from collecting these'];
 
-  rtwoptions(3).prompt       = 'Maximum Task overrun count';
+  rtwoptions(3).prompt       = 'Maximum Task overrun count:	';
   rtwoptions(3).type         = 'Edit';
   rtwoptions(3).default      = '1';
   rtwoptions(3).tlcvariable  = 'OverrunCount';
@@ -66,18 +66,21 @@
   rtwoptions(3).tooltip      = ...
     ['Exit realtime model if task overruns exceeds this amount'];
 
-  rtwoptions(4).prompt       = 'RTAI Stack Size';
+  rtwoptions(4).prompt       = 'RTAI Stack Size:	';
   rtwoptions(4).type         = 'Edit';
   rtwoptions(4).default      = '2000';
   rtwoptions(4).tlcvariable  = 'StackSize';
   rtwoptions(4).makevariable = 'STACKSIZE';
   rtwoptions(4).tooltip      = ...
-    ['This is the stack size reserved for the real time task.',sprintf('\n'), ...
-     '2k is usually enough, but check the kernel logs when the',sprintf('\n'), ...
-     'model is unloaded. The stack utilization is printed then.',sprintf('\n'), ...
+    ['This is the stack size reserved for the real time task.', ...
+     sprintf('\n'), ...
+     '2k is usually enough, but check the kernel logs when the', ...
+     sprintf('\n'), ...
+     'model is unloaded. The stack utilization is printed then.', ...
+     sprintf('\n'), ...
      'Keep ~500 bytes free.' ];
 
-  rtwoptions(5).prompt       = 'Process Image decimation rate';
+  rtwoptions(5).prompt       = 'Process Image decimation rate:	';
   rtwoptions(5).type         = 'Edit';
   rtwoptions(5).default      = '1';
   rtwoptions(5).tlcvariable  = 'ETLDecimation';
@@ -86,13 +89,41 @@
     ['The number of simulation runs between which', sprintf('\n'), ...
      'snapshots are made of the process image.'];
 
-  rtwoptions(6).prompt       = 'Verbose build';
+  rtwoptions(6).prompt       = 'Verbose build ';
   rtwoptions(6).type         = 'Checkbox';
   rtwoptions(6).default      = 'off';
   rtwoptions(6).tlcvariable  = 'VerboseBuild';
   rtwoptions(6).makevariable = 'VERBOSE_BUILD';
   rtwoptions(6).tooltip      = ...
     ['Check this to turn on extra compiler messages.'];
+
+  rtwoptions(7).prompt       = 'Staged build directory:	';
+  rtwoptions(7).type         = 'Edit';
+  rtwoptions(7).default      = '';
+  rtwoptions(7).tlcvariable  = 'StagingDir';
+  rtwoptions(7).makevariable = 'STAGING_DIR';
+  rtwoptions(7).tooltip      = ...
+    ['When developing models on a host that is not the target,', ...
+     sprintf('\n'), ...
+     'you can install the target''s EtherLab/kernel/RTAI locally into', ...
+     sprintf('\n'), ...
+     'a staging directory, and then use this field to point to that', ...
+     sprintf('\n'), ...
+     'directory.'];
+
+  rtwoptions(8).prompt       = 'Module Payload:	';
+  rtwoptions(8).type         = 'Edit';
+  rtwoptions(8).default      = [gcs '.mdl '];
+  rtwoptions(8).tlcvariable  = 'ModulePayload';
+  rtwoptions(8).makevariable = 'MODULE_PAYLOAD';
+  rtwoptions(8).tooltip      = ...
+    ['Space separated list of files that are attached verbatim to the ', ...
+     sprintf('\n'), ...
+     'kernel module. These files will appear compressed in the /proc ', ...
+     sprintf('\n'), ...
+     'filesystem. Wildcards are acceptable. Non-existent files will be', ...
+     sprintf('\n'), ...
+     'filtered out silently.'];
 
   %----------------------------------------%
   % Configure RTW code generation settings %

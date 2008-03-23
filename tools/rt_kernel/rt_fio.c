@@ -190,12 +190,15 @@ static long rtp_ioctl(
             {
                 struct mdl_properties properties;
 
-                properties.rtB_len   = model->rtB_len;
-                properties.rtB_cnt   = model->rtB_cnt;
-                properties.numst     = rtw_model->numst;
-                properties.rtP_size  = rtw_model->rtP_size;
-                properties.base_rate = rtw_model->sample_period;
-                properties.symbol_len = rtw_model->symbol_len;
+                properties.rtB_count     = rtw_model->rtB_count;
+                properties.signal_count  = rtw_model->signal_count;
+                properties.param_count   = rtw_model->param_count;
+                properties.variable_path_len  = rtw_model->variable_path_len;
+                properties.numst         = rtw_model->numst;
+                properties.base_rate     = rtw_model->sample_period;
+                properties.rtB_size      = rtw_model->rtB_size
+                    + rtw_model->numst * sizeof(struct task_stats);
+                properties.rtP_size      = rtw_model->rtP_size;
 
                 rv = copy_to_user((void *)data, &properties, 
                         sizeof(properties));
@@ -265,16 +268,36 @@ static long rtp_ioctl(
             rv = 0;
             break;
             
-        case GET_MDL_DESCRIPTION:
-            pr_info("Getting model symbol file: %u bytes\n", 
-                    rtw_model->symbol_len);
-            if (copy_to_user((void *)data, rtw_model->symbols,
-                    rtw_model->symbol_len)) {
-                rv = -EFAULT;
-                break;
+        case GET_SIGNAL_INFO:
+        case GET_PARAM_INFO:
+            /* Get properties of signal or parameter */
+            {
+                struct signal_info signal_info;
+                struct signal_info *si = 
+                    (struct signal_info*)data;
+                const char *path;
+                const char *err;
+
+                // Get the index the user is interested in
+                if ((rv = get_user(signal_info.index, &si->index)))
+                    break;
+
+                err = (command == GET_SIGNAL_INFO)
+                    ? rtw_model->get_signal_info(&signal_info, &path)
+                    : rtw_model->get_param_info(&signal_info, &path);
+                if (rv) {
+                    printk("Error: %s\n", err);
+                    rv = -ERANGE;
+                    break;
+                }
+
+                if (copy_to_user(si, &signal_info, sizeof(*si))
+                    || copy_to_user(&si->path[0], path, strlen(path))) {
+                    rv = -EFAULT;
+                    break;
+                }
             }
             break;
-
 
         case GET_PARAM:
             /* Buddy process wants to get the complete parameter
@@ -483,6 +506,8 @@ void rtp_fio_clear_mdl(struct model *model)
     pr_debug("Tearing down FIO for model_id %u\n", model->id);
 
     clear_bit(model->id, &rt_kernel.data_mask);
+    class_device_destroy(rt_kernel.sysfs_class, 
+            rt_kernel.dev + model->id + 1);
     cdev_del(&model->rtp_dev);
 
     /* Wake the buddy to tell that there is a new process */
@@ -496,7 +521,6 @@ void rtp_fio_clear_mdl(struct model *model)
 int rtp_fio_init_mdl(struct model *model, struct module *owner)
 {
     dev_t devno;
-    int major = MAJOR(rt_kernel.dev), minor = MINOR(rt_kernel.dev);
     int err = -1;
 
     pr_debug("Initialising FIO for model_id %u\n", model->id);
@@ -509,12 +533,20 @@ int rtp_fio_init_mdl(struct model *model, struct module *owner)
     /* Character device for BlockIO stream */
     cdev_init(&model->rtp_dev, &rtp_fops);
     model->rtp_dev.owner = owner;
-    devno = MKDEV(major, minor + model->id + 1);
+    devno = rt_kernel.dev + model->id + 1;
     if ((err = cdev_add(&model->rtp_dev, devno, 1))) {
         printk("Could not add Process IO FOPS to cdev\n");
         goto out_add_rtp;
     }
     pr_debug("Added char dev for BlockIO, minor %u\n", MINOR(devno));
+
+    model->sysfs_dev = class_device_create(rt_kernel.sysfs_class, NULL, 
+            devno, NULL, "etl%d", model->id + 1);
+    if (IS_ERR(model->sysfs_dev)) {
+        printk("Could not create device etl0.\n");
+        err = PTR_ERR(model->sysfs_dev);
+        goto out_class_device_create;
+    }
 
     /* Wake the buddy to tell that there is a new process */
     rt_kernel.model_state_changed = 1;
@@ -522,6 +554,8 @@ int rtp_fio_init_mdl(struct model *model, struct module *owner)
 
     return 0;
 
+    class_device_destroy(rt_kernel.sysfs_class, devno);
+out_class_device_create:
     cdev_del(&model->rtp_dev);
 out_add_rtp:
     return err;
@@ -638,8 +672,10 @@ void rtp_fio_clear(void)
 {
     pr_debug("Tearing down FIO for rt_kernel\n");
 
+    class_device_destroy(rt_kernel.sysfs_class, rt_kernel.dev);
     cdev_del(&rt_kernel.buddy_dev);
     unregister_chrdev_region(rt_kernel.dev, rt_kernel.chrdev_cnt);
+    class_destroy(rt_kernel.sysfs_class);
 }
 
 /* Set up the Real-Time Kernel file handles. This is called once when
@@ -652,6 +688,13 @@ int rtp_fio_init(void)
     pr_debug("Initialising FIO for rt_kernel\n");
 
     rt_kernel.model_state_changed = 0;
+
+    rt_kernel.sysfs_class = class_create(THIS_MODULE, "rt_kernel");
+    if (IS_ERR(rt_kernel.sysfs_class)) {
+        printk("Could not create SysFS class structure.\n");
+        err = PTR_ERR(rt_kernel.sysfs_class);
+        goto out_class_create;
+    }
 
     /* Create character devices for this process. Each RT model needs 1
      * char device, and rt_kernel needs 1 */
@@ -672,12 +715,24 @@ int rtp_fio_init(void)
     }
     pr_debug("Started char dev for rt_kernel\n");
 
+    rt_kernel.sysfs_dev = class_device_create(rt_kernel.sysfs_class, NULL, 
+            rt_kernel.dev, NULL, "etl0");
+    if (IS_ERR(rt_kernel.sysfs_dev)) {
+        printk("Could not create device etl0.\n");
+        err = PTR_ERR(rt_kernel.sysfs_dev);
+        goto out_class_device_create;
+    }
+
     return 0;
 
+    class_device_destroy(rt_kernel.sysfs_class, rt_kernel.dev);
+out_class_device_create:
     cdev_del(&rt_kernel.buddy_dev);
 out_add_rtp:
     unregister_chrdev_region(rt_kernel.dev, rt_kernel.chrdev_cnt);
 out_chrdev:
+    class_destroy(rt_kernel.sysfs_class);
+out_class_create:
     return err;
 }
 

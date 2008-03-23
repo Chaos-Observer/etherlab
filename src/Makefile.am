@@ -1,1 +1,1 @@
-SUBDIRS = include buddy kernel
+#SUBDIRS = C

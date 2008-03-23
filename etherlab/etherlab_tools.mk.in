@@ -7,17 +7,20 @@
 # License: GPL
 
 OPT_OPTS = -O -ffloat-store -fno-common
-OPT_OPTS = -Wall -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing -fno-common -ffreestanding -O2 -fomit-frame-pointer -pipe -mpreferred-stack-boundary=2 -fno-unit-at-a-time -march=i686 -mtune=pentium3 -mhard-float -ffast-math
+
 ifneq ($(DEBUG),)
 CODE_DEBUG = -g
 endif
 ANSI_OPTS        = -std=gnu99
 ANSI_OPTS        = -std=gnu99 -pedantic
+ANSI_OPTS        = 
 CC               = gcc
 LD               = ld
 LDFLAGS		 =
-INSTRUMENT_LIBS  = @prefix@/lib/libetherlab.a
-USER_INCLUDES    = -I@ETHERLAB_DIR@/include -I$(ETHERLAB_DIR)/include -I$(ETHERLAB_DIR)/src/kernel 
+INSTRUMENT_LIBS  = $(STAGING_DIR)/@prefix@/lib/libetherlab.a
+PRECOMP_RTW_LIB  = $(wildcard $(STAGING_DIR)/@prefix@/lib/librtw.a)
+USER_INCLUDES    = -I$(STAGING_DIR)/@ETHERLAB_DIR@/include \
+        -I$(ETHERLAB_DIR)/include -I$(ETHERLAB_DIR)/src/kernel 
 
 # These definitions are used by targets that have the WARN_ON_GLNX option
 GCC_WARN_OPTS     := -pedantic -Wall -Wwrite-strings \
@@ -32,3 +35,7 @@ GCC_WARN_OPTS_MAX := $(GCC_WARN_OPTS) -Wshadow -Wcast-qual
 
 KERNEL_DIR           := @LINUX_DIR@
 RTAI_FLAGS           := @RTAI_FLAGS@
+
+# load KERNEL_OPTS from kflags.mk
+include $(STAGING_DIR)/@prefix@/etherlab/kflags.mk
+KERNEL_OPTS := $(filter-out -Wundef,$(KERNEL_OPTS)) $(RTAI_FLAGS)

@@ -46,7 +46,14 @@ MODULE_PATH="@prefix@/modules/$MODULE.ko"
 
 #------------------------------------------------------------------------------
 
+if test -r /etc/rc.status; then
 . /etc/rc.status
+else
+function rc_reset () { :; }
+function rc_status () { echo; }
+function rc_exit  () { echo; exit; }
+fi
+
 rc_reset
 
 case "$1" in
@@ -69,12 +76,14 @@ case "$1" in
 		fi
 
 		# get dynamic major number
-        major=$(awk "\$2==\"$MODULE\" {print \$1}" /proc/devices)
+		major=$(awk "\$2==\"$MODULE\" {print \$1}" /proc/devices)
 
-        # create device nodes
-		for i in {0..32}; do
-			mknod /dev/${DEVICE}$i c $major $i
-		done
+		# create device nodes
+		if test ! -c /dev/${DEVICE}0; then
+		    for i in {0..32}; do
+			    mknod /dev/${DEVICE}$i c $major $i
+		    done
+		fi
 
 		rc_status -v
 		;;

@@ -28,16 +28,19 @@
 
 //#include "defines.h"
 #include "fio_ioctl.h"
+#include "mdl_taskstats.h"
 #include "msr_main.h"
 #include "msr_lists.h"
+#include "msr_reg.h"
 
 #include "buddy_main.h"
 #include "modules.h"
 #include "net_io.h"
 
-#define CHECK_ERR(condition, position, msg, goto_label) { \
+#define CHECK_ERR(condition, errno, goto_label, msg, args...) { \
     if (condition) { \
-        syslog(LOG_CRIT, "%s error: %s\n", position, msg); \
+        syslog(LOG_CRIT, msg, ##args); \
+        rv = errno; \
         goto goto_label; \
     } \
 }
@@ -57,7 +60,7 @@ struct rtp_io {
                                    where the module waits for connects 
                                    from the TestManager */
 
-        /* Properties of the model */
+        /* Properties of the model. Defined in fio_ioctl.h */
         struct mdl_properties properties;
 
         void *blockio_start;    // Pointer to start of BlockIO
@@ -165,125 +168,14 @@ static void update_rtB(int fd, void *priv_data)
 }
 
 
-/* This funtion fetches the compressed model symbol file from the
- * real time process, decompresses it and writes it to a file. 
- * The caller should unlink() the file to prevent polluting /tmp
- * Returns: filename of the decompressed file - the caller must free() it
- *          NULL on error
- */
-static char *get_model_symbol( struct model *model)
-{
-    Bytef dst[4096];
-    void *in_buf;
-    char so_filename[] = "/tmp/msf_so_XXXXXX";
-    char *ret_filename;
-    int fd_so;
-    int err;
-    z_stream d_stream;
-    size_t len;
-
-    /* Open a temporary file where the uncompressed file will be stored */
-    fd_so = mkstemp(so_filename);
-    CHECK_ERR(fd_so < 0, "mkstemp()", strerror(errno), out_mkstemp_so_file);
-    syslog(LOG_DEBUG,
-            "Created temporary file for model symbol file: %s\n",
-            so_filename);
-
-    /* Make a copy of the filename, the caller has to free() it */
-    ret_filename = strdup(so_filename);
-    CHECK_ERR(!ret_filename, "strdup()", "No memory", out_strdup);
-
-#undef TEST
-
-#ifdef TEST
-    {
-        int fd;
-        in_buf = malloc(10000);
-        CHECK_ERR(!in_buf, "malloc()", "No memory", out_inflate_malloc);
-
-        fd = open("/home/rich/matlab/osc.so.c", O_RDONLY);
-        len = read(fd, in_buf, 10000);
-        close(fd);
-
-        printf("Read %i bytes\n", len);
-    }
-#else
-    /* Make some space for the model symbol file */
-    len = model->properties.symbol_len;
-    in_buf = malloc(len);
-    CHECK_ERR(!in_buf, "malloc()", "No memory", out_inflate_malloc);
-    syslog(LOG_DEBUG, "Compressed model symbol file is %i bytes", len);
-
-    /* Fetch the compressed model symbol file into in_buf */
-    err = ioctl(model->rtp_fd, GET_MDL_DESCRIPTION, in_buf);
-    CHECK_ERR(err, "ioctl()", strerror(errno), out_ioctl);
-#endif
-
-    /* Setup data structure for inflateInit() function */
-    d_stream.zalloc = (alloc_func)0;
-    d_stream.zfree = (free_func)0;
-    d_stream.opaque = (voidpf)0;
-    err = inflateInit(&d_stream);
-    CHECK_ERR(err != Z_OK, "inflateInit()", d_stream.msg, out_inflate_init);
-
-    /* Make d_stream pointers point to the compressed data */
-    d_stream.next_in  = in_buf;
-    d_stream.avail_in = len;
- 
-    /* Decompress the data in chunks */
-    while (d_stream.avail_in && err != Z_STREAM_END) {
-        d_stream.next_out = dst;
-        d_stream.avail_out = sizeof(dst);
-
-        err = inflate(&d_stream, Z_NO_FLUSH);
-        len = sizeof(dst) - d_stream.avail_out;
-
-        /* Filter out Z_STREAM_END from the errors. This is not a real error
-         * and this case is handled in the while() statement */
-        CHECK_ERR(err != Z_STREAM_END && err != Z_OK, 
-                "inflate()", d_stream.msg, out_inflate);
-
-        /* write() the data to the output file */
-        CHECK_ERR(len != write(fd_so, dst, len), "write()", strerror(errno), 
-                out_write);
-    }
-    syslog(LOG_INFO, "Decompressed model symbol file: %s, length %lu",
-            ret_filename, d_stream.total_out);
-
-    close(fd_so);
-
-    err = inflateEnd(&d_stream);
-    CHECK_ERR(err != Z_OK, "inflateInit()", d_stream.msg, out_inflate_end);
-
-    return ret_filename;
-
-out_inflate_end:
-out_write:
-out_inflate:
-    inflateEnd(&d_stream);
-out_inflate_init:
-out_ioctl:
-    free(in_buf);
-out_inflate_malloc:
-    free(ret_filename);
-out_strdup:
-    close(fd_so);
-    unlink(so_filename);
-out_mkstemp_so_file:
-    return NULL;
-}
-
 static int start_model(const char *model_name, unsigned int model_num)
 {
     int rv = 0;
     char filename[PATH_MAX];
-    char *model_symbol_file;
-    void *dlhandle;
     struct model *model;
-    int (*model_init)(void *);
     struct task_stats *task_stats;
     unsigned int st;
-    char *version_string;
+    struct signal_info *si;
 
     /* Get a pointer to model, going to need it often */
     model = &rtp_io.model[model_num];
@@ -295,100 +187,77 @@ static int start_model(const char *model_name, unsigned int model_num)
     snprintf(filename, PATH_MAX, "%s%u", rtp_io.dev_path, model_num + 1);
     syslog(LOG_DEBUG, "Open data channel (%s) to the Real-Time Process\n",
             filename);
-    if ((model->rtp_fd = open(filename, O_RDONLY | O_NONBLOCK)) < 0) {
-        syslog(LOG_ERR, "Cannot open char device %s to rt_process: %s",
-                filename, strerror(errno));
-        rv = -errno;
-        goto out_open_rtb;
-    }
+    model->rtp_fd = open(filename, O_RDONLY | O_NONBLOCK);
+    CHECK_ERR(model->rtp_fd < 0, errno, out_open_rtb,
+            "Error: Cannot open char device %s to rt_process: %s",
+            filename, strerror(errno));
 
     /*======================================================================
      * Initialise the Real-Time Process parameters in user space
      *======================================================================*/
     /* Find out the size of the parameter structure */
-    if ((rv = ioctl(model->rtp_fd, GET_MDL_PROPERTIES, &model->properties))) {
-    }
+    rv = ioctl(model->rtp_fd, GET_MDL_PROPERTIES, &model->properties);
+    CHECK_ERR(rv, rv, out_get_mdl_properties,
+            "Error: Could not fetch model properties: %s", strerror(errno));
 
     /* Get memory for parameter structure */
-    if (!(model->rtP = malloc(model->properties.rtP_size))) {
-        syslog(LOG_ERR, "Could not allocate memory: %s", strerror(errno));
-        rv = -errno;
-        goto out_malloc_rtP;
-    }
+    model->rtP = malloc(model->properties.rtP_size);
+    CHECK_ERR(!model->rtP, errno, out_malloc_rtP,
+            "Could not allocate memory: %s", strerror(errno));
+
     /* Initialise it with the current Real-Time Process parameters. Note
      * that the model may already have been running and that these parameters
      * are not necessarily the defaults */
-    if ((rv = ioctl(model->rtp_fd, GET_PARAM, model->rtP)) < 0) {
-        syslog(LOG_ERR, "Could not fetch model's current parameter set: %s",
+    rv = ioctl(model->rtp_fd, GET_PARAM, model->rtP);
+    CHECK_ERR(rv < 0, rv, out_ioctl_get_param,
+            "Could not fetch model's current parameter set: %s",
                 strerror(errno));
-        goto out_ioctl_get_param;
-    }
 
     /*======================================================================
      * Initialise pointers to the BlockIO stream from the Real-Time Process
      *======================================================================*/
 
     model->blockio_start = 
-        mmap(0, model->properties.rtB_len * model->properties.rtB_cnt, 
+        mmap(0, model->properties.rtB_size * model->properties.rtB_count, 
                 PROT_READ, MAP_PRIVATE, model->rtp_fd, 0);
-    if (model->blockio_start == MAP_FAILED) {
-        syslog(LOG_ERR, "Could not memory map model's IO space: %s",
-                strerror(errno));
-        goto out_mmap;
-    }
+    CHECK_ERR(model->blockio_start == MAP_FAILED, errno, out_mmap,
+            "Could not memory map model's IO space: %s", strerror(errno));
     model->slice_rp = ioctl(model->rtp_fd, RESET_BLOCKIO_RP);
-
-    /*======================================================================
-     * Load the Model specific shared object, which contains all path 
-     * and parameter names.
-     *======================================================================*/
-    /* Build up the path name to the shared object, which in turn has
-     * all the model specific details. It has the form ./<model>.so 
-     * The ./ is needed otherwise the dynamic loader only searches in
-     * the library paths */
-    if (!(model_symbol_file = get_model_symbol(model))) {
-        goto out_get_model_symbol_file;
-    }
-
-    /* Now load the shared object. This also additionally executes the function
-     * having __attribute__((constructor)) */
-    syslog(LOG_DEBUG, "Loading model symbol file %s\n", model_symbol_file);
-    dlhandle = dlopen(model_symbol_file, RTLD_LAZY);
-    if (!dlhandle) {
-        syslog(LOG_ERR, "Could not open model symbol file %s: %s",
-                model_symbol_file, dlerror());
-        rv = -errno;
-        goto out_dlopen;
-    }
-    if (!(version_string = dlsym(dlhandle, "version_string"))) {
-        syslog(LOG_ERR, "Symbol \"version_string\" is not exported in %s: %s",
-                model_symbol_file, dlerror());
-        rv = -errno;
-        goto out_init_sym;
-    }
-    if (!(model_init = dlsym(dlhandle, "model_init"))) {
-        syslog(LOG_ERR, "Symbol \"model_init\" is not exported in %s: %s",
-                model_symbol_file, dlerror());
-        rv = -errno;
-        goto out_init_sym;
-    }
 
     /*======================================================================
      * Find out the model's tick period, and initialise MSR and model
      *======================================================================*/
-    if (msr_init(model, param_change, 
+    CHECK_ERR (msr_init(model, param_change, 
                 model->properties.base_rate, model->blockio_start, 
-                model->properties.rtB_len, model->properties.rtB_cnt)) {
-        syslog(LOG_ERR, "Could not initialise msr software\n");
-        goto out_msr_init;
-    }
+                model->properties.rtB_size, model->properties.rtB_count),
+            -1, out_msr_init, "Could not initialise msr software");
+
     /* Initialise the model with the pointer obtained from the shared
      * object above */
-    model_init(model->rtP);
+    si = (struct signal_info*) malloc(sizeof(struct signal_info) + 
+            model->properties.variable_path_len);
+    CHECK_ERR (!si, errno, out_malloc_si,
+            "Could not allocate memory: %s", strerror(errno));
+
+    for (si->index = 0; si->index < model->properties.signal_count; 
+            si->index++) {
+        rv = ioctl(model->rtp_fd, GET_SIGNAL_INFO, si);
+        CHECK_ERR (rv, errno, out_get_signal_info,
+                "Error: could not get Signal Info %s", strerror(errno));
+        CHECK_ERR (msr_reg_rtw_signal(si->path, si->alias, "", si->offset, 
+                    si->rnum, si->cnum, si->data_type, si->orientation,
+                    si_data_width[si->data_type]), -1, out_reg_signal,
+                "MSR Error: could not register signal");
+    }
+
+    for (si->index = 0; si->index < model->properties.param_count; 
+            si->index++) {
+    }
+
 
     /* Statistics of Tasks are stored as a (struct task_stats *) just
      * after the rtB vector. Register these separately */
-    task_stats = (struct task_stats *) (model->properties.rtB_len - 
+    task_stats = (struct task_stats *) (model->properties.rtB_size - 
          model->properties.numst*sizeof(struct task_stats));
     msr_reg_time(&task_stats[0].time);
     for (st = 0; st < model->properties.numst; st++) {
@@ -409,29 +278,24 @@ static int start_model(const char *model_name, unsigned int model_num)
     init_fd(model->rtp_fd, update_rtB, NULL, model);
 
     /* Free unused memory */
-    dlclose(dlhandle);
-    unlink(model_symbol_file);
-    free(model_symbol_file);
 
     syslog(LOG_DEBUG, "Finished registering model with buddy");
     return 0;
 
 out_prepare_tcp:
+out_reg_signal:
+out_get_signal_info:
+    free(si);
+out_malloc_si:
     msr_cleanup();
 out_msr_init:
-//out_wrong_version:
-out_init_sym:
-    dlclose(dlhandle);
-out_dlopen:
-    unlink(model_symbol_file);
-    free(model_symbol_file);
-out_get_model_symbol_file:
     munmap(model->blockio_start, 
-            model->properties.rtB_len * model->properties.rtB_cnt);
+            model->properties.rtB_size * model->properties.rtB_count);
 out_mmap:
 out_ioctl_get_param:
     free(model->rtP);
 out_malloc_rtP:
+out_get_mdl_properties:
     close(model->rtp_fd);
 out_open_rtb:
     return rv;

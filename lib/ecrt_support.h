@@ -23,11 +23,12 @@ const char *ecs_reg_slave_pdomapping(
 struct ecat_slave_block *ecs_reg_slave_block(
         unsigned int tid,
         unsigned int master_id,
+        unsigned int domain_id,
+        ec_direction_t direction,
 
         const char *slave_address,
         uint32_t vendor_id, /**< vendor ID */
         uint32_t product_code, /**< product code */
-        unsigned int output,  /* Set to 1 if this is an output */
 
         const char **errmsg
         );
@@ -53,6 +54,8 @@ ec_master_t *ecs_get_master_ptr(
 const char *ecs_reg_pdo(
         unsigned int tid,
         unsigned int master_id,
+        unsigned int domain_id,
+        ec_direction_t direction,
 
         const char *slave_address,
         uint32_t vendor_id, /**< vendor ID */
@@ -60,19 +63,18 @@ const char *ecs_reg_pdo(
         uint16_t pdo_index, /**< PDO index */
         uint8_t pdo_subindex, /**< PDO subindex */
 
-        unsigned int output,  /* Set to 1 if this is an output */
-
         void **data_ptr
         );
 
 const char *ecs_reg_pdo_range(
         unsigned int tid,
         unsigned int master_id,
+        unsigned int domain_id,
+        ec_direction_t direction,
 
         const char *slave_address,
         uint32_t vendor_id, /**< vendor ID */
         uint32_t product_code, /**< product code */
-        ec_direction_t pdo_direction,
         uint16_t pdo_offset,
         uint16_t pdo_length,
         void **data_ptr

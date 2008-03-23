@@ -67,7 +67,6 @@ struct ecat_pdo {
     uint8_t pdo_entry_subindex;
 
     /* This data is used only with pdo_range */
-    ec_direction_t pdo_direction;
     uint16_t pdo_offset;
     uint16_t pdo_length;
 
@@ -93,8 +92,7 @@ struct ecat_slave_block {
     struct list_head pdo_entry_list;
 
     /* Used to remap PDO's */
-    uint16_t *RxPDO;
-    uint16_t *TxPDO;
+    ec_pdomap_t *pdo_map;
 
     /* Set to 1 if this is an output */
     unsigned int output;
@@ -107,6 +105,8 @@ struct ecat_domain {
                                  * is only used prior to ecs_start(), where
                                  * it is reworked into an array for faster
                                  * access */
+
+    unsigned int id;            /* RTW id number assigned to this domain */
 
     ec_domain_t *handle;        /* used when calling EtherCAT functions */
 
@@ -132,10 +132,6 @@ struct ecat_master {
                                  * it is reworked into an array for faster
                                  * access */
 
-    struct list_head domain_list; /* The list to temprarily store domains 
-                                   * that are registered on this master. This
-                                   * list is reworked during ecs_start() */
-
     unsigned int fastest_tid;   /* Fastest RTW task id that uses this 
                                  * master */
 
@@ -154,6 +150,14 @@ struct ecat_master {
                                 * registered for this master. The value here
                                 * can be too high when the same slave is 
                                 * registered more than once. */
+
+    /* Temporary storage for domains registered to this master. Every
+     * sample time has a read and a write list
+     */
+    struct {
+        struct list_head input_list;
+        struct list_head output_list;
+    } st_domain[];
 };
 
 /* Data used by the EtherCAT support layer */
@@ -428,444 +432,444 @@ __exit ecs_end(void)
 const char *
 __init ecs_start(void)
 {
-    struct ecat_master *master, *n1;
-    struct ecat_domain *domain, *n2;
-    struct ecat_pdo *pdo, *n3;
-    struct ecat_slave_block *slave_block, *n4;
-    struct sdo_init *sdo, *n5;
-    ec_slave_t *slave_ptr;
-    void *ptr;
-    uint16_t *p;
-    size_t len;
-    unsigned int i, j;
-    unsigned int master_tid = 0;
-    unsigned int total_masters = 0, total_domains = 0;
-    int error;
-    struct ecat_slave {
-        ec_slave_t *slave_ptr;
-        unsigned int locked;
-    } *slaves;
-
-
-
-    /* Count the number of masters and their domains so that it is possible
-     * to allocate memory for their data structures. Although memory has 
-     * already been allocated for these, the aim here is to allocate a 
-     * contiguous memory block and access them using array indexing instead
-     * of crawling though a linked list. Hope this is more efficient ;-)
-     */
-    list_for_each_entry(master, &ecat_data->master_list, list) {
-        total_masters++;
-        list_for_each_entry(domain, &master->domain_list, list) {
-            ecat_data->st[domain->tid].master_count++;
-            total_domains++;
-        }
-    }
-    pr_debug("Total number of masters = %u, domains = %u\n", 
-            total_masters, total_domains);
-
-    /* Now that the master and domain counts are known, we can
-     * get a large block of contiguous memory where the master and domain
-     * structures are kept. This is better for caching, and list operators
-     * are replaced with array operators */
-    len = total_masters*sizeof(struct ecat_master)
-        + total_domains*sizeof(struct ecat_domain);
-    if (!(ptr = kmalloc(len, GFP_KERNEL))) {
-        return no_mem_msg;
-    }
-
-    /* Subdivide the newly allocated space into the sample times */
-    for( i = 0; i < ecat_data->nst; i++) {
-        if (ecat_data->st[i].master_count) {
-            ecat_data->st[i].master = ptr;
-            ptr += sizeof(struct ecat_master)*ecat_data->st[i].master_count;
-            ecat_data->st[i].master_count = 0;
-        } else {
-            ecat_data->st[i].master = NULL;
-        }
-
-        if (ecat_data->st[i].domain_count) {
-            ecat_data->st[i].domain = ptr;
-            ptr += sizeof(struct ecat_domain)*ecat_data->st[i].domain_count;
-            ecat_data->st[i].domain_count = 0;
-        } else {
-            ecat_data->st[i].domain = NULL;
-        }
-    }
-
-    /* OK, take a deep breath, you will need to bear with me here.
-     * Now starting from master_list, go through the domains, and register
-     * all of simple_pdo_list.
-     * Going back to the domains, loop through slave_block_list, registering
-     * its pdo_list, its sdo_list, and possibly RxPDO/TxPDO */
-
-    /* Note that here we need to use list_for_each_entry_safe() because
-     * the list members are removed one by one */
-    list_for_each_entry_safe(master, n1, &ecat_data->master_list, list) {
-        unsigned int master_idx;
-        struct ecat_master *new_master;
-        unsigned int slave_count = 0;
-        unsigned int slave_idx = 0;
-
-        /* Find out to which tid this master will be allocated. The fastest
-         * tid will get it */
-        master_tid = master->fastest_tid;
-        master_idx = ecat_data->st[master_tid].master_count++;
-        new_master = &ecat_data->st[master_tid].master[master_idx];
-
-        /* Slaves is a temporary array where all registered slaves are kept.
-         * The user has many ways of addressing a slave and the only way to 
-         * detect whether two slaves are the same is when the master returns
-         * the same pointer for both slaves. That is why the slaves are 
-         * temporarily stored here */
-        slaves = kzalloc(
-                sizeof(struct ecat_slave) * master->slave_count, GFP_KERNEL);
-        if (!slaves) {
-            snprintf(errbuf, sizeof(errbuf), "%s", no_mem_msg);
-            goto out_alloc_slaves;
-        }
-
-        /* Loop through all of the masters domains */
-        list_for_each_entry_safe(domain, n2, &master->domain_list, list) {
-            unsigned int tid, domain_idx;
-
-            /* Go though the domain's simple_pdo_list. These slaves will not
-             * be configured, i.e. no SDO's and TxPDO/RxPDO */
-            pr_debug("Doing simple slave configuration\n");
-            list_for_each_entry_safe(pdo, n3, &domain->simple_pdo_list, list) {
-                /* Depending on the type of pdo (typed or range), have
-                 * different calls to EtherCAT */
-                pr_debug("Considering slave %s\n", pdo->slave_address);
-                slave_ptr = ecrt_master_get_slave(master->handle, 
-                        pdo->slave_address,
-                        pdo->vendor_id,
-                        pdo->product_code);
-                if (!slave_ptr) {
-                    snprintf(errbuf, sizeof(errbuf), 
-                            "EtherCAT get_slave() %s on Master %u failed.",
-                            pdo->slave_address, master->id);
-                    goto out_get_slave;
-                }
-
-                /* Find out whether this slave has already been registered. */
-                for (slave_idx = 0; slave_idx < slave_count; slave_idx++) {
-                    if (slaves[slave_idx].slave_ptr == slave_ptr) {
-                        pr_debug("Slave has been registered already\n");
-                        break;
-                    }
-                }
-                if (slave_idx < slave_count) {
-                    /* Slave has already been registered, now check whether
-                     * either the previous slave or this new slave id
-                     * either configured or is an output.
-                     * */
-                    if (slaves[slave_idx].locked || pdo->output) {
-                        snprintf(errbuf, sizeof(errbuf), 
-                                "Cannot register EtherCAT slave %s on Master %u "
-                                "twice as output.",
-                                pdo->slave_address, master->id);
+//    struct ecat_master *master, *n1;
+//    struct ecat_domain *domain, *n2;
+//    struct ecat_pdo *pdo, *n3;
+//    struct ecat_slave_block *slave_block, *n4;
+//    struct sdo_init *sdo, *n5;
+//    ec_slave_t *slave_ptr;
+//    void *ptr;
+//    uint16_t *p;
+//    size_t len;
+//    unsigned int i, j;
+//    unsigned int master_tid = 0;
+//    unsigned int total_masters = 0, total_domains = 0;
+//    int error;
+//    struct ecat_slave {
+//        ec_slave_t *slave_ptr;
+//        unsigned int locked;
+//    } *slaves;
+//
+//
+//
+//    /* Count the number of masters and their domains so that it is possible
+//     * to allocate memory for their data structures. Although memory has 
+//     * already been allocated for these, the aim here is to allocate a 
+//     * contiguous memory block and access them using array indexing instead
+//     * of crawling though a linked list. Hope this is more efficient ;-)
+//     */
+//    list_for_each_entry(master, &ecat_data->master_list, list) {
+//        total_masters++;
+//        list_for_each_entry(domain, &master->domain_list, list) {
+//            ecat_data->st[domain->tid].master_count++;
+//            total_domains++;
+//        }
+//    }
+//    pr_debug("Total number of masters = %u, domains = %u\n", 
+//            total_masters, total_domains);
+//
+//    /* Now that the master and domain counts are known, we can
+//     * get a large block of contiguous memory where the master and domain
+//     * structures are kept. This is better for caching, and list operators
+//     * are replaced with array operators */
+//    len = total_masters*sizeof(struct ecat_master)
+//        + total_domains*sizeof(struct ecat_domain);
+//    if (!(ptr = kmalloc(len, GFP_KERNEL))) {
+//        return no_mem_msg;
+//    }
+//
+//    /* Subdivide the newly allocated space into the sample times */
+//    for( i = 0; i < ecat_data->nst; i++) {
+//        if (ecat_data->st[i].master_count) {
+//            ecat_data->st[i].master = ptr;
+//            ptr += sizeof(struct ecat_master)*ecat_data->st[i].master_count;
+//            ecat_data->st[i].master_count = 0;
+//        } else {
+//            ecat_data->st[i].master = NULL;
+//        }
+//
+//        if (ecat_data->st[i].domain_count) {
+//            ecat_data->st[i].domain = ptr;
+//            ptr += sizeof(struct ecat_domain)*ecat_data->st[i].domain_count;
+//            ecat_data->st[i].domain_count = 0;
+//        } else {
+//            ecat_data->st[i].domain = NULL;
+//        }
+//    }
+//
+//    /* OK, take a deep breath, you will need to bear with me here.
+//     * Now starting from master_list, go through the domains, and register
+//     * all of simple_pdo_list.
+//     * Going back to the domains, loop through slave_block_list, registering
+//     * its pdo_list, its sdo_list, and possibly RxPDO/TxPDO */
+//
+//    /* Note that here we need to use list_for_each_entry_safe() because
+//     * the list members are removed one by one */
+//    list_for_each_entry_safe(master, n1, &ecat_data->master_list, list) {
+//        unsigned int master_idx;
+//        struct ecat_master *new_master;
+//        unsigned int slave_count = 0;
+//        unsigned int slave_idx = 0;
+//
+//        /* Find out to which tid this master will be allocated. The fastest
+//         * tid will get it */
+//        master_tid = master->fastest_tid;
+//        master_idx = ecat_data->st[master_tid].master_count++;
+//        new_master = &ecat_data->st[master_tid].master[master_idx];
+//
+//        /* Slaves is a temporary array where all registered slaves are kept.
+//         * The user has many ways of addressing a slave and the only way to 
+//         * detect whether two slaves are the same is when the master returns
+//         * the same pointer for both slaves. That is why the slaves are 
+//         * temporarily stored here */
+//        slaves = kzalloc(
+//                sizeof(struct ecat_slave) * master->slave_count, GFP_KERNEL);
+//        if (!slaves) {
+//            snprintf(errbuf, sizeof(errbuf), "%s", no_mem_msg);
+//            goto out_alloc_slaves;
+//        }
+//
+//        /* Loop through all of the masters domains */
+//        list_for_each_entry_safe(domain, n2, &master->domain_list, list) {
+//            unsigned int tid, domain_idx;
+//
+//            /* Go though the domain's simple_pdo_list. These slaves will not
+//             * be configured, i.e. no SDO's and TxPDO/RxPDO */
+//            pr_debug("Doing simple slave configuration\n");
+//            list_for_each_entry_safe(pdo, n3, &domain->simple_pdo_list, list) {
+//                /* Depending on the type of pdo (typed or range), have
+//                 * different calls to EtherCAT */
+//                pr_debug("Considering slave %s\n", pdo->slave_address);
+//                slave_ptr = ecrt_master_get_slave(master->handle, 
+//                        pdo->slave_address,
+//                        pdo->vendor_id,
+//                        pdo->product_code);
+//                if (!slave_ptr) {
+//                    snprintf(errbuf, sizeof(errbuf), 
+//                            "EtherCAT get_slave() %s on Master %u failed.",
+//                            pdo->slave_address, master->id);
+//                    goto out_get_slave;
+//                }
+//
+//                /* Find out whether this slave has already been registered. */
+//                for (slave_idx = 0; slave_idx < slave_count; slave_idx++) {
+//                    if (slaves[slave_idx].slave_ptr == slave_ptr) {
+//                        pr_debug("Slave has been registered already\n");
+//                        break;
+//                    }
+//                }
+//                if (slave_idx < slave_count) {
+//                    /* Slave has already been registered, now check whether
+//                     * either the previous slave or this new slave id
+//                     * either configured or is an output.
+//                     * */
+//                    if (slaves[slave_idx].locked || pdo->output) {
+//                        snprintf(errbuf, sizeof(errbuf), 
+//                                "Cannot register EtherCAT slave %s on Master %u "
+//                                "twice as output.",
+//                                pdo->slave_address, master->id);
+////                        goto out_get_slave;
+//                    }
+//                } else {
+//                    /* Never seen this slave before */
+//                    slaves[slave_count].slave_ptr = slave_ptr;
+//                    if (pdo->output)
+//                        slaves[slave_count].locked = 1;
+//                    slave_count++;
+//                    pr_debug("Slave has never been registered\n");
+//                }
+//
+//                switch(pdo->type) {
+//                    case pdo_typed:
+//                        error = ecrt_domain_register_pdo(
+//                                domain->handle, slave_ptr,
+//                                pdo->pdo_entry_index, 
+//                                pdo->pdo_entry_subindex, 
+//                                pdo->data_ptr);
+//                        pr_debug("\t%p = ecrt_domain_register_pdo("
+//                                "%p, \"%s\", %i, %i, %i, %i, %p)\n", slave_ptr,
+//                                domain->handle,
+//                                pdo->slave_address, pdo->vendor_id, 
+//                                pdo->product_code, pdo->pdo_entry_index, 
+//                                pdo->pdo_entry_subindex, pdo->data_ptr);
+//                        break;
+//                    case pdo_range:
+//                        error = ecrt_domain_register_pdo_range(
+//                                domain->handle, slave_ptr,
+//                                pdo->pdo_direction, 
+//                                pdo->pdo_offset, pdo->pdo_length, 
+//                                pdo->data_ptr);
+//                        pr_debug("\t%p = ecrt_domain_register_pdo_range("
+//                                "%p, \"%s\", %i, %i, %i, %i, %i, %p)\n", slave_ptr,
+//                                domain->handle,
+//                                pdo->slave_address, pdo->vendor_id, 
+//                                pdo->product_code, pdo->pdo_direction, 
+//                                pdo->pdo_offset, pdo->pdo_length, 
+//                                pdo->data_ptr);
+//                        break;
+//                    default:
+//                        error = 1;
+//                        pr_info("Unknown pdo->type in %s\n", __func__);
+//                        break;
+//                }
+//                if (error) {
+//                    snprintf(errbuf, sizeof(errbuf), 
+//                            "EtherCAT register PDO for slave %s "
+//                            "on Master %u failed.",
+//                            pdo->slave_address, master->id);
+//                    goto out_register_pdo;
+//                }
+//            }
+//
+//            /* Now go through the domain's slave_block_list. This list contains
+//             * enhanced slave configuration */
+//            pr_debug("Doing enhanced slave configuration\n");
+//            list_for_each_entry_safe(slave_block, n4, 
+//                    &domain->slave_block_list, list) {
+//                pr_debug("Considering slave %s\n", slave_block->slave_address);
+//                slave_ptr = ecrt_master_get_slave(master->handle, 
+//                        slave_block->slave_address,
+//                        slave_block->vendor_id,
+//                        slave_block->product_code);
+//                if (!slave_ptr) {
+//                    snprintf(errbuf, sizeof(errbuf), 
+//                            "EtherCAT get_slave() %s on Master %u failed.",
+//                            slave_block->slave_address, master->id);
+//                    goto out_get_slave;
+//                }
+//
+//                /* Find out whether this slave has already been registered. */
+//                for (slave_idx = 0; slave_idx < slave_count; slave_idx++) {
+//                    if (slaves[slave_idx].slave_ptr == slave_ptr) {
+//                        pr_debug("Slave has been registered already.\n");
+//                        break;
+//                    }
+//                }
+//                if (slave_idx < slave_count) {
+//                    /* Slave has already been registered, now check whether
+//                     * either the previous slave or this new slave id
+//                     * either configured or is an output.
+//                     * */
+//                    if (slaves[slave_idx].locked
+//                            || slave_block->output
+//                            || slave_block->TxPDO 
+//                            || slave_block->RxPDO 
+//                            || !list_empty(&slave_block->sdo_list)) {
+//                        snprintf(errbuf, sizeof(errbuf), 
+//                                "Cannot register EtherCAT slave %s on Master %u "
+//                                "twice as output or configured device.",
+//                                slave_block->slave_address, master->id);
 //                        goto out_get_slave;
-                    }
-                } else {
-                    /* Never seen this slave before */
-                    slaves[slave_count].slave_ptr = slave_ptr;
-                    if (pdo->output)
-                        slaves[slave_count].locked = 1;
-                    slave_count++;
-                    pr_debug("Slave has never been registered\n");
-                }
-
-                switch(pdo->type) {
-                    case pdo_typed:
-                        error = ecrt_domain_register_pdo(
-                                domain->handle, slave_ptr,
-                                pdo->pdo_entry_index, 
-                                pdo->pdo_entry_subindex, 
-                                pdo->data_ptr);
-                        pr_debug("\t%p = ecrt_domain_register_pdo("
-                                "%p, \"%s\", %i, %i, %i, %i, %p)\n", slave_ptr,
-                                domain->handle,
-                                pdo->slave_address, pdo->vendor_id, 
-                                pdo->product_code, pdo->pdo_entry_index, 
-                                pdo->pdo_entry_subindex, pdo->data_ptr);
-                        break;
-                    case pdo_range:
-                        error = ecrt_domain_register_pdo_range(
-                                domain->handle, slave_ptr,
-                                pdo->pdo_direction, 
-                                pdo->pdo_offset, pdo->pdo_length, 
-                                pdo->data_ptr);
-                        pr_debug("\t%p = ecrt_domain_register_pdo_range("
-                                "%p, \"%s\", %i, %i, %i, %i, %i, %p)\n", slave_ptr,
-                                domain->handle,
-                                pdo->slave_address, pdo->vendor_id, 
-                                pdo->product_code, pdo->pdo_direction, 
-                                pdo->pdo_offset, pdo->pdo_length, 
-                                pdo->data_ptr);
-                        break;
-                    default:
-                        error = 1;
-                        pr_info("Unknown pdo->type in %s\n", __func__);
-                        break;
-                }
-                if (error) {
-                    snprintf(errbuf, sizeof(errbuf), 
-                            "EtherCAT register PDO for slave %s "
-                            "on Master %u failed.",
-                            pdo->slave_address, master->id);
-                    goto out_register_pdo;
-                }
-            }
-
-            /* Now go through the domain's slave_block_list. This list contains
-             * enhanced slave configuration */
-            pr_debug("Doing enhanced slave configuration\n");
-            list_for_each_entry_safe(slave_block, n4, 
-                    &domain->slave_block_list, list) {
-                pr_debug("Considering slave %s\n", slave_block->slave_address);
-                slave_ptr = ecrt_master_get_slave(master->handle, 
-                        slave_block->slave_address,
-                        slave_block->vendor_id,
-                        slave_block->product_code);
-                if (!slave_ptr) {
-                    snprintf(errbuf, sizeof(errbuf), 
-                            "EtherCAT get_slave() %s on Master %u failed.",
-                            slave_block->slave_address, master->id);
-                    goto out_get_slave;
-                }
-
-                /* Find out whether this slave has already been registered. */
-                for (slave_idx = 0; slave_idx < slave_count; slave_idx++) {
-                    if (slaves[slave_idx].slave_ptr == slave_ptr) {
-                        pr_debug("Slave has been registered already.\n");
-                        break;
-                    }
-                }
-                if (slave_idx < slave_count) {
-                    /* Slave has already been registered, now check whether
-                     * either the previous slave or this new slave id
-                     * either configured or is an output.
-                     * */
-                    if (slaves[slave_idx].locked
-                            || slave_block->output
-                            || slave_block->TxPDO 
-                            || slave_block->RxPDO 
-                            || !list_empty(&slave_block->sdo_list)) {
-                        snprintf(errbuf, sizeof(errbuf), 
-                                "Cannot register EtherCAT slave %s on Master %u "
-                                "twice as output or configured device.",
-                                slave_block->slave_address, master->id);
-                        goto out_get_slave;
-                    }
-                } else {
-                    pr_debug("Slave has never been registered.\n");
-                    /* Never seen this slave before.
-                     * Put the slave into the list of known slaves */
-                    slaves[slave_count].slave_ptr = slave_ptr;
-                    if (slave_block->output
-                            || slave_block->TxPDO 
-                            || slave_block->RxPDO 
-                            || !list_empty(&slave_block->sdo_list)) {
-                        slaves[slave_count].locked = 1;
-                    }
-                    slave_idx = slave_count++;
-                }
-
-                /* First do the PDO remapping if they exist */
-                if ((p = slave_block->TxPDO)) {
-                    pr_debug("TxPDO has changed: ");
-                    ecrt_slave_pdo_mapping_clear(slave_ptr, EC_DIR_INPUT);
-                    while (*p) {
-#ifdef DEBUG
-                        printk("0x%X ", *p);
-#endif
-                        if (ecrt_slave_pdo_mapping_add(slave_ptr, 
-                                    EC_DIR_INPUT, *p++)) {
-                            snprintf(errbuf, sizeof(errbuf), 
-                                    "Cannot add TxPDO remapping %i for EtherCAT "
-                                    "slave %s on Master %u.",
-                                    *(p-1), slave_block->slave_address, 
-                                    master->id);
-                            goto out_get_slave;
-                        }
-                    }
-#ifdef DEBUG
-                    printk("\n");
-#endif
-                }
-                if ((p = slave_block->RxPDO)) {
-                    pr_debug("RxPDO has changed: ");
-                    ecrt_slave_pdo_mapping_clear(slave_ptr, EC_DIR_OUTPUT);
-                    while (*p) {
-#ifdef DEBUG
-                        printk("0x%X ", *p);
-#endif
-                        if (ecrt_slave_pdo_mapping_add(slave_ptr, 
-                                    EC_DIR_OUTPUT, *p++)) {
-                            snprintf(errbuf, sizeof(errbuf), 
-                                    "Cannot add RxPDO remapping %i for EtherCAT "
-                                    "slave %s on Master %u.",
-                                    *(p-1), slave_block->slave_address, 
-                                    master->id);
-                            goto out_get_slave;
-                        }
-                    }
-#ifdef DEBUG
-                    printk("\n");
-#endif
-                }
-
-                /* Register the PDO Entries */
-                list_for_each_entry_safe(pdo, n3, 
-                        &slave_block->pdo_entry_list, list) {
-                    /* Depending on the type of pdo (typed or range), have
-                     * different calls to EtherCAT */
-                    switch(pdo->type) {
-                        case pdo_typed:
-                            error = ecrt_domain_register_pdo(
-                                    domain->handle, slave_ptr,
-                                    pdo->pdo_entry_index, 
-                                    pdo->pdo_entry_subindex, 
-                                    pdo->data_ptr);
-                            pr_debug("\t%p = ecrt_domain_register_pdo("
-                                    "%p, %p, %i, %i, %p)\n", 
-                                    slave_ptr, domain->handle, slave_ptr,
-                                    pdo->pdo_entry_index, 
-                                    pdo->pdo_entry_subindex, pdo->data_ptr);
-                            break;
-                        case pdo_range:
-                            error = ecrt_domain_register_pdo_range(
-                                    domain->handle, slave_ptr,
-                                    pdo->pdo_direction, 
-                                    pdo->pdo_offset, pdo->pdo_length, 
-                                    pdo->data_ptr);
-                            pr_debug("\t%p = ecrt_domain_register_pdo_range("
-                                    "%p, %p, %i, %i, %i, %p)\n", 
-                                    slave_ptr, domain->handle, slave_ptr,
-                                    pdo->pdo_direction, 
-                                    pdo->pdo_offset, pdo->pdo_length, 
-                                    pdo->data_ptr);
-                            break;
-                        default:
-                            error = 1;
-                            pr_info("Unknown pdo->type in %s\n", __func__);
-                            break;
-                    }
-                    if (error) {
-                        snprintf(errbuf, sizeof(errbuf), 
-                                "EtherCAT register PDO for slave %s "
-                                "on Master %u failed.",
-                                slave_block->slave_address, master->id);
-                        goto out_register_pdo;
-                    }
-                }
-
-                /* Go through the SDO configuration parameters for a slave */
-                list_for_each_entry_safe(sdo, n5, &slave_block->sdo_list, list) {
-                    switch (sdo->type) {
-                        case sdo8:
-                            if (ecrt_slave_conf_sdo8(slave_ptr, 
-                                        sdo->sdo_index, sdo->sdo_subindex,
-                                        sdo->value.u8)) {
-                                goto out_conf_sdo;
-                            }
-                            pr_debug ("ecrt_slave_conf_sdo8(%p, %i, %i, %i)\n",
-                                    slave_ptr, 
-                                    sdo->sdo_index, sdo->sdo_subindex,
-                                    sdo->value.u8);
-                            break;
-                        case sdo16:
-                            if (ecrt_slave_conf_sdo16(slave_ptr, 
-                                        sdo->sdo_index, sdo->sdo_subindex,
-                                        sdo->value.u16)) {
-                                goto out_conf_sdo;
-                            }
-                            pr_debug ("ecrt_slave_conf_sdo16(%p, %i, %i, %i)\n",
-                                    slave_ptr, 
-                                    sdo->sdo_index, sdo->sdo_subindex,
-                                    sdo->value.u16);
-                            break;
-                        case sdo32:
-                            if (ecrt_slave_conf_sdo32(slave_ptr, 
-                                        sdo->sdo_index, sdo->sdo_subindex,
-                                        sdo->value.u32)) {
-                                goto out_conf_sdo;
-                            }
-                            pr_debug ("ecrt_slave_conf_sdo32(%p, %i, %i, %i)\n",
-                                    slave_ptr, 
-                                    sdo->sdo_index, sdo->sdo_subindex,
-                                    sdo->value.u32);
-                            break;
-                    }
-                }
-            }
-
-            /* Move the domain to the sample time list */
-            tid = domain->tid;
-            domain_idx = ecat_data->st[tid].domain_count++;
-            memcpy(&ecat_data->st[tid].domain[domain_idx],
-                    list_entry(&domain->list, struct ecat_domain, list),
-                    sizeof(struct ecat_domain));
-            /* Free the old domain and set domain to the new address */
-            domain = &ecat_data->st[tid].domain[domain_idx];
-
-            /* Master has moved. Update pointer */
-            domain->master = new_master;
-        }
-
-        /* Now that all modifications are performed on the old master,
-         * the data can be copied to the new location */
-        list_del(&master->list);
-        memcpy(new_master, 
-                list_entry(&master->list, struct ecat_master, list),
-                sizeof(struct ecat_master));
-        kfree(slaves);
-    }
-
-    free_temp_mem();
-
-    /* Now that everything is set up, let the master activate itself */
-    for( i = 0; i < ecat_data->nst; i++) {
-        for( j = 0; j < ecat_data->st[i].master_count; j++) {
-            master = &ecat_data->st[i].master[j];
-
-            /* Setup the lock, timing  and callbacks needed for sharing 
-             * the master.
-             *
-             * Grace_cycles is a value that allows others to lock the network
-             * card if the current value of get_cycles() since the last tick
-             * is less than this value. If it is more, a new tick cycle is 
-             * expected soon, in which case the others should wait. Set this
-             * value to 20 microseconds less than the sample time's period */
-            master->grace_cycles = 
-                (ecat_data->st[master->fastest_tid].period - 20)*(cpu_khz/1000);
-            rt_sem_init(&master->lock,1);
-            ecrt_master_callbacks(master->handle, 
-                    ecs_request_cb, ecs_release_cb, master);
-
-            if (ecrt_master_activate(master->handle)) {
-                goto out_master_activate;
-            }
-            pr_debug ("ecrt_master_activate(%p)\n", master->handle);
-        }
-    }
-
-    return NULL;
-
-out_conf_sdo:
-    snprintf(errbuf, sizeof(errbuf), 
-            "EtherCAT SDO configuration for slave %s on Master %i failed.",
-            slave_block->slave_address, master->id);
-out_register_pdo:
-out_get_slave:
-    kfree(slaves);
-out_alloc_slaves:
-    ecat_data->st[master_tid].master_count--;
-    return errbuf;
-
-out_master_activate:
-    snprintf(errbuf, sizeof(errbuf),
-            "Master %i activate failed", master->id);
+//                    }
+//                } else {
+//                    pr_debug("Slave has never been registered.\n");
+//                    /* Never seen this slave before.
+//                     * Put the slave into the list of known slaves */
+//                    slaves[slave_count].slave_ptr = slave_ptr;
+//                    if (slave_block->output
+//                            || slave_block->TxPDO 
+//                            || slave_block->RxPDO 
+//                            || !list_empty(&slave_block->sdo_list)) {
+//                        slaves[slave_count].locked = 1;
+//                    }
+//                    slave_idx = slave_count++;
+//                }
+//
+//                /* First do the PDO remapping if they exist */
+//                if ((p = slave_block->TxPDO)) {
+//                    pr_debug("TxPDO has changed: ");
+//                    ecrt_slave_pdo_mapping_clear(slave_ptr, EC_DIR_INPUT);
+//                    while (*p) {
+//#ifdef DEBUG
+//                        printk("0x%X ", *p);
+//#endif
+//                        if (ecrt_slave_pdo_mapping_add(slave_ptr, 
+//                                    EC_DIR_INPUT, *p++)) {
+//                            snprintf(errbuf, sizeof(errbuf), 
+//                                    "Cannot add TxPDO remapping %i for EtherCAT "
+//                                    "slave %s on Master %u.",
+//                                    *(p-1), slave_block->slave_address, 
+//                                    master->id);
+//                            goto out_get_slave;
+//                        }
+//                    }
+//#ifdef DEBUG
+//                    printk("\n");
+//#endif
+//                }
+//                if ((p = slave_block->RxPDO)) {
+//                    pr_debug("RxPDO has changed: ");
+//                    ecrt_slave_pdo_mapping_clear(slave_ptr, EC_DIR_OUTPUT);
+//                    while (*p) {
+//#ifdef DEBUG
+//                        printk("0x%X ", *p);
+//#endif
+//                        if (ecrt_slave_pdo_mapping_add(slave_ptr, 
+//                                    EC_DIR_OUTPUT, *p++)) {
+//                            snprintf(errbuf, sizeof(errbuf), 
+//                                    "Cannot add RxPDO remapping %i for EtherCAT "
+//                                    "slave %s on Master %u.",
+//                                    *(p-1), slave_block->slave_address, 
+//                                    master->id);
+//                            goto out_get_slave;
+//                        }
+//                    }
+//#ifdef DEBUG
+//                    printk("\n");
+//#endif
+//                }
+//
+//                /* Register the PDO Entries */
+//                list_for_each_entry_safe(pdo, n3, 
+//                        &slave_block->pdo_entry_list, list) {
+//                    /* Depending on the type of pdo (typed or range), have
+//                     * different calls to EtherCAT */
+//                    switch(pdo->type) {
+//                        case pdo_typed:
+//                            error = ecrt_domain_register_pdo(
+//                                    domain->handle, slave_ptr,
+//                                    pdo->pdo_entry_index, 
+//                                    pdo->pdo_entry_subindex, 
+//                                    pdo->data_ptr);
+//                            pr_debug("\t%p = ecrt_domain_register_pdo("
+//                                    "%p, %p, %i, %i, %p)\n", 
+//                                    slave_ptr, domain->handle, slave_ptr,
+//                                    pdo->pdo_entry_index, 
+//                                    pdo->pdo_entry_subindex, pdo->data_ptr);
+//                            break;
+//                        case pdo_range:
+//                            error = ecrt_domain_register_pdo_range(
+//                                    domain->handle, slave_ptr,
+//                                    pdo->pdo_direction, 
+//                                    pdo->pdo_offset, pdo->pdo_length, 
+//                                    pdo->data_ptr);
+//                            pr_debug("\t%p = ecrt_domain_register_pdo_range("
+//                                    "%p, %p, %i, %i, %i, %p)\n", 
+//                                    slave_ptr, domain->handle, slave_ptr,
+//                                    pdo->pdo_direction, 
+//                                    pdo->pdo_offset, pdo->pdo_length, 
+//                                    pdo->data_ptr);
+//                            break;
+//                        default:
+//                            error = 1;
+//                            pr_info("Unknown pdo->type in %s\n", __func__);
+//                            break;
+//                    }
+//                    if (error) {
+//                        snprintf(errbuf, sizeof(errbuf), 
+//                                "EtherCAT register PDO for slave %s "
+//                                "on Master %u failed.",
+//                                slave_block->slave_address, master->id);
+//                        goto out_register_pdo;
+//                    }
+//                }
+//
+//                /* Go through the SDO configuration parameters for a slave */
+//                list_for_each_entry_safe(sdo, n5, &slave_block->sdo_list, list) {
+//                    switch (sdo->type) {
+//                        case sdo8:
+//                            if (ecrt_slave_conf_sdo8(slave_ptr, 
+//                                        sdo->sdo_index, sdo->sdo_subindex,
+//                                        sdo->value.u8)) {
+//                                goto out_conf_sdo;
+//                            }
+//                            pr_debug ("ecrt_slave_conf_sdo8(%p, %i, %i, %i)\n",
+//                                    slave_ptr, 
+//                                    sdo->sdo_index, sdo->sdo_subindex,
+//                                    sdo->value.u8);
+//                            break;
+//                        case sdo16:
+//                            if (ecrt_slave_conf_sdo16(slave_ptr, 
+//                                        sdo->sdo_index, sdo->sdo_subindex,
+//                                        sdo->value.u16)) {
+//                                goto out_conf_sdo;
+//                            }
+//                            pr_debug ("ecrt_slave_conf_sdo16(%p, %i, %i, %i)\n",
+//                                    slave_ptr, 
+//                                    sdo->sdo_index, sdo->sdo_subindex,
+//                                    sdo->value.u16);
+//                            break;
+//                        case sdo32:
+//                            if (ecrt_slave_conf_sdo32(slave_ptr, 
+//                                        sdo->sdo_index, sdo->sdo_subindex,
+//                                        sdo->value.u32)) {
+//                                goto out_conf_sdo;
+//                            }
+//                            pr_debug ("ecrt_slave_conf_sdo32(%p, %i, %i, %i)\n",
+//                                    slave_ptr, 
+//                                    sdo->sdo_index, sdo->sdo_subindex,
+//                                    sdo->value.u32);
+//                            break;
+//                    }
+//                }
+//            }
+//
+//            /* Move the domain to the sample time list */
+//            tid = domain->tid;
+//            domain_idx = ecat_data->st[tid].domain_count++;
+//            memcpy(&ecat_data->st[tid].domain[domain_idx],
+//                    list_entry(&domain->list, struct ecat_domain, list),
+//                    sizeof(struct ecat_domain));
+//            /* Free the old domain and set domain to the new address */
+//            domain = &ecat_data->st[tid].domain[domain_idx];
+//
+//            /* Master has moved. Update pointer */
+//            domain->master = new_master;
+//        }
+//
+//        /* Now that all modifications are performed on the old master,
+//         * the data can be copied to the new location */
+//        list_del(&master->list);
+//        memcpy(new_master, 
+//                list_entry(&master->list, struct ecat_master, list),
+//                sizeof(struct ecat_master));
+//        kfree(slaves);
+//    }
+//
+//    free_temp_mem();
+//
+//    /* Now that everything is set up, let the master activate itself */
+//    for( i = 0; i < ecat_data->nst; i++) {
+//        for( j = 0; j < ecat_data->st[i].master_count; j++) {
+//            master = &ecat_data->st[i].master[j];
+//
+//            /* Setup the lock, timing  and callbacks needed for sharing 
+//             * the master.
+//             *
+//             * Grace_cycles is a value that allows others to lock the network
+//             * card if the current value of get_cycles() since the last tick
+//             * is less than this value. If it is more, a new tick cycle is 
+//             * expected soon, in which case the others should wait. Set this
+//             * value to 20 microseconds less than the sample time's period */
+//            master->grace_cycles = 
+//                (ecat_data->st[master->fastest_tid].period - 20)*(cpu_khz/1000);
+//            rt_sem_init(&master->lock,1);
+//            ecrt_master_callbacks(master->handle, 
+//                    ecs_request_cb, ecs_release_cb, master);
+//
+//            if (ecrt_master_activate(master->handle)) {
+//                goto out_master_activate;
+//            }
+//            pr_debug ("ecrt_master_activate(%p)\n", master->handle);
+//        }
+//    }
+//
+//    return NULL;
+//
+//out_conf_sdo:
+//    snprintf(errbuf, sizeof(errbuf), 
+//            "EtherCAT SDO configuration for slave %s on Master %i failed.",
+//            slave_block->slave_address, master->id);
+//out_register_pdo:
+//out_get_slave:
+//    kfree(slaves);
+//out_alloc_slaves:
+//    ecat_data->st[master_tid].master_count--;
+//    return errbuf;
+//
+//out_master_activate:
+//    snprintf(errbuf, sizeof(errbuf),
+//            "Master %i activate failed", master->id);
     return errbuf;
 }
 
@@ -941,6 +945,8 @@ __init get_master(
         )
 {
     struct ecat_master *master;
+    unsigned int i;
+    ptrdiff_t len;
 
     /* Is the master registered - if not, create it */
     list_for_each_entry(master, &ecat_data->master_list, list) {
@@ -949,13 +955,18 @@ __init get_master(
         }
     }
     if (master == (typeof(master))&ecat_data->master_list) {
-        if (!(master = get_temp_mem(sizeof(struct ecat_master)))) {
+        master = NULL;
+        len = (size_t)&master->st_domain[ecat_data->nst];
+        if (!(master = get_temp_mem(len))) {
             *errmsg = no_mem_msg;
             return NULL;
         }
         list_add_tail(&master->list, &ecat_data->master_list);
         master->id = master_id;
-        INIT_LIST_HEAD(&master->domain_list);
+        for (i = 0; i < ecat_data->nst; i++) {
+            INIT_LIST_HEAD(&master->st_domain[i].input_list);
+            INIT_LIST_HEAD(&master->st_domain[i].output_list);
+        }
         master->fastest_tid--;  /* wrap it around */
 
         pr_debug("Requesting master %i\n", master->id);
@@ -981,33 +992,51 @@ __init get_master(
 struct ecat_domain *
 __init get_domain(
         struct ecat_master *master,
+        unsigned int domain_id,
+        ec_direction_t direction,
         unsigned int tid,
 
         const char **errmsg
         )
 {
     struct ecat_domain *domain;
+    struct list_head *domain_list;
 
+    /* Check if this domain is faster than fastest known tid by the master */
     if (ecat_data->st[tid].period 
             < ecat_data->st[master->fastest_tid].period) {
-
-        /* Decrease the master count for the last tid, and increase for
-         * the new tid */
         master->fastest_tid = tid;
     }
 
-    /* Is the domain registered - if not, create it */
-    list_for_each_entry(domain, &master->domain_list, list) {
-        if (domain->tid == tid) {
+    /* Is the domain registered - if not, create it
+     * The master maintains a separate list for the read and write 
+     * directions for every sample time */
+    switch (direction) {
+        case EC_DIR_OUTPUT:
+            domain_list = &master->st_domain[tid].output_list;
+            break;
+        case EC_DIR_INPUT:
+            domain_list = &master->st_domain[tid].input_list;
+            break;
+        default:
+            snprintf(errbuf, sizeof(errbuf), 
+                    "Unknown ec_direction_t used for domain %u, tid %i.",
+                    domain_id, tid);
+            *errmsg = errbuf;
+            return NULL;
+    };
+    list_for_each_entry(domain, domain_list, list) {
+        if (domain->id == domain_id) {
+            /* Yea, the domain has been registered once before */
             break;
         }
     }
-    if (domain == (typeof(domain))&master->domain_list) {
+    if (domain == (typeof(domain))domain_list) {
         if (!(domain = get_temp_mem(sizeof(struct ecat_domain)))) {
             *errmsg = no_mem_msg;
             return NULL;
         }
-        list_add_tail( &domain->list, &master->domain_list);
+        list_add_tail( &domain->list, domain_list);
         INIT_LIST_HEAD(&domain->simple_pdo_list);
         INIT_LIST_HEAD(&domain->slave_block_list);
         domain->tid = tid;
@@ -1042,11 +1071,12 @@ struct ecat_slave_block *
 __init ecs_reg_slave_block(
         unsigned int tid,
         unsigned int master_id,
+        unsigned int domain_id,
+        ec_direction_t direction,  /* Set to 1 if this is an output */
 
         const char *slave_address,
         uint32_t vendor_id, /**< vendor ID */
         uint32_t product_code, /**< product code */
-        unsigned int output,  /* Set to 1 if this is an output */
 
         const char **errmsg
         )
@@ -1057,7 +1087,7 @@ __init ecs_reg_slave_block(
 
     if (!(master = get_master(master_id, errmsg)))
         return NULL;
-    if (!(domain = get_domain(master, tid, errmsg)))
+    if (!(domain = get_domain(master, domain_id, direction, tid, errmsg)))
         return NULL;
 
     /* Now the pointers to master and domain are set up. Register the pdo
@@ -1075,11 +1105,11 @@ __init ecs_reg_slave_block(
     slave->product_code = product_code;
     slave->RxPDO = NULL;
     slave->TxPDO = NULL;
-    slave->output = output;
     pr_debug("%s(): Registered slave block: tid = %u, master = %u, "
-            "slave_address = %s, vendor id = %u, product code = %u, output = %u\n", 
+            "domain = %u, slave_address = %s, vendor id = %u, "
+            "product code = %u, output = %u\n", 
             __func__,
-            tid, master_id, 
+            tid, master_id, domain_id,
             slave->slave_address,
             slave->vendor_id,
             slave->product_code,
@@ -1154,14 +1184,14 @@ const char *
 __init ecs_reg_pdo(
         unsigned int tid,
         unsigned int master_id,
+        unsigned int domain_id,
+        ec_direction_t direction,
 
         const char *slave_address,
         uint32_t vendor_id, /**< vendor ID */
         uint32_t product_code, /**< product code */
         uint16_t pdo_index, /**< PDO index */
         uint8_t pdo_subindex, /**< PDO subindex */
-
-        unsigned int output,  /* Set to 1 if this is an output */
 
         void **data_ptr
         )
@@ -1172,7 +1202,8 @@ __init ecs_reg_pdo(
     const char *errmsg;
 
     if (!(master = get_master(master_id, &errmsg)) ||
-            !(domain = get_domain(master, tid, &errmsg))) {
+            !(domain = get_domain(master, domain_id, 
+                    direction, tid, &errmsg))) {
         return errmsg;
     }
 
@@ -1191,7 +1222,6 @@ __init ecs_reg_pdo(
     pdo->pdo_entry_index = pdo_index;
     pdo->pdo_entry_subindex = pdo_subindex;
     pdo->data_ptr = data_ptr;
-    pdo->output = output;
 
     master->slave_count++;
 
@@ -1208,11 +1238,12 @@ const char *
 __init ecs_reg_pdo_range(
         unsigned int tid,
         unsigned int master_id,
+        unsigned int domain_id,
+        ec_direction_t direction,
 
         const char *slave_address,
         uint32_t vendor_id, /**< vendor ID */
         uint32_t product_code, /**< product code */
-        ec_direction_t pdo_direction,
         uint16_t pdo_offset,
         uint16_t pdo_length,
 
@@ -1225,7 +1256,8 @@ __init ecs_reg_pdo_range(
     const char *errmsg;
 
     if (!(master = get_master(master_id, &errmsg)) ||
-            !(domain = get_domain(master, tid, &errmsg))) {
+            !(domain = get_domain(master, domain_id, direction, tid,
+                                  &errmsg))) {
         return errmsg;
     }
 
@@ -1241,11 +1273,9 @@ __init ecs_reg_pdo_range(
     pdo->slave_address = slave_address;
     pdo->vendor_id = vendor_id;
     pdo->product_code = product_code;
-    pdo->pdo_direction = pdo_direction;
     pdo->pdo_offset = pdo_offset;
     pdo->pdo_length = pdo_length;
     pdo->data_ptr = data_ptr;
-    pdo->output = 0;
 
     master->slave_count++;
 
@@ -1269,9 +1299,9 @@ __init ecs_init(
     int i;
 
     /* Make sure that the correct header version is used */
-#if ECRT_VERSION_MAGIC != ECRT_VERSION(1,3)
+#if ECRT_VERSION_MAGIC != ECRT_VERSION(1,4)
 #error Incompatible EtherCAT header file found.
-#error This source is only compatible with EtherCAT Version 1.3
+#error This source is only compatible with EtherCAT Version 1.4
 #endif
 
     /* Make sure that the EtherCAT driver has the correct interface */

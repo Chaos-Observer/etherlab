@@ -27,7 +27,6 @@
 
 #include "mdl_wrapper.h"
 
-
 int register_rtw_model(const struct rtw_model *rtw_model, size_t struct_len,
         const char *revision_str, struct module *owner);
 void free_rtw_model(int tid);

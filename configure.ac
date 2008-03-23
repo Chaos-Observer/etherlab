@@ -42,25 +42,71 @@ AC_ARG_ENABLE([kernel],
 AM_CONDITIONAL(KERNEL, test x$kernel = x1)
 AC_SUBST(KERNEL,${kernel})
 
-dnl RTAI Path
+dnl Staging directory for host compile
+dnl Sometimes you want to create an environment where the real time models
+dnl are compiled on a different host than the target. In this case you can
+dnl compile the target host's packages normally, install them there as well
+dnl as in a staging directory (using DESTDIR=/staging/dir). To tell
+dnl etherlab about this, use --with-staging-dir
+dnl Note that nothing will be installed in $staging_dir
+dnl 
+AC_ARG_WITH([staging-dir], 
+    AS_HELP_STRING(
+        [--with-staging-dir=<staging-dir>],
+        [Host staging directory for cross compile]),
+    [ staging_dir=${withval} ],
+    [ staging_dir= ]
+    )
+if test "x$staging_dir" != x; then
+AC_MSG_CHECKING(for $ETHERLAB_DIR in $staging_dir)
+test -d "$staging_dir/$ETHERLAB_DIR" ||\
+    AC_MSG_ERROR([Could not find $staging_dir/$ETHERLAB_DIR])
+AC_MSG_RESULT(yes)
+fi
+AC_SUBST(STAGING_DIR,[$staging_dir])
+
+AC_ARG_WITH([matlab-dir], 
+    AS_HELP_STRING(
+        [--with-matlab-dir=<matlab-dir>],
+        [Optionally enter Matlab(tm) directory to pre-build matlab library]),
+    [ matlab_dir=${withval} ],
+    [ matlab_dir= ]
+    )
+if test "x$matlab_dir" != x; then
+matlab_rtw_src=$matlab_dir/rtw/c/libsrc
+AC_MSG_CHECKING([for $matlab_rtw_src])
+test -d "$matlab_rtw_src" ||\
+    AC_MSG_ERROR([Could not locate library sources in $matlab_rtw_src])
+AC_MSG_RESULT(yes)
+AC_SUBST(MATLAB_ROOT,[$matlab_dir])
+AM_CONDITIONAL(MATLAB_ROOT, test "x$matlab_dir" != x)
+fi
+
+dnl Path to RTAI installation
 if test "x$kernel" = "x1"; then
 AC_ARG_WITH([rtai-dir], 
     AS_HELP_STRING(
         [--with-rtai-dir=<rtai-dir>],
-        [RTAI directory (/usr/realtime)]),
+        [RTAI directory ($staging_dir/usr/realtime)]),
     [ rtai_dir=${withval} ],
     [
-        rtai_dir=$(type -p rtai-config)
-        rtai_dir=${rtai_dir%%bin/rtai-config}
-        test x"$rtai_dir" == x && rtai_dir=/usr/realtime
+        if test -x "$staging_dir/usr/realtime/bin/rtai-config"; then
+            rtai_dir="$staging_dir/usr/realtime"
+        else
+            rtai_dir=$(type -p rtai-config)
+            rtai_dir=${rtai_dir%%bin/rtai-config}
+        fi
     ])
 AC_MSG_CHECKING(RTAI path)
-test -r "$rtai_dir"/include/rtai.h ||\
-    AC_MSG_ERROR([No installed RTAI found $rtai_dir/include/rtai.h])
+test -r "$staging_dir/$rtai_dir"/include/rtai.h ||\
+    AC_MSG_ERROR([No installed RTAI found $staging_dir/$rtai_dir/include/rtai.h])
 AC_SUBST(RTAI_DIR,[$rtai_dir])
 AC_MSG_RESULT($RTAI_DIR)
-RTAI_FLAGS=$($RTAI_DIR/bin/rtai-config --module-cflags)
+RTAI_FLAGS=$($staging_dir/$rtai_dir/bin/rtai-config --module-cflags)
+RTAI_FLAGS=${RTAI_FLAGS//-I./}
+RTAI_FLAGS=${RTAI_FLAGS//-I/-I$staging_dir}
 AC_SUBST(RTAI_FLAGS)
+AC_MSG_RESULT(RTAI_FLAGS = $RTAI_FLAGS)
 fi
 
 dnl Make sure rtai-config reports correct kernel
@@ -72,7 +118,7 @@ AC_ARG_WITH([linux-dir],
         [Kernel directory (rtai-config --linux-dir)]),
     [ linux_dir=${withval} ],
     [
-        linux_dir=$(${RTAI_DIR}/bin/rtai-config --linux-dir)
+        linux_dir=$($staging_dir/${RTAI_DIR}/bin/rtai-config --linux-dir)
     ])
 AC_MSG_CHECKING(Linux kernel path)
 test -r "${linux_dir}/.config" || \
@@ -105,9 +151,9 @@ AC_ARG_ENABLE([ethercat],
 )
 if test "x$ethercat" = "x1"; then
 AC_MSG_CHECKING(EtherCat header file)
-test -r "${ETHERLAB_DIR}/include/ecrt.h" || \
-        AC_MSG_ERROR([ecrt.h found in ${ETHERLAB_DIR}/include])
-AC_MSG_RESULT(${ETHERLAB_DIR}/include/ecrt.h)
+test -r "$staging_dir/${ETHERLAB_DIR}/include/ecrt.h" || \
+        AC_MSG_ERROR([ecrt.h not found in $staging_dir/${ETHERLAB_DIR}/include])
+AC_MSG_RESULT($staging_dir/${ETHERLAB_DIR}/include/ecrt.h)
 fi
 fi
 AM_CONDITIONAL(ETHERCAT, test x$ethercat = x1)
@@ -213,9 +259,6 @@ AC_CONFIG_FILES([
         blocks/EtherCAT/Makefile
         blocks/EtherCAT/setup.m 
         src/Makefile
-        src/include/Makefile
-        src/buddy/Makefile
-        src/kernel/Makefile
         tools/Makefile
         tools/buddy/Makefile
         tools/buddy-ng/Makefile
@@ -226,5 +269,6 @@ AC_CONFIG_FILES([
         tools/include/Makefile
         lib/Kbuild
         lib/Makefile
+        lib/Makefile.rtw
 ])
 AC_OUTPUT

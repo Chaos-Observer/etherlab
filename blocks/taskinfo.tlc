@@ -18,7 +18,7 @@
   /* %<Type> Block: %<Name>
    */
   %<LibBlockPWork(TimeSrc,"","",0)> = \
-    etl_get_world_time_ptr(%<LibGetGlobalTIDFromLocalSFcnTID(0)>);
+    &etl_world_time[%<LibGetGlobalTIDFromLocalSFcnTID(0)>];
 %endfunction
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

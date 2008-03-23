@@ -1,2 +1,2 @@
-bin_SCRIPTS = etherlab gen_msf.py
-dist_bin_SCRIPTS = gen_msf.py
+bin_SCRIPTS = etherlab
+dist_bin_SCRIPTS = gen_payload.py

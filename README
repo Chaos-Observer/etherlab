@@ -1,0 +1,90 @@
+1) Building models where host and target are different machines
+    The linux kernel is quite fussy about the modules it loads - and rightly
+    so. The compiler and compiler flags used to build the model must match
+    those used when building the kernel. This makes it difficult to build
+    models where the target and compilation host are not the same.
+
+    EtherLab has two solutions:
+    * The host simply does the C-code generation, and model building is
+      done on the target machine.
+    * The host does all the compilation.
+
+  1.1) Host generates code; target compiles model
+
+    For this method, the host runs Matlab/Simulink/RTW (tm), and only
+    generates the code and does not compile. 
+    
+    EtherLab can be installed on the host either as the full version:
+        ./configure; make; make install
+    or if there is no kernel building architecture available on the host,
+    only the Simulink parts may be installed:
+        ./configure --disable-kernel; make; make install
+
+    On the target machine, you need the sources of the running kernel.
+    Since the Simulink parts are not needed, it can be configured as:
+        ./configure --disable-simulink; make; make install
+    although you could install the full package, irrespective of whether
+    Matlab/Simulink is installed. You might still need to use the options
+    --with-rtai-dir=... or even --with-linux-dir=... depending on special
+    building requirements.
+
+    RTW also dynamically builds some source code distributed with 
+    Matlab/Simulink. These sources are required on the target machine. Copy
+    the following directories
+        $(MATLAB_ROOT)/extern/include
+        $(MATLAB_ROOT)/simulink/include/
+        $(MATLAB_ROOT)/rtw/c/src/
+        $(MATLAB_ROOT)/rtw/c/libsrc/
+    to the target machine, for example to /opt/matlab
+
+    To make Simulink/RTW generate code only and not attempt to compile it
+    directly. This is achieved by checking the "Generate code only" option
+    in the Configuration Parameters (Tools -> Real-Time Workshop).
+
+    Now you need to transfer the whole directory <model>_etl_rtw from the
+    current model directory to the host. Best you mount the directory on
+    the target directly. Beware that if you are one of those lazy people
+    allways working as root because you have not become friends with sudo,
+    this will not work over NFS ;)!
+
+    To build the sources, type
+        make -f <model>.mk
+    on the target. This will only work if EtherLab and the copied Matlab
+    directories are installed under the same locations as the host. If not,
+    you can use the make variables MATLAB_ROOT and ALT_ETHERLAB_DIR
+    respectively to point to other directories:
+        make -f <model>.mk MATLAB_ROOT=/opt/matlab
+    or
+        make -f <model>.mk MATLAB_ROOT=/opt/matlab ALT_ETHERLAB_DIR=/etherlab
+
+    When you do default installation, it is unlikely that you will have to 
+    specify these variables.
+    variable
+
+  1.2) Host code generation and compile (staged compile)
+
+    It is also possible to generate and compile the code on the same machine,
+    usually the one where Matlab runs. For this, you need the kernel and RTAI
+    sources that you are using on the target, as well as the same compiler.
+    The easiest is to have the target actually running the kernel and RTAI 
+    that was built on the Matlab host itself.
+
+    Besides installing the RTAI and Linux kernel on the target, you also need
+    to install RTAI into a local staging directory. To do this, first create
+    a staging directory
+        mkdir /opt/staging
+
+    Now use the DESTDIR make variable to make RTAI install locally:
+        ./configure; make; make DESTDIR=/opt/staging install
+
+    You will also need to put EtherLab into that staging directory:
+        ./configure; make; make DESTDIR=/opt/staging
+
+    Note that using configure --prefix will NOT work; you have to use DESTDIR!
+
+    When building the model, enter the staging directory (/opt/staging) 
+    in the Etherlab Configuration Parameters (Tools -> Real-Time Workshop
+    -> EtherLab C code generation optios)
+
+    Now you can generate the model on you host entirely, and only need to 
+    transfer <model>_kmod.ko to the target to load it there.
