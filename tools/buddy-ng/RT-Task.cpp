@@ -21,6 +21,7 @@
  * **********************************************************************/
 
 #include "RT-Task.h"
+#include "RT-Model.h"
 #include "ConfigFile.h"
 #include "Exception.h"
 
@@ -66,35 +67,53 @@ RTTask::~RTTask()
 
 int RTTask::read(int)
 {
-    struct rt_event {
-        enum type_t {new_model, del_model, new_data} type;
-    } event;
-    int n, total = 0;
+    struct rtcom_event event[1024], *p = event;
+    int n, total;
 
-    while ((n = ::read(fd, &event, sizeof(event))) == sizeof(event)) {
-        total += n;
-        switch (event.type) {
-            case rt_event::new_model:
-                break;
-            case rt_event::del_model:
-                break;
-            case rt_event::new_data:
-                break;
-            default:
-                break;
-        }
-    }
+    n = ::read(fd, event, sizeof(event));
 
-    if (!n) {
-        return total;
-    }
-    else if (n > 0) {
+    if (n % sizeof(*p)) {
         // Protocol error
-        throw;
+        throw Exception("RTCom IO error: read() returned a "
+                    "length that is not an integer multiple of "
+                    "struct rtcom_event.");
     }
-    else {
+    else if (n < 0) {
         // n < 0 here. Return the negative value. This means trouble, 
         // we're going to die now :(
-        return n;
+        return errno;
     }
+
+    total = n;
+    while (n) {
+        std::cout << "read " << n << "bytes." << std::endl;
+        switch (p->type) {
+            case rtcom_event::new_model:
+                {
+                    RTModel *model = new RTModel(fd, p->data.model_ref);
+                    struct rtcom_privdata pd;
+
+                    pd.ref = p->data.model_ref;
+                    pd.priv_data = model;
+
+                    modelList.push_back(model);
+                    if (::ioctl(fd, SET_PRIV_DATA, &pd)) {
+                        return errno;
+                    }
+
+                    break;
+                }
+            case rtcom_event::del_model:
+                {
+                    RTModel *model = reinterpret_cast<RTModel*>(p->priv_data);
+                    delete model;
+                    modelList.remove(model);
+                }
+                break;
+        }
+        n -= sizeof(*p);
+        p++;
+    }
+
+    return total;
 }

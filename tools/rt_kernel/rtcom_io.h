@@ -1,8 +1,8 @@
-/***********************************************************************
+/******************************************************************************
  *
  * $Id$
  *
- * This file defines the data widths for the supported types.
+ * This is the header file for the RTCom character device interface
  * 
  * Copyright (C) 2008  Richard Hacker
  * 
@@ -19,22 +19,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- ***********************************************************************/
+ *****************************************************************************/ 
 
-#include "include/etl_data_info.h"
 
-#ifdef __KERNEL__
-#include <linux/types.h>
-#else
-#include <stdint.h>
-#endif
+void rtcom_new_model(void *model_ref);
+void rtcom_del_model(void *model_ref);
 
-// Data type widths. 
-// DO NOT change these without updating etl_data_types.h
-size_t si_data_width[] = {
-    sizeof(double), sizeof(float),
-    sizeof(uint8_t), sizeof(int8_t),
-    sizeof(uint16_t), sizeof(int16_t),
-    sizeof(uint32_t), sizeof(int32_t),
-    sizeof(uint8_t)
-};
+/* Clear the Real-Time Kernel file handles */
+void rtcom_fio_clear(void);
+
+/* Set up the Real-Time Kernel file handles. This is called once when
+ * the rt_kernel is loaded, and opens up the char device for 
+ * communication between buddy and rt_kernel */
+int rtcom_fio_init(void);

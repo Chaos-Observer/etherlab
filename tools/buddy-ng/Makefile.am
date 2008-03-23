@@ -18,13 +18,14 @@ etherlab_buddy_SOURCES = \
         RTComServer.cpp RTComServer.h \
         ConfigFile.cpp ConfigFile.h \
         RT-Task.cpp RT-Task.h \
+        RT-Model.cpp RT-Model.h \
         ControlTask.cpp ControlTask.h \
         RTComTask.cpp RTComTask.h \
         RTComBufTask.cpp RTComBufTask.h \
         RTComOStream.cpp RTComOStream.h \
-        iniparser.h dictionary.h \
         HTTPTask.cpp HTTPTask.h
-etherlab_buddy_LDADD = /usr/lib/libevent.la /usr/lib/libpcrecpp.la /usr/lib/libsasl2.la libiniparser.a
+nodist_etherlab_buddy_SOURCES = iniparser.h dictionary.h
+etherlab_buddy_LDADD = /usr/lib/libevent.la /usr/lib/libpcrecpp.so.0 /usr/lib/libsasl2.la libiniparser.a
 etherlab_buddy_LDFLAGS = 
 etherlab_buddy_CPPFLAGS = -DDEBUG=$(DEBUG) -I$(top_srcdir)/tools -Wall
 

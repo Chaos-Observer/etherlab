@@ -1,6 +1,6 @@
 #include <linux/limits.h>       // PATH_MAX
 #include <stddef.h>             // size_t
-#include "mdl_taskstats.h"      // struct task_stats
+#include "include/mdl_taskstats.h"      // struct task_stats
 #include "module_payload.h"
 
 struct signal_info;

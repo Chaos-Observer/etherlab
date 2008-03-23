@@ -1,8 +1,8 @@
-/***********************************************************************
+/* **********************************************************************
  *
  * $Id$
  *
- * This file defines the data widths for the supported types.
+ * This defines the class used to interact with the real-time kernel
  * 
  * Copyright (C) 2008  Richard Hacker
  * 
@@ -18,23 +18,24 @@
  * 
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- ***********************************************************************/
+ * **********************************************************************/
 
-#include "include/etl_data_info.h"
+#include "RT-Model.h"
+#include "ConfigFile.h"
+#include "Exception.h"
 
-#ifdef __KERNEL__
-#include <linux/types.h>
-#else
-#include <stdint.h>
-#endif
+#include <iostream>
+#include <cerrno>
+#include <cstring>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/ioctl.h>
 
-// Data type widths. 
-// DO NOT change these without updating etl_data_types.h
-size_t si_data_width[] = {
-    sizeof(double), sizeof(float),
-    sizeof(uint8_t), sizeof(int8_t),
-    sizeof(uint16_t), sizeof(int16_t),
-    sizeof(uint32_t), sizeof(int32_t),
-    sizeof(uint8_t)
-};
+RTModel::RTModel(int _fd, struct model *_model_ref): 
+    fd(_fd), model_ref(_model_ref)
+{
+}
+
+RTModel::~RTModel()
+{
+}

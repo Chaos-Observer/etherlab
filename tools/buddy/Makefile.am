@@ -50,7 +50,7 @@ etherlab_buddy_SOURCES = \
 etherlab_buddy_LDADD = libmsr.a
 etherlab_buddy_LDFLAGS = -rdynamic -ldl -lz
 etherlab_buddy_CFLAGS = -Imsrio_lib/include \
-        -DDEBUG=$(DEBUG) -I$(top_srcdir)/tools/include -Wall
+        -DDEBUG=$(DEBUG) -I$(top_srcdir)/tools -Wall
 
 datatypedir = $(prefix)/src/kernel
 datatype_DATA = etl_data_types.c

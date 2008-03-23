@@ -1,10 +1,11 @@
-EXTRA_CFLAGS := @RTAI_FLAGS@ -I@abs_top_srcdir@ \
-        -I@abs_top_srcdir@/tools/include $(DEFS)
+EXTRA_CFLAGS := @RTAI_FLAGS@ $(DEFS) \
+        -I@abs_top_srcdir@ -I@abs_top_srcdir@/tools
+        
 
 EXTRA_SYMBOLS := @STAGING_DIR@/@RTAI_DIR@/include/Module.symvers
 
 obj-m        := rt_kernel.o rt_test.o
-rt_kernel-y  := rt_main.o rt_fio.o rt_vars.o
+rt_kernel-y  := $(RT_KERNEL_SRCS:.c=.o)
 rt_test-y    := test_vars.o
 
 clean-files := $(obj)/kernel-cflags.c

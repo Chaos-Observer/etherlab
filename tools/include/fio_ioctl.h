@@ -1,10 +1,18 @@
+#ifndef FIO_IOCTL_H
+#define FIO_IOCTL_H
+
 #include <linux/ioctl.h>
 #include <stddef.h>
-#include "etl_data_info.h"
 
 #ifndef __KERNEL__
 #include <unistd.h>     // ssize_t
 #endif
+
+#if defined __cplusplus
+extern "C" {
+#endif
+
+#include "etl_data_info.h"
 
 /* The maximum number of models that can be handled. The limit is due
  * to the data type that the bit operators (set_bit, clear_bit) can handle
@@ -112,3 +120,24 @@ struct rtp_model_name {
     char name[MAX_MODEL_NAME_LEN];
 };
 #define RTK_MODEL_NAME          _IOR(RTK_MAGIC, 2, struct rtp_model_name *)
+
+#define SET_PRIV_DATA           _IOW(RTK_MAGIC, 3, struct rtcom_privdata *)
+struct rtcom_privdata {
+    struct model *ref;
+    void *priv_data;
+};
+
+struct rtcom_event {
+    enum {new_model, del_model} type;
+    void *priv_data;
+    union {
+        struct model *model_ref;
+    } data;
+};
+#define RTK
+
+#if defined __cplusplus
+}
+#endif
+
+#endif // FIO_IOCTL_H

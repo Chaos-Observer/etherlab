@@ -19,8 +19,7 @@ LD               = ld
 LDFLAGS		 =
 INSTRUMENT_LIBS  = $(STAGING_DIR)/@prefix@/lib/libetherlab.a
 PRECOMP_RTW_LIB  = $(wildcard $(STAGING_DIR)/@prefix@/lib/librtw.a)
-USER_INCLUDES    = -I$(STAGING_DIR)/@ETHERLAB_DIR@/include \
-        -I$(ETHERLAB_DIR)/include -I$(ETHERLAB_DIR)/src/kernel 
+USER_INCLUDES    = -I$(STAGING_DIR)/@ETHERLAB_DIR@ -I$(ETHERLAB_DIR)
 
 # These definitions are used by targets that have the WARN_ON_GLNX option
 GCC_WARN_OPTS     := -pedantic -Wall -Wwrite-strings \

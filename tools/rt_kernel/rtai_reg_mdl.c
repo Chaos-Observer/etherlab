@@ -30,7 +30,7 @@
 #include <linux/init.h>
 #include <linux/moduleparam.h>
 #include <linux/autoconf.h>
-#include "rt_kernel.h"
+#include "include/rt_kernel.h"
 
 extern struct rtw_model rtw_model;
 

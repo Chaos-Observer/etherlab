@@ -32,14 +32,14 @@
  *
  *****************************************************************************/ 
 
-#include "mdl_wrapper.h"
-#include "mdl_time.h"
-#include "fio_ioctl.h"
-#include "rtw_data_info.h"
+#include "include/mdl_wrapper.h"
+#include "include/mdl_time.h"
+#include "include/fio_ioctl.h"
+#include "include/rtw_data_info.h"
+#include "include/defines.h"
 
 #include "rtmodel.h"
 #include "rt_sim.h"
-#include "defines.h"
 
 
 #ifndef RT

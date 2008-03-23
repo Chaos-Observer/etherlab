@@ -27,8 +27,8 @@
 #include <zlib.h>
 
 //#include "defines.h"
-#include "fio_ioctl.h"
-#include "mdl_taskstats.h"
+#include "include/fio_ioctl.h"
+#include "include/mdl_taskstats.h"
 #include "msr_main.h"
 #include "msr_lists.h"
 #include "msr_reg.h"

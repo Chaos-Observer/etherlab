@@ -174,6 +174,32 @@ AC_ARG_ENABLE([experimental],
 AM_CONDITIONAL(EXPERIMENTAL, test x$exp = x1)
 AC_SUBST(EXPERIMENTAL,${exp})
 
+dnl new C code
+AC_ARG_ENABLE([C],
+    AS_HELP_STRING(
+        [--enable-C],
+        [Enable new C-interface]),
+    [ case "${enableval}" in
+        yes) : ;;
+        *)   enableval=
+      esac],
+    [ enableval= ]
+)
+AM_CONDITIONAL(C_INTERFACE, test x$enableval != x)
+
+dnl Buddy-NG
+AC_ARG_ENABLE([buddy-ng],
+    AS_HELP_STRING(
+        [--enable-buddy-ng],
+        [Enable new next generation buddy]),
+    [ case "${enableval}" in
+        yes) : ;;
+        *)   enableval=
+      esac],
+    [ enableval= ]
+)
+AM_CONDITIONAL(BUDDY_NG, test x$enableval != x)
+
 dnl Allow experimental stuff  for development
 AC_ARG_ENABLE([debug],
     AS_HELP_STRING(
@@ -202,6 +228,9 @@ AC_PATH_PROG(ED, ed)
 AC_PATH_PROG(GREP, grep)
 AC_PATH_PROG(PYTHON, python)
 AC_PATH_PROG(AR, ar)
+AC_PATH_PROG(MV, mv)
+AC_PATH_PROG(XSLTPROC, xsltproc)
+AC_PATH_PROG(INDENT, indent)
 
 # Checks for libraries
 AC_CHECK_LIB([dl],[dlopen],[:],[
@@ -259,6 +288,8 @@ AC_CONFIG_FILES([
         blocks/EtherCAT/Makefile
         blocks/EtherCAT/setup.m 
         src/Makefile
+        src/C/Makefile
+        src/C/Kbuild.makefile
         tools/Makefile
         tools/buddy/Makefile
         tools/buddy-ng/Makefile

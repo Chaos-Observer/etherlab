@@ -305,8 +305,7 @@ ifneq ($(KERNELRELEASE),)
 
 EXTRA_SYMBOLS := $(STAGING_DIR)/$(RTAI_DIR)/modules/Module.symvers
 
-EXTRA_CFLAGS	:= $(CODE_DEBUG) $(RTAI_FLAGS) -I$(ETHERLAB_DIR)/include \
-		-I$(ETHERLAB_DIR)/src/kernel
+EXTRA_CFLAGS	:= $(CODE_DEBUG) $(RTAI_FLAGS) -I$(USER_INCLUDES)
 obj-m		:= $(KERNEL_MODULE:.ko=.o)
 $(KERNEL_MODULE:.ko=)-y := $(MODULE_MAIN_SRC:.c=.o) $(SHIPPED_MODEL) \
         module_payload.o

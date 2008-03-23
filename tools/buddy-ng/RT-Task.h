@@ -26,7 +26,10 @@
 #include "Task.h"
 
 #include <string>
+#include <list>
 #include <include/fio_ioctl.h>
+
+class RTModel;
 
 class RTTask: public Task {
     public:
@@ -36,6 +39,8 @@ class RTTask: public Task {
     private:
         const std::string device;
         int fd;
+
+        std::list<RTModel*> modelList;
 
 //        struct mdl_properties properties;
 //        char* rtP;

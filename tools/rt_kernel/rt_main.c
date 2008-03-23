@@ -53,6 +53,7 @@
 /* Local headers */
 #include "rt_kernel.h"          /* Public functions exported by manager */
 #include "rt_main.h"            /* Private to kernel */
+#include "rtcom_io.h"
 
 struct rt_kernel rt_kernel;
 
@@ -379,6 +380,7 @@ void free_rtw_model(int model_id)
 
     clear_bit(model_id, &rt_kernel.loaded_models);
     rtp_fio_clear_mdl(model);
+    rtcom_del_model(model);
 
     if (!rt_kernel.loaded_models) {
         /* Last process to be removed */
@@ -539,6 +541,7 @@ int register_rtw_model(const struct rtw_model *rtw_model,
         printk("Could not initialise file io\n");
         goto out_fio_init;
     }
+    rtcom_new_model(model);
 
     now = rt_get_time();
     model->photo_sample = 1;           /* Take a photo of next calculation */
@@ -690,6 +693,7 @@ void __exit mod_cleanup(void)
     return;
 #endif //TEST_THREAD
 
+    rtcom_fio_clear();
     rtp_fio_clear();
 
     /* Stop world time task */
@@ -728,6 +732,12 @@ int __init mod_init(void)
         goto out_fio_init;
     }
 
+    /* Initialise file io with rtcom buddy */
+    if ((err = rtcom_fio_init())) {
+        goto out_rtcom_fio_init;
+    }
+
+
     /* The only thing to do here is start a thread to fetch world time */
     rt_kernel.helper_thread = 
         kthread_run(rt_kernel_helper, NULL, "rt_kernel_helper");
@@ -745,6 +755,8 @@ int __init mod_init(void)
 
     kthread_stop(rt_kernel.helper_thread);
 out_start_thread:
+    rtcom_fio_clear();
+out_rtcom_fio_init:
     rtp_fio_clear();
 out_fio_init:
     return err;
