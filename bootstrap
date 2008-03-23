@@ -1,7 +1,3 @@
 #!/bin/bash
 
-set -x
-aclocal -I config
-autoheader
-automake --add-missing -Woverride
-autoconf
+autoreconf -i

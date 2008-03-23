@@ -451,7 +451,8 @@ static int subscribe(struct rt_var *rt_dst, struct rt_var *rt_src, int st)
      *     - The variable is brand new
      *     - Another variable with the same name existed already.
      */
-    if (rt_dst->node.rb_parent || unsubscribed_root.rb_node == &rt_dst->node) {
+    if (//rt_dst->node.rb_parent || 
+            unsubscribed_root.rb_node == &rt_dst->node) {
         pr_debug("<<< Erasing node %s from %p\n", 
                 rt_dst->name, &unsubscribed_root);
         rb_erase(&rt_dst->node, &unsubscribed_root);
@@ -503,7 +504,7 @@ static void unsubscribe(struct rt_var *rt_dst, int put_on_unsubscribers_tree)
             pr_info("Variable %s existed as unsubscribed, adding to the list\n",
                     rt_var->name);
             list_add(&rt_dst->subscriber_list, &rt_var->subscriber_list);
-            rt_dst->node.rb_parent = NULL;
+//            rt_dst->node.rb_parent = NULL;
         }
         else {
             pr_debug("Putting %s on unsubscribed list \n", rt_dst->name);
@@ -566,7 +567,7 @@ int rt_get_var(struct rt_var_space *rt_var_space,
     /* The following initialisations are a hint to the subscribe() and
      * unsubscribe() functions that this is a fresh variable that does
      * not yet exist on any list */
-    rt_dst->node.rb_parent = NULL;
+//    rt_dst->node.rb_parent = NULL;
     list_add(&rt_dst->var_list, &rt_var_space->dst_head);
 
     /* Try to find the source with this name. If found, subscribe to it
@@ -747,7 +748,7 @@ void rt_clr_var_space(struct rt_var_space *rt_var_space)
              * unsubscribed_root itself or only linked into the variable that 
              * is.
              */
-            if (rt_dst->node.rb_parent || 
+            if (//rt_dst->node.rb_parent || 
                     unsubscribed_root.rb_node == &rt_dst->node) {
                 struct rt_var *new_dst;
 
