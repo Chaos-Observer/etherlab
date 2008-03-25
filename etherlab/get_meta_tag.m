@@ -18,6 +18,9 @@ function rv = get_meta_tag(s)
 %
 
 m = regexp(s,'<meta.+?/>','match');
+m = strrep(m, '\\', '');
+m = strrep(m, '\"', '"');
+m = strrep(m, '\n', '');
 if size(m)
   rv = m{1};
 else

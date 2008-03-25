@@ -31,6 +31,8 @@
 
 %assign Accelerator = 0
 %openfile meta = "%<cFile>"
+%%<?xml version="1.0" encoding="UTF-8"?>
+%%<!--
 # EtherLab target specific file
 #
 # This file is created to augment additional informatioin
@@ -38,7 +40,9 @@
 #
 # List of <meta .../> tags that were found in the Description fields
 # of blocks. These are passed on verbatim to the msr kernel
+%%-->
 
+%%<metafile>
 %with CompiledModel 
   %with BlockHierarchyMap
     %foreach ss = NumSubsystems
@@ -49,6 +53,9 @@
           %assign descr = STRING(Subsystem[ss].Block[block].Description)
           %assign y = FEVAL("get_meta_tag",descr)
           %if !ISEMPTY(y)
+%%  <block path="%<SLibMangledGrBlockPath(x)>">
+%%    %<y>
+%%  </block>
 "%<SLibMangledGrBlockPath(x)>", %<y>
           %endif
         %endif
@@ -56,4 +63,5 @@
     %endforeach
   %endwith
 %endwith
+%%</metafile>
 %closefile meta
