@@ -25,7 +25,7 @@ libmsr_a_SOURCES = \
         msrio_lib/include/msr_utils.h \
         msrio_lib/include/msr_attributelist.h \
         msrio_lib/include/msr_version.h 
-libmsr_a_CFLAGS = -Imsrio_lib/include -DRTW_BUDDY -Wall
+libmsr_a_CFLAGS = -Imsrio_lib/include -DRTW_BUDDY -Wall -I$(top_srcdir)/tools
 
 include_HEADERS = \
         msrio_lib/include/msr_main.h \
@@ -48,7 +48,6 @@ etherlab_buddy_SOURCES = \
         etl_data_types.c \
         command_module.c
 etherlab_buddy_LDADD = libmsr.a
-etherlab_buddy_LDFLAGS = -rdynamic -ldl -lz
 etherlab_buddy_CFLAGS = -Imsrio_lib/include \
         -DDEBUG=$(DEBUG) -I$(top_srcdir)/tools -Wall
 

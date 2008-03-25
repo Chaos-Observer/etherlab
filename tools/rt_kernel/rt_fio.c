@@ -190,13 +190,13 @@ static long rtp_ioctl(
             {
                 struct mdl_properties properties;
 
-                properties.rtB_count     = rtw_model->rtB_count;
                 properties.signal_count  = rtw_model->signal_count;
                 properties.param_count   = rtw_model->param_count;
                 properties.variable_path_len  = rtw_model->variable_path_len;
-                properties.num_st        = rtw_model->num_st;
+                properties.sample_period = rtw_model->sample_period;
                 properties.num_tasks     = rtw_model->num_tasks;
-                properties.base_rate     = rtw_model->sample_period;
+
+                properties.rtB_count     = rtw_model->rtB_count;
                 properties.rtB_size      = rtw_model->rtB_size
                     + rtw_model->num_tasks * sizeof(struct task_stats);
                 properties.rtP_size      = rtw_model->rtP_size;
@@ -273,27 +273,27 @@ static long rtp_ioctl(
         case GET_PARAM_INFO:
             /* Get properties of signal or parameter */
             {
-                struct signal_info signal_info;
-                struct signal_info *si = 
+                struct signal_info tmp_si;
+                struct signal_info *user_si = 
                     (struct signal_info*)data;
                 const char *path;
                 const char *err;
 
                 // Get the index the user is interested in
-                if ((rv = get_user(signal_info.index, &si->index)))
+                if ((rv = get_user(tmp_si.index, &user_si->index)))
                     break;
 
                 err = (command == GET_SIGNAL_INFO)
-                    ? rtw_model->get_signal_info(&signal_info, &path)
-                    : rtw_model->get_param_info(&signal_info, &path);
+                    ? rtw_model->get_signal_info(&tmp_si, &path)
+                    : rtw_model->get_param_info(&tmp_si, &path);
                 if (rv) {
                     printk("Error: %s\n", err);
                     rv = -ERANGE;
                     break;
                 }
 
-                if (copy_to_user(si, &signal_info, sizeof(*si))
-                    || copy_to_user(&si->path[0], path, strlen(path))) {
+                if (copy_to_user(user_si, &tmp_si, sizeof(tmp_si))
+                    || copy_to_user(user_si->path, path, strlen(path)+1)) {
                     rv = -EFAULT;
                     break;
                 }

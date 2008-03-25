@@ -97,14 +97,15 @@ struct mdl_properties {
     size_t rtP_size;            // Size of parameter structure
     unsigned int num_st;        // Number of sample times
     unsigned int num_tasks;     // Number of tasks
-    unsigned long base_rate;    // Model's base rate in microseconds
+    unsigned long sample_period;// Model's signal sampling period
+                                // in microseconds
 
     size_t param_count;         // Number of parameters
     size_t signal_count;        // Number of signals
     size_t variable_path_len;   // Memory requirements to store variable
                                 // path and alias, including \0
-    char name[MAX_MODEL_NAME_LEN];
-    char version[MAX_MODEL_VER_LEN];
+    char name[MAX_MODEL_NAME_LEN+1];
+    char version[MAX_MODEL_VER_LEN+1];
 };
 
 #define GET_MDL_SAMPLETIMES   _IOR(FIO_MAGIC, 20, struct rtcom_ioctldata)
@@ -121,7 +122,7 @@ struct mdl_properties {
  * name */
 struct rtp_model_name {
     unsigned int number;
-    char name[MAX_MODEL_NAME_LEN];
+    char name[MAX_MODEL_NAME_LEN+1];
 };
 #define RTK_MODEL_NAME          _IOR(RTK_MAGIC, 2, struct rtp_model_name *)
 

@@ -197,7 +197,7 @@ static int start_model(const char *model_name, unsigned int model_num)
      *======================================================================*/
     /* Find out the size of the parameter structure */
     rv = ioctl(model->rtp_fd, GET_MDL_PROPERTIES, &model->properties);
-    CHECK_ERR(rv, rv, out_get_mdl_properties,
+    CHECK_ERR(rv, errno, out_get_mdl_properties,
             "Error: Could not fetch model properties: %s", strerror(errno));
 
     /* Get memory for parameter structure */
@@ -209,7 +209,7 @@ static int start_model(const char *model_name, unsigned int model_num)
      * that the model may already have been running and that these parameters
      * are not necessarily the defaults */
     rv = ioctl(model->rtp_fd, GET_PARAM, model->rtP);
-    CHECK_ERR(rv < 0, rv, out_ioctl_get_param,
+    CHECK_ERR(rv < 0, errno, out_ioctl_get_param,
             "Could not fetch model's current parameter set: %s",
                 strerror(errno));
 
@@ -228,14 +228,14 @@ static int start_model(const char *model_name, unsigned int model_num)
      * Find out the model's tick period, and initialise MSR and model
      *======================================================================*/
     CHECK_ERR (msr_init(model, param_change, 
-                model->properties.base_rate, model->blockio_start, 
+                model->properties.sample_period, model->blockio_start, 
                 model->properties.rtB_size, model->properties.rtB_count),
             -1, out_msr_init, "Could not initialise msr software");
 
     /* Initialise the model with the pointer obtained from the shared
      * object above */
     si = (struct signal_info*) malloc(sizeof(struct signal_info) + 
-            model->properties.variable_path_len);
+            model->properties.variable_path_len + 1);
     CHECK_ERR (!si, errno, out_malloc_si,
             "Could not allocate memory: %s", strerror(errno));
 
@@ -244,32 +244,41 @@ static int start_model(const char *model_name, unsigned int model_num)
         rv = ioctl(model->rtp_fd, GET_SIGNAL_INFO, si);
         CHECK_ERR (rv, errno, out_get_signal_info,
                 "Error: could not get Signal Info %s", strerror(errno));
-        CHECK_ERR (msr_reg_rtw_signal(si->path, si->alias, "", si->offset, 
+        CHECK_ERR (!msr_reg_rtw_signal(si->path, si->name, "", si->offset, 
                     si->rnum, si->cnum, si->data_type, si->orientation,
-                    si_data_width[si->data_type]), -1, out_reg_signal,
-                "MSR Error: could not register signal");
+                    si_data_width[si->data_type]), 
+                -1, out_reg_signal, "MSR Error: could not register signal");
     }
 
     for (si->index = 0; si->index < model->properties.param_count; 
             si->index++) {
+        rv = ioctl(model->rtp_fd, GET_PARAM_INFO, si);
+        CHECK_ERR (rv, errno, out_get_param_info,
+                "Error: could not get Parameter Info %s", strerror(errno));
+        CHECK_ERR (!msr_reg_rtw_param(si->path, si->name, "", 
+                    model->rtP + si->offset, 
+                    si->rnum, si->cnum, si->data_type, si->orientation,
+                    si_data_width[si->data_type]), 
+                -1, out_reg_param, "MSR Error: could not register parameter");
     }
-
 
     /* Statistics of Tasks are stored as a (struct task_stats *) just
      * after the rtB vector. Register these separately */
     task_stats = (struct task_stats *) (model->properties.rtB_size - 
-         model->properties.numst*sizeof(struct task_stats));
+         model->properties.num_tasks*sizeof(struct task_stats));
     msr_reg_time(&task_stats[0].time);
-    for (st = 0; st < model->properties.numst; st++) {
+    for (st = 0; st < model->properties.num_tasks; st++) {
         msr_reg_task_stats(st, &task_stats[st].time, &task_stats[st].exec_time,
                 &task_stats[st].time_step, &task_stats[st].overrun);
     }
 
-    syslog(LOG_DEBUG, "Preparing msr module socket port: %i\n", msr_port + model_num);
+    syslog(LOG_DEBUG, "Preparing msr module socket port: %i\n", 
+            msr_port + model_num);
     model->net_fd = prepare_tcp(msr_port + model_num, new_msr_client, msr_read, 
                 msr_write, NULL);
     if (model->net_fd < 0) {
-        syslog(LOG_ERR, "Could not register network port %i", msr_port + model_num);
+        syslog(LOG_ERR, "Could not register network port %i", 
+                msr_port + model_num);
         goto out_prepare_tcp;
     }
 
@@ -283,6 +292,8 @@ static int start_model(const char *model_name, unsigned int model_num)
     return 0;
 
 out_prepare_tcp:
+out_reg_param:
+out_get_param_info:
 out_reg_signal:
 out_get_signal_info:
     free(si);

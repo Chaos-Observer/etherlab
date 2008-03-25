@@ -50,10 +50,10 @@ static const char* get_signal_info(struct signal_info *si, const char **path)
     // Pass path as a pointer; gets copied later
     *path = rtwCAPI_GetSignalBlockPath(signals, si->index);
 
-    strncpy(si->alias, rtwCAPI_GetSignalName(signals, si->index),
-            sizeof(si->alias));
+    strncpy(si->name, rtwCAPI_GetSignalName(signals, si->index),
+            sizeof(si->name));
     // Make sure the string is terminated
-    si->alias[sizeof(si->alias)-1] = '\0';
+    si->name[sizeof(si->name)-1] = '\0';
 
     si->offset =
         (void*)rtwCAPI_GetDataAddress( dataAddressMap, 
@@ -137,7 +137,7 @@ static const char* get_signal_info(struct signal_info *si, const char **path)
     return NULL;
 }
 
-static const char* get_param_info(struct signal_info* si, const char **name)
+static const char* get_param_info(struct signal_info* si, const char **path)
 {
     unsigned int dimIdx, dimArrayIdx, dataTypeIdx; 
 
@@ -146,9 +146,12 @@ static const char* get_param_info(struct signal_info* si, const char **name)
     }
 
     // Pass path as a pointer; gets copied later
-    *name = rtwCAPI_GetBlockParameterBlockPath(blockParams, si->index);
+    *path = rtwCAPI_GetBlockParameterBlockPath(blockParams, si->index);
 
-    si->alias[0] = '\0';
+    strncpy(si->name, rtwCAPI_GetBlockParameterName(blockParams, si->index),
+            sizeof(si->name));
+    // Make sure the string is terminated
+    si->name[sizeof(si->name)-1] = '\0';
 
     si->offset =
         (void*)rtwCAPI_GetDataAddress( dataAddressMap, 

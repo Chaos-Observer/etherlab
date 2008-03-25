@@ -40,6 +40,7 @@
 #include <msr_mem.h>
 #include <msr_charbuf.h>
 #include <msr_lists.h>
+#include "include/etl_data_info.h"
 
 /*--defines--------------------------------------------------------------------------------------*/
 
@@ -252,15 +253,6 @@ enum enum_var_typ{
 /* der hierzu passende String (FIXME TTIMEVAL ist noch TDBL !!!!!!!!!!!!!!!!)*/
 #define ENUM_VAR_STR "TCHAR","TUCHAR","TSHORT","TUSHORT","TINT","TUINT","TLINT","TULINT","TDBL","TFLT","TDBL","TENUM","TSTR","TFCALL"
 
-/* Enumeration for data orientation (übernommen aus rtw_capi.h HM) */
-enum var_orientation{
-  var_SCALAR,
-  var_VECTOR,
-  var_MATRIX_ROW_MAJOR,
-  var_MATRIX_COL_MAJOR,
-  var_MATRIX_COL_MAJOR_ND
-};
-
 /* und der passende String */
 #define ENUM_OR_STR "SCALAR","VECTOR","MATRIX_ROW_MAJOR","MATRIX_COL_MAJOR","MATRIX_COL_MAJOR_ND"
 
@@ -275,7 +267,7 @@ struct msr_param_list
     MSR_LIST_HEADER	         /* siehe oben */
     unsigned int rnum;                                                   //Matrizen Anzahl Zeilen
     unsigned int cnum;                                                   //Matrizen Anzahl Spalten
-    enum var_orientation orientation;
+    enum si_orientation_t orientation;
     void *cbuf;                  /* Speicherbereich für den Vergleich des Variableninhaltes mit vorherigem Wert, 
 				    um bestimmen zu können ob sich die Variable geändert hat */ 
     unsigned int p_flags;        /* Berechtigungen */
@@ -347,10 +339,10 @@ struct msr_meta_list
 */
 
 #define msr_reg_param(bez,einh,adr,typ) \
-        msr_cfi_reg_param(bez,einh,adr,1,1,var_SCALAR,typ,"",MSR_R,NULL,NULL)
+        msr_cfi_reg_param(bez,einh,adr,1,1,si_scalar,typ,"",MSR_R,NULL,NULL)
 
 #define msr_f_reg_param(bez,einh,adr,typ,flags) \
-        msr_cfi_reg_param(bez,einh,adr,1,1,var_SCALAR,typ,"",flags,NULL,NULL)         //mit Flags
+        msr_cfi_reg_param(bez,einh,adr,1,1,si_scalar,typ,"",flags,NULL,NULL)         //mit Flags
 
 int msr_cfi_reg_param(char *bez,char *einh,void *adr,int rnum, int cnum,int orientation,enum enum_var_typ typ,
 		      char *info,
@@ -365,7 +357,7 @@ int msr_cfi_reg_param(char *bez,char *einh,void *adr,int rnum, int cnum,int orie
  do {                                                          \
      char *info=(char *)getmem(1024);                          \
      sprintf(info,"init=\"%s%i.%.4i\" ll=\"%s%i.%.4i\" ul=\"%s%i.%.4i\"",F_FLOAT(init),F_FLOAT(ug), F_FLOAT(og)); \
-     msr_cfi_reg_param(bez,einh,adr,1,1,var_SCALAR,TDBL,info,flags,w,r);  \
+     msr_cfi_reg_param(bez,einh,adr,1,1,si_scalar,TDBL,info,flags,w,r);  \
      freemem(info);                                            \
     } while (0)
 
@@ -373,7 +365,7 @@ int msr_cfi_reg_param(char *bez,char *einh,void *adr,int rnum, int cnum,int orie
  do {                                                          \
      char *info=(char *)getmem(1024);                          \
      sprintf(info,"init=\"%i\" ll=\"%i\" ul=\"%i\"",init,ug,og); \
-     msr_cfi_reg_param(bez,einh,adr,1,1,var_SCALAR,TINT,info,flags,w,r);  \
+     msr_cfi_reg_param(bez,einh,adr,1,1,si_scalar,TINT,info,flags,w,r);  \
      freemem(info);                                            \
     } while (0)
 
@@ -381,7 +373,7 @@ int msr_cfi_reg_param(char *bez,char *einh,void *adr,int rnum, int cnum,int orie
  do {                                                          \
      char *info=(char *)getmem(1024);                          \
      sprintf(info,"init=\"%i\" ll=\"%i\" ul=\"%i\"",init,ug,og); \
-     msr_cfi_reg_param(bez,einh,adr,1,1,var_SCALAR,TUINT,info,flags,w,r);  \
+     msr_cfi_reg_param(bez,einh,adr,1,1,si_scalar,TUINT,info,flags,w,r);  \
      freemem(info);                                            \
     } while (0)
 
@@ -416,7 +408,7 @@ int msr_cfi_reg_param(char *bez,char *einh,void *adr,int rnum, int cnum,int orie
      char *info=(char *)getmem(1024+strlen(values));            \
      for(i=0;i<strlen(v);i++) if(v[i] == ',') cnt++;           \
      sprintf(info,"init=\"%i\" range=\"%s\" ul=\"%i\"",init,values,cnt); \
-      msr_cfi_reg_param(bez,einh,adr,1,1,var_SCALAR,TENUM,info,flags,w,r);          \
+      msr_cfi_reg_param(bez,einh,adr,1,1,si_scalar,TENUM,info,flags,w,r);          \
      freemem(info);                                            \
     } while (0)
 

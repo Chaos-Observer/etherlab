@@ -52,7 +52,7 @@ struct signal_info {
     enum si_datatype_t data_type;      // Data Type
     enum si_orientation_t orientation; // Data organisation
     size_t data_size;           // Size of data type
-    char alias[256];            // Signal alias name
+    char name[256];             // Signal alias name
     char path[];                // Path of signal
 };
 

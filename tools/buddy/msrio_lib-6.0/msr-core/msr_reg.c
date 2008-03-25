@@ -61,6 +61,7 @@
 #include <msr_hex_bin.h>
 #include <msr_interpreter.h>
 #include <msr_attributelist.h>
+#include "include/etl_data_info.h"
 
 #define DBG 0
 /*--external functions---------------------------------------------------------------------------*/
@@ -105,9 +106,9 @@ extern int (*newparamflag)(void*, void*, size_t);  //Funktion, die aufgerufen we
 
 #define MSR_CALC_ADR(_START,_DATASIZE,_ORIENTATION,_RNUM,_CNUM)   \
 do {                                                              \
-if (_ORIENTATION == var_MATRIX_COL_MAJOR) 		          \
+if (_ORIENTATION == si_matrix_col_major) 		          \
     p = _START + (_CNUM * r + c)*_DATASIZE;	                  \
-else if (_ORIENTATION == var_MATRIX_ROW_MAJOR)		          \
+else if (_ORIENTATION == si_matrix_row_major)		          \
     p = _START + (_RNUM * r + c)*_DATASIZE;	                  \
 else								  \
     p = _START + (r + c)*_DATASIZE;  			          \
@@ -1658,7 +1659,7 @@ int msr_anz_param(void)
 //=====================================================================================
 
 
-enum enum_var_typ RTW_to_MSR(unsigned int datatyp) {
+enum enum_var_typ ETL_to_MSR(unsigned int datatyp) {
 
 /*     SS_DOUBLE  =  0,    /\* real_T    *\/ */
 /*     SS_SINGLE  =  1,    /\* real32_T  *\/ */
@@ -1670,7 +1671,7 @@ enum enum_var_typ RTW_to_MSR(unsigned int datatyp) {
 /*     SS_UINT32  =  7,    /\* uint32_T  *\/ */
 /*     SS_BOOLEAN =  8   */
 
-    enum enum_var_typ tt[9] = {TDBL,TFLT,TCHAR,TUCHAR,TSHORT,TUSHORT,TINT,TUINT,TCHAR};
+    enum enum_var_typ tt[9] = {TDBL,TFLT,TUCHAR,TCHAR,TUSHORT,TSHORT,TUINT,TINT,TCHAR};
 
     return tt[datatyp];
 }
@@ -1718,7 +1719,8 @@ do {                                                             \
 int msr_reg_rtw_param( const char *path, const char *name, const char *cTypeName,
 		       void *data,
 		       unsigned int rnum, unsigned int cnum,
-		       unsigned int dataType, unsigned int orientation,
+		       enum si_datatype_t dataType, 
+                       enum si_orientation_t orientation,
 		       unsigned int dataSize){
     char *buf;
     char *rbuf,*info;
@@ -1771,12 +1773,12 @@ int msr_reg_rtw_param( const char *path, const char *name, const char *cTypeName
 
 
     if(!dohide) {
-	if(hasattribute(alist,"isstring") && (RTW_to_MSR(dataType) == TUCHAR || RTW_to_MSR(dataType) == TCHAR)) {
+	if(hasattribute(alist,"isstring") && (ETL_to_MSR(dataType) == TUCHAR || ETL_to_MSR(dataType) == TCHAR)) {
 	    result = msr_cfi_reg_param(rbuf,"",data,rnum,cnum,orientation,TSTR,info,pflag,NULL,NULL);
 	    isstring = 1;
 	}
 	else
-	    result = msr_cfi_reg_param(rbuf,"",data,rnum,cnum,orientation,RTW_to_MSR(dataType),info,pflag,NULL,NULL);
+	    result = msr_cfi_reg_param(rbuf,"",data,rnum,cnum,orientation,ETL_to_MSR(dataType),info,pflag,NULL,NULL);
 
 	    //jetzt noch die einzelnen Elemente registrieren 
 	    if (!hasattribute(alist,"hideelements") && isstring == 0) {
@@ -1793,7 +1795,7 @@ int msr_reg_rtw_param( const char *path, const char *name, const char *cTypeName
 			    else                         //Matrize
 				sprintf(buf2,"%s/%i,%i",rbuf,r,c);
 			    //p wird in MSR_CALC_ADR berechnet !!!!!!!!!!!
-			    result = msr_cfi_reg_param(buf2,"",p,1,1,orientation,RTW_to_MSR(dataType),info,pflag | MSR_DEP,NULL,NULL);
+			    result = msr_cfi_reg_param(buf2,"",p,1,1,orientation,ETL_to_MSR(dataType),info,pflag | MSR_DEP,NULL,NULL);
 			}
 		    }
 		    freemem(buf2);
@@ -1813,7 +1815,7 @@ int msr_reg_rtw_param( const char *path, const char *name, const char *cTypeName
 int msr_reg_time(void *time)
 {
     msr_reg_kanal3("/Time","s","",
-            time,TDBL,"",default_sampling_red);
+            time,TTIMEVAL,"",default_sampling_red);
     return 0;
 }
 
@@ -1828,7 +1830,7 @@ int msr_reg_task_stats(
 
     snprintf(buf, 50, "/Taskinfo/%i/TaskTime", tid);
     msr_reg_kanal3(buf,"us","",
-            time,TDBL,"",default_sampling_red);
+            time,TTIMEVAL,"",default_sampling_red);
 
     snprintf(buf, 50, "/Taskinfo/%i/ExecTime", tid);
     msr_reg_kanal3(buf,"us","",
@@ -1874,7 +1876,8 @@ int msr_reg_task_stats(
 int msr_reg_rtw_signal( const char *path, const char *name, const char *cTypeName,
 			unsigned long offset,                                              // !!!
 			unsigned int rnum, unsigned int cnum,
-			unsigned int dataType, unsigned int orientation,
+			enum si_datatype_t dataType, 
+                        enum si_orientation_t orientation,
 			unsigned int dataSize){
 
     char *buf;
@@ -1934,13 +1937,13 @@ int msr_reg_rtw_signal( const char *path, const char *name, const char *cTypeNam
 		    else                         //Matrize
 			sprintf(buf2,"%s/%i/%i",rbuf,r,c);
 		    //p wird in MSR_CALC_ADR berechnet !!!!!!!!!!!
-		    result |= msr_reg_kanal3(buf2,(char *)name,"",p,RTW_to_MSR(dataType),info,default_sampling_red);
+		    result |= msr_reg_kanal3(buf2,(char *)name,"",p,ETL_to_MSR(dataType),info,default_sampling_red);
 		}
 	    }
 	    freemem(buf2);
 	}
 	else {  //ein Sklarer Kanal
-	    result |= msr_reg_kanal3(rbuf,(char *)name,"",(void *)offset,RTW_to_MSR(dataType),info,default_sampling_red);
+	    result |= msr_reg_kanal3(rbuf,(char *)name,"",(void *)offset,ETL_to_MSR(dataType),info,default_sampling_red);
 	}
 
     }

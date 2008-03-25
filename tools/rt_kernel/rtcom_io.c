@@ -313,21 +313,19 @@ fop_ioctl( struct file *filp, unsigned int command, unsigned long data)
                 }
                 rtw_model = id.model_id->rtw_model;
 
-                p.rtB_count     = rtw_model->rtB_count;
                 p.signal_count  = rtw_model->signal_count;
                 p.param_count   = rtw_model->param_count;
                 p.variable_path_len  = rtw_model->variable_path_len;
                 p.num_st        = rtw_model->num_st;
                 p.num_tasks     = rtw_model->num_tasks;
-                p.base_rate     = rtw_model->sample_period;
-                p.rtB_size      = rtw_model->rtB_size
-                    + rtw_model->num_tasks * sizeof(struct task_stats);
-                p.rtP_size      = rtw_model->rtP_size;
-                strncpy(p.name, rtw_model->modelName, MAX_MODEL_NAME_LEN-1);
+
+                // No buffer overflow here, the array is defined as
+                // name[MAX+1]
+                strncpy(p.name, rtw_model->modelName, MAX_MODEL_NAME_LEN);
                 strncpy(p.version, rtw_model->modelVersion, 
-                        MAX_MODEL_VER_LEN-1);
-                p.name[MAX_MODEL_NAME_LEN-1] = '\0';
-                p.version[MAX_MODEL_VER_LEN-1] = '\0';
+                        MAX_MODEL_VER_LEN);
+                p.name[MAX_MODEL_NAME_LEN] = '\0';
+                p.version[MAX_MODEL_VER_LEN] = '\0';
 
                 if (sizeof(p) != id.data_len ||
                         copy_to_user(id.data, &p, sizeof(p))) {

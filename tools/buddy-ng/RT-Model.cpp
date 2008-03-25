@@ -83,7 +83,7 @@ RTModel::RTModel(int _fd, struct model *_model_ref):
 
         }
         else {
-            signalList[si->index] = new RTSignal(si->path, si->alias, 
+            signalList[si->index] = new RTSignal(si->path, si->name, 
                     si->data_type, si->orientation, si->rnum, si->cnum,
                     sampleTime.at(si->st_index));
         }
@@ -94,7 +94,8 @@ RTModel::RTModel(int _fd, struct model *_model_ref):
         if (::ioctl(fd, GET_PARAM_INFO, &id)) {
         }
         else {
-            paramList[si->index] = new RTParameter(si->path, si->alias, 
+            paramList[si->index] = new RTParameter(
+                    std::string(si->path) + si->name, std::string(),
                     si->data_type, si->orientation, si->rnum, si->cnum);
         }
     }
