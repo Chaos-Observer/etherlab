@@ -25,7 +25,7 @@
  *
  *****************************************************************************/ 
 
-#include "mdl_wrapper.h"
+#include "rt_model.h"
 
 int register_rtw_model(const struct rtw_model *rtw_model, size_t struct_len,
         const char *revision_str, struct module *owner);

@@ -53,7 +53,7 @@
 /* Local headers */
 #include "rt_kernel.h"          /* Public functions exported by manager */
 #include "rt_main.h"            /* Private to kernel */
-#include "rtcom_io.h"
+#include "rtcom_chardev.h"
 
 struct rt_kernel rt_kernel;
 

@@ -2,12 +2,13 @@ moduledir = $(prefix)/modules
 module_DATA = rt_kernel.ko rt_test.ko
 
 kerneldatadir = $(prefix)/src/kernel
-dist_kerneldata_DATA = rtai_reg_mdl.c mdl_wrapper.c rtw_data_info.c
+dist_kerneldata_DATA = rt_mdl_main.c rtw_wrapper.c rtw_signal_interface.c
 
-include_HEADERS = rt_vars.h rt_kernel.h mdl_time.h mdl_wrapper.h module_payload.h rtw_data_info.h
+include_HEADERS = rt_vars.h rt_kernel.h mdl_time.h rt_model.h \
+        module_payload.h rtw_signal_interface.h
 
-RT_KERNEL_SRCS = rt_main.c rt_fio.c rt_vars.c rtcom_io.c
-RT_KERNEL_HEADER = rt_main.h rtcom_io.h
+RT_KERNEL_SRCS = rt_main.c mdl_chardev.c rt_vars.c rtcom_chardev.c
+RT_KERNEL_HEADER = rt_main.h rtcom_chardev.h
 
 EXTRA_DIST = $(RT_KERNEL_SRCS) $(RT_KERNEL_HEADER) test_vars.c
 

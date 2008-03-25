@@ -221,14 +221,14 @@ endif
 #----------------------------- Source Files ------------------------------------
 
 # The <model>_capi.c must be removed from the sources
-SRCS  = $(MODULES) $(S_FUNCTIONS) rtw_data_info.c etl_data_types.c
+SRCS  = $(MODULES) $(S_FUNCTIONS) rtw_signal_interface.c etl_data_types.c
 
 # Object target that will be used together with $(MODULE_MAIN_SRC) to
 # become a kernel object (.ko) during the KBuild process
 SHIPPED_MODEL      := $(MODEL)_obj.o_shipped
 
 # Source for the module main ( module_init() and module_exit() )
-MODULE_MAIN_SRC    := rtai_reg_mdl.c
+MODULE_MAIN_SRC    := rt_mdl_main.c
 
 KERNEL_MODULE      := $(MODEL)_kmod.ko
 
@@ -369,7 +369,7 @@ $(MODULE_MAIN_SRC): $(ETHERLAB_DIR)/src/kernel/$(MODULE_MAIN_SRC)
 	@cp $< $@
 
 # Create <model>.o_shipped object for use in KBuild
-$(SHIPPED_MODEL): mdl_wrapper.o $(MODELLIB) $(SHARED_LIB) $(LIBS) $(MODELREF_LINK_LIBS) 
+$(SHIPPED_MODEL): rtw_wrapper.o $(MODELLIB) $(SHARED_LIB) $(LIBS) $(MODELREF_LINK_LIBS) 
 	$(ld) $(LDFLAGS) -r -o $@ $^
 	@echo "### Created $@"
 
@@ -391,7 +391,7 @@ $(MODEL).o : $(MODEL).$(TARGET_LANG_EXT)
 	@$(GCC_TEST_CMD) $< $(GCC_TEST_OUT)
 	$(cc) -c $(LOCAL_CFLAGS) $(KERNEL_OPTS) $(GCC_WALL_FLAG) $<
 
-rtw_data_info.o: $(ETHERLAB_DIR)/src/kernel/rtw_data_info.c capi.h
+rtw_signal_interface.o: $(ETHERLAB_DIR)/src/kernel/rtw_signal_interface.c capi.h
 	@$(GCC_TEST_CMD) $< $(GCC_TEST_OUT)
 	$(cc) -c $(LOCAL_CFLAGS) $(KERNEL_OPTS) $(GCC_WALL_FLAG) $<
 

@@ -27,7 +27,7 @@
 #error "Don't have config.h"
 #endif
 
-#include "rtcom_io.h"
+#include "rtcom_chardev.h"
 
 #define DEBUG
 
@@ -45,7 +45,7 @@
 
 /* Local headers */
 #include "rt_main.h"
-#include "mdl_wrapper.h"
+#include "rt_model.h"
 
 // 4MB IO memory
 #define IO_MEM_LEN (1<<23)
