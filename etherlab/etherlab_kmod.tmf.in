@@ -221,7 +221,7 @@ endif
 #----------------------------- Source Files ------------------------------------
 
 # The <model>_capi.c must be removed from the sources
-SRCS  = $(MODULES) $(S_FUNCTIONS) rtw_signal_interface.c etl_data_types.c
+SRCS  = $(MODULES) $(S_FUNCTIONS) rtw_data_interface.c etl_data_types.c
 
 # Object target that will be used together with $(MODULE_MAIN_SRC) to
 # become a kernel object (.ko) during the KBuild process
