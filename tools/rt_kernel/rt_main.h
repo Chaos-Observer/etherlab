@@ -25,6 +25,9 @@
  *
  *****************************************************************************/ 
 
+#ifndef RT_MAIN_H
+#define RT_MAIN_H
+
 #include <linux/fs.h>
 #include <linux/cdev.h>
 #include <linux/wait.h>
@@ -60,6 +63,10 @@ struct model {
     struct class_device *sysfs_dev;
 
     struct buddy_fio *buddy_fio; 
+
+    struct {
+        void *priv_data;
+    } rtcom_data;
 
     struct cdev rtp_dev;        /* Device for Process IO */
     SEM buf_sem;                /* RT Sem to protect data path to buddy */
@@ -152,3 +159,5 @@ void rtp_fio_clear_mdl(struct model *);
 int rtp_fio_init(void);
 void rtp_fio_clear(void);
 void rtp_data_avail_handler(void);
+
+#endif // RT_MAIN_H

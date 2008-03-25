@@ -24,7 +24,8 @@ struct rtw_model {
 	unsigned int max_overrun;	/* Maximum overrun count */
 	unsigned long stack_size;	/* RTAI Stack size */
 
-        unsigned int numst;             /* Number of model sample times */
+        unsigned int num_tasks;         /* Number of model tasks */
+        unsigned int num_st;            /* Number of model sample times */
 
 	void *pend_rtP;         /* Pointer to a new set of parameters */
 
@@ -43,9 +44,9 @@ struct rtw_model {
 
         const char *(*rt_OneStepMain)(void);
         const char *(*rt_OneStepTid)(unsigned int);
-        void (*set_error_msg)(const char *);
-        const char* (*get_signal_info)(struct signal_info*, const char**);
-        const char* (*get_param_info)(struct signal_info*, const char**);
+        void        (*set_error_msg)(const char *);
+        const char *(*get_signal_info)(struct signal_info*, const char**);
+        const char *(*get_param_info)(struct signal_info*, const char**);
 
         const char *modelVersion;
         const char *modelName;

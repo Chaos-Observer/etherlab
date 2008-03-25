@@ -139,40 +139,95 @@ static const char* get_signal_info(struct signal_info *si, const char **path)
 
 static const char* get_param_info(struct signal_info* si, const char **name)
 {
-    si->st_index = 0;
-#if 0
-        path = rtwCAPI_GetBlockParameterBlockPath(blockParams, paramIdx);
-        name = rtwCAPI_GetBlockParameterName(blockParams, paramIdx);
-        offset = (ptrdiff_t)rtwCAPI_GetDataAddress(
-                rtwCAPI_GetDataAddressMap(mmi),
-                rtwCAPI_GetBlockParameterAddrIdx(blockParams, paramIdx)
-                ) - (ptrdiff_t)&rtP;
+    unsigned int dimIdx, dimArrayIdx, dataTypeIdx; 
 
-        dimIdx = rtwCAPI_GetBlockParameterDimensionIdx(blockParams, 
-                paramIdx);
+    if (si->index >= maxParameterIdx) {
+        return "Exceeded parameter index array.";
+    }
 
-        if (rtwCAPI_GetNumDims(dimMap, dimIdx) != 2) {
-            fprintf(stderr,
-                    "Cannot handle array dimensions != 2\n");
-            return -1;
-        }
-        dimArrayIdx = rtwCAPI_GetDimArrayIndex(dimMap, dimIdx);
-        orientation = rtwCAPI_GetOrientation(dimMap, dimIdx);
-        if (orientation == rtwCAPI_MATRIX_COL_MAJOR_ND) {
-            fprintf(stderr,
-                    "Cannot handle n Dimensional arrays\n");
-            return -1;
-        }
+    // Pass path as a pointer; gets copied later
+    *name = rtwCAPI_GetBlockParameterBlockPath(blockParams, si->index);
 
-        rnum = dimArray[dimArrayIdx];
-        cnum = dimArray[dimArrayIdx+1];
+    si->alias[0] = '\0';
 
-        dataTypeIdx = rtwCAPI_GetBlockParameterDataTypeIdx(blockParams,
-                paramIdx);
-        cTypeName = rtwCAPI_GetDataTypeCName(dTypeMap, dataTypeIdx);
-        dataType = rtwCAPI_GetDataTypeSLId(dTypeMap, dataTypeIdx);
-        dataSize = rtwCAPI_GetDataTypeSize(dTypeMap, dataTypeIdx);
-#endif
+    si->offset =
+        (void*)rtwCAPI_GetDataAddress( dataAddressMap, 
+                rtwCAPI_GetBlockParameterAddrIdx(blockParams, si->index))
+        - (void*)&rtP;
+
+    dimIdx = rtwCAPI_GetBlockParameterDimensionIdx(blockParams, si->index);
+
+    if (rtwCAPI_GetNumDims(dimMap, dimIdx) != 2) {
+        return "Cannot handle array dimensions != 2";
+    }
+    dimArrayIdx = rtwCAPI_GetDimArrayIndex(dimMap, dimIdx);
+    si->rnum = dimArray[dimArrayIdx];
+    si->cnum = dimArray[dimArrayIdx+1];
+
+    switch (rtwCAPI_GetOrientation(dimMap, dimIdx)) {
+        case rtwCAPI_SCALAR:
+            si->orientation = si_scalar;
+            break;
+        case rtwCAPI_VECTOR:
+            si->orientation = si_vector;
+            break;
+        case rtwCAPI_MATRIX_COL_MAJOR:
+            si->orientation = si_matrix_col_major;
+            break;
+        case rtwCAPI_MATRIX_ROW_MAJOR:
+            si->orientation = si_matrix_row_major;
+            break;
+        default:
+            return "Unknown RTW data orientation encountered.";
+    }
+
+    dataTypeIdx = rtwCAPI_GetBlockParameterDataTypeIdx(blockParams, si->index);
+    switch (rtwCAPI_GetDataTypeSLId(dTypeMap, dataTypeIdx)) {
+        case SS_DOUBLE:
+            si->data_type = si_double_T;
+            break;
+        case SS_SINGLE:
+            si->data_type = si_single_T;
+            break;
+        case SS_INT8:
+            si->data_type = si_sint8_T;
+            break;
+        case SS_UINT8:
+            si->data_type = si_uint8_T;
+            break;
+        case SS_INT16:
+            si->data_type = si_sint16_T;
+            break;
+        case SS_UINT16:
+            si->data_type = si_uint16_T;
+            break;
+        case SS_INT32:
+            si->data_type = si_sint32_T;
+            break;
+        case SS_UINT32:
+            si->data_type = si_uint32_T;
+            break;
+        case SS_BOOLEAN:
+            si->data_type = si_boolean_T;
+            break;
+        default:
+            return "Unknown RTW data type encountered.";
+    }
+
+    // Sample time index is irrelevant for parameters
+    si->st_index = ~0U;
+
+    // Check that the data type is compatable
+    if (si_data_width[si->data_type] !=
+            rtwCAPI_GetDataTypeSize(dTypeMap, dataTypeIdx)) {
+        return "Incompatable data type size encountered.";
+    }
+    if (rtwCAPI_GetDataIsComplex(dTypeMap, dataTypeIdx)) {
+        return "Cannot interact with complex signals yet.";
+    }
+    if (rtwCAPI_GetDataIsPointer(dTypeMap, dataTypeIdx)) {
+        return "Cannot interact with pointer signals.";
+    }
 
     return NULL;
 }

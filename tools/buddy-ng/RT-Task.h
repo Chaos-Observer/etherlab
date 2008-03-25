@@ -42,8 +42,9 @@ class RTTask: public Task {
 
         std::list<RTModel*> modelList;
 
-//        struct mdl_properties properties;
-//        char* rtP;
+        struct rt_kernel_prop rt_properties;
+
+        void *io_mem;
 
         // Reimplemented from class Task
         int read(int fd);

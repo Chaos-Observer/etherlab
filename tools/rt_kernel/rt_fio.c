@@ -194,10 +194,11 @@ static long rtp_ioctl(
                 properties.signal_count  = rtw_model->signal_count;
                 properties.param_count   = rtw_model->param_count;
                 properties.variable_path_len  = rtw_model->variable_path_len;
-                properties.numst         = rtw_model->numst;
+                properties.num_st        = rtw_model->num_st;
+                properties.num_tasks     = rtw_model->num_tasks;
                 properties.base_rate     = rtw_model->sample_period;
                 properties.rtB_size      = rtw_model->rtB_size
-                    + rtw_model->numst * sizeof(struct task_stats);
+                    + rtw_model->num_tasks * sizeof(struct task_stats);
                 properties.rtP_size      = rtw_model->rtP_size;
 
                 rv = copy_to_user((void *)data, &properties, 

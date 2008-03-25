@@ -21,9 +21,10 @@
  *
  *****************************************************************************/ 
 
+#include "rt_main.h"
 
-void rtcom_new_model(void *model_ref);
-void rtcom_del_model(void *model_ref);
+void rtcom_new_model(struct model *model);
+void rtcom_del_model(struct model *model);
 
 /* Clear the Real-Time Kernel file handles */
 void rtcom_fio_clear(void);

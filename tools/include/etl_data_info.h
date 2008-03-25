@@ -22,6 +22,9 @@
  *
  ***********************************************************************/
 
+#ifndef ETLDATAINFO_H
+#define ETLDATAINFO_H
+
 #include <stddef.h>
 
 // Data organisation
@@ -53,3 +56,4 @@ struct signal_info {
     char path[];                // Path of signal
 };
 
+#endif // ETLDATAINFO_H

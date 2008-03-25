@@ -2,7 +2,8 @@
  *
  * $Id$
  *
- * This defines the class used to interact with the real-time kernel
+ * This defines the base class of a Real-Time Variable, the aggregation of
+ * signal and parameters
  * 
  * Copyright (C) 2008  Richard Hacker
  * 
@@ -20,33 +21,26 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * **********************************************************************/
 
-#ifndef RTMODEL_H
-#define RTMODEL_H
+#ifndef RTVARIABLE_H
+#define RTVARIABLE_H
 
-#include <include/fio_ioctl.h>
-
-#include <vector>
 #include <string>
+#include "include/etl_data_info.h"
 
-class RTSignal;
-class RTParameter;
-struct timeval;
-
-class RTModel {
+class RTVariable {
     public:
-        RTModel(int fd, struct model* model_ref);
-        ~RTModel();
+        RTVariable(const std::string &path, const std::string &alias,
+                si_datatype_t dataType, si_orientation_t orientation,
+                unsigned int rnum, unsigned int cnum);
+        ~RTVariable();
 
     private:
-        const int fd;
-        struct model* const model_ref;
-        std::string name;
-        std::string version;
+        const std::string path;
+        const std::string alias;
+        const si_datatype_t dataType; 
+        const si_orientation_t orientation;
 
-        char *rtP;
-
-        std::vector<RTSignal*> signalList;
-        std::vector<RTParameter*> paramList;
-        std::vector<uint32_t> sampleTime;
+        const unsigned int rnum;
+        const unsigned int cnum;
 };
-#endif // RTMODEL_H
+#endif // RTVARIABLE_H

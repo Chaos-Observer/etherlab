@@ -82,7 +82,7 @@ mod_init(void)
     }
 
     // If a new tick is supplied, use it instead of the model's
-    for (i = rtw_model.numst; tick && i--; ) {
+    for (i = rtw_model.num_st; tick && i--; ) {
         rtw_model.task_period[i] = 
             rtw_model.task_period[i] / rtw_model.task_period[0] * tick;
     }

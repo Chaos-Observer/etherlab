@@ -370,7 +370,7 @@ void free_rtw_model(int model_id)
 
     down(&rt_kernel.lock);
 
-    for (i = 0; i < model->rtw_model->numst; i++) {
+    for (i = 0; i < model->rtw_model->num_tasks; i++) {
         rt_task_suspend(&model->task[i].rtai_thread);
         printk("Unused stack memory: %i\n", 
             rt_task_stack_check(&model->task[i].rtai_thread,STACK_MAGIC));
@@ -452,8 +452,8 @@ int register_rtw_model(const struct rtw_model *rtw_model,
     /* Get some memory to manage RT model */
     model = kcalloc( 1, 
             ( sizeof(struct model) 
-              + rtw_model->numst*sizeof(struct mdl_task)
-              + rtw_model->numst*sizeof(struct task_stats)),
+              + rtw_model->num_tasks*sizeof(struct mdl_task)
+              + rtw_model->num_tasks*sizeof(struct task_stats)),
             GFP_KERNEL);
     if (!model) {
         printk("Error: Could not get memory for Real-Time Task\n");
@@ -461,8 +461,10 @@ int register_rtw_model(const struct rtw_model *rtw_model,
         goto out;
     }
     model->task_stats = 
-        (struct task_stats *)&model->task[rtw_model->numst];
-    model->task_stats_len = rtw_model->numst*sizeof(struct task_stats);
+        (struct task_stats *)&model->task[rtw_model->num_tasks];
+    model->task_stats_len = rtw_model->num_tasks*sizeof(struct task_stats);
+    pr_info("Malloc'ed struct model *(%p) for rtw_model *(%p)\n",
+            model, rtw_model);
 
     down(&rt_kernel.lock);
 
@@ -481,7 +483,7 @@ int register_rtw_model(const struct rtw_model *rtw_model,
 
     model->rtw_model = rtw_model;
 
-    for (i = 0; i < rtw_model->numst; i++) {
+    for (i = 0; i < rtw_model->num_tasks; i++) {
         model->task[i].mdl_tid = i;
         model->task[i].model = model;
         model->task[i].stats = &model->task_stats[i];
@@ -545,7 +547,7 @@ int register_rtw_model(const struct rtw_model *rtw_model,
 
     now = rt_get_time();
     model->photo_sample = 1;           /* Take a photo of next calculation */
-    for (i = 0; i < rtw_model->numst; i++) {
+    for (i = 0; i < rtw_model->num_tasks; i++) {
         pr_info("RTW Model tid %i running at %uus\n", 
                 i, rtw_model->task_period[i]);
         decimation = rtw_model->task_period[i] / rtw_model->task_period[0];
@@ -567,7 +569,7 @@ out_make_periodic:
     rtp_fio_clear_mdl(model);
 out_fio_init:
 out_incompatible_ticks:
-    for (i--; i > rtw_model->numst; i--) {
+    for (i--; i > rtw_model->num_tasks; i--) {
         rt_task_suspend(&model->task[i].rtai_thread);
         rt_task_delete(&model->task[i].rtai_thread);
     }

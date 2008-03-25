@@ -31,6 +31,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
+#include <sys/mman.h>
 
 RTTask::RTTask(Task* parent): Task(parent),
     device(configFile->getString("", "device", "/dev/etl"))
@@ -43,26 +44,27 @@ RTTask::RTTask(Task* parent): Task(parent),
                 + strerror(errno));
     }
 
-    //ioctl(fd, GET_RT_PROPERTIES);
-    //mmap();
+    std::cout << "rt_properties = " << (void*)&rt_properties << std::endl;
+    if (ioctl(fd, GET_RTK_PROPERTIES, &rt_properties)) {
+        throw Exception(
+                std::string("Could not get Kernel Properties: ")
+                + strerror(errno));
+    }
+
+    io_mem = mmap(0, rt_properties.iomem_len, PROT_READ, MAP_PRIVATE, fd, 0);
+    if (io_mem == MAP_FAILED) {
+        throw Exception(
+                std::string("Could not map IO memory to kernel: ")
+                + strerror(errno));
+    }
 
     enableRead(fd);
-//    if (ioctl(fd, GET_MDL_PROPERTIES, &properties)) {
-//        throw Exception(std::string("Could not fetch model properties: ")
-//                + strerror(errno));
-//    }
-//
-//    rtP = new char[properties.rtP_size];
-//            
-//    if (ioctl(fd, GET_PARAM, rtP)) {
-//        throw Exception(std::string("Could not fetch model parameter set: ")
-//                + strerror(errno));
-//    }
-
 }
 
 RTTask::~RTTask()
 {
+    munmap(io_mem, rt_properties.iomem_len);
+    close(fd);
 }
 
 int RTTask::read(int)
@@ -87,17 +89,20 @@ int RTTask::read(int)
     total = n;
     while (n) {
         std::cout << "read " << n << "bytes." << std::endl;
+        RTModel *model = reinterpret_cast<RTModel*>(p->priv_data);
         switch (p->type) {
             case rtcom_event::new_model:
                 {
                     RTModel *model = new RTModel(fd, p->data.model_ref);
-                    struct rtcom_privdata pd;
+                    struct rtcom_ioctldata id;
 
-                    pd.ref = p->data.model_ref;
-                    pd.priv_data = model;
+                    std::cout << "new RTModel " << model << std::endl;
+
+                    id.model_id = p->data.model_ref;
+                    id.data = model;
 
                     modelList.push_back(model);
-                    if (::ioctl(fd, SET_PRIV_DATA, &pd)) {
+                    if (::ioctl(fd, SET_PRIV_DATA, &id)) {
                         return errno;
                     }
 
@@ -105,9 +110,12 @@ int RTTask::read(int)
                 }
             case rtcom_event::del_model:
                 {
-                    RTModel *model = reinterpret_cast<RTModel*>(p->priv_data);
-                    delete model;
-                    modelList.remove(model);
+                    std::cout << "delete RTModel " << model << std::endl;
+                    if (find(modelList.begin(), modelList.end(), model) 
+                            != modelList.end()) {
+                        delete model;
+                        modelList.remove(model);
+                    }
                 }
                 break;
         }

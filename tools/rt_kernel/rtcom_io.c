@@ -45,10 +45,11 @@
 
 /* Local headers */
 #include "rt_main.h"
+#include "mdl_wrapper.h"
 
 // 4MB IO memory
-#define IO_MEM_LEN (2<<24)
-#define EVENTQ_LEN (2<<14)
+#define IO_MEM_LEN (1<<23)
+#define EVENTQ_LEN (1<<14)
 
 // Wait queue for poll
 static DECLARE_WAIT_QUEUE_HEAD(event_q);
@@ -59,6 +60,30 @@ static struct rtcom_event *event_list, *event_list_end,
                           *event_rp, *event_wp = NULL;
 static void *io_mem;
 
+static struct page *
+vma_nopage(struct vm_area_struct *vma, unsigned long address, int *type)
+{
+    unsigned long offset;
+    struct page *page = NOPAGE_SIGBUS;
+
+    offset = (address - vma->vm_start) + (vma->vm_pgoff << PAGE_SHIFT);
+
+    /* Check that buddy did not want to access memory out of range */
+    if (offset >= IO_MEM_LEN)
+        return NOPAGE_SIGBUS;
+
+    page = vmalloc_to_page(io_mem + offset);
+
+//    pr_debug("Nopage fault vma, address = %#lx, offset = %#lx, page = %p\n", 
+//            address, offset, page);
+
+    /* got it, now increment the count */
+    get_page(page);
+    if (type)
+        *type = VM_FAULT_MINOR;
+    
+    return page;
+}
 
 /*#########################################################################*
  * Here the file operations to control the Real-Time Kernel are defined.
@@ -96,7 +121,7 @@ fop_open( struct inode *inode, struct file *filp)
     for ( model_id = 0; model_id < MAX_MODELS; model_id++ ) {
         if (!test_bit(model_id, &rt_kernel.loaded_models))
             continue;
-        rtcom_new_model(&rt_kernel.model[model_id]);
+        rtcom_new_model(rt_kernel.model[model_id]);
     }
     up(&rt_kernel.lock);
     pr_debug("Opened rtcom file: %p %p\n", io_mem, event_list);
@@ -149,15 +174,169 @@ fop_ioctl( struct file *filp, unsigned int command, unsigned long data)
 
     down(&rt_kernel.lock);
     switch (command) {
-        case SET_PRIV_DATA:
+        case GET_RTK_PROPERTIES:
             {
-                struct rtcom_privdata pd;
+                struct rt_kernel_prop p;
+                p.iomem_len = IO_MEM_LEN;
+                p.eventq_len = EVENTQ_LEN;
+                printk("In GET_RTK_PROPERTIES\n");
 
-                if (copy_from_user(&pd, (void*)data, sizeof(pd))) {
+                if (copy_to_user((void*)data, &p, sizeof(p))) {
                     rv = -EFAULT;
                     break;
                 }
             }
+            break;
+
+        case SET_PRIV_DATA:
+            {
+                struct rtcom_ioctldata id;
+                struct model* model;
+                printk("In SET_PRIV_DATA\n");
+
+                if (copy_from_user(&id, (void*)data, sizeof(id))) {
+                    rv = -EFAULT;
+                    break;
+                }
+                printk("setting private data %p\n", id.data);
+
+                // Set the RTCom priv_data field
+                model = id.model_id;
+                model->rtcom_data.priv_data = id.data;
+            }
+            break;
+
+        case GET_MDL_SAMPLETIMES:
+            {
+                struct rtcom_ioctldata id;
+                const struct rtw_model* rtw_model;
+                printk("In GET_MDL_SAMPLETIMES\n");
+
+                if (copy_from_user(&id, (void*)data, sizeof(id))) {
+                    rv = -EFAULT;
+                    break;
+                }
+                rtw_model = id.model_id->rtw_model;
+
+                if (sizeof(*rtw_model->task_period) * rtw_model->num_st
+                        != id.data_len) {
+                    pr_info("Error: data area too small.");
+                    rv = -ENOSPC;
+                    break;
+                }
+
+                if (copy_to_user(id.data, rtw_model->task_period, 
+                            id.data_len)) {
+                    rv = -EFAULT;
+                    break;
+                }
+            }
+            break;
+
+        case GET_PARAM:
+            {
+                struct rtcom_ioctldata id;
+                const struct rtw_model* rtw_model;
+                printk("In GET_PARAM\n");
+
+                if (copy_from_user(&id, (void*)data, sizeof(id))) {
+                    rv = -EFAULT;
+                    break;
+                }
+                rtw_model = id.model_id->rtw_model;
+
+                if (copy_to_user(id.data, rtw_model->mdl_rtP, 
+                            rtw_model->rtP_size)) {
+                    rv = -EFAULT;
+                    break;
+                }
+            }
+            break;
+
+        case GET_SIGNAL_INFO:
+        case GET_PARAM_INFO:
+            {
+                struct rtcom_ioctldata id;
+                const struct rtw_model* rtw_model;
+                struct signal_info si;
+                const char *path;
+                const char *err;
+                size_t len;
+                pr_debug("In GET_(SIGNAL|PARAM)_INFO\n");
+
+                if (copy_from_user(&id, (void*)data, sizeof(id))) {
+                    rv = -EFAULT;
+                    break;
+                }
+                rtw_model = id.model_id->rtw_model;
+                if (copy_from_user(&si, id.data, sizeof(si))) {
+                    rv = -EFAULT;
+                    break;
+                }
+
+                err = (command == GET_SIGNAL_INFO)
+                    ? rtw_model->get_signal_info(&si, &path)
+                    : rtw_model->get_param_info(&si, &path);
+                if (err) {
+                    pr_info("Error occurred in get_signal_info(): %s\n",
+                            err);
+                    rv = -EINVAL;
+                    break;
+                }
+                len = strlen(path) + 1;
+
+                if (sizeof(si) + len > id.data_len) {
+                    pr_info("Error: data area too small.");
+                    rv = -ENOSPC;
+                    break;
+                }
+
+                if (copy_to_user(id.data, &si, sizeof(si)) ||
+                        copy_to_user(((struct signal_info*)id.data)->path,
+                            path, len)) {
+                    rv = -EFAULT;
+                    break;
+                }
+            }
+            break;
+
+        case GET_MDL_PROPERTIES:
+            {
+                struct rtcom_ioctldata id;
+                const struct rtw_model *rtw_model;
+                struct mdl_properties p;
+                printk("In GET_MDL_PROPERTIES\n");
+
+                if (copy_from_user(&id, (void*)data, sizeof(id))) {
+                    rv = -EFAULT;
+                    break;
+                }
+                rtw_model = id.model_id->rtw_model;
+
+                p.rtB_count     = rtw_model->rtB_count;
+                p.signal_count  = rtw_model->signal_count;
+                p.param_count   = rtw_model->param_count;
+                p.variable_path_len  = rtw_model->variable_path_len;
+                p.num_st        = rtw_model->num_st;
+                p.num_tasks     = rtw_model->num_tasks;
+                p.base_rate     = rtw_model->sample_period;
+                p.rtB_size      = rtw_model->rtB_size
+                    + rtw_model->num_tasks * sizeof(struct task_stats);
+                p.rtP_size      = rtw_model->rtP_size;
+                strncpy(p.name, rtw_model->modelName, MAX_MODEL_NAME_LEN-1);
+                strncpy(p.version, rtw_model->modelVersion, 
+                        MAX_MODEL_VER_LEN-1);
+                p.name[MAX_MODEL_NAME_LEN-1] = '\0';
+                p.version[MAX_MODEL_VER_LEN-1] = '\0';
+
+                if (sizeof(p) != id.data_len ||
+                        copy_to_user(id.data, &p, sizeof(p))) {
+                    rv = -EFAULT;
+                    break;
+                }
+                break;
+            }
+            break;
 
         default:
             rv = -ENOTTY;
@@ -209,12 +388,24 @@ fop_read( struct file * filp, char *buffer, size_t bufLen, loff_t * offset)
     return len;
 }
 
+static struct vm_operations_struct vm_ops = {
+    .nopage = vma_nopage,
+};
+
+static int
+fop_mmap(struct file *filp, struct vm_area_struct *vma)
+{
+    vma->vm_ops = &vm_ops;
+    vma->vm_flags |= VM_RESERVED;       /* Pages will not be swapped out */
+    return 0;
+}
+
 static struct file_operations kernel_fops = {
     .unlocked_ioctl = fop_ioctl,
     .poll           = fop_poll,
     .open           = fop_open,
     .read           = fop_read,
-//    .mmap           = fop_mmap,
+    .mmap           = fop_mmap,
     .release        = fop_release,
     .owner          = THIS_MODULE,
 };
@@ -239,24 +430,25 @@ static inline void update_wp(void)
         event_wp = NULL;
 }
 
-void rtcom_new_model(void *model_ref)
+void rtcom_new_model(struct model *model)
 {
     down(&dev_lock);
     if (event_wp) {
         event_wp->type = new_model;
-        event_wp->data.model_ref = model_ref;
+        event_wp->data.model_ref = model;
         update_wp();
     }
     up(&dev_lock);
     wake_up_interruptible(&event_q);
 }
 
-void rtcom_del_model(void *model_ref)
+void rtcom_del_model(struct model *model)
 {
     down(&dev_lock);
     if (event_wp) {
         event_wp->type = del_model;
-        event_wp->data.model_ref = model_ref;
+        event_wp->priv_data = model->rtcom_data.priv_data;
+        printk("Generating delete event: %p %p\n", model, model->rtcom_data.priv_data);
         update_wp();
     }
     up(&dev_lock);

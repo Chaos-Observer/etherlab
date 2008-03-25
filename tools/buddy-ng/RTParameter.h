@@ -2,7 +2,8 @@
  *
  * $Id$
  *
- * This defines the class used to interact with the real-time kernel
+ * This defines the class of Real-Time Signals. Signals have a sample time
+ * and cannot be written to.
  * 
  * Copyright (C) 2008  Richard Hacker
  * 
@@ -20,33 +21,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * **********************************************************************/
 
-#ifndef RTMODEL_H
-#define RTMODEL_H
+#ifndef RTPARAMETER_H
+#define RTPARAMETER_H
 
-#include <include/fio_ioctl.h>
+#include "RTVariable.h"
 
-#include <vector>
-#include <string>
-
-class RTSignal;
-class RTParameter;
-struct timeval;
-
-class RTModel {
+class RTParameter: public RTVariable {
     public:
-        RTModel(int fd, struct model* model_ref);
-        ~RTModel();
+        RTParameter(const std::string &path, const std::string &alias,
+                si_datatype_t dataType, si_orientation_t orientation,
+                unsigned int _rnum, unsigned int _cnum);
+        ~RTParameter();
 
     private:
-        const int fd;
-        struct model* const model_ref;
-        std::string name;
-        std::string version;
-
-        char *rtP;
-
-        std::vector<RTSignal*> signalList;
-        std::vector<RTParameter*> paramList;
-        std::vector<uint32_t> sampleTime;
 };
-#endif // RTMODEL_H
+#endif // RTPARAMETER_H

@@ -1,4 +1,4 @@
-EXTRA_CFLAGS := @RTAI_FLAGS@ $(DEFS) \
+EXTRA_CFLAGS := -Wall @RTAI_FLAGS@ $(DEFS) \
         -I@abs_top_srcdir@ -I@abs_top_srcdir@/tools
         
 

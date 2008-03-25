@@ -98,12 +98,13 @@ struct rtw_model rtw_model = {
 #endif
 
     /* Some variables concerning sample times passed to the model */
+    .num_st = TID01EQ ? NUMST-1 : NUMST,
 #ifdef MULTITASKING
-    .numst = TID01EQ ? NUMST-1 : NUMST,
+    .num_tasks = TID01EQ ? NUMST-1 : NUMST,
     .rt_OneStepMain = rt_OneStepMain,
     .rt_OneStepTid = rt_OneStepTid,
 #else
-    .numst = 1,
+    .num_tasks = 1,
     .rt_OneStepMain = rt_OneStep,
     .rt_OneStepTid = NULL,
 #endif
@@ -334,16 +335,16 @@ mdl_start(void)
         return errmsg;
     }
 
-//    if ((errmsg = rtw_capi_init(S, 
-//                    &rtw_model.get_signal_info,
-//                    &rtw_model.get_param_info,
-//                    &rtw_model.signal_count,
-//                    &rtw_model.param_count,
-//                    &rtw_model.variable_path_len))) {
-//        return errmsg;
-//    }
+    if ((errmsg = rtw_capi_init(S, 
+                    &rtw_model.get_signal_info,
+                    &rtw_model.get_param_info,
+                    &rtw_model.signal_count,
+                    &rtw_model.param_count,
+                    &rtw_model.variable_path_len))) {
+        return errmsg;
+    }
 
-    for (i = 0; i < rtw_model.numst; i++) {
+    for (i = 0; i < rtw_model.num_st; i++) {
         task_period[i] = (unsigned int)
             (rtmGetSampleTime(S, i + (TID01EQ ? 1 : 0))*1.0e6 + 0.5);
     }

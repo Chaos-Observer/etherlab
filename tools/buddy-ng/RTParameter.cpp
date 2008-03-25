@@ -2,7 +2,8 @@
  *
  * $Id$
  *
- * This defines the class used to interact with the real-time kernel
+ * This defines the class of Real-Time Parameters. Parameters can only be
+ * subscribed as an event.
  * 
  * Copyright (C) 2008  Richard Hacker
  * 
@@ -20,33 +21,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * **********************************************************************/
 
-#ifndef RTMODEL_H
-#define RTMODEL_H
+#include "RTParameter.h"
 
-#include <include/fio_ioctl.h>
+RTParameter::RTParameter(const std::string &_path, const std::string &_alias,
+        si_datatype_t _dataType, si_orientation_t _orientation,
+        unsigned int _rnum, unsigned int _cnum) :
+    RTVariable(_path, _alias, _dataType, _orientation, _rnum, _cnum)
+{
+}
 
-#include <vector>
-#include <string>
-
-class RTSignal;
-class RTParameter;
-struct timeval;
-
-class RTModel {
-    public:
-        RTModel(int fd, struct model* model_ref);
-        ~RTModel();
-
-    private:
-        const int fd;
-        struct model* const model_ref;
-        std::string name;
-        std::string version;
-
-        char *rtP;
-
-        std::vector<RTSignal*> signalList;
-        std::vector<RTParameter*> paramList;
-        std::vector<uint32_t> sampleTime;
-};
-#endif // RTMODEL_H
+RTParameter::~RTParameter()
+{
+}

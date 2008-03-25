@@ -19,6 +19,9 @@ etherlab_buddy_SOURCES = \
         ConfigFile.cpp ConfigFile.h \
         RT-Task.cpp RT-Task.h \
         RT-Model.cpp RT-Model.h \
+        RTSignal.cpp RTSignal.h \
+        RTParameter.cpp RTParameter.h \
+        RTVariable.cpp RTVariable.h \
         ControlTask.cpp ControlTask.h \
         RTComTask.cpp RTComTask.h \
         RTComBufTask.cpp RTComBufTask.h \

@@ -90,20 +90,24 @@ struct param_change {
 /* This ioctl is used to return all the properties about the real time
  * process that the buddy needs. Pass it the address of a local 
  * struct mdl_properties */
-#define GET_MDL_PROPERTIES    _IOR(FIO_MAGIC, 19, struct mdl_properties *)
+#define GET_MDL_PROPERTIES    _IOR(FIO_MAGIC, 19, struct mdl_properties)
 struct mdl_properties {
     size_t rtB_count;           // Total count of block_io structs in kernel
     size_t rtB_size;            // Size of block IO structure
     size_t rtP_size;            // Size of parameter structure
-    unsigned int numst;         // Number of sample times
+    unsigned int num_st;        // Number of sample times
+    unsigned int num_tasks;     // Number of tasks
     unsigned long base_rate;    // Model's base rate in microseconds
 
     size_t param_count;         // Number of parameters
     size_t signal_count;        // Number of signals
     size_t variable_path_len;   // Memory requirements to store variable
                                 // path and alias, including \0
+    char name[MAX_MODEL_NAME_LEN];
+    char version[MAX_MODEL_VER_LEN];
 };
 
+#define GET_MDL_SAMPLETIMES   _IOR(FIO_MAGIC, 20, struct rtcom_ioctldata)
 
 /***************************************************
  * The following ioctl commands are used by the 
@@ -121,10 +125,11 @@ struct rtp_model_name {
 };
 #define RTK_MODEL_NAME          _IOR(RTK_MAGIC, 2, struct rtp_model_name *)
 
-#define SET_PRIV_DATA           _IOW(RTK_MAGIC, 3, struct rtcom_privdata *)
-struct rtcom_privdata {
-    struct model *ref;
-    void *priv_data;
+#define SET_PRIV_DATA           _IOW(RTK_MAGIC, 3, struct rtcom_ioctldata)
+struct rtcom_ioctldata {
+    struct model *model_id;
+    void *data;
+    size_t data_len;
 };
 
 struct rtcom_event {
@@ -134,7 +139,12 @@ struct rtcom_event {
         struct model *model_ref;
     } data;
 };
-#define RTK
+
+#define GET_RTK_PROPERTIES      _IOR(RTK_MAGIC, 4, struct rt_kernel_prop *)
+struct rt_kernel_prop {
+    size_t iomem_len;
+    size_t eventq_len;
+};
 
 #if defined __cplusplus
 }
