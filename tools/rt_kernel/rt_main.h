@@ -57,7 +57,7 @@ struct model {
     int id;                     /** The model index in the array 
                                  * \ref rt_kernel.rt_mdl assigned by 
                                  * rt_kernel for this model. */
-    const struct rtw_model *rtw_model; /** Data structure for the RTW model. 
+    const struct rt_model *rt_model; /** Data structure for the RTW model. 
                                   * This gets passed to us when the model
                                   * is registered */
     struct class_device *sysfs_dev;

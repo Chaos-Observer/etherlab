@@ -209,23 +209,23 @@ fop_ioctl( struct file *filp, unsigned int command, unsigned long data)
         case GET_MDL_SAMPLETIMES:
             {
                 struct rtcom_ioctldata id;
-                const struct rtw_model* rtw_model;
+                const struct rt_model* rt_model;
                 printk("In GET_MDL_SAMPLETIMES\n");
 
                 if (copy_from_user(&id, (void*)data, sizeof(id))) {
                     rv = -EFAULT;
                     break;
                 }
-                rtw_model = id.model_id->rtw_model;
+                rt_model = id.model_id->rt_model;
 
-                if (sizeof(*rtw_model->task_period) * rtw_model->num_st
+                if (sizeof(*rt_model->task_period) * rt_model->num_st
                         != id.data_len) {
                     pr_info("Error: data area too small.");
                     rv = -ENOSPC;
                     break;
                 }
 
-                if (copy_to_user(id.data, rtw_model->task_period, 
+                if (copy_to_user(id.data, rt_model->task_period, 
                             id.data_len)) {
                     rv = -EFAULT;
                     break;
@@ -236,17 +236,17 @@ fop_ioctl( struct file *filp, unsigned int command, unsigned long data)
         case GET_PARAM:
             {
                 struct rtcom_ioctldata id;
-                const struct rtw_model* rtw_model;
+                const struct rt_model* rt_model;
                 printk("In GET_PARAM\n");
 
                 if (copy_from_user(&id, (void*)data, sizeof(id))) {
                     rv = -EFAULT;
                     break;
                 }
-                rtw_model = id.model_id->rtw_model;
+                rt_model = id.model_id->rt_model;
 
-                if (copy_to_user(id.data, rtw_model->mdl_rtP, 
-                            rtw_model->rtP_size)) {
+                if (copy_to_user(id.data, rt_model->mdl_rtP, 
+                            rt_model->rtP_size)) {
                     rv = -EFAULT;
                     break;
                 }
@@ -257,7 +257,7 @@ fop_ioctl( struct file *filp, unsigned int command, unsigned long data)
         case GET_PARAM_INFO:
             {
                 struct rtcom_ioctldata id;
-                const struct rtw_model* rtw_model;
+                const struct rt_model* rt_model;
                 struct signal_info si;
                 const char *path;
                 const char *err;
@@ -268,15 +268,15 @@ fop_ioctl( struct file *filp, unsigned int command, unsigned long data)
                     rv = -EFAULT;
                     break;
                 }
-                rtw_model = id.model_id->rtw_model;
+                rt_model = id.model_id->rt_model;
                 if (copy_from_user(&si, id.data, sizeof(si))) {
                     rv = -EFAULT;
                     break;
                 }
 
                 err = (command == GET_SIGNAL_INFO)
-                    ? rtw_model->get_signal_info(&si, &path)
-                    : rtw_model->get_param_info(&si, &path);
+                    ? rt_model->get_signal_info(&si, &path)
+                    : rt_model->get_param_info(&si, &path);
                 if (err) {
                     pr_info("Error occurred in get_signal_info(): %s\n",
                             err);
@@ -303,7 +303,7 @@ fop_ioctl( struct file *filp, unsigned int command, unsigned long data)
         case GET_MDL_PROPERTIES:
             {
                 struct rtcom_ioctldata id;
-                const struct rtw_model *rtw_model;
+                const struct rt_model *rt_model;
                 struct mdl_properties p;
                 printk("In GET_MDL_PROPERTIES\n");
 
@@ -311,18 +311,18 @@ fop_ioctl( struct file *filp, unsigned int command, unsigned long data)
                     rv = -EFAULT;
                     break;
                 }
-                rtw_model = id.model_id->rtw_model;
+                rt_model = id.model_id->rt_model;
 
-                p.signal_count  = rtw_model->signal_count;
-                p.param_count   = rtw_model->param_count;
-                p.variable_path_len  = rtw_model->variable_path_len;
-                p.num_st        = rtw_model->num_st;
-                p.num_tasks     = rtw_model->num_tasks;
+                p.signal_count  = rt_model->signal_count;
+                p.param_count   = rt_model->param_count;
+                p.variable_path_len  = rt_model->variable_path_len;
+                p.num_st        = rt_model->num_st;
+                p.num_tasks     = rt_model->num_tasks;
 
                 // No buffer overflow here, the array is defined as
                 // name[MAX+1]
-                strncpy(p.name, rtw_model->modelName, MAX_MODEL_NAME_LEN);
-                strncpy(p.version, rtw_model->modelVersion, 
+                strncpy(p.name, rt_model->modelName, MAX_MODEL_NAME_LEN);
+                strncpy(p.version, rt_model->modelVersion, 
                         MAX_MODEL_VER_LEN);
                 p.name[MAX_MODEL_NAME_LEN] = '\0';
                 p.version[MAX_MODEL_VER_LEN] = '\0';

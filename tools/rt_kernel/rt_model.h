@@ -5,7 +5,7 @@
 
 struct signal_info;
 
-struct rtw_model {
+struct rt_model {
 	/** Block IO
 	 * This part is filled in during mdl_init()
 	 */
@@ -20,7 +20,7 @@ struct rtw_model {
 	unsigned int sample_period;	/* Photo period in microsec */
         unsigned int buffer_time;       /* Time in microsec of the BlockIO 
                                          * buffer */
-	void *rt_model;
+	void *rtw_model;
 	unsigned int max_overrun;	/* Maximum overrun count */
 	unsigned long stack_size;	/* RTAI Stack size */
 
@@ -52,7 +52,7 @@ struct rtw_model {
         const char *modelName;
 };
 
-extern struct rtw_model rtw_model;
+extern struct rt_model rt_model;
 
 /* Revision number that will be used to check whether the structure
  * definitions have changed */

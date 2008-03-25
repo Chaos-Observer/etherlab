@@ -84,8 +84,8 @@ struct task_stats task_stats[NUMST - (TID01EQ ? 1 : 0)];
 unsigned int get_signal_info(struct signal_info* si, char **name);
 unsigned int get_param_info(struct signal_info* si, char **name);
 
-/* Instantiate and initialise rtw_model here */
-struct rtw_model rtw_model = {
+/* Instantiate and initialise rt_model here */
+struct rt_model rt_model = {
     .mdl_rtB = &rtB,
     .rtB_size = sizeof(rtB),
 
@@ -153,7 +153,7 @@ struct rtw_model rtw_model = {
 const char *
 rt_OneStep()
 {
-    RT_MODEL *S = rtw_model.rt_model;
+    RT_MODEL *S = rt_model.rtw_model;
     real_T tnext;
 
     etl_world_time[0] = (double)task_stats[0].time.tv_sec 
@@ -204,7 +204,7 @@ rt_OneStep()
 const char *
 rt_OneStepMain()
 {
-    RT_MODEL *S = rtw_model.rt_model;
+    RT_MODEL *S = rt_model.rtw_model;
     real_T tnext;
 
     etl_world_time[FIRST_TID] = (double)task_stats[0].time.tv_sec 
@@ -246,7 +246,7 @@ rt_OneStepMain()
 const char *
 rt_OneStepTid(uint_T tid)
 {
-    RT_MODEL *S = rtw_model.rt_model;
+    RT_MODEL *S = rt_model.rtw_model;
     uint_T rtw_tid = tid + FIRST_TID;
 
     etl_world_time[rtw_tid] = (double)task_stats[tid].time.tv_sec 
@@ -275,7 +275,7 @@ rt_OneStepTid(uint_T tid)
 void
 mdl_set_error_msg(const char *msg)
 {
-    RT_MODEL *S = rtw_model.rt_model;
+    RT_MODEL *S = rt_model.rtw_model;
 
     rtmSetErrorStatusFlag(S, msg);
 }
@@ -306,7 +306,7 @@ mdl_start(void)
     /************************
      * Initialize the model *
      ************************/
-    rtw_model.rt_model = S = MODEL();
+    rt_model.rtw_model = S = MODEL();
 
     if (rtmGetErrorStatus(S) != NULL) {
 	    return rtmGetErrorStatus(S);
@@ -336,21 +336,21 @@ mdl_start(void)
     }
 
     if ((errmsg = rtw_capi_init(S, 
-                    &rtw_model.get_signal_info,
-                    &rtw_model.get_param_info,
-                    &rtw_model.signal_count,
-                    &rtw_model.param_count,
-                    &rtw_model.variable_path_len))) {
+                    &rt_model.get_signal_info,
+                    &rt_model.get_param_info,
+                    &rt_model.signal_count,
+                    &rt_model.param_count,
+                    &rt_model.variable_path_len))) {
         return errmsg;
     }
 
-    for (i = 0; i < rtw_model.num_st; i++) {
+    for (i = 0; i < rt_model.num_st; i++) {
         task_period[i] = (unsigned int)
             (rtmGetSampleTime(S, i + (TID01EQ ? 1 : 0))*1.0e6 + 0.5);
     }
 
     // Cannot assign this in struct definition :(
-//    rtw_model.symbol_len = model_symbols_len;
+//    rt_model.symbol_len = model_symbols_len;
 
     return NULL;
 

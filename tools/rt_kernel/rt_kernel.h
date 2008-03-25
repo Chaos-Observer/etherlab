@@ -27,6 +27,6 @@
 
 #include "rt_model.h"
 
-int register_rtw_model(const struct rtw_model *rtw_model, size_t struct_len,
+int register_rtw_model(const struct rt_model *rt_model, size_t struct_len,
         const char *revision_str, struct module *owner);
 void free_rtw_model(int tid);

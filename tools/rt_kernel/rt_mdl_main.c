@@ -32,7 +32,7 @@
 #include <linux/autoconf.h>
 #include "include/rt_kernel.h"
 
-extern struct rtw_model rtw_model;
+extern struct rt_model rt_model;
 
 unsigned long stack_size = 0;
 module_param(stack_size, ulong, S_IRUGO);
@@ -57,11 +57,11 @@ MODULE_PARM_DESC(tick,"Override tick rate specified in the model.");
 static void __exit 
 mod_cleanup(void)
 {
-    free_rtw_model(rtw_model.model_id);
-    kfree(rtw_model.pend_rtP);
+    free_rtw_model(rt_model.model_id);
+    kfree(rt_model.pend_rtP);
     mdl_stop();
     pr_info("Removed RTW Model \"%s\" from RT-Kernel\n", 
-            rtw_model.modelName);
+            rt_model.modelName);
 }
 
 
@@ -82,51 +82,51 @@ mod_init(void)
     }
 
     // If a new tick is supplied, use it instead of the model's
-    for (i = rtw_model.num_st; tick && i--; ) {
-        rtw_model.task_period[i] = 
-            rtw_model.task_period[i] / rtw_model.task_period[0] * tick;
+    for (i = rt_model.num_st; tick && i--; ) {
+        rt_model.task_period[i] = 
+            rt_model.task_period[i] / rt_model.task_period[0] * tick;
     }
-    rtw_model.decimation = decimation ? decimation : rtw_model.decimation;
-    rtw_model.max_overrun = overrun ? overrun : rtw_model.max_overrun;
-    rtw_model.buffer_time = buffer_time ? buffer_time : rtw_model.buffer_time;
-    rtw_model.stack_size = stack_size ? stack_size : rtw_model.stack_size;
+    rt_model.decimation = decimation ? decimation : rt_model.decimation;
+    rt_model.max_overrun = overrun ? overrun : rt_model.max_overrun;
+    rt_model.buffer_time = buffer_time ? buffer_time : rt_model.buffer_time;
+    rt_model.stack_size = stack_size ? stack_size : rt_model.stack_size;
 
     /* Work out how fast the model is sampled by test_manager */
-    rtw_model.sample_period = rtw_model.decimation 
-        ? rtw_model.task_period[0]*rtw_model.decimation
-        : rtw_model.task_period[0];
+    rt_model.sample_period = rt_model.decimation 
+        ? rt_model.task_period[0]*rt_model.decimation
+        : rt_model.task_period[0];
 
-    rtw_model.rtB_count = rtw_model.buffer_time/rtw_model.sample_period;
-    rtw_model.rtB_count = rtw_model.rtB_count ? rtw_model.rtB_count : 1;
+    rt_model.rtB_count = rt_model.buffer_time/rt_model.sample_period;
+    rt_model.rtB_count = rt_model.rtB_count ? rt_model.rtB_count : 1;
 
     /* Get area where pending parameters are stored */
-    rtw_model.pend_rtP = kmalloc(rtw_model.rtP_size, GFP_KERNEL);
-    if (!rtw_model.pend_rtP) {
+    rt_model.pend_rtP = kmalloc(rt_model.rtP_size, GFP_KERNEL);
+    if (!rt_model.pend_rtP) {
             printk("Could not allocate memory for rtP exchange area\n");
             err = -ENOMEM;
             goto out_kmalloc;
     }
 
     /* Initialise the pending parameter area with the current parameters */
-    memcpy(rtw_model.pend_rtP, rtw_model.mdl_rtP, rtw_model.rtP_size);
+    memcpy(rt_model.pend_rtP, rt_model.mdl_rtP, rt_model.rtP_size);
 
     /* Having finished all the model initialisation, it is now time to 
      * register this RTW Model with the Real-Time Kernel to be scheduled */
-    if ((rtw_model.model_id = register_rtw_model(&rtw_model,
-                    sizeof(rtw_model), REVISION, THIS_MODULE)) < 0) {
+    if ((rt_model.model_id = register_rtw_model(&rt_model,
+                    sizeof(rt_model), REVISION, THIS_MODULE)) < 0) {
         printk("Could not register model with rtw_manager; rc = %i\n",
-                rtw_model.model_id);
-        err = rtw_model.model_id;
+                rt_model.model_id);
+        err = rt_model.model_id;
         goto out_register_mdl;
     }
 
     pr_info("Successfully registered RTW Model \"%s\" with RT-Kernel\n",
-            rtw_model.modelName);
+            rt_model.modelName);
 
     return 0;
 
 out_register_mdl:
-    kfree(rtw_model.pend_rtP);
+    kfree(rt_model.pend_rtP);
 out_kmalloc:
     mdl_stop();
 out:

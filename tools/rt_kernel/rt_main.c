@@ -210,7 +210,7 @@ static void mdl_main_thread(long priv_data)
 {
     struct mdl_task *mdl_task = (struct mdl_task *)priv_data;
     struct model *model = mdl_task->model;
-    const struct rtw_model *rtw_model = model->rtw_model;
+    const struct rt_model *rt_model = model->rt_model;
     unsigned int overrun = 0;
     unsigned long counter = 0;
     const char *errmsg;
@@ -231,8 +231,8 @@ static void mdl_main_thread(long priv_data)
         if (model->new_rtP) {
                 rt_sem_wait(&model->rtP_sem);
                 pr_debug("Got new parameter set\n");
-                memcpy(rtw_model->mdl_rtP, rtw_model->pend_rtP,
-                                rtw_model->rtP_size);
+                memcpy(rt_model->mdl_rtP, rt_model->pend_rtP,
+                                rt_model->rtP_size);
                 model->new_rtP = 0;
                 rt_sem_signal(&model->rtP_sem);
         }
@@ -241,13 +241,13 @@ static void mdl_main_thread(long priv_data)
         rt_sem_wait(&rt_kernel.time.lock);
         mdl_task->stats->time = rt_kernel.time.tv;
         rt_sem_signal(&rt_kernel.time.lock);
-        if ((errmsg = rtw_model->rt_OneStepMain()))
+        if ((errmsg = rt_model->rt_OneStepMain()))
             break;
 
         /* Send a copy of rtB to the buddy process */
         if (!--model->photo_sample) {
             rtp_make_photo(model);
-            model->photo_sample = rtw_model->decimation;
+            model->photo_sample = rt_model->decimation;
         }
 
         /* Calculate and report execution statistics */
@@ -269,13 +269,13 @@ static void mdl_main_thread(long priv_data)
                         counter,
                         (unsigned long)(get_cycles() - 
                                         rt_start)/(cpu_khz/1000),
-                        rtw_model->task_period[0]);
+                        rt_model->task_period[0]);
             }
 
-            if (overrun == rtw_model->max_overrun) {
+            if (overrun == rt_model->max_overrun) {
                 printk("\n");
                 errmsg = "Too many overruns";
-                rtw_model->set_error_msg("Abort");
+                rt_model->set_error_msg("Abort");
                 break;
             }
         } else {
@@ -289,7 +289,7 @@ static void mdl_main_thread(long priv_data)
         }
     }
     rt_printk("Model %s main task aborted. Error message:\n\t%s\n", 
-            rtw_model->modelName, errmsg);
+            rt_model->modelName, errmsg);
 
     /* If this task is not the master, it can end here */
     if (!mdl_task->master)
@@ -313,7 +313,7 @@ static void mdl_sec_thread(long priv_data)
     struct mdl_task *mdl_task = (struct mdl_task *)priv_data;
     struct model *model = mdl_task->model;
     unsigned int mdl_tid = mdl_task->mdl_tid;
-    const struct rtw_model *rtw_model = model->rtw_model;
+    const struct rt_model *rt_model = model->rt_model;
     unsigned int overrun = 0;
     unsigned long counter = 0;
     const char *errmsg;
@@ -329,7 +329,7 @@ static void mdl_sec_thread(long priv_data)
         rt_sem_wait(&rt_kernel.time.lock);
         mdl_task->stats->time = rt_kernel.time.tv;
         rt_sem_signal(&rt_kernel.time.lock);
-        if ((errmsg = rtw_model->rt_OneStepTid(mdl_tid))) 
+        if ((errmsg = rt_model->rt_OneStepTid(mdl_tid))) 
             break;
 
         /* Calculate and report execution statistics */
@@ -348,10 +348,10 @@ static void mdl_sec_thread(long priv_data)
                     mdl_tid,
                     counter,
                     (unsigned long)(get_cycles() - rt_start)/(cpu_khz/1000),
-                    rtw_model->task_period[mdl_tid]);
-            if (++overrun == rtw_model->max_overrun) {
+                    rt_model->task_period[mdl_tid]);
+            if (++overrun == rt_model->max_overrun) {
                 errmsg = "Too many overruns";
-                rtw_model->set_error_msg("Abort");
+                rt_model->set_error_msg("Abort");
                 break;
             }
         } else {
@@ -360,7 +360,7 @@ static void mdl_sec_thread(long priv_data)
         }
     }
     rt_printk("Model %s tid %u aborted. Error message:\n\t%s\n", 
-            rtw_model->modelName, mdl_tid, errmsg);
+            rt_model->modelName, mdl_tid, errmsg);
 }
 
 void free_rtw_model(int model_id)
@@ -370,7 +370,7 @@ void free_rtw_model(int model_id)
 
     down(&rt_kernel.lock);
 
-    for (i = 0; i < model->rtw_model->num_tasks; i++) {
+    for (i = 0; i < model->rt_model->num_tasks; i++) {
         rt_task_suspend(&model->task[i].rtai_thread);
         printk("Unused stack memory: %i\n", 
             rt_task_stack_check(&model->task[i].rtai_thread,STACK_MAGIC));
@@ -396,7 +396,7 @@ void free_rtw_model(int model_id)
     return;
 }
 
-int register_rtw_model(const struct rtw_model *rtw_model,
+int register_rtw_model(const struct rt_model *rt_model,
         size_t struct_len,
         const char *revision_str,
         struct module *owner)
@@ -418,21 +418,21 @@ int register_rtw_model(const struct rtw_model *rtw_model,
         return -1;
     }
 
-    if (struct_len != sizeof(struct rtw_model)) {
+    if (struct_len != sizeof(struct rt_model)) {
         pr_info("Error: The header file lengths do not match.\n"
                 "Model has: %i\n"
                 "Expected: %i\n"
                 "You have probably updated and are using an old rt_kernel.\n"
                 "Recompile and reinstall all parts of " PACKAGE_NAME ".\n",
-                struct_len, sizeof(struct rtw_model));
+                struct_len, sizeof(struct rt_model));
         return -1;
     }
 
     pr_debug("Registering new RTW Model %s with rtw_manager\n", 
-            rtw_model->modelName);
+            rt_model->modelName);
 
     /* Make sure the model name is within range */
-    if (strlen(rtw_model->modelName) > MAX_MODEL_NAME_LEN-1) {
+    if (strlen(rt_model->modelName) > MAX_MODEL_NAME_LEN-1) {
         pr_info("Error: model name exceeds %i bytes\n", MAX_MODEL_NAME_LEN-1);
         err = -E2BIG;
         goto out;
@@ -441,10 +441,10 @@ int register_rtw_model(const struct rtw_model *rtw_model,
     /* If the ticker is already running, check that the base rates are
      * compatible */
     if (rt_kernel.base_period && 
-            rtw_model->task_period[0] % rt_kernel.base_period) {
+            rt_model->task_period[0] % rt_kernel.base_period) {
         pr_info("Model's base rate (%uns) is not an integer multiple of "
                 "RTAI baserate %luus\n", 
-                rtw_model->task_period[0], rt_kernel.base_period);
+                rt_model->task_period[0], rt_kernel.base_period);
         err = -EINVAL;
         goto out;
     }
@@ -452,8 +452,8 @@ int register_rtw_model(const struct rtw_model *rtw_model,
     /* Get some memory to manage RT model */
     model = kcalloc( 1, 
             ( sizeof(struct model) 
-              + rtw_model->num_tasks*sizeof(struct mdl_task)
-              + rtw_model->num_tasks*sizeof(struct task_stats)),
+              + rt_model->num_tasks*sizeof(struct mdl_task)
+              + rt_model->num_tasks*sizeof(struct task_stats)),
             GFP_KERNEL);
     if (!model) {
         printk("Error: Could not get memory for Real-Time Task\n");
@@ -461,10 +461,10 @@ int register_rtw_model(const struct rtw_model *rtw_model,
         goto out;
     }
     model->task_stats = 
-        (struct task_stats *)&model->task[rtw_model->num_tasks];
-    model->task_stats_len = rtw_model->num_tasks*sizeof(struct task_stats);
-    pr_info("Malloc'ed struct model *(%p) for rtw_model *(%p)\n",
-            model, rtw_model);
+        (struct task_stats *)&model->task[rt_model->num_tasks];
+    model->task_stats_len = rt_model->num_tasks*sizeof(struct task_stats);
+    pr_info("Malloc'ed struct model *(%p) for rt_model *(%p)\n",
+            model, rt_model);
 
     down(&rt_kernel.lock);
 
@@ -481,9 +481,9 @@ int register_rtw_model(const struct rtw_model *rtw_model,
 
     rt_kernel.model[model_id] = model;
 
-    model->rtw_model = rtw_model;
+    model->rt_model = rt_model;
 
-    for (i = 0; i < rtw_model->num_tasks; i++) {
+    for (i = 0; i < rt_model->num_tasks; i++) {
         model->task[i].mdl_tid = i;
         model->task[i].model = model;
         model->task[i].stats = &model->task_stats[i];
@@ -495,7 +495,7 @@ int register_rtw_model(const struct rtw_model *rtw_model,
                          : mdl_main_thread),      /* Task function 	*/
                         (long)&model->task[i], /* Private data passed to 
                                                    * task */
-                        rtw_model->stack_size,   /* Stack size 	*/
+                        rt_model->stack_size,   /* Stack size 	*/
                         i,                      /* priority 	*/
                         1,                      /* use fpu 		*/
                         NULL                    /* signal		*/
@@ -514,20 +514,20 @@ int register_rtw_model(const struct rtw_model *rtw_model,
         /* Use global baserate if it has been passed as a module parameter
          * otherwise take that from the model */
         rt_kernel.base_period = 
-            basetick ? basetick : rtw_model->task_period[0];
+            basetick ? basetick : rt_model->task_period[0];
         rt_kernel.tick_period = 
             start_rt_timer_ns(rt_kernel.base_period*1000);
         model->task[0].master = 1;
         pr_info("Started RT timer at a rate of %luus\n", 
                 rt_kernel.base_period);
     } else {
-        if (rtw_model->task_period[0] < rt_kernel.base_period) {
+        if (rt_model->task_period[0] < rt_kernel.base_period) {
             printk("ERROR: Period of model faster than rt_kernel's base "
                     "period. Load fastest model first.\n");
             goto out_incompatible_ticks;
         } 
 
-        if (rtw_model->task_period[0] % rt_kernel.base_period) {
+        if (rt_model->task_period[0] % rt_kernel.base_period) {
             printk("ERROR: Period of model not an integral multiple "
                     "of rt_kernel's base period.\n");
             goto out_incompatible_ticks;
@@ -547,10 +547,10 @@ int register_rtw_model(const struct rtw_model *rtw_model,
 
     now = rt_get_time();
     model->photo_sample = 1;           /* Take a photo of next calculation */
-    for (i = 0; i < rtw_model->num_tasks; i++) {
+    for (i = 0; i < rt_model->num_tasks; i++) {
         pr_info("RTW Model tid %i running at %uus\n", 
-                i, rtw_model->task_period[i]);
-        decimation = rtw_model->task_period[i] / rtw_model->task_period[0];
+                i, rt_model->task_period[i]);
+        decimation = rt_model->task_period[i] / rt_model->task_period[0];
         if ((err = rt_task_make_periodic(
                         &model->task[i].rtai_thread, 
                         now + nano2count(1e7), //rt_kernel.tick_period,
@@ -569,7 +569,7 @@ out_make_periodic:
     rtp_fio_clear_mdl(model);
 out_fio_init:
 out_incompatible_ticks:
-    for (i--; i > rtw_model->num_tasks; i--) {
+    for (i--; i > rt_model->num_tasks; i--) {
         rt_task_suspend(&model->task[i].rtai_thread);
         rt_task_delete(&model->task[i].rtai_thread);
     }

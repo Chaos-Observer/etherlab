@@ -109,7 +109,7 @@ static int rtp_open(
     size_t buf_len;
     struct model *model = 
         container_of(inode->i_cdev, struct model, rtp_dev);
-    const struct rtw_model *rtw_model = model->rtw_model;
+    const struct rt_model *rt_model = model->rt_model;
 
     if (down_trylock(&model->buddy_lock)) {
         return -EBUSY;
@@ -117,9 +117,9 @@ static int rtp_open(
     filp->private_data = model;
 
     /* Get some memory to store snapshots of the BlockIO vector */
-    model->rtB_cnt = (rtw_model->buffer_time > rtw_model->sample_period)
-        ? rtw_model->buffer_time/rtw_model->sample_period : 1;
-    model->rtB_len = rtw_model->rtB_size + model->task_stats_len;
+    model->rtB_cnt = (rt_model->buffer_time > rt_model->sample_period)
+        ? rt_model->buffer_time/rt_model->sample_period : 1;
+    model->rtB_len = rt_model->rtB_size + model->task_stats_len;
     buf_len = model->rtB_cnt * model->rtB_len;
     model->rtb_buf = vmalloc(buf_len);
     if (!model->rtb_buf) {
@@ -182,7 +182,7 @@ static long rtp_ioctl(
         unsigned long data
         ) {
     struct model *model = filp->private_data;
-    const struct rtw_model *rtw_model = model->rtw_model;
+    const struct rt_model *rt_model = model->rt_model;
     long rv = 0;
 
     switch (command) {
@@ -190,16 +190,16 @@ static long rtp_ioctl(
             {
                 struct mdl_properties properties;
 
-                properties.signal_count  = rtw_model->signal_count;
-                properties.param_count   = rtw_model->param_count;
-                properties.variable_path_len  = rtw_model->variable_path_len;
-                properties.sample_period = rtw_model->sample_period;
-                properties.num_tasks     = rtw_model->num_tasks;
+                properties.signal_count  = rt_model->signal_count;
+                properties.param_count   = rt_model->param_count;
+                properties.variable_path_len  = rt_model->variable_path_len;
+                properties.sample_period = rt_model->sample_period;
+                properties.num_tasks     = rt_model->num_tasks;
 
-                properties.rtB_count     = rtw_model->rtB_count;
-                properties.rtB_size      = rtw_model->rtB_size
-                    + rtw_model->num_tasks * sizeof(struct task_stats);
-                properties.rtP_size      = rtw_model->rtP_size;
+                properties.rtB_count     = rt_model->rtB_count;
+                properties.rtB_size      = rt_model->rtB_size
+                    + rt_model->num_tasks * sizeof(struct task_stats);
+                properties.rtP_size      = rt_model->rtP_size;
 
                 rv = copy_to_user((void *)data, &properties, 
                         sizeof(properties));
@@ -284,8 +284,8 @@ static long rtp_ioctl(
                     break;
 
                 err = (command == GET_SIGNAL_INFO)
-                    ? rtw_model->get_signal_info(&tmp_si, &path)
-                    : rtw_model->get_param_info(&tmp_si, &path);
+                    ? rt_model->get_signal_info(&tmp_si, &path)
+                    : rt_model->get_param_info(&tmp_si, &path);
                 if (rv) {
                     printk("Error: %s\n", err);
                     rv = -ERANGE;
@@ -303,8 +303,8 @@ static long rtp_ioctl(
         case GET_PARAM:
             /* Buddy process wants to get the complete parameter
              * set */
-            if (copy_to_user((void *)data, rtw_model->mdl_rtP,
-                    rtw_model->rtP_size)) {
+            if (copy_to_user((void *)data, rt_model->mdl_rtP,
+                    rt_model->rtP_size)) {
                 rv = -EFAULT;
                 break;
             }
@@ -316,7 +316,7 @@ static long rtp_ioctl(
              * the pending param space */
 
             /* Reject if the model has no parameter set */
-            if (!rtw_model->rtP_size) {
+            if (!rt_model->rtP_size) {
                 rv = -ENODEV;
                 break;
             }
@@ -330,8 +330,8 @@ static long rtp_ioctl(
 
             /* Put parameters into a pending area. RT task
              * will pick it up from there */
-            if (copy_from_user(rtw_model->pend_rtP, (void *)data, 
-                    rtw_model->rtP_size)) {
+            if (copy_from_user(rt_model->pend_rtP, (void *)data, 
+                    rt_model->rtP_size)) {
                 rv = -EFAULT;
             } else {
                 model->new_rtP = 1;
@@ -348,14 +348,14 @@ static long rtp_ioctl(
                 int i;
 
                 /* Reject if the model has no parameter set */
-                if (!rtw_model->rtP_size) {
+                if (!rt_model->rtP_size) {
                     rv = -ENODEV;
                     break;
                 }
 
                 /* Check if access to user space is ok. */
                 if (copy_from_user(&p, (void *)data, sizeof(struct param_change))
-                        || !access_ok(VERIFY_READ, p.rtP, rtw_model->rtP_size)
+                        || !access_ok(VERIFY_READ, p.rtP, rt_model->rtP_size)
                         || (p.count && !access_ok(VERIFY_READ, p.changes, 
                                 p.count*sizeof(struct change_ptr)))
                         ) {
@@ -373,11 +373,11 @@ static long rtp_ioctl(
                 }
 
                 /* Copy the immediate change */
-                if (p.pos + p.len > rtw_model->rtP_size) {
+                if (p.pos + p.len > rt_model->rtP_size) {
                     rv = -ERANGE;
                     break;
                 }
-                __copy_from_user(rtw_model->pend_rtP + p.pos,
+                __copy_from_user(rt_model->pend_rtP + p.pos,
                         p.rtP + p.pos, p.len);
 
                 pr_debug("Setting %i bytes at offset %i for parameters\n", 
@@ -388,14 +388,14 @@ static long rtp_ioctl(
                     __copy_from_user(&change_ptr, &p.changes[i],
                             sizeof(struct change_ptr));
                     if (change_ptr.pos + change_ptr.len 
-                            > rtw_model->rtP_size) {
-                        memcpy(rtw_model->pend_rtP, rtw_model->mdl_rtP,
-                                rtw_model->rtP_size);
+                            > rt_model->rtP_size) {
+                        memcpy(rt_model->pend_rtP, rt_model->mdl_rtP,
+                                rt_model->rtP_size);
                         rv = -ERANGE;
                         break;
                     }
                     __copy_from_user(
-                            rtw_model->pend_rtP + change_ptr.pos, 
+                            rt_model->pend_rtP + change_ptr.pos, 
                             p.rtP + change_ptr.pos,
                             change_ptr.len);
                     pr_debug("Setting %i bytes at offset %i for parameters\n", 
@@ -466,15 +466,15 @@ void rtp_data_avail_handler(void)
  * in rtb_buf after the last one */
 void rtp_make_photo(struct model *model)
 {
-    const struct rtw_model *rtw_model = model->rtw_model;
+    const struct rt_model *rt_model = model->rt_model;
 
     rt_sem_wait(&model->buf_sem);
 
     /* Only take a photo when wp is valid. To stop taking photos (e.g.
      * when not initialised or when the buffer is full), set wp to NULL */
     if (model->wp) {
-        memcpy(model->wp, rtw_model->mdl_rtB, rtw_model->rtB_size);
-        memcpy(model->wp + rtw_model->rtB_size, model->task_stats,
+        memcpy(model->wp, rt_model->mdl_rtB, rt_model->rtB_size);
+        memcpy(model->wp + rt_model->rtB_size, model->task_stats,
                 model->task_stats_len);
 
         /* Update write pointer, wrapping if necessary */
@@ -637,7 +637,7 @@ static long rtp_main_ioctl(
                     break;
                 }
 
-                name = rt_kernel.model[mdl_number]->rtw_model->modelName;
+                name = rt_kernel.model[mdl_number]->rt_model->modelName;
 
                 // Model name length was checked to be less than 
                 // MAX_MODEL_NAME_LEN when it was registered
