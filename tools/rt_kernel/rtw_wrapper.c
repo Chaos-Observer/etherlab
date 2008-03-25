@@ -32,10 +32,10 @@
  *
  *****************************************************************************/ 
 
-#include "include/mdl_wrapper.h"
+#include "include/rt_model.h"
 #include "include/mdl_time.h"
 #include "include/fio_ioctl.h"
-#include "include/rtw_data_info.h"
+#include "include/rtw_signal_interface.h"
 #include "include/defines.h"
 
 #include "rtmodel.h"
