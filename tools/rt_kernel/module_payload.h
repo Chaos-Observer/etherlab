@@ -3,7 +3,7 @@
  * $Id$
  *
  * Header file for payload file data structure.
- * Payload files are files that are attached verbatime to the kernel
+ * Payload files are files that are attached verbatim to the kernel
  * module. These are accessible via the /proc interface
  * 
  * Copyright (C) 2008  Richard Hacker
@@ -22,12 +22,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  ***********************************************************************/
+
 #include <stddef.h>
 
 struct payload_files {
-    char *file_name;
-    size_t len;
-    char *data;
+    char *file_name;    // File name
+    size_t len;         // Length of the data string
+    char *data;         // Compressed data string
 };
 
 extern const struct payload_files payload_files[];

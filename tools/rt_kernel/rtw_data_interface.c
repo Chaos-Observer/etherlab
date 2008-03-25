@@ -2,7 +2,12 @@
  *
  * $Id$
  *
- * Here functions are defined to 
+ * This file implements fuctionality to interact with the signals and
+ * parameters provided by Matlab/Simulink's Real-Time Workshop (TM)
+ *
+ * Due to the fact that internal data types and structures are used, this
+ * file has to be compiled together with the model. It cannot be part
+ * of the rt_kernel.
  * 
  * Copyright (C) 2008  Richard Hacker
  * 

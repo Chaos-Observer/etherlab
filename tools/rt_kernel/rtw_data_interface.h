@@ -2,7 +2,7 @@
  *
  * $Id$
  *
- * Header for rtw_data_info.c
+ * Header for rtw_data_interface.c
  * 
  * Copyright (C) 2008  Richard Hacker
  * 
@@ -24,7 +24,7 @@
 #include <stddef.h>
 #include "defines.h"    // RT_MODEL
 
-#include "rtmodel.h"
+#include "rtmodel.h"    // Supplied by RTW
 
 const char* rtw_capi_init(
         RT_MODEL *rtM,

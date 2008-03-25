@@ -1,11 +1,26 @@
 /******************************************************************************
  *
- *           $RCSfile: rtai_module.c,v $
- *           $Revision: 2.0 $
- *           $Author: rich $
- *           $Date: 2006/02/10 19:06:40 $
- *           $State: Exp $
+ * $Id: /local/rtw-trunk/src/C/copyright.txt 301 2008-03-22T14:43:03.529462Z rich  $
  *
+ * Here is the main file for the rt_kernel. It prepares the environment in
+ * which Real-Time Models can run in.
+ * 
+ * Copyright (C) 2008  Richard Hacker
+ * 
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * Original copyright notice:
  *           Autor: Richard Hacker
  *
  *           (C) Copyright IgH 2005
@@ -15,23 +30,6 @@
  *           Tel.: +49 201/36014-0
  *           Fax.: +49 201/36014-14
  *           E-mail: info@igh-essen.com
- *
- * 	This file uses functions in rtai_wrapper.c to start the model.
- * 	This two layer concept is required because it is not (yet) possible
- * 	to compile the RTW generated C-code with kernel header files.
- *
- *           $Log: rtai_module.c,v $
- *           Revision 2.0  2006/02/10 19:06:40  rich
- *           Major revision, separating RTAI from the Model. Now there is a service
- *           called rtw_manager that runs as a separate module. RTW Models
- *           attach themselves to this manager. Now it is possible having more
- *           than one RTW Model running.
- *
- *           Revision 1.2  2006/02/04 11:07:15  rich
- *           Added report of RTP error message when RTP init fails
- *
- *           Revision 1.1  2006/01/23 14:49:53  rich
- *           Initial revision
  *
  *****************************************************************************/ 
 

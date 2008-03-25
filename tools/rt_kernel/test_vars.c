@@ -10,7 +10,7 @@
  *           Fax.: +49 201/36014-14
  *           E-mail: info@igh-essen.com
  *
- * 	This file uses functions in rt_kernel.c to start the model.
+ * Used to test the real-time variables
  *
  *
  *****************************************************************************/ 
