@@ -57,7 +57,7 @@ MODULE_PARM_DESC(tick,"Override tick rate specified in the model.");
 static void __exit 
 mod_cleanup(void)
 {
-    free_rtw_model(rt_model.model_id);
+    stop_rt_model(rt_model.model_id);
     kfree(rt_model.pend_rtP);
     mdl_stop();
     pr_info("Removed RTW Model \"%s\" from RT-Kernel\n", 
@@ -112,7 +112,7 @@ mod_init(void)
 
     /* Having finished all the model initialisation, it is now time to 
      * register this RTW Model with the Real-Time Kernel to be scheduled */
-    if ((rt_model.model_id = register_rtw_model(&rt_model,
+    if ((rt_model.model_id = start_rt_model(&rt_model,
                     sizeof(rt_model), REVISION, THIS_MODULE)) < 0) {
         printk("Could not register model with rtw_manager; rc = %i\n",
                 rt_model.model_id);

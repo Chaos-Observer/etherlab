@@ -363,7 +363,7 @@ static void mdl_sec_thread(long priv_data)
             rt_model->modelName, mdl_tid, errmsg);
 }
 
-void free_rtw_model(int model_id)
+void stop_rt_model(int model_id)
 {
     struct model *model = rt_kernel.model[model_id];
     unsigned int i;
@@ -396,7 +396,7 @@ void free_rtw_model(int model_id)
     return;
 }
 
-int register_rtw_model(const struct rt_model *rt_model,
+int start_rt_model(const struct rt_model *rt_model,
         size_t struct_len,
         const char *revision_str,
         struct module *owner)
@@ -770,8 +770,8 @@ MODULE_DESCRIPTION("RT-Kernel for " PACKAGE_NAME);
 MODULE_AUTHOR("Richard Hacker");
 MODULE_VERSION(PACKAGE_VERSION);
 
-EXPORT_SYMBOL_GPL(register_rtw_model);
-EXPORT_SYMBOL_GPL(free_rtw_model);
+EXPORT_SYMBOL_GPL(start_rt_model);
+EXPORT_SYMBOL_GPL(stop_rt_model);
 
 module_init(mod_init);
 module_exit(mod_cleanup);
