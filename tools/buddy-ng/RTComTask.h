@@ -34,15 +34,18 @@
 #include <pcrecpp.h>
 #include <sasl/sasl.h>
 
+class RTTask;
+
 class RTComTask: public Task {
     public:
-        RTComTask(Task* parent, int fd);
+        RTComTask(Task* parent, int fd, RTTask* rtTask);
         ~RTComTask();
 
         int read(int fd);
 
     private:
         const int fd;
+        RTTask* const rtTask;
         RTComBufTask sb;
         RTComOStream os;
 
@@ -77,6 +80,8 @@ class RTComTask: public Task {
         const pcrecpp::RE auth;
         const pcrecpp::RE length;
         const pcrecpp::RE empty;
+        const pcrecpp::RE listModels;
+        const pcrecpp::RE listSignals;
 };
 
 #endif // RTCOMTASK_H

@@ -30,6 +30,7 @@
 #include "Task.h"
 
 #include <ostream>
+#include <vector>
 
 class RTComOStream: public std::ostream {
     public:
@@ -40,6 +41,12 @@ class RTComOStream: public std::ostream {
         void processLog(const std::string& s);
         void eventStream(const char* s, size_t n);
         void dataStream(unsigned int decimation, const char* s, size_t n);
+
+        void stdOutListStart(const std::string& title);
+        void stdOutListElement(const std::vector<std::string>& key,
+                const std::vector<std::string>& value,
+                bool first);
+        void stdOutListEnd();
 };
 
 #endif // RTCOMOSTREAM_H

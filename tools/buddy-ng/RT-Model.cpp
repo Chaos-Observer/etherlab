@@ -76,16 +76,20 @@ RTModel::RTModel(int _fd, struct model *_model_ref):
     id.data = new char[id.data_len];
     si = (struct signal_info*)id.data;
 
+    variableList.resize(mdl_properties.signal_count 
+            + mdl_properties.param_count);
     signalList.resize(mdl_properties.signal_count);
+    unsigned int varIdx = 0;
     for (si->index = 0; si->index < mdl_properties.signal_count; 
             si->index++) {
         if (::ioctl(fd, GET_SIGNAL_INFO, &id)) {
 
         }
         else {
-            signalList[si->index] = new RTSignal(si->path, si->name, 
-                    si->data_type, si->orientation, si->rnum, si->cnum,
-                    sampleTime.at(si->st_index));
+            variableList[varIdx++] = 
+                signalList[si->index] = new RTSignal(si->path, si->name, 
+                        si->data_type, si->orientation, si->rnum, si->cnum,
+                        sampleTime.at(si->st_index));
         }
     }
 
@@ -94,9 +98,10 @@ RTModel::RTModel(int _fd, struct model *_model_ref):
         if (::ioctl(fd, GET_PARAM_INFO, &id)) {
         }
         else {
-            paramList[si->index] = new RTParameter(
-                    std::string(si->path) + si->name, std::string(),
-                    si->data_type, si->orientation, si->rnum, si->cnum);
+            variableList[varIdx++] = 
+                paramList[si->index] = new RTParameter(
+                        std::string(si->path) + '/' + si->name, std::string(),
+                        si->data_type, si->orientation, si->rnum, si->cnum);
         }
     }
     delete[] (char*)id.data;

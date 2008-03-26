@@ -65,8 +65,8 @@ The central dispatcher then calls the function that was registered when
 
 struct MainTask: public Task {
     MainTask(): Task(NULL) {
-        new RTTask(this);
-        new RTComServer(this);
+        RTTask* rtTask = new RTTask(this);
+        new RTComServer(this, rtTask);
         getDispatcher()->run();
     }
 };

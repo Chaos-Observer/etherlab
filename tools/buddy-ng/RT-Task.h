@@ -26,21 +26,27 @@
 #include "Task.h"
 
 #include <string>
-#include <list>
-#include <include/fio_ioctl.h>
+#include <map>
+#include "include/fio_ioctl.h"
 
 class RTModel;
 
 class RTTask: public Task {
     public:
+        typedef std::map<std::string,RTModel*> ModelMap;
+
         RTTask(Task* task);
         ~RTTask();
+
+        const ModelMap& getModelMap() const {
+            return modelMap;
+        }
 
     private:
         const std::string device;
         int fd;
 
-        std::list<RTModel*> modelList;
+        ModelMap modelMap;
 
         struct rt_kernel_prop rt_properties;
 

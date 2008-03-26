@@ -27,6 +27,9 @@
 #include "RTComTask.h"
 #include "SocketExcept.h"
 #include "ConfigFile.h"
+#include "RT-Task.h"
+#include "RT-Model.h"
+#include "RTVariable.h"
 
 #include <iostream>
 #include <string>
@@ -36,13 +39,16 @@
 using namespace std;
 
 //************************************************************************
-RTComTask::RTComTask(Task* parent, int _fd): Task(parent), fd(_fd),
+RTComTask::RTComTask(Task* parent, int _fd, RTTask* _rtTask): 
+    Task(parent), fd(_fd), rtTask(_rtTask),
     sb(this,fd), os(&sb),
     login("LOGIN\n$"),
     capabilities("CAPABILITIES\n$"),
     auth("AUTH\\s+(\\w+)\n(.*)"),
     length("{\\d+}"),
-    empty("\\s*\n$")
+    empty("\\s*\n$"),
+    listModels("LIST MODELS\n$"),
+    listSignals("LIST SIGNALS (\\w+)\n$")
 //************************************************************************
 {
     sasl_callback_t callbacks[] = {
@@ -141,11 +147,12 @@ int RTComTask::read(int)
 //************************************************************************
 {
     int n;
+    std::string model;
 
     n = ::read(fd, inBuf + inBufPos, sizeof(inBuf) - inBufPos - 1);
 
     if (n <= 0) {
-        return n;
+        return n ? errno : 0;
     }
 
     inBufPos += n;
@@ -163,6 +170,43 @@ int RTComTask::read(int)
             }
             else if (empty.FullMatch(inBuf)) {
                 cerr << "Found empty strin " << endl;
+            }
+            else if (listSignals.FullMatch(inBuf, &model)) {
+                const RTTask::ModelMap& modelMap = rtTask->getModelMap();
+                RTTask::ModelMap::const_iterator it = modelMap.find(model);
+                if (it == modelMap.end()) {
+                    os.stdErr("Model unknown");
+                    break;
+                }
+                const std::vector<RTVariable*>& variableList =
+                    it->second->getVariableList();
+                std::vector<RTVariable*>::const_iterator vit;
+                os.stdOutListStart("Variable List");
+                std::vector<string> key(1);
+                std::vector<string> value(1);
+                key[0] = "Path";
+                for( vit = variableList.begin(); vit != variableList.end(); 
+                        vit++) {
+                    value[0] = (*vit)->getPath();
+                    os.stdOutListElement(key, value, 
+                            vit == variableList.begin());
+                }
+                os.stdOutListEnd();
+            }
+            else if (listModels.FullMatch(inBuf)) {
+                const RTTask::ModelMap& modelMap = rtTask->getModelMap();
+                os.stdOutListStart("Model List");
+                std::vector<string> key(2);
+                std::vector<string> value(2);
+                key[0] = "Name";
+                key[1] = "Version";
+                for( RTTask::ModelMap::const_iterator it = modelMap.begin();
+                        it != modelMap.end(); it++) {
+                    value[0] = it->first;
+                    value[1] = it->second->getVersion();
+                    os.stdOutListElement(key, value, it == modelMap.begin());
+                }
+                os.stdOutListEnd();
             }
             else if (strchr(inBuf, '\n') || inBufPos >= sizeof(inBuf)-1) {
                 // Discard everyting in input buffer if an Enter is detected
@@ -222,7 +266,7 @@ int RTComTask::read(int)
                 const char* dataStart;
 
                 while ((dataStart = strchr(p,'}'))) {
-                        int len;
+                        unsigned int len;
 
                         if (!dataStart)
                         break;

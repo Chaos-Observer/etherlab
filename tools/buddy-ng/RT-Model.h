@@ -28,6 +28,7 @@
 #include <vector>
 #include <string>
 
+class RTVariable;
 class RTSignal;
 class RTParameter;
 struct timeval;
@@ -37,6 +38,12 @@ class RTModel {
         RTModel(int fd, struct model* model_ref);
         ~RTModel();
 
+        const std::string& getName() const { return name; }
+        const std::string& getVersion() const { return version; }
+        const std::vector<RTVariable*>& getVariableList() const { 
+            return variableList; 
+        }
+
     private:
         const int fd;
         struct model* const model_ref;
@@ -45,6 +52,7 @@ class RTModel {
 
         char *rtP;
 
+        std::vector<RTVariable*> variableList;
         std::vector<RTSignal*> signalList;
         std::vector<RTParameter*> paramList;
         std::vector<uint32_t> sampleTime;

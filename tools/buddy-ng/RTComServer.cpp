@@ -33,11 +33,12 @@
 using namespace std;
 
 //************************************************************************
-RTComServer::RTComServer(Task* parent): TCPServerTask(parent)
+RTComServer::RTComServer(Task* parent, RTTask* _rtTask): 
+    TCPServerTask(parent), rtTask(_rtTask)
 //************************************************************************
 {
-    port = ConfigFile::getInt("general", "port", 2500);
-    s_addr = ConfigFile::getString("general", "interface", "0.0.0.0");
+    port = ConfigFile::getInt("rtcom", "port", 2500);
+    s_addr = ConfigFile::getString("rtcom", "interface", "0.0.0.0");
 
     // Open a TCP port
     open(s_addr.c_str(), port);
@@ -60,7 +61,7 @@ int RTComServer::read(int)
 
     new_fd = SocketServerTask::accept((struct sockaddr*)&in_addr, size);
     if (new_fd >= 0)
-        new RTComTask(this, new_fd);
+        new RTComTask(this, new_fd, rtTask);
 
     cerr << "New file descriptor" << new_fd << endl;
 

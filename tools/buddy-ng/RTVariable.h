@@ -34,6 +34,8 @@ class RTVariable {
                 unsigned int rnum, unsigned int cnum);
         ~RTVariable();
 
+        const std::string& getPath() const { return path; }
+
     private:
         const std::string path;
         const std::string alias;

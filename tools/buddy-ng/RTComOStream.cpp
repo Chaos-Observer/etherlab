@@ -70,3 +70,30 @@ void RTComOStream::dataStream(unsigned int decimation,
 //************************************************************************
 {
 }
+
+//************************************************************************
+void RTComOStream::stdOutListStart(const std::string& title)
+//************************************************************************
+{
+    *this << "+ OK " << title << ":\n";
+}
+
+//************************************************************************
+void RTComOStream::stdOutListElement(const std::vector<std::string>& key,
+        const std::vector<std::string>& value, bool first)
+//************************************************************************
+{
+    if (!first)
+        *this << '\n';
+    for (unsigned int i = 0; i < key.size(); i++)
+        *this << key[i] << ": " << value[i] << '\n';
+}
+
+//************************************************************************
+void RTComOStream::stdOutListEnd()
+//************************************************************************
+{
+    *this << ".\n";
+    this->flush();
+}
+

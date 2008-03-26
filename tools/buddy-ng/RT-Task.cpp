@@ -101,21 +101,19 @@ int RTTask::read(int)
                     id.model_id = p->data.model_ref;
                     id.data = model;
 
-                    modelList.push_back(model);
                     if (::ioctl(fd, SET_PRIV_DATA, &id)) {
                         return errno;
                     }
+                    modelMap[model->getName()] = model;
 
                     break;
                 }
             case rtcom_event::del_model:
                 {
                     std::cout << "delete RTModel " << model << std::endl;
-                    if (find(modelList.begin(), modelList.end(), model) 
-                            != modelList.end()) {
-                        delete model;
-                        modelList.remove(model);
-                    }
+                    ModelMap::iterator m;
+                    modelMap.erase(model->getName());
+                    delete model;
                 }
                 break;
         }

@@ -31,12 +31,16 @@
 
 #include <string>
 
+class RTTask;
+
 class RTComServer: public TCPServerTask {
     public:
-        RTComServer(Task* parent);
+        RTComServer(Task* parent, RTTask* rtTask);
         ~RTComServer();
     protected:
     private:
+        RTTask* const rtTask;
+
         int port;
         std::string s_addr;
 
