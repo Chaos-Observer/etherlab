@@ -63,8 +63,6 @@ The central dispatcher then calls the function that was registered when
 
 #include <iostream>
 
-ConfigFile *configFile;
-
 struct MainTask: public Task {
     MainTask(): Task(NULL) {
         new RTTask(this);
@@ -75,7 +73,7 @@ struct MainTask: public Task {
 
 int main(int argc, const char *argv[])
 {
-    configFile = new ConfigFile("buddy.conf");
+    ConfigFile::ConfigFile("buddy.conf");
 
     MainTask mainTask;
 

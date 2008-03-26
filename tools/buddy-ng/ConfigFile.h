@@ -38,22 +38,22 @@ extern "C" {
 class ConfigFile {
     public:
         ConfigFile(const char* filename);
-        ~ConfigFile();
-        std::string getString(const std::string& section, 
+
+        static std::string getString(const std::string& section, 
                 const std::string& entry, const std::string& def = "")
             throw(std::bad_alloc);
-        double getDouble(const std::string& section, 
+        static double getDouble(const std::string& section, 
                 const std::string& entry, double def = 0) 
             throw(std::bad_alloc);
-        bool getBool(const std::string& section, 
+        static bool getBool(const std::string& section, 
                 const std::string& entry, bool def = false);
-        int getInt(const std::string& section, 
+        static int getInt(const std::string& section, 
                 const std::string& entry, int def = 0);
 
     private:
-        dictionary* dict;
+        static dictionary* dict;
+        static std::string makeKey(const std::string& section, 
+                const std::string& entry);
 };
-
-extern ConfigFile *configFile;
 
 #endif // CONFIGFILE_H

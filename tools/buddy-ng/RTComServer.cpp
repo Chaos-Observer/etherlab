@@ -36,8 +36,8 @@ using namespace std;
 RTComServer::RTComServer(Task* parent): TCPServerTask(parent)
 //************************************************************************
 {
-    port = configFile->getInt("general", "port", 2500);
-    s_addr = configFile->getString("general", "interface", "0.0.0.0");
+    port = ConfigFile::getInt("general", "port", 2500);
+    s_addr = ConfigFile::getString("general", "interface", "0.0.0.0");
 
     // Open a TCP port
     open(s_addr.c_str(), port);

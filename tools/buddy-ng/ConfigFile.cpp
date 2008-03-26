@@ -32,19 +32,22 @@
 
 using namespace std;
 
+dictionary* ConfigFile::dict;
+
 //************************************************************************
 ConfigFile::ConfigFile(const char* filename)
 //************************************************************************
 {
+    if (dict)
+        iniparser_freedict(dict);
     dict = iniparser_load(filename);
-    cerr << "loaded file " << filename << dict << endl;
 }
 
 //************************************************************************
-ConfigFile::~ConfigFile()
+std::string ConfigFile::makeKey(const string& section, const string& entry)
 //************************************************************************
 {
-    iniparser_freedict(dict);
+    return section + ":" + entry;
 }
 
 //************************************************************************
@@ -52,8 +55,8 @@ bool ConfigFile::getBool(const string& section, const string& entry,
         bool def)
 //************************************************************************
 {
-    string key(section);
-    key.append(":").append(entry);
+    string key(makeKey(section,entry));
+
     return iniparser_getboolean(dict, key.c_str(), def);
 }
 
@@ -65,8 +68,7 @@ double ConfigFile::getDouble(const string& section, const string& entry,
     char* nkey;
     double value;
 
-    string key(section);
-    key.append(":").append(entry);
+    string key(makeKey(section,entry));
 
     nkey = strdup(key.c_str());
     if (!nkey)
@@ -83,8 +85,8 @@ int ConfigFile::getInt(const string& section, const string& entry,
         int def)
 //************************************************************************
 {
-    string key(section);
-    key.append(":").append(entry);
+    string key(makeKey(section,entry));
+
     return iniparser_getint(dict, key.c_str(), def);
 }
 
@@ -99,8 +101,8 @@ string ConfigFile::getString(const string& section, const string& entry,
     if (!def_str)
         throw bad_alloc();
 
-    string key(section);
-    key.append(":").append(entry);
+    string key(makeKey(section,entry));
+
     string value = iniparser_getstring(dict, key.c_str(), def_str);
     free(def_str);
     return value;

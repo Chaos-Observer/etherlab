@@ -34,7 +34,7 @@
 #include <sys/mman.h>
 
 RTTask::RTTask(Task* parent): Task(parent),
-    device(configFile->getString("", "device", "/dev/etl"))
+    device(ConfigFile::getString("", "device", "/dev/etl"))
 {
     std::cout << "opening " << device << std::endl;
     fd = open(device.c_str(), O_RDONLY | O_NONBLOCK);

@@ -85,7 +85,7 @@ int SocketServerTask::sasl_getopt(void *context, const char *plugin_name,
     cerr << "Requested " << " " << key << " " << result << " " << len << endl;
 
     instance->sasl_options.push_front(
-            configFile->getString("sasl", key, ""));
+            ConfigFile::getString("sasl", key, ""));
     list<string>::iterator i = instance->sasl_options.begin();
 
     if (i->length()) {
