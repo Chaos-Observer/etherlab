@@ -1,12 +1,12 @@
 <?xml version="1.0"?>
-<modeldescription modelname="my-model">
+<model name="my-model">
   <description>My HandCoded C Model</description>
   <version>11</version>
   <properties max_overruns="5" stacksize="2048" sample_decimation="1" buffer_time="10"/>
 
-  <!-- Enter the base tick in microseconds and the number of sample times -->
+  <!-- Enter the base tick in microseconds for the main task. If you
+       have subtasks, add them inside <task> with the according decimation -->
   <task basetick="1000">
-      <subtask decimation="1"/>
       <subtask decimation="100"/>
   </task>
 
@@ -14,8 +14,7 @@
     <signal name="rootpressure" cvar="var1" datatype="double_T" orientation='vector' elements="10" sampleTimeIndex="0"/>
     <subsystem name="meters">
     <subsystem name="meter1">
-      <signal name="pressure" cvar="var2" datatype="double_T" rnum="10" sampleTimeIndex="0">
-        <alias>X</alias>
+      <signal name="pressure" cvar="var2" datatype="double_T" rnum="10" sampleTimeIndex="1" alias="X">
         <meta hide="0"/>
       </signal>
       <parameter name="scalar_param" cvar="scalar_param" datatype="double_T"
@@ -23,4 +22,4 @@
     </subsystem>
     </subsystem>
   </data>some more junk
-</modeldescription>
+</model>

@@ -22,8 +22,10 @@
  *
  *****************************************************************************/ 
 
-#include "model.h"
-#include "mdl_wrapper.h"
+#include "include/model.h"
+#include "include/rt_model.h"
+#include "include/etl_data_info.h"
+#include "include/etl_mdf.h"
 
 #ifndef MODEL
 # error "must define MODEL"
@@ -33,6 +35,51 @@
 # error "must define number of sample times, NUMST"
 #endif
 
+static const char* rt_OneStepMain(void);
+static const char* rt_OneStepTid(unsigned int);
+static void        mdl_set_error_msg(const char*);
+static const char* get_signal_info(struct signal_info *si, const char** path);
+static const char* get_param_info(struct signal_info *si, const char** path);
+
+static unsigned int task_period[NUMST] = { TASK_DECIMATIONS };
+static struct task_stats task_stats[NUMST];
+
+static int maxSignalIdx;
+static int maxParameterIdx;
+
+// Cannot declare static, as it is still required by rt_mdl_register.c
+struct rt_model rt_model = {
+    .mdl_rtB = &cvt,
+    .rtB_size = sizeof(cvt),
+
+    .mdl_rtP = &param,
+    .rtP_size = sizeof(param),
+
+    /* Some variables concerning sample times passed to the model */
+    .num_st = NUMST,
+    .num_tasks = NUMST,
+
+    .rt_OneStepMain = rt_OneStepMain,
+    .rt_OneStepTid = rt_OneStepTid,
+    .get_signal_info = get_signal_info,
+    .get_param_info = get_param_info,
+
+    .task_period = task_period,
+
+    .decimation = DECIMATION > 1 ? DECIMATION : 1,
+    .max_overrun = OVERRUNMAX,
+    .buffer_time = BUFFER_TIME > 0 ? BUFFER_TIME*1e6 : 0,
+    .stack_size = STACKSIZE,
+    .task_stats = task_stats,
+
+    .payload_files = NULL,
+
+    /* Register model callbacks */
+    .set_error_msg = mdl_set_error_msg,
+    .modelVersion = STR(MODELVERSION),
+    .modelName = STR(MODEL),
+};
+
 /** Perform calculation step of base period
  *
  * This function is called to perform a calculation step for the model's
@@ -41,21 +88,45 @@
  * Return:
  *      Pointer to error string in case of an error.
  */
-const char *
-rt_OneStepMain(double time)
+static const char *
+rt_OneStepMain(void)
 {
-    return MdlStep(0, time);
+    return MdlStep(0);
 } /* end rtOneStepMain */
 
-const char *
-rt_OneStepTid(unsigned int tid, double time)
+static const char *
+rt_OneStepTid(unsigned int tid)
 {
-    return MdlStep(tid, time);
+    return MdlStep(tid);
 } /* end rtOneStepTid */
 
-void
+static void
 mdl_set_error_msg(const char *msg)
 {
+}
+
+static const char* 
+get_signal_info(struct signal_info *si, const char** path)
+{
+    if (si->index >= maxSignalIdx) {
+        return "Signal index exceeded.";
+    }
+    memcpy(si, &capi_signals[si->index], sizeof(*si));
+    *path = &capi_signals[si->index].path[0];
+
+    return NULL;
+}
+
+static const char* 
+get_param_info(struct signal_info *si, const char** path)
+{
+    if (si->index >= maxParameterIdx) {
+        return "Signal index exceeded.";
+    }
+    memcpy(si, &capi_parameters[si->index], sizeof(*si));
+    *path = &capi_parameters[si->index].path[0];
+
+    return NULL;
 }
 
 /* Function: mdl_stop ========================================================
@@ -77,41 +148,36 @@ mdl_stop(void)
 const char *
 mdl_start(void)
 {
-    const char *error_msg;
-    unsigned int i __attribute__((unused));
+    const char *error_msg = NULL;
+    unsigned int i;
+
+    // At the moment, task_period only contains decimations. Convert that
+    // to microseconds here
+    for (i = 0; i < NUMST; i++)
+        task_period[i] *= BASEPERIOD;
+
+    for (maxSignalIdx = 0; capi_signals[maxSignalIdx].address;
+            maxSignalIdx++) {
+        if (strlen(capi_signals[maxSignalIdx].path) 
+                > rt_model.variable_path_len) {
+            rt_model.variable_path_len =
+                strlen(capi_signals[maxSignalIdx].path);
+        }
+    }
+    rt_model.signal_count = maxSignalIdx;
+
+    for (maxParameterIdx = 0; capi_parameters[maxParameterIdx].address;
+            maxParameterIdx++) {
+        if (strlen(capi_parameters[maxParameterIdx].path) 
+                > rt_model.variable_path_len) {
+            rt_model.variable_path_len =
+                strlen(capi_parameters[maxParameterIdx].path);
+        }
+    }
+    rt_model.param_count = maxParameterIdx;
 
     error_msg = MdlInit();
 
-    if (error_msg)
-        return error_msg;
-
-    rtw_model.mdl_rtB = &cvt;
-    rtw_model.rtB_size = sizeof(cvt);
-
-    rtw_model.mdl_rtP = &param;
-    rtw_model.rtP_size = sizeof(param);
-
-    /* Some variables concerning sample times passed to the model */
-    rtw_model.numst = NUMST;
-    rtw_model.base_period = BASEPERIOD;
-    rtw_model.subtask_decimation = NUMST ? subtask_decimation : NULL;
-
-    rtw_model.decimation = DECIMATION > 1 ? DECIMATION : 1;
-    rtw_model.max_overrun = OVERRUNMAX;
-    rtw_model.buffer_time = BUFFER_TIME > 0 ? BUFFER_TIME*1e6 : 0;
-    rtw_model.stack_size = STACKSIZE;
-
-    rtw_model.symbols = NULL;
-    rtw_model.symbol_len = 0;
-
-    /* Register model callbacks */
-    rtw_model.rt_OneStepMain = rt_OneStepMain;
-    rtw_model.rt_OneStepTid = rt_OneStepTid;
-    rtw_model.set_error_msg = mdl_set_error_msg;
-
-    rtw_model.modelVersion = STR(MODELVERSION);
-    rtw_model.modelName = STR(MODEL);
-
-    return NULL;
+    return error_msg;
 
 } /* end main */

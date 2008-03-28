@@ -23,12 +23,12 @@
  *************************************************************************/
 
 #include "model_defines.h"      // Model variables
-#include "defines.h"   // STR()
+#include "include/defines.h"   // STR()
 #include "cvt.h"
 #include "param.h"
 
 const char * MdlInit(void);
-const char *MdlStep(unsigned int, double);
+const char *MdlStep(unsigned int);
 void MdlExit(void);
 
 extern unsigned int subtask_decimation[];

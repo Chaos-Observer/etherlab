@@ -22,30 +22,8 @@
  *
  ************************************************************************/
 
-#include "etl_datatype.h"
+#include "include/etl_datatype.h"
+#include "include/etl_data_info.h"
 
-enum orientation_t {
-    orientation_scalar,
-    orientation_vector,
-    orientation_matrix_row_major,
-    orientation_matrix_col_major,
-};
-
-struct capi_signals {
-    void* address;
-    enum datatype_t datatype;
-    unsigned int sample_time_domain;
-    enum orientation_t orientation;
-    unsigned int rows;
-    unsigned int cols;
-    const char* path;
-};
-
-struct capi_parameters {
-    void* address;
-    enum datatype_t datatype;
-    enum orientation_t orientation;
-    unsigned int rows;
-    unsigned int cols;
-    const char* path;
-};
+extern struct signal_info capi_signals[];
+extern struct signal_info capi_parameters[];

@@ -10,7 +10,7 @@
  *********************************************************************/
 
 /* model.h must be included in every model */
-#include "model.h"
+#include "include/model.h"
 
 /** Initialise the model
  *
@@ -48,7 +48,7 @@ void MdlExit(void)
  *      0: No error
  *     <0: An error occurred. The model calculation will be stopped.
  */
-const char *MdlStep(unsigned int stidx, double world_time)
+const char *MdlStep(unsigned int stidx)
 {
     return NULL;
 }

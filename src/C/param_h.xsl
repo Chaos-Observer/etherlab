@@ -52,7 +52,7 @@
  * directly, but use P(param) instead.
  */
 
-    #include "etl_datatype.h"
+    #include "include/etltypes.h"
     </xsl:text>
     <xsl:text>struct param {
     </xsl:text>

@@ -49,7 +49,7 @@
  * directly, but use S(sig) instead.
  */
 
-    <![CDATA[#include "etl_datatype.h"]]>
+    <![CDATA[#include "include/etltypes.h"]]>
 
     </xsl:text>
     <xsl:text>struct cvt {</xsl:text>

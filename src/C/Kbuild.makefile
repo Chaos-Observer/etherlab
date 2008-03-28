@@ -42,15 +42,15 @@ all %:
 else #ifeq ($(KERNELRELEASE),)
 
 EXTRA_CFLAGS = \
-        -I/opt/etherlab/include \
-        -I/opt/etherlab/rtw/include \
-        -I/usr/realtime-3.6/include \
+        -I/opt/etherlab \
+        -I/opt/etherlab/rtw \
+        -I/usr/realtime-3.6 \
         $(MODEL_CFLAGS) \
         -DMODEL=$(MODEL_NAME)
 
 obj-m := $(MODEL_NAME).o
 $(MODEL_NAME)-y := mdl_main.o data.o $(MODEL_SOURCES:.c=.o) \
-        .src/register.o .src/rtai_reg_mdl.o
+        .src/register.o .src/rt_mdl_main.o
 # Additionally mark the source files in .src as SECONDARY, so they are 
 # not deleted, since they are needed by modpost.
 .SECONDARY: $(obj)/.src/register.c
@@ -99,5 +99,11 @@ $(obj)/model_defines.h: $(obj)/$(MODEL_NAME).xml
                 /usr/bin/indent > $@
 	$(Q)echo "$@: /opt/etherlab/rtw/lib/C/model_defines_h.xsl" > \
                 $(obj)/.$(notdir $@).dep
+
+XSL_FILE = /opt/etherlab/rtw/lib/C/$(notdir $@).xsl
+-include $(obj)/.model_defines.h.dep
+$(obj)/mdf.c: $(obj)/$(MODEL_NAME).xml
+	$(Q)/usr/bin/xsltproc $(XSL_FILE) $< | /usr/bin/indent > $@
+	$(Q)echo "$@: $(XSL_FILE)" > $(obj)/.$(notdir $@).dep
 
 endif #ifeq ($(KERNELRELEASE),)

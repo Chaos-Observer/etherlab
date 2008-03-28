@@ -32,13 +32,26 @@
   <xsl:template match="text()|@*"/>
   
   <xsl:template match="/modeldescription">
-    #define NUMST <xsl:value-of select="count(task/subtask)"/>
-    #define BASEPERIOD <xsl:value-of select="task/@basetick"/>
+    <xsl:choose>
+      <xsl:when test="count(task/subtask)">
+        <!-- Subtasks were defined. Add these to the base task  -->
+        #define NUMST <xsl:value-of select="count(task/subtask)+1"/>
+        #define TASK_DECIMATIONS 1, <xsl:for-each select="task/subtask">
+        <xsl:value-of select="@decimation"/>, </xsl:for-each>
+      </xsl:when>
+      <xsl:otherwise>
+        <!-- Only the base task was defined -->
+        #define NUMST 1
+        #define TASK_DECIMATIONS 1
+      </xsl:otherwise>
+    </xsl:choose>
+    #define BASEPERIOD   <xsl:value-of select="task/@basetick"/>
     #define MODELVERSION <xsl:value-of select="version"/>
-    #define DECIMATION <xsl:value-of select="properties/@sample_decimation"/>
-    #define OVERRUNMAX <xsl:value-of select="properties/@max_overruns"/>
-    #define BUFFER_TIME <xsl:value-of select="properties/@buffer_time"/>
-    #define STACKSIZE <xsl:value-of select="properties/@stacksize"/>
+    #define DECIMATION   <xsl:value-of select="properties/@sample_decimation"/>
+    #define OVERRUNMAX   <xsl:value-of select="properties/@max_overruns"/>
+    #define BUFFER_TIME  <xsl:value-of select="properties/@buffer_time"/>
+    #define STACKSIZE    <xsl:value-of select="properties/@stacksize"/>
+
   </xsl:template>
   
 </xsl:stylesheet>

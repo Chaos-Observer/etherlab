@@ -34,7 +34,7 @@
   <xsl:template match="text()|@*"/>
   
   <xsl:template match="/modeldescription">
-#include "model.h"
+#include "include/model.h"
 
 /* Parameter initialisation and definition */
     <xsl:apply-templates select="data"/>

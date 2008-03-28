@@ -25,18 +25,4 @@ typedef struct {
     double im;
 } complex_T;
 
-enum datatype_t {
-    uint8_T_en,
-    sint8_T_en,
-    uint16_T_en,
-    sint16_T_en,
-    uint32_T_en,
-    sint32_T_en,
-    uint64_T_en,
-    sint64_T_en,
-    single_T_en,
-    double_T_en,
-    complex_T_en 
-};
-
 #endif // ETLDATATYPE_H
