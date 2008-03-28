@@ -41,7 +41,7 @@
   %<RegisterEtherCATSlavePDO(block, Output_PDO, \
       LibBlockPWork(OutputByte,"","",0))>
   %if StatusOp
-    %<RegisterEtherCATSlave(block, Status_PDO, \
+    %<RegisterEtherCATSlavePDO(block, Status_PDO, \
         LibBlockPWork(StatusByte,"","",0))>
   %endif
 %endfunction

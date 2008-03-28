@@ -41,9 +41,9 @@
     %foreach sigIdx = Width
       %<RegisterEtherCATSlaveBlock(block, DeviceModel, \
           MasterId, SlaveAddr, 0)>
-      %<RegisterEtherCATSlave(block, "%<Status_PDO>%<sigIdx+1>", \
+      %<RegisterEtherCATSlavePDO(block, "%<Status_PDO>%<sigIdx+1>", \
           LibBlockPWork(StatusByte,"","",sigIdx))>
-      %<RegisterEtherCATSlave(block, "%<Input_PDO>%<sigIdx+1>", \
+      %<RegisterEtherCATSlavePDO(block, "%<Input_PDO>%<sigIdx+1>", \
           LibBlockPWork(AD_Word,"","",sigIdx))>
     %endforeach
   %else
