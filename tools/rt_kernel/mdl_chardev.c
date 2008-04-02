@@ -279,7 +279,7 @@ static long rtp_ioctl(
                 const char *err;
 
                 // Get the index the user is interested in
-                if ((rv = get_user(tmp_si.index, &user_si->index)))
+                if ((rv = copy_from_user(&tmp_si, user_si, sizeof(tmp_si))))
                     break;
 
                 err = (command == GET_SIGNAL_INFO)

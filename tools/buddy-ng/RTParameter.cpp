@@ -24,9 +24,8 @@
 #include "RTParameter.h"
 
 RTParameter::RTParameter(const std::string &_path, const std::string &_alias,
-        si_datatype_t _dataType, si_orientation_t _orientation,
-        unsigned int _rnum, unsigned int _cnum) :
-    RTVariable(_path, _alias, _dataType, _orientation, _rnum, _cnum)
+        si_datatype_t _dataType, std::vector<size_t>& _dims) :
+    RTVariable(_path, _alias, _dataType, _dims)
 {
 }
 

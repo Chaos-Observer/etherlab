@@ -109,6 +109,8 @@ struct mdl_properties {
 };
 
 #define GET_MDL_SAMPLETIMES   _IOR(FIO_MAGIC, 20, struct rtcom_ioctldata)
+#define GET_PARAM_DIMS        _IOR(FIO_MAGIC, 21, struct rtcom_ioctldata)
+#define GET_SIGNAL_DIMS       _IOR(FIO_MAGIC, 22, struct rtcom_ioctldata)
 
 /***************************************************
  * The following ioctl commands are used by the 

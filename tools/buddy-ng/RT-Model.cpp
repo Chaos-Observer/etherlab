@@ -27,6 +27,7 @@
 #include "RTParameter.h"
 
 #include <iterator>
+#include <algorithm>
 #include <iostream>
 #include <cerrno>
 #include <cstring>
@@ -38,20 +39,23 @@
 RTModel::RTModel(int _fd, struct model *_model_ref): 
     fd(_fd), model_ref(_model_ref)
 {
-    struct signal_info *si;
-    struct rtcom_ioctldata id;
+    struct signal_info si;
     struct mdl_properties mdl_properties;
+    struct rtcom_ioctldata id;
 
     id.model_id = model_ref;
     id.data = &mdl_properties;
     id.data_len = sizeof(mdl_properties);
 
+    // First of all get the model properties
     if (::ioctl(fd, GET_MDL_PROPERTIES, &id)) {
         throw Exception("Could not get model properties.");
     }
     name = mdl_properties.name;
     version = mdl_properties.version;
 
+    // Now that the number of sample times is known, get them and copy to
+    // sampleTime
     uint32_t st[mdl_properties.num_st];
     id.data = st;
     id.data_len = sizeof(st);
@@ -59,8 +63,7 @@ RTModel::RTModel(int _fd, struct model *_model_ref):
         throw Exception("Could not get model sample times.");
     }
     sampleTime.resize(mdl_properties.num_st);
-    for (unsigned int i = 0; i < mdl_properties.num_st; i++)
-        sampleTime[i] = st[i];
+    std::copy(st, st+mdl_properties.num_st, sampleTime.begin());
 
     std::ostream_iterator<uint32_t> oo(std::cout, " ");
     std::cout << "model properties " 
@@ -72,47 +75,84 @@ RTModel::RTModel(int _fd, struct model *_model_ref):
     copy(sampleTime.begin(), sampleTime.end(), oo);
     std::cout << std::endl;
 
-    id.data_len = sizeof(*si) + mdl_properties.variable_path_len + 1;
-    id.data = new char[id.data_len];
-    si = (struct signal_info*)id.data;
+    // Knowing the number of signals and parameters, as well as the length
+    // of the longest path name, a structure can be allocated so that the
+    // information can be fetched from the kernel
+    si.path = new char[mdl_properties.variable_path_len + 1];
+    id.data = &si;
+
+    // Not quite true, here the length of the path is added too
+    id.data_len = sizeof(si) + mdl_properties.variable_path_len + 1;
+
+    std::vector<size_t> dims;
+    unsigned int varIdx = 0;
 
     variableList.resize(mdl_properties.signal_count 
             + mdl_properties.param_count);
-    signalList.resize(mdl_properties.signal_count);
-    unsigned int varIdx = 0;
-    for (si->index = 0; si->index < mdl_properties.signal_count; 
-            si->index++) {
+    for (si.index = 0; si.index < mdl_properties.signal_count; 
+            si.index++) {
         if (::ioctl(fd, GET_SIGNAL_INFO, &id)) {
-
+            throw Exception("Error on GET_SIGNAL_INFO.");
         }
-        else {
-            variableList[varIdx++] = 
-                signalList[si->index] = new RTSignal(si->path, si->name, 
-                        si->data_type, si->orientation, si->rnum, si->cnum,
-                        sampleTime.at(si->st_index));
-        }
+        getDims(dims, &si, GET_SIGNAL_DIMS);
+        variableList[varIdx++] = new RTSignal(si.path, si.name, 
+                    si.data_type, dims, sampleTime.at(si.st_index));
     }
 
-    paramList.resize(mdl_properties.param_count);
-    for (si->index = 0; si->index < mdl_properties.param_count; si->index++) {
+    for (si.index = 0; si.index < mdl_properties.param_count; si.index++) {
         if (::ioctl(fd, GET_PARAM_INFO, &id)) {
+            throw Exception("Error on GET_SIGNAL_INFO.");
         }
-        else {
-            variableList[varIdx++] = 
-                paramList[si->index] = new RTParameter(
-                        std::string(si->path) + '/' + si->name, std::string(),
-                        si->data_type, si->orientation, si->rnum, si->cnum);
-        }
+        getDims(dims, &si, GET_PARAM_DIMS);
+        variableList[varIdx++] = new RTParameter(
+                    std::string(si.path) + '/' + si.name, std::string(),
+                    si.data_type, dims);
     }
-    delete[] (char*)id.data;
+    delete[] si.path;
+}
+
+/** Get signal's vector dimensions.
+ *
+ * A signal's array dimensions are coded in si->dims[2]:
+ * dims[0] == 1; dims[1] == 0     : scalar
+ * dims[0] >  1; dims[1] == 0     : vector
+ * dims[0] >  0; dims[1] >  0     : matrix
+ * dims[0] == 0; dims[1] >  0     : n-Dimensional matrix. Number of dimensions
+ *                                  is coded in dims[1]. Have to fetch dims
+ *                                  in a second step
+ */
+void RTModel::getDims(std::vector<size_t>& dims, const struct signal_info *si,
+        unsigned int dim_type)
+{
+    if (!si->dim[0]) {
+        // Number of dimensions is >2. Actual dimensions is in si->dim[1]
+        // Get the new dimensions
+        size_t new_dims[si->dim[1]];
+        struct rtcom_ioctldata id;
+
+        id.model_id = model_ref;
+        id.data = new_dims;
+        id.data_len = sizeof(new_dims);
+
+        // Signal index gets passed in first array element
+        new_dims[0] = si->index;
+
+        if (::ioctl(fd, dim_type, &id)) {
+            throw Exception("Error on GET_SIGNAL/PARAM_DIMS.");
+        }
+
+        dims.resize(si->dim[1]);
+        std::copy(new_dims, new_dims + si->dim[1], dims.begin());
+    }
+    else {
+        dims.resize(si->dim[1] ? 2 : 1);
+        std::copy(si->dim, si->dim + dims.size(), dims.begin());
+    }
 }
 
 RTModel::~RTModel()
 {
-    for (std::vector<RTSignal*>::iterator it = signalList.begin();
-            it != signalList.end(); it++)
-        delete *it;
-    for (std::vector<RTParameter*>::iterator it = paramList.begin();
-            it != paramList.end(); it++)
+    for (std::vector<RTVariable*>::iterator it = variableList.begin();
+            it != variableList.end(); it++)
         delete *it;
 }

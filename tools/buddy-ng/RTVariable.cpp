@@ -24,10 +24,8 @@
 #include "RTVariable.h"
 
 RTVariable::RTVariable(const std::string &_path, const std::string &_alias,
-        si_datatype_t _dataType, si_orientation_t _orientation,
-        unsigned int _rnum, unsigned int _cnum) :
-    path(_path), alias(_alias), dataType(_dataType), orientation(_orientation),
-    rnum(_rnum), cnum(_cnum)
+        si_datatype_t _dataType, std::vector<size_t>& _dims) :
+    path(_path), alias(_alias), dataType(_dataType), dims(_dims)
 {
 }
 

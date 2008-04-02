@@ -29,12 +29,13 @@
 class RTSignal: public RTVariable {
     public:
         RTSignal(const std::string &path, const std::string &alias,
-                si_datatype_t dataType, si_orientation_t orientation,
-                unsigned int _rnum, unsigned int _cnum, 
-                uint32_t sampleTime);
+                si_datatype_t dataType, std::vector<size_t>& _dims,
+                unsigned int sampleTime);
         ~RTSignal();
+        unsigned int getSampleTime() const {return sampleTime;}
+        bool isWriteable() const { return false; }
 
     private:
-        const uint32_t sampleTime;
+        const unsigned int sampleTime;
 };
 #endif // RTSIGNAL_H

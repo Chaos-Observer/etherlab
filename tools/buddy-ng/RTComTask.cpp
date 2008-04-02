@@ -32,6 +32,8 @@
 #include "RTVariable.h"
 
 #include <iostream>
+#include <sstream>
+#include <iterator>
 #include <string>
 #include <cstring>
 #include <cerrno>
@@ -47,8 +49,8 @@ RTComTask::RTComTask(Task* parent, int _fd, RTTask* _rtTask):
     auth("AUTH\\s+(\\w+)\n(.*)"),
     length("{\\d+}"),
     empty("\\s*\n$"),
-    listModels("LIST MODELS\n$"),
-    listSignals("LIST SIGNALS (\\w+)\n$")
+    listModels("MODELS\n$"),
+    listSignals("LIST (\\w+)\n$")
 //************************************************************************
 {
     sasl_callback_t callbacks[] = {
@@ -172,6 +174,9 @@ int RTComTask::read(int)
                 cerr << "Found empty strin " << endl;
             }
             else if (listSignals.FullMatch(inBuf, &model)) {
+                unsigned int idx = 0;
+                std::ostringstream oss;
+                std::ostream_iterator<size_t> oo(oss, " ");
                 const RTTask::ModelMap& modelMap = rtTask->getModelMap();
                 RTTask::ModelMap::const_iterator it = modelMap.find(model);
                 if (it == modelMap.end()) {
@@ -182,14 +187,71 @@ int RTComTask::read(int)
                     it->second->getVariableList();
                 std::vector<RTVariable*>::const_iterator vit;
                 os.stdOutListStart("Variable List");
+
                 std::vector<string> key(1);
                 std::vector<string> value(1);
+                key[0] = "VariableCount";
+                oss << variableList.size();
+                value[0] = oss.str();
+                os.stdOutListElement(key, value, true);
+
+                key.resize(6);
+                value.resize(6);
                 key[0] = "Path";
+                key[1] = "Index";
+                key[2] = "Datatype";
+                key[3] = "Dimensions";
+                key[4] = "Flags";
+                key[5] = "SampleTime";
                 for( vit = variableList.begin(); vit != variableList.end(); 
                         vit++) {
                     value[0] = (*vit)->getPath();
-                    os.stdOutListElement(key, value, 
-                            vit == variableList.begin());
+                    oss.str("");
+                    oss << idx++;
+                    value[1] = oss.str();
+                    switch ((*vit)->getDataType()) {
+                        case si_double_T:
+                            value[2] = "double_T";
+                            break;
+                        case si_single_T:
+                            value[2] = "single_T";
+                            break;
+                        case si_boolean_T:
+                            value[2] = "boolean_T";
+                            break;
+                        case si_uint8_T:
+                            value[2] = "uint8_T";
+                            break;
+                        case si_sint8_T:
+                            value[2] = "sint8_T";
+                            break;
+                        case si_uint16_T:
+                            value[2] = "uint16_T";
+                            break;
+                        case si_sint16_T:
+                            value[2] = "sint16_T";
+                            break;
+                        case si_uint32_T:
+                            value[2] = "uint32_T";
+                            break;
+                        case si_sint32_T:
+                            value[2] = "sint32_T";
+                            break;
+                        default:
+                            break;
+                    }
+                    const std::vector<size_t> dims = 
+                        (*vit)->getDims();
+                    oss.str("");
+                    copy(dims.begin(), dims.end(), oo);
+                    value[3] = oss.str();
+
+                    value[4] = (*vit)->isWriteable() ? "rw" : "r-";
+
+                    oss.str("");
+                    oss << (*vit)->getSampleTime();
+                    value[5] = oss.str();
+                    os.stdOutListElement(key, value, false);
                 }
                 os.stdOutListEnd();
             }

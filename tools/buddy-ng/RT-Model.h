@@ -53,8 +53,9 @@ class RTModel {
         char *rtP;
 
         std::vector<RTVariable*> variableList;
-        std::vector<RTSignal*> signalList;
-        std::vector<RTParameter*> paramList;
         std::vector<uint32_t> sampleTime;
+
+        void getDims(std::vector<size_t>& dims, const struct signal_info *si,
+                unsigned int type);
 };
 #endif // RTMODEL_H

@@ -47,13 +47,13 @@ struct signal_info {
     unsigned int index;         // Index of signal or parameter
     unsigned int st_index;      // Sample time index
     unsigned int offset;        // Offset of signal from the structure base
-    unsigned int rnum;          // Number of rows
-    unsigned int cnum;          // Number of columns
+    size_t dim[2];              // Values of first 2 dimensions. If dim[0] == 0,
+                                // the number of dimensions is transported in
+                                // dim[1]. The actual dimensions has to be 
+                                // fetched in a second step.
     enum si_datatype_t data_type;      // Data Type
-    enum si_orientation_t orientation; // Data organisation
-    size_t data_size;           // Size of data type
     char name[256];             // Signal alias name
-    char path[];                // Path of signal
+    char *path;                 // Path of signal
 };
 
 #endif // ETLDATAINFO_H

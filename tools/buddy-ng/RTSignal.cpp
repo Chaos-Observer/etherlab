@@ -24,10 +24,9 @@
 #include "RTSignal.h"
 
 RTSignal::RTSignal(const std::string &_path, const std::string &_alias,
-        si_datatype_t _dataType, si_orientation_t _orientation,
-        unsigned int _rnum, unsigned int _cnum, 
-        uint32_t _sampleTime): 
-    RTVariable(_path, _alias, _dataType, _orientation, _rnum, _cnum),
+        si_datatype_t _dataType, std::vector<size_t>& _dims, 
+        unsigned int _sampleTime): 
+    RTVariable(_path, _alias, _dataType, _dims),
     sampleTime(_sampleTime)
 {
 }

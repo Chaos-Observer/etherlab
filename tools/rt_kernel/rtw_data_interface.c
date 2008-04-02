@@ -34,6 +34,14 @@
 #include "capi.h"
 #include "rtmodel.h"
 
+#ifndef max
+#define max(x1,x2) ((x1) > (x2) ? (x1) : (x2))
+#endif
+
+#ifndef min
+#define min(x1,x2) ((x2) > (x1) ? (x1) : (x2))
+#endif
+
 rtwCAPI_ModelMappingInfo* mmi;
 const rtwCAPI_DimensionMap*    dimMap;
 const rtwCAPI_DataTypeMap*     dTypeMap;
@@ -71,24 +79,29 @@ static const char* get_signal_info(struct signal_info *si, const char **path)
         return "Cannot handle array dimensions != 2";
     }
     dimArrayIdx = rtwCAPI_GetDimArrayIndex(dimMap, dimIdx);
-    si->rnum = dimArray[dimArrayIdx];
-    si->cnum = dimArray[dimArrayIdx+1];
+    // dimArray[dimArrayIdx]   = number of rows
+    // dimArray[dimArrayIdx+1] = numbol or columns
 
-    switch (rtwCAPI_GetOrientation(dimMap, dimIdx)) {
-        case rtwCAPI_SCALAR:
-            si->orientation = si_scalar;
-            break;
-        case rtwCAPI_VECTOR:
-            si->orientation = si_vector;
-            break;
-        case rtwCAPI_MATRIX_COL_MAJOR:
-            si->orientation = si_matrix_col_major;
-            break;
-        case rtwCAPI_MATRIX_ROW_MAJOR:
-            si->orientation = si_matrix_row_major;
-            break;
-        default:
-            return "Unknown RTW data orientation encountered.";
+    si->dim[0] = si->dim[1] = 0;
+    if (min(dimArray[dimArrayIdx],dimArray[dimArrayIdx+1]) == 1) {
+        si->dim[0] = max(dimArray[dimArrayIdx],dimArray[dimArrayIdx+1]);
+    }
+    else {
+        switch (rtwCAPI_GetOrientation(dimMap, dimIdx)) {
+            case rtwCAPI_MATRIX_COL_MAJOR:
+                if (min(dimArray[dimArrayIdx],dimArray[dimArrayIdx+1]) == 1) {
+                } else {
+                    si->dim[0] = dimArray[dimArrayIdx];
+                    si->dim[1] = dimArray[dimArrayIdx+1];
+                }
+                break;
+            case rtwCAPI_MATRIX_ROW_MAJOR:
+                si->dim[0] = dimArray[dimArrayIdx+1];
+                si->dim[1] = dimArray[dimArrayIdx];
+                break;
+            default:
+                return "Unknown RTW data orientation encountered.";
+        }
     }
 
     dataTypeIdx = rtwCAPI_GetSignalDataTypeIdx(signals, si->index);
@@ -169,24 +182,27 @@ static const char* get_param_info(struct signal_info* si, const char **path)
         return "Cannot handle array dimensions != 2";
     }
     dimArrayIdx = rtwCAPI_GetDimArrayIndex(dimMap, dimIdx);
-    si->rnum = dimArray[dimArrayIdx];
-    si->cnum = dimArray[dimArrayIdx+1];
 
-    switch (rtwCAPI_GetOrientation(dimMap, dimIdx)) {
-        case rtwCAPI_SCALAR:
-            si->orientation = si_scalar;
-            break;
-        case rtwCAPI_VECTOR:
-            si->orientation = si_vector;
-            break;
-        case rtwCAPI_MATRIX_COL_MAJOR:
-            si->orientation = si_matrix_col_major;
-            break;
-        case rtwCAPI_MATRIX_ROW_MAJOR:
-            si->orientation = si_matrix_row_major;
-            break;
-        default:
-            return "Unknown RTW data orientation encountered.";
+    si->dim[0] = si->dim[1] = 0;
+    if (min(dimArray[dimArrayIdx],dimArray[dimArrayIdx+1]) == 1) {
+        si->dim[0] = max(dimArray[dimArrayIdx],dimArray[dimArrayIdx+1]);
+    }
+    else {
+        switch (rtwCAPI_GetOrientation(dimMap, dimIdx)) {
+            case rtwCAPI_MATRIX_COL_MAJOR:
+                if (min(dimArray[dimArrayIdx],dimArray[dimArrayIdx+1]) == 1) {
+                } else {
+                    si->dim[0] = dimArray[dimArrayIdx];
+                    si->dim[1] = dimArray[dimArrayIdx+1];
+                }
+                break;
+            case rtwCAPI_MATRIX_ROW_MAJOR:
+                si->dim[0] = dimArray[dimArrayIdx+1];
+                si->dim[1] = dimArray[dimArrayIdx];
+                break;
+            default:
+                return "Unknown RTW data orientation encountered.";
+        }
     }
 
     dataTypeIdx = rtwCAPI_GetBlockParameterDataTypeIdx(blockParams, si->index);

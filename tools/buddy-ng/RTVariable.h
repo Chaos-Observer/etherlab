@@ -25,24 +25,26 @@
 #define RTVARIABLE_H
 
 #include <string>
+#include <vector>
 #include "include/etl_data_info.h"
 
 class RTVariable {
     public:
         RTVariable(const std::string &path, const std::string &alias,
-                si_datatype_t dataType, si_orientation_t orientation,
-                unsigned int rnum, unsigned int cnum);
-        ~RTVariable();
+                si_datatype_t dataType, std::vector<size_t>& dims);
+        virtual ~RTVariable();
 
         const std::string& getPath() const { return path; }
+        si_datatype_t getDataType() const { return dataType; }
+        const std::vector<size_t>& getDims() const { return dims; }
+
+        virtual unsigned int getSampleTime() const {return 0;}
+        virtual bool isWriteable() const = 0;
 
     private:
         const std::string path;
         const std::string alias;
         const si_datatype_t dataType; 
-        const si_orientation_t orientation;
-
-        const unsigned int rnum;
-        const unsigned int cnum;
+        const std::vector<size_t> dims;
 };
 #endif // RTVARIABLE_H

@@ -175,7 +175,8 @@ static int start_model(const char *model_name, unsigned int model_num)
     struct model *model;
     struct task_stats *task_stats;
     unsigned int st;
-    struct signal_info *si;
+    struct signal_info si;
+    enum si_orientation_t orientation;
 
     /* Get a pointer to model, going to need it often */
     model = &rtp_io.model[model_num];
@@ -234,31 +235,42 @@ static int start_model(const char *model_name, unsigned int model_num)
 
     /* Initialise the model with the pointer obtained from the shared
      * object above */
-    si = (struct signal_info*) malloc(sizeof(struct signal_info) + 
-            model->properties.variable_path_len + 1);
-    CHECK_ERR (!si, errno, out_malloc_si,
+    si.path = (char*) malloc( model->properties.variable_path_len + 1);
+    CHECK_ERR (!si.path, errno, out_malloc_si,
             "Could not allocate memory: %s", strerror(errno));
 
-    for (si->index = 0; si->index < model->properties.signal_count; 
-            si->index++) {
-        rv = ioctl(model->rtp_fd, GET_SIGNAL_INFO, si);
+    for (si.index = 0; si.index < model->properties.signal_count; 
+            si.index++) {
+        rv = ioctl(model->rtp_fd, GET_SIGNAL_INFO, &si);
         CHECK_ERR (rv, errno, out_get_signal_info,
                 "Error: could not get Signal Info %s", strerror(errno));
-        CHECK_ERR (!msr_reg_rtw_signal(si->path, si->name, "", si->offset, 
-                    si->rnum, si->cnum, si->data_type, si->orientation,
-                    si_data_width[si->data_type]), 
+        if (si.dim[1]) {
+            orientation = si_matrix_row_major;
+        }
+        else {
+            orientation = si.dim[0] > 1 ? si_vector : si_scalar;
+        }
+        CHECK_ERR (!msr_reg_rtw_signal(si.path, si.name, "", si.offset, 
+                    si.dim[0], si.dim[1], si.data_type, orientation,
+                    si_data_width[si.data_type]), 
                 -1, out_reg_signal, "MSR Error: could not register signal");
     }
 
-    for (si->index = 0; si->index < model->properties.param_count; 
-            si->index++) {
-        rv = ioctl(model->rtp_fd, GET_PARAM_INFO, si);
+    for (si.index = 0; si.index < model->properties.param_count; 
+            si.index++) {
+        rv = ioctl(model->rtp_fd, GET_PARAM_INFO, &si);
         CHECK_ERR (rv, errno, out_get_param_info,
                 "Error: could not get Parameter Info %s", strerror(errno));
-        CHECK_ERR (!msr_reg_rtw_param(si->path, si->name, "", 
-                    model->rtP + si->offset, 
-                    si->rnum, si->cnum, si->data_type, si->orientation,
-                    si_data_width[si->data_type]), 
+        if (si.dim[1]) {
+            orientation = si_matrix_row_major;
+        }
+        else {
+            orientation = si.dim[0] > 1 ? si_vector : si_scalar;
+        }
+        CHECK_ERR (!msr_reg_rtw_param(si.path, si.name, "", 
+                    model->rtP + si.offset, 
+                    si.dim[0], si.dim[1], si.data_type, orientation,
+                    si_data_width[si.data_type]), 
                 -1, out_reg_param, "MSR Error: could not register parameter");
     }
 
@@ -287,6 +299,7 @@ static int start_model(const char *model_name, unsigned int model_num)
     init_fd(model->rtp_fd, update_rtB, NULL, model);
 
     /* Free unused memory */
+    free(si.path);
 
     syslog(LOG_DEBUG, "Finished registering model with buddy");
     return 0;
@@ -296,7 +309,7 @@ out_reg_param:
 out_get_param_info:
 out_reg_signal:
 out_get_signal_info:
-    free(si);
+    free(si.path);
 out_malloc_si:
     msr_cleanup();
 out_msr_init:
