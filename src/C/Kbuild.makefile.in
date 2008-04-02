@@ -39,6 +39,9 @@ ifeq ($(KERNELRELEASE),)
 all %:
 	$(MAKE) -C @LINUX_DIR@ M=$(shell pwd) $@
 
+.linted: $(MODEL_NAME).xml
+	xmllint @prefix@/lib/C/rt_model.xsd $^ > $@
+
 else #ifeq ($(KERNELRELEASE),)
 
 EXTRA_CFLAGS = \
@@ -56,7 +59,7 @@ $(MODEL_NAME)-y := mdl_main.o data.o $(MODEL_SOURCES:.c=.o) \
 .SECONDARY: $(obj)/.src/register.c
 
 clean-dirs := .src
-clean-files := .*.dep param.h cvt.h data.c model_defines.h
+clean-files := .*.dep param.h cvt.h data.c model_defines.h .linted
 
 # Kbuild can only compile files that are local to $(obj).
 # If a file exists in the source distribution, copy it locally.
