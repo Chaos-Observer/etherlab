@@ -13,34 +13,38 @@
     <!-- signal name="rootpressure" cvar="var1" datatype="double_T" orientation='vector' elements="10" sampleTimeIndex="0"/ -->
 
   <subsystem name="subsysname">
-    <dim value="3"/>
-    <signal name="pressure" cvar="var2" datatype="double_T"/>
-    <parameter name="scalar_param" cvar="scalar_param" datatype="double_T">
+    <dim value="1"/>
+    <subsystem name="X">
+      <signal name="pressure" datatype="double_T"/>
+    </subsystem>
+    <parameter name="scalar_param" datatype="double_T">
      <value>4</value>
     </parameter>
   </subsystem>
+  
+  <!-- include file="libfile.xml"/ -->
 
   <data>
     <subsystem name="meters">
+      <signal name="pressure" datatype="double_T" sampleTimeIndex="1" alias="X"/>
     <subsystem name="meter1">
-      <dim value="3"/>
-      <signal name="pressure" cvar="var2" datatype="double_T" 
-               sampleTimeIndex="1" alias="X">
+      <dim value="2"/>
+      <signal name="pressure" datatype="double_T" sampleTimeIndex="1" alias="X">
        <dim value="10"/>
        <dim value="20"/>
        <dim value="30"/>
        <meta>hide="0"</meta>
       </signal>
-      <parameter name="scalar_param" cvar="scalar_param" datatype="double_T">
+      <parameter name="scalar_param" datatype="double_T">
        <value>4</value>
       </parameter>
+      <reference name="reference" value="subsysname">
+       <dim value="4"/>
+      </reference>
     </subsystem>
     </subsystem>
-    <cstruct name="cstruct">
-     <dim value="4"/>
+    <cstruct structname="cstruct" name="pi">
+     <dim value="3"/>
     </cstruct>
-    <reference name="reference" value="subsysname">
-     <dim value="4"/>
-    </reference>
   </data>
 </model>

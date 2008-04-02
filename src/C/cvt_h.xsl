@@ -32,8 +32,8 @@
 
   <xsl:template match="text()|@*"/>
   
-  <xsl:template match="/">
-    <xsl:apply-templates select="modeldescription/data"/>
+  <xsl:template match="/model">
+    <xsl:apply-templates select="data"/>
   </xsl:template>
   
   <xsl:template match="data">
@@ -52,7 +52,8 @@
     <![CDATA[#include "include/etltypes.h"]]>
 
     </xsl:text>
-    <xsl:text>struct cvt {</xsl:text>
+    <xsl:text>struct cvt {
+    </xsl:text>
     <xsl:apply-templates/>
     <xsl:text>};
     extern struct cvt cvt;
@@ -61,56 +62,79 @@
     
     </xsl:text>
 
-
   </xsl:template>
   
-  <xsl:template match="signal">
-    <xsl:value-of select="@datatype"/>
-    <xsl:text> </xsl:text> 
-    <xsl:value-of select="@cvar"/>
-    <xsl:choose>
-      <xsl:when test="@orientation='vector'">
-        <xsl:call-template name="elements"/>
-      </xsl:when>
-      <xsl:when test="@orientation='matrix_row_major'">
-        <xsl:call-template name="rnum"/>
-        <xsl:call-template name="cnum"/>
-      </xsl:when>
-      <xsl:when test="@orientation='matrix_col_major'">
-        <xsl:call-template name="cnum"/>
-        <xsl:call-template name="rnum"/>
-      </xsl:when>
-    </xsl:choose>
-    <xsl:text>; </xsl:text>
-    
-      <!-- Now write the full path as a comment -->
-    <xsl:text>/* /</xsl:text>
+  <xsl:template match="subsystem">
+    <xsl:param name="reference"/>
+    <xsl:param name="prefix"/>
+    <xsl:param name="path">
+      <xsl:value-of select="$prefix"/>/<xsl:value-of select="@name"/>
+    </xsl:param>
+
+    <xsl:text>struct </xsl:text>
+    <!-- Now write the full path as a comment -->
+    <xsl:text>/* </xsl:text>
     <!-- First write the names of all subsystems -->
-    <xsl:for-each select="ancestor::subsystem">
-    	<xsl:value-of select="@name"/>
-    	<xsl:text>/</xsl:text>
-    </xsl:for-each>
-    <xsl:value-of select="@name"/>
+    <xsl:value-of select="$path"/>
     <xsl:text> */
     </xsl:text>
-  
+    <xsl:text> {
+    </xsl:text>
+    <xsl:apply-templates select="*[name()!='dim']">
+      <xsl:with-param name="prefix">
+        <xsl:value-of select="$path"/>
+      </xsl:with-param>
+    </xsl:apply-templates>
+    <xsl:text>} </xsl:text>
+    <xsl:value-of select="@name"/>
+
+    <!-- 
+    If subsystem was called by reference, the caller must do the dimensioning
+    -->
+    <xsl:if test="not($reference)">
+      <xsl:apply-templates select="dim"/>
+      <xsl:text>;
+      </xsl:text>
+    </xsl:if>
   </xsl:template>
-  
-  <xsl:template name="rnum">
-    <xsl:text>[</xsl:text>
-    <xsl:value-of select="@rnum"/>
-    <xsl:text>]</xsl:text>
+
+  <xsl:template match="cstruct">
+    <xsl:text>struct </xsl:text>
+    <xsl:value-of select="@structname"/>
+    <xsl:text> </xsl:text>
+    <xsl:value-of select="@name"/>
+    <xsl:apply-templates select="dim"/>
+    <xsl:text>;
+    </xsl:text>
   </xsl:template>
-  
-  <xsl:template name="cnum">
+
+  <xsl:template match="dim">
     <xsl:text>[</xsl:text>
-    <xsl:value-of select="@cnum"/>
+    <xsl:value-of select="@value"/>
     <xsl:text>]</xsl:text>
   </xsl:template>
 
-  <xsl:template name="elements">
-    <xsl:text>[</xsl:text>
-    <xsl:value-of select="@elements"/>
-    <xsl:text>]</xsl:text>
+  <xsl:template match="reference">
+    <xsl:param name="prefix"/>
+    <xsl:param name="v"><xsl:value-of select="@value"/></xsl:param>
+    <xsl:apply-templates select="/model/subsystem[@name=$v]">
+      <xsl:with-param name="prefix">
+        <xsl:value-of select="$prefix"/>
+      </xsl:with-param>
+      <xsl:with-param name="reference">Y</xsl:with-param>
+    </xsl:apply-templates>
+    <xsl:apply-templates select="dim"/>
+    <xsl:text>;
+    </xsl:text>
   </xsl:template>
+
+  <xsl:template match="signal|parameter">
+    <xsl:value-of select="@datatype"/>
+    <xsl:text> </xsl:text> 
+    <xsl:value-of select="@name"/>
+    <xsl:apply-templates select="dim"/>
+    <xsl:text>;
+    </xsl:text>
+  </xsl:template>
+  
 </xsl:stylesheet>
