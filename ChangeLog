@@ -1,3 +1,9 @@
+2008-04-03      Florian Pose (fp@igh-essen.com)
+	Released Version 1.1.4
+
+	* Serveral bugfixes
+	* Implemented generic EtherCAT s-Function.
+
 2007-11-30      Richard Hacker (lerich_at_gmx.net)
 	Released Version 1.1.3
 
