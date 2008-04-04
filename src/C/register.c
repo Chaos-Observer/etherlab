@@ -41,16 +41,12 @@ static void        mdl_set_error_msg(const char*);
 static const char* get_signal_info(struct signal_info *si, const char** path);
 static const char* get_param_info(struct signal_info *si, const char** path);
 
-static unsigned int task_period[NUMST] = { TASK_DECIMATIONS };
 static struct task_stats task_stats[NUMST];
-
-static int maxSignalIdx;
-static int maxParameterIdx;
 
 // Cannot declare static, as it is still required by rt_mdl_register.c
 struct rt_model rt_model = {
-    .mdl_rtB = &cvt,
-    .rtB_size = sizeof(cvt),
+    .mdl_rtB = &signal,
+    .rtB_size = sizeof(signal),
 
     .mdl_rtP = &param,
     .rtP_size = sizeof(param),
@@ -108,23 +104,24 @@ mdl_set_error_msg(const char *msg)
 static const char* 
 get_signal_info(struct signal_info *si, const char** path)
 {
-    if (si->index >= maxSignalIdx) {
+    if (si->index >= rt_model.signal_count) {
         return "Signal index exceeded.";
     }
-    memcpy(si, &capi_signals[si->index], sizeof(*si));
-    *path = &capi_signals[si->index].path[0];
+    memcpy(si, &capi_signals[si->index].si, sizeof(*si));
+    *path = capi_signals[si->index].si.path;
 
     return NULL;
 }
 
+// TODO: remove const char** path!
 static const char* 
 get_param_info(struct signal_info *si, const char** path)
 {
-    if (si->index >= maxParameterIdx) {
+    if (si->index >= rt_model.param_count) {
         return "Signal index exceeded.";
     }
-    memcpy(si, &capi_parameters[si->index], sizeof(*si));
-    *path = &capi_parameters[si->index].path[0];
+    memcpy(si, &capi_parameters[si->index].si, sizeof(*si));
+    *path = capi_parameters[si->index].si.path;
 
     return NULL;
 }
@@ -149,32 +146,26 @@ const char *
 mdl_start(void)
 {
     const char *error_msg = NULL;
-    unsigned int i;
+    size_t len;
+    unsigned int idx;
 
-    // At the moment, task_period only contains decimations. Convert that
-    // to microseconds here
-    for (i = 0; i < NUMST; i++)
-        task_period[i] *= BASEPERIOD;
-
-    for (maxSignalIdx = 0; capi_signals[maxSignalIdx].address;
-            maxSignalIdx++) {
-        if (strlen(capi_signals[maxSignalIdx].path) 
+    // Count the number of signals and parameters, and also find the 
+    // length of the longest path
+    for (idx = 0; capi_signals[idx].address; idx++) {
+        if ((len = strlen(capi_signals[idx].si.path) )
                 > rt_model.variable_path_len) {
-            rt_model.variable_path_len =
-                strlen(capi_signals[maxSignalIdx].path);
+            rt_model.variable_path_len = len;
         }
     }
-    rt_model.signal_count = maxSignalIdx;
+    rt_model.signal_count = idx;
 
-    for (maxParameterIdx = 0; capi_parameters[maxParameterIdx].address;
-            maxParameterIdx++) {
-        if (strlen(capi_parameters[maxParameterIdx].path) 
+    for (idx = 0; capi_parameters[idx].address; idx++) {
+        if ((len = strlen(capi_parameters[idx].si.path))
                 > rt_model.variable_path_len) {
-            rt_model.variable_path_len =
-                strlen(capi_parameters[maxParameterIdx].path);
+            rt_model.variable_path_len = len;
         }
     }
-    rt_model.param_count = maxParameterIdx;
+    rt_model.param_count = idx;
 
     error_msg = MdlInit();
 

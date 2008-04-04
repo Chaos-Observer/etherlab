@@ -12,7 +12,7 @@
 ######################################################################
 
 
-# Enter the name of you model here. This will be the file name of the
+# Enter the name of your model here. This will be the file name of the
 # kernel object that is created. This is also the name of the 
 # Model Description File .xml file.
 # Requirement: Mandatory
@@ -53,7 +53,7 @@ EXTRA_CFLAGS = \
 
 obj-m := $(MODEL_NAME).o
 $(MODEL_NAME)-y := mdl_main.o data.o $(MODEL_SOURCES:.c=.o) \
-        .src/register.o .src/rt_mdl_main.o
+        .src/register.o .src/rt_mdl_main.o mdf.o
 # Additionally mark the source files in .src as SECONDARY, so they are 
 # not deleted, since they are needed by modpost.
 .SECONDARY: $(obj)/.src/register.c
@@ -67,46 +67,24 @@ $(obj)/.src/%: @prefix@/src/kernel/%
 	$(Q)mkdir -p .src
 	$(Q)cp $< $@
 
-$(obj)/data.o: headers
+HEADERS = $(obj)/param.h $(obj)/signal.h $(obj)/inputptr.h
+MDL_DEFINES = $(obj)/model_defines.h
 
-$(obj)/mdl_main.o: headers
+$(obj)/data.o: $(obj)/data.c $(HEADERS) $(MDL_DEFINES)
 
-headers: $(obj)/param.h $(obj)/cvt.h $(obj)/model_defines.h
+$(obj)/mdl_main.o: $(HEADERS) $(MDL_DEFINES)
+
+$(obj)/mdf.o: $(obj)/mdf.c $(HEADERS) $(MDL_DEFINES)
 
 quiet_cmd_xsltproc := XSLTPROC $@
 
--include $(obj)/.param.h.dep
-$(obj)/param.h: $(obj)/$(MODEL_NAME).xml
-	$(Q)@XSLTPROC@ @prefix@/lib/C/param_h.xsl $< | \
-                @INDENT@ > $@
-	$(Q)echo "$@: @prefix@/lib/C/param_h.xsl" > \
-                $(obj)/.$(notdir $@).dep
+XSL_CMD = $(basename $(notdir $@))
+$(HEADERS): $(obj)/$(MODEL_NAME).xml
+	@XSLTPROC@ --stringparam header_type $(XSL_CMD) \
+                @prefix@/lib/C/header.xsl $< | @INDENT@ > $@
 
--include $(obj)/.cvt.h.dep
-$(obj)/cvt.h: $(obj)/$(MODEL_NAME).xml
-	$(Q)@XSLTPROC@ @prefix@/lib/C/cvt_h.xsl $< | \
-                @INDENT@ > $@
-	$(Q)echo "$@: @prefix@/lib/C/cvt_h.xsl" > \
-                $(obj)/.$(notdir $@).dep
-
--include $(obj)/.data.c.dep
-$(obj)/data.c: $(obj)/$(MODEL_NAME).xml
-	$(Q)@XSLTPROC@ @prefix@/lib/C/data_c.xsl $< | \
-                @INDENT@ > $@
-	$(Q)echo "$@: @prefix@/lib/C/data_c.xsl" > \
-                $(obj)/.$(notdir $@).dep
-
--include $(obj)/.model_defines.h.dep
-$(obj)/model_defines.h: $(obj)/$(MODEL_NAME).xml
-	$(Q)@XSLTPROC@ @prefix@/lib/C/model_defines_h.xsl $< | \
-                @INDENT@ > $@
-	$(Q)echo "$@: @prefix@/lib/C/model_defines_h.xsl" > \
-                $(obj)/.$(notdir $@).dep
-
-XSL_FILE = @prefix@/lib/C/$(notdir $@).xsl
--include $(obj)/.model_defines.h.dep
-$(obj)/mdf.c: $(obj)/$(MODEL_NAME).xml
-	$(Q)@XSLTPROC@ $(XSL_FILE) $< | @INDENT@ > $@
-	$(Q)echo "$@: $(XSL_FILE)" > $(obj)/.$(notdir $@).dep
+XSLTFILE = @prefix@/lib/C/$(notdir $@).xsl
+$(MDL_DEFINES) $(obj)/data.c $(obj)/mdf.c: $(obj)/$(MODEL_NAME).xml
+	@XSLTPROC@ $(XSLTFILE) $< | @INDENT@ > $@
 
 endif #ifeq ($(KERNELRELEASE),)

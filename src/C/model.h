@@ -24,11 +24,12 @@
 
 #include "model_defines.h"      // Model variables
 #include "include/defines.h"   // STR()
-#include "cvt.h"
+#include "signal.h"
 #include "param.h"
+#include "inputptr.h"
 
 const char * MdlInit(void);
 const char *MdlStep(unsigned int);
 void MdlExit(void);
 
-extern unsigned int subtask_decimation[];
+extern unsigned int task_period[];

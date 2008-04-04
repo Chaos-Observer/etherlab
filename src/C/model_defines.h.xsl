@@ -31,7 +31,15 @@
 
   <xsl:template match="text()|@*"/>
   
-  <xsl:template match="/modeldescription">
+  <xsl:template match="/model">
+    <xsl:text>
+/* 
+ * This is a generated file. Do not edit.
+ * 
+ * This generated file contains #defines extracted from the model .xml file
+ *
+ */
+    </xsl:text>
     <xsl:choose>
       <xsl:when test="count(task/subtask)">
         <!-- Subtasks were defined. Add these to the base task  -->
@@ -47,10 +55,56 @@
     </xsl:choose>
     #define BASEPERIOD   <xsl:value-of select="task/@basetick"/>
     #define MODELVERSION <xsl:value-of select="version"/>
-    #define DECIMATION   <xsl:value-of select="properties/@sample_decimation"/>
-    #define OVERRUNMAX   <xsl:value-of select="properties/@max_overruns"/>
-    #define BUFFER_TIME  <xsl:value-of select="properties/@buffer_time"/>
-    #define STACKSIZE    <xsl:value-of select="properties/@stacksize"/>
+    <xsl:text>
+    </xsl:text>
+
+    <xsl:text>#define DECIMATION </xsl:text>
+    <xsl:choose>
+      <xsl:when test="properties/@sample_decimation">
+        <xsl:value-of select="properties/@sample_decimation"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:text>1</xsl:text>
+      </xsl:otherwise>
+    </xsl:choose>
+    <xsl:text>
+    </xsl:text>
+
+    <xsl:text>#define OVERRUNMAX </xsl:text>
+    <xsl:choose>
+      <xsl:when test="properties/@max_overruns">
+        <xsl:value-of select="properties/@max_overruns"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:text>1</xsl:text>
+      </xsl:otherwise>
+    </xsl:choose>
+    <xsl:text>
+    </xsl:text>
+
+    <xsl:text>#define BUFFER_TIME </xsl:text>
+    <xsl:choose>
+      <xsl:when test="properties/@buffer_time">
+        <xsl:value-of select="properties/@buffer_time"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:text>10</xsl:text>
+      </xsl:otherwise>
+    </xsl:choose>
+    <xsl:text>
+    </xsl:text>
+
+    <xsl:text>#define STACKSIZE </xsl:text>
+    <xsl:choose>
+      <xsl:when test="properties/@stacksize">
+        <xsl:value-of select="properties/@stacksize"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:text>2048</xsl:text>
+      </xsl:otherwise>
+    </xsl:choose>
+    <xsl:text>
+    </xsl:text>
 
   </xsl:template>
   

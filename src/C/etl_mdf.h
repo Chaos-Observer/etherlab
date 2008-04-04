@@ -22,8 +22,14 @@
  *
  ************************************************************************/
 
-#include "include/etl_datatype.h"
+#include "include/etltypes.h"
 #include "include/etl_data_info.h"
 
-extern struct signal_info capi_signals[];
-extern struct signal_info capi_parameters[];
+struct capi_variable {
+    struct signal_info si;
+    void *address;
+    size_t *dim;
+};
+
+extern struct capi_variable capi_signals[];
+extern struct capi_variable capi_parameters[];
