@@ -1,5 +1,5 @@
 SUBDIRS =
 
 if C_INTERFACE
-#SUBDIRS += C
+SUBDIRS += C
 endif
