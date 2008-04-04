@@ -31,7 +31,6 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
-#include <sys/mman.h>
 
 RTTask::RTTask(Task* parent): Task(parent),
     device(ConfigFile::getString("", "device", "/dev/etl"))
@@ -44,17 +43,9 @@ RTTask::RTTask(Task* parent): Task(parent),
                 + strerror(errno));
     }
 
-    std::cout << "rt_properties = " << (void*)&rt_properties << std::endl;
-    if (ioctl(fd, GET_RTK_PROPERTIES, &rt_properties)) {
+    if (::ioctl(fd, LOCK_KERNEL)) {
         throw Exception(
                 std::string("Could not get Kernel Properties: ")
-                + strerror(errno));
-    }
-
-    io_mem = mmap(0, rt_properties.iomem_len, PROT_READ, MAP_PRIVATE, fd, 0);
-    if (io_mem == MAP_FAILED) {
-        throw Exception(
-                std::string("Could not map IO memory to kernel: ")
                 + strerror(errno));
     }
 
@@ -63,7 +54,9 @@ RTTask::RTTask(Task* parent): Task(parent),
 
 RTTask::~RTTask()
 {
-    munmap(io_mem, rt_properties.iomem_len);
+    // TODO: neatly kill all children
+
+    disableRead();
     close(fd);
 }
 
@@ -89,31 +82,26 @@ int RTTask::read(int)
     total = n;
     while (n) {
         std::cout << "read " << n << "bytes." << std::endl;
-        RTModel *model = reinterpret_cast<RTModel*>(p->priv_data);
         switch (p->type) {
             case rtcom_event::new_model:
                 {
-                    RTModel *model = new RTModel(fd, p->data.model_ref);
-                    struct rtcom_ioctldata id;
+                    RTModel *model = new RTModel(this, p->model_name);
 
-                    std::cout << "new RTModel " << model << std::endl;
+                    std::cout << "new RTModel " << p->model_name << std::endl;
 
-                    id.model_id = p->data.model_ref;
-                    id.data = model;
-
-                    if (::ioctl(fd, SET_PRIV_DATA, &id)) {
-                        return errno;
-                    }
-                    modelMap[model->getName()] = model;
+                    modelMap[p->model_name] = model;
+//                    children[model] = modelMap.find(p->model_name);
 
                     break;
                 }
             case rtcom_event::del_model:
                 {
-                    std::cout << "delete RTModel " << model << std::endl;
-                    ModelMap::iterator m;
-                    modelMap.erase(model->getName());
-                    delete model;
+                    std::cout << "delete RTModel " << p->model_name 
+                        << std::endl;
+                    ModelMap::iterator m = modelMap.find(p->model_name);
+                    if (m != modelMap.end()) {
+                        kill(m->second, 0);
+                    }
                 }
                 break;
         }
@@ -122,4 +110,11 @@ int RTTask::read(int)
     }
 
     return total;
+}
+
+void RTTask::kill(Task* child, int rv)
+{
+//    delete children(child)->second;
+//    modelMap.erase(children(child));
+//    children.erase(child);
 }

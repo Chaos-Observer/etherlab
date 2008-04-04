@@ -23,7 +23,8 @@
 #ifndef RTMODEL_H
 #define RTMODEL_H
 
-#include <include/fio_ioctl.h>
+#include "include/fio_ioctl.h"
+#include "RT-Task.h"
 
 #include <vector>
 #include <string>
@@ -33,9 +34,9 @@ class RTSignal;
 class RTParameter;
 struct timeval;
 
-class RTModel {
+class RTModel: public Task {
     public:
-        RTModel(int fd, struct model* model_ref);
+        RTModel(RTTask* parent, const std::string& modelName);
         ~RTModel();
 
         const std::string& getName() const { return name; }
@@ -45,17 +46,23 @@ class RTModel {
         }
 
     private:
-        const int fd;
-        struct model* const model_ref;
-        std::string name;
+        const Task* parent;
+        const std::string name;
         std::string version;
+        int fd;
 
         char *rtP;
+        void *io_mem;
+
+        struct rt_kernel_prop rt_properties;
 
         std::vector<RTVariable*> variableList;
         std::vector<uint32_t> sampleTime;
 
         void getDims(std::vector<size_t>& dims, const struct signal_info *si,
                 unsigned int type);
+
+        // Reimplemented from class Task
+        int read(int fd);
 };
 #endif // RTMODEL_H

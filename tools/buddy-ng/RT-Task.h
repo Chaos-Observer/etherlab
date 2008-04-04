@@ -41,6 +41,7 @@ class RTTask: public Task {
         const ModelMap& getModelMap() const {
             return modelMap;
         }
+        const std::string& getDevice() const { return device; }
 
     private:
         const std::string device;
@@ -48,11 +49,8 @@ class RTTask: public Task {
 
         ModelMap modelMap;
 
-        struct rt_kernel_prop rt_properties;
-
-        void *io_mem;
-
         // Reimplemented from class Task
         int read(int fd);
+        void kill(Task* child, int rv);
 };
 #endif // RTTASK_H

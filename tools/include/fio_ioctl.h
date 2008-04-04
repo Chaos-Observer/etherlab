@@ -137,10 +137,13 @@ struct rtcom_ioctldata {
 
 struct rtcom_event {
     enum {new_model, del_model} type;
-    void *priv_data;
-    union {
-        struct model *model_ref;
-    } data;
+    char model_name[MAX_MODEL_NAME_LEN+1];
+};
+
+struct model_event {
+    enum {new_data, new_msg} type;
+    void *ptr;
+    size_t len;
 };
 
 #define GET_RTK_PROPERTIES      _IOR(RTK_MAGIC, 4, struct rt_kernel_prop *)
@@ -149,6 +152,8 @@ struct rt_kernel_prop {
     size_t eventq_len;
 };
 
+#define LOCK_KERNEL             _IO(RTK_MAGIC, 5)
+#define SELECT_MODEL            _IOW(RTK_MAGIC, 6, char[MAX_MODEL_NAME_LEN])
 #if defined __cplusplus
 }
 #endif

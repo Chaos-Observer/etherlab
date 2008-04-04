@@ -35,31 +35,51 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
+#include <sys/mman.h>
 
-RTModel::RTModel(int _fd, struct model *_model_ref): 
-    fd(_fd), model_ref(_model_ref)
+RTModel::RTModel(RTTask *parent, const std::string& _modelName):
+    Task(parent), name(_modelName)
 {
     struct signal_info si;
     struct mdl_properties mdl_properties;
-    struct rtcom_ioctldata id;
+    std::string device = parent->getDevice();
 
-    id.model_id = model_ref;
-    id.data = &mdl_properties;
-    id.data_len = sizeof(mdl_properties);
+    fd = ::open(device.c_str(), O_RDONLY | O_NONBLOCK);
+    if (fd < 0) {
+        throw Exception(
+                std::string("Failed to open ") + device + ": " 
+                + strerror(errno));
+    }
+
+    // First choose the model we're dealing with
+    if (::ioctl(fd, SELECT_MODEL, name.c_str())) {
+        throw Exception("Could not select model.");
+    }
+
+    std::cout << "rt_properties = " << (void*)&rt_properties << std::endl;
+    if (::ioctl(fd, GET_RTK_PROPERTIES, &rt_properties)) {
+        throw Exception(
+                std::string("Could not get Kernel Properties: ")
+                + strerror(errno));
+    }
+
+    io_mem = mmap(0, rt_properties.iomem_len, PROT_READ, MAP_PRIVATE, fd, 0);
+    if (io_mem == MAP_FAILED) {
+        throw Exception(
+                std::string("Could not map IO memory to kernel: ")
+                + strerror(errno));
+    }
 
     // First of all get the model properties
-    if (::ioctl(fd, GET_MDL_PROPERTIES, &id)) {
+    if (::ioctl(fd, GET_MDL_PROPERTIES, &mdl_properties)) {
         throw Exception("Could not get model properties.");
     }
-    name = mdl_properties.name;
     version = mdl_properties.version;
 
     // Now that the number of sample times is known, get them and copy to
     // sampleTime
     uint32_t st[mdl_properties.num_st];
-    id.data = st;
-    id.data_len = sizeof(st);
-    if (::ioctl(fd, GET_MDL_SAMPLETIMES, &id)) {
+    if (::ioctl(fd, GET_MDL_SAMPLETIMES, st)) {
         throw Exception("Could not get model sample times.");
     }
     sampleTime.resize(mdl_properties.num_st);
@@ -79,10 +99,6 @@ RTModel::RTModel(int _fd, struct model *_model_ref):
     // of the longest path name, a structure can be allocated so that the
     // information can be fetched from the kernel
     si.path = new char[mdl_properties.variable_path_len + 1];
-    id.data = &si;
-
-    // Not quite true, here the length of the path is added too
-    id.data_len = sizeof(si) + mdl_properties.variable_path_len + 1;
 
     std::vector<size_t> dims;
     unsigned int varIdx = 0;
@@ -91,7 +107,7 @@ RTModel::RTModel(int _fd, struct model *_model_ref):
             + mdl_properties.param_count);
     for (si.index = 0; si.index < mdl_properties.signal_count; 
             si.index++) {
-        if (::ioctl(fd, GET_SIGNAL_INFO, &id)) {
+        if (::ioctl(fd, GET_SIGNAL_INFO, &si)) {
             throw Exception("Error on GET_SIGNAL_INFO.");
         }
         getDims(dims, &si, GET_SIGNAL_DIMS);
@@ -100,7 +116,7 @@ RTModel::RTModel(int _fd, struct model *_model_ref):
     }
 
     for (si.index = 0; si.index < mdl_properties.param_count; si.index++) {
-        if (::ioctl(fd, GET_PARAM_INFO, &id)) {
+        if (::ioctl(fd, GET_PARAM_INFO, &si)) {
             throw Exception("Error on GET_SIGNAL_INFO.");
         }
         getDims(dims, &si, GET_PARAM_DIMS);
@@ -109,6 +125,15 @@ RTModel::RTModel(int _fd, struct model *_model_ref):
                     si.data_type, dims);
     }
     delete[] si.path;
+
+    enableRead(fd);
+}
+
+RTModel::~RTModel()
+{
+    for (std::vector<RTVariable*>::iterator it = variableList.begin();
+            it != variableList.end(); it++)
+        delete *it;
 }
 
 /** Get signal's vector dimensions.
@@ -128,16 +153,11 @@ void RTModel::getDims(std::vector<size_t>& dims, const struct signal_info *si,
         // Number of dimensions is >2. Actual dimensions is in si->dim[1]
         // Get the new dimensions
         size_t new_dims[si->dim[1]];
-        struct rtcom_ioctldata id;
-
-        id.model_id = model_ref;
-        id.data = new_dims;
-        id.data_len = sizeof(new_dims);
 
         // Signal index gets passed in first array element
         new_dims[0] = si->index;
 
-        if (::ioctl(fd, dim_type, &id)) {
+        if (::ioctl(fd, dim_type, new_dims)) {
             throw Exception("Error on GET_SIGNAL/PARAM_DIMS.");
         }
 
@@ -150,9 +170,8 @@ void RTModel::getDims(std::vector<size_t>& dims, const struct signal_info *si,
     }
 }
 
-RTModel::~RTModel()
+int RTModel::read(int)
 {
-    for (std::vector<RTVariable*>::iterator it = variableList.begin();
-            it != variableList.end(); it++)
-        delete *it;
+    int n, total = 0;
+    return total;
 }

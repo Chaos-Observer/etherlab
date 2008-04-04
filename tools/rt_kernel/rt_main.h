@@ -72,10 +72,6 @@ struct model {
 
     struct buddy_fio *buddy_fio; 
 
-    struct {
-        void *priv_data;
-    } rtcom_data;
-
     struct cdev rtp_dev;        /* Device for Process IO */
     SEM buf_sem;                /* RT Sem to protect data path to buddy */
     SEM rtP_sem;                /* RT Sem for parameters */
@@ -86,6 +82,7 @@ struct model {
     wait_queue_head_t waitq;
     unsigned int rtB_cnt;
     size_t rtB_len;
+    struct model_event *event_list, *event_list_end, *event_rp, *event_wp;
 
     /* Management for Process IO */
     void *rtb_buf;
