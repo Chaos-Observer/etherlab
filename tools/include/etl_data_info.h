@@ -25,7 +25,11 @@
 #ifndef ETLDATAINFO_H
 #define ETLDATAINFO_H
 
+#ifdef __KERNEL__
+#include <linux/types.h>
+#else
 #include <stddef.h>
+#endif
 
 // Data organisation
 enum si_orientation_t {si_scalar, si_vector, si_matrix_row_major, 
