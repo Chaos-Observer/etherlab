@@ -78,9 +78,9 @@ AC_MSG_CHECKING([for $matlab_rtw_src])
 test -d "$matlab_rtw_src" ||\
     AC_MSG_ERROR([Could not locate library sources in $matlab_rtw_src])
 AC_MSG_RESULT(yes)
+fi
 AC_SUBST(MATLAB_ROOT,[$matlab_dir])
 AM_CONDITIONAL(MATLAB_ROOT, test "x$matlab_dir" != x)
-fi
 
 dnl Path to RTAI installation
 if test "x$kernel" = "x1"; then
@@ -218,8 +218,8 @@ AC_ARG_ENABLE([debug],
 # Checks for programs
 AC_PROG_CXX
 AC_PROG_CC
+AM_PROG_CC_C_O
 AC_PROG_LIBTOOL
-AC_PROG_RANLIB
 AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PATH_PROG(RM, rm)
