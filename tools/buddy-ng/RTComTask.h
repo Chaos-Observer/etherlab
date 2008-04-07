@@ -43,6 +43,9 @@ class RTComTask: public Task {
 
         int read(int fd);
 
+        void newModel(const std::string& model);
+        void delModel(const std::string& model);
+
     private:
         const int fd;
         RTTask* const rtTask;

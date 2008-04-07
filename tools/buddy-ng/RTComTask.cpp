@@ -98,6 +98,7 @@ RTComTask::RTComTask(Task* parent, int _fd, RTTask* _rtTask):
 
     cerr << "sasl_listmech " << mechanisms << " " << mechanism_len << " " << mechanism_count << endl;
 
+    rtTask->setComTask(this);
 
 }
 
@@ -105,6 +106,7 @@ RTComTask::RTComTask(Task* parent, int _fd, RTTask* _rtTask):
 RTComTask::~RTComTask()
 //************************************************************************
 {
+    rtTask->clrComTask(this);
     sasl_dispose(&sasl_connection);
     delete[] sasl_callbacks;
     cerr << "Deleting RTComTask" << this << endl;
@@ -411,4 +413,18 @@ void RTComTask::kill(Task*, int)
 //************************************************************************
 {
     throw SocketExcept("Internal Error: Cannot kill output stream.");
+}
+
+//************************************************************************
+void RTComTask::newModel(const std::string& name)
+//************************************************************************
+{
+    os.eventStream(std::string("new model: ").append(name));
+}
+
+//************************************************************************
+void RTComTask::delModel(const std::string& name)
+//************************************************************************
+{
+    os.eventStream(std::string("del model: ").append(name));
 }

@@ -22,6 +22,7 @@
 
 #include "RT-Task.h"
 #include "RT-Model.h"
+#include "RTComTask.h"
 #include "ConfigFile.h"
 #include "Exception.h"
 
@@ -48,6 +49,8 @@ int RTTask::read(int)
 {
     struct rtcom_event event;
     int n;
+    std::list<RTComTask*>::iterator it;
+    std::string modelName;
 
     n = fd.read(&event, sizeof(event));
 
@@ -67,10 +70,16 @@ int RTTask::read(int)
                 try {
                     RTModel *model =
                         new RTModel(this, event.id);
-                    modelMap[model->getName()] = model;
+                    modelName = model->getName();
+                    modelMap[modelName] = model;
                 } catch (Exception& e) {
                     std::cerr << "Could not open model id " << event.id 
                         << ": " << e.what() << std::endl;
+                }
+
+                for (it = rtComTaskList.begin(); it != rtComTaskList.end();
+                        it++) {
+                    (*it)->newModel(modelName);
                 }
 
                 break;
@@ -82,6 +91,12 @@ int RTTask::read(int)
                     if (m->second->getId() == event.id) {
                         std::cout << "delete RTModel " << event.id 
                             << std::endl;
+                        modelName = m->second->getName();
+                        for (it = rtComTaskList.begin(); 
+                                it != rtComTaskList.end(); it++) {
+                            (*it)->delModel(modelName);
+                        }
+
                         kill(m->second, 0);
                         break;
                     }
@@ -104,4 +119,14 @@ void RTTask::kill(Task* child, int rv)
             modelMap.erase(old_m);
         }
     }
+}
+
+void RTTask::setComTask(RTComTask* rtComTask)
+{
+    rtComTaskList.push_back(rtComTask);
+}
+
+void RTTask::clrComTask(RTComTask* rtComTask)
+{
+    rtComTaskList.remove(rtComTask);
 }

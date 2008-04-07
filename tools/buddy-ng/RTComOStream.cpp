@@ -58,10 +58,10 @@ void RTComOStream::processLog(const std::string& s)
 }
 
 //************************************************************************
-void RTComOStream::eventStream(const char* s, size_t n)
+void RTComOStream::eventStream(const std::string& s)
 //************************************************************************
 {
-    *this << "+EVENT" << endl;
+    *this << "=EVENT " << s << endl;
 }
 
 //************************************************************************
@@ -75,7 +75,7 @@ void RTComOStream::dataStream(unsigned int decimation,
 void RTComOStream::stdOutListStart(const std::string& title)
 //************************************************************************
 {
-    *this << "+ OK " << title << ":\n";
+    *this << "+OK " << title << ":\n";
 }
 
 //************************************************************************

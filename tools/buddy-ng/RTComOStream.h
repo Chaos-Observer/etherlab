@@ -39,7 +39,7 @@ class RTComOStream: public std::ostream {
         void stdOut(const std::string& s);
         void stdErr(const std::string& s);
         void processLog(const std::string& s);
-        void eventStream(const char* s, size_t n);
+        void eventStream(const std::string& s);
         void dataStream(unsigned int decimation, const char* s, size_t n);
 
         void stdOutListStart(const std::string& title);
