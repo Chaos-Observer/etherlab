@@ -17,6 +17,7 @@ etherlab_buddy_SOURCES = \
         TCPServerTask.cpp TCPServerTask.h \
         RTComServer.cpp RTComServer.h \
         ConfigFile.cpp ConfigFile.h \
+        FileDevice.cpp FileDevice.h \
         RT-Task.cpp RT-Task.h \
         RT-Model.cpp RT-Model.h \
         RTSignal.cpp RTSignal.h \

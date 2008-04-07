@@ -82,7 +82,6 @@ struct model {
     wait_queue_head_t waitq;
     unsigned int rtB_cnt;
     size_t rtB_len;
-    struct model_event *event_list, *event_list_end, *event_rp, *event_wp;
 
     /* Management for Process IO */
     void *rtb_buf;

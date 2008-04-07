@@ -541,7 +541,10 @@ int start_rt_model(const struct rt_model *rt_model,
         printk("Could not initialise file io\n");
         goto out_fio_init;
     }
-    rtcom_new_model(model);
+    if ((err = rtcom_new_model(model))) {
+        printk("Could not initialise rtcom file io\n");
+        goto out_rtcom_init_fail;
+    }
 
     now = rt_get_time();
     model->photo_sample = 1;           /* Take a photo of next calculation */
@@ -564,6 +567,8 @@ int start_rt_model(const struct rt_model *rt_model,
     return model_id;
 
 out_make_periodic:
+    rtcom_del_model(model);
+out_rtcom_init_fail:
     rtp_fio_clear_mdl(model);
 out_fio_init:
 out_incompatible_ticks:

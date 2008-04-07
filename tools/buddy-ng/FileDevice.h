@@ -2,7 +2,9 @@
  *
  * $Id$
  *
- * This defines the class used to interact with the real-time kernel
+ * This defines the class of file device. It simplifies cleaning up of
+ * file structures when this class goes out of scope, i.e. silent 
+ * destruction.
  * 
  * Copyright (C) 2008  Richard Hacker
  * 
@@ -20,38 +22,25 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * **********************************************************************/
 
-#ifndef RTTASK_H
-#define RTTASK_H
-
-#include "Task.h"
-#include "FileDevice.h"
+#ifndef FILEDEVICE_H
+#define FILEDEVICE_H
 
 #include <string>
-#include <map>
-#include "include/fio_ioctl.h"
 
-class RTModel;
-
-class RTTask: public Task {
+class FileDevice {
     public:
-        typedef std::map<std::string,RTModel*> ModelMap;
+        FileDevice(const std::string& path);
+        ~FileDevice();
 
-        RTTask(Task* task);
-        ~RTTask();
-
-        const ModelMap& getModelMap() const {
-            return modelMap;
-        }
-        const std::string& getDevice() const { return device; }
+        int ioctl(int request, long data, const std::string& errctxt);
+        int ioctl(int request, const std::string& errctxt);
+        void *mmap(size_t len);
+        int getFileNo() const { return fd; }
+        int read(void* buf, size_t len);
 
     private:
-        const std::string device;
-        FileDevice fd;
-
-        ModelMap modelMap;
-
-        // Reimplemented from class Task
-        int read(int fd);
-        void kill(Task* child, int rv);
+        int fd;
+        void *io_mem;
+        size_t io_mem_len;
 };
-#endif // RTTASK_H
+#endif // FILEDEVICE_H

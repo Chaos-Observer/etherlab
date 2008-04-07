@@ -26,95 +26,82 @@
 #include "Exception.h"
 
 #include <iostream>
-#include <cerrno>
-#include <cstring>
-#include <fcntl.h>
-#include <unistd.h>
-#include <sys/ioctl.h>
 
 RTTask::RTTask(Task* parent): Task(parent),
-    device(ConfigFile::getString("", "device", "/dev/etl"))
+    device(ConfigFile::getString("", "device", "/dev/etl")), fd(device)
 {
-    std::cout << "opening " << device << std::endl;
-    fd = open(device.c_str(), O_RDONLY | O_NONBLOCK);
-    if (fd < 0) {
-        throw Exception(
-                std::string("Failed to open ") + device + ": " 
-                + strerror(errno));
-    }
+    std::cout << "opened " << device << std::endl;
 
-    if (::ioctl(fd, LOCK_KERNEL)) {
-        throw Exception(
-                std::string("Could not get Kernel Properties: ")
-                + strerror(errno));
-    }
+    fd.ioctl(SELECT_KERNEL, "SELECT_KERNEL");
 
-    enableRead(fd);
+    enableRead(fd.getFileNo());
 }
 
 RTTask::~RTTask()
 {
-    // TODO: neatly kill all children
-
-    disableRead();
-    close(fd);
+    for (ModelMap::iterator m = modelMap.begin(); m != modelMap.end(); m++) {
+        delete m->second;
+    }
 }
 
 int RTTask::read(int)
 {
-    struct rtcom_event event[1024], *p = event;
-    int n, total;
+    struct rtcom_event event;
+    int n;
 
-    n = ::read(fd, event, sizeof(event));
+    n = fd.read(&event, sizeof(event));
 
-    if (n % sizeof(*p)) {
+    if (n % sizeof(event)) {
         // Protocol error
         throw Exception("RTCom IO error: read() returned a "
-                    "length that is not an integer multiple of "
-                    "struct rtcom_event.");
-    }
-    else if (n < 0) {
-        // n < 0 here. Return the negative value. This means trouble, 
-        // we're going to die now :(
-        return errno;
+                "length that is not an integer multiple of "
+                "struct rtcom_event.");
     }
 
-    total = n;
-    while (n) {
-        std::cout << "read " << n << "bytes." << std::endl;
-        switch (p->type) {
-            case rtcom_event::new_model:
-                {
-                    RTModel *model = new RTModel(this, p->model_name);
+    std::cout << "read " << n << "bytes." << std::endl;
+    switch (event.type) {
+        case rtcom_event::new_model:
+            {
+                std::cout << "new RTModel " << event.id << std::endl;
 
-                    std::cout << "new RTModel " << p->model_name << std::endl;
-
-                    modelMap[p->model_name] = model;
-//                    children[model] = modelMap.find(p->model_name);
-
-                    break;
+                try {
+                    RTModel *model =
+                        new RTModel(this, event.id);
+                    modelMap[model->getName()] = model;
+                } catch (Exception& e) {
+                    std::cerr << "Could not open model id " << event.id 
+                        << ": " << e.what() << std::endl;
                 }
-            case rtcom_event::del_model:
-                {
-                    std::cout << "delete RTModel " << p->model_name 
-                        << std::endl;
-                    ModelMap::iterator m = modelMap.find(p->model_name);
-                    if (m != modelMap.end()) {
+
+                break;
+            }
+        case rtcom_event::del_model:
+            {
+                for (ModelMap::iterator m = modelMap.begin();
+                        m != modelMap.end(); m++) {
+                    if (m->second->getId() == event.id) {
+                        std::cout << "delete RTModel " << event.id 
+                            << std::endl;
                         kill(m->second, 0);
+                        break;
                     }
                 }
-                break;
-        }
-        n -= sizeof(*p);
-        p++;
+            }
+            break;
     }
 
-    return total;
+    return n;
 }
 
 void RTTask::kill(Task* child, int rv)
 {
-//    delete children(child)->second;
-//    modelMap.erase(children(child));
-//    children.erase(child);
+    ModelMap::iterator old_m, m = modelMap.begin();
+    while (m != modelMap.end()) {
+        old_m = m++;
+
+        if (old_m->second == child) {
+            delete child;
+            modelMap.erase(old_m);
+        }
+    }
 }

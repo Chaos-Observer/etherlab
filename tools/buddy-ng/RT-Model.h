@@ -25,6 +25,7 @@
 
 #include "include/fio_ioctl.h"
 #include "RT-Task.h"
+#include "FileDevice.h"
 
 #include <vector>
 #include <string>
@@ -36,9 +37,10 @@ struct timeval;
 
 class RTModel: public Task {
     public:
-        RTModel(RTTask* parent, const std::string& modelName);
+        RTModel(RTTask* parent, unsigned int id);
         ~RTModel();
 
+        unsigned int getId() const { return id; }
         const std::string& getName() const { return name; }
         const std::string& getVersion() const { return version; }
         const std::vector<RTVariable*>& getVariableList() const { 
@@ -47,9 +49,10 @@ class RTModel: public Task {
 
     private:
         const Task* parent;
-        const std::string name;
+        const unsigned int id;
+        std::string name;
         std::string version;
-        int fd;
+        FileDevice fd;
 
         char *rtP;
         void *io_mem;
@@ -61,6 +64,8 @@ class RTModel: public Task {
 
         void getDims(std::vector<size_t>& dims, const struct signal_info *si,
                 unsigned int type);
+
+        void cleanup();
 
         // Reimplemented from class Task
         int read(int fd);
