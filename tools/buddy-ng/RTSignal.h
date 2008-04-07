@@ -28,9 +28,9 @@
 
 class RTSignal: public RTVariable {
     public:
-        RTSignal(const std::string &path, const std::string &alias,
-                si_datatype_t dataType, std::vector<size_t>& _dims,
-                unsigned int sampleTime);
+        RTSignal(const std::string &path, const std::string &name,
+                const std::string &alias, si_datatype_t dataType, 
+                std::vector<size_t>& _dims, unsigned int sampleTime);
         ~RTSignal();
         unsigned int getSampleTime() const {return sampleTime;}
         bool isWriteable() const { return false; }

@@ -238,6 +238,7 @@ static int start_model(const char *model_name, unsigned int model_num)
     si.path = (char*) malloc( model->properties.variable_path_len + 1);
     CHECK_ERR (!si.path, errno, out_malloc_si,
             "Could not allocate memory: %s", strerror(errno));
+    si.path_len = model->properties.variable_path_len + 1;
 
     for (si.index = 0; si.index < model->properties.signal_count; 
             si.index++) {
@@ -245,12 +246,14 @@ static int start_model(const char *model_name, unsigned int model_num)
         CHECK_ERR (rv, errno, out_get_signal_info,
                 "Error: could not get Signal Info %s", strerror(errno));
         if (si.dim[1]) {
-            orientation = si_matrix_row_major;
+            orientation = si_matrix;
         }
         else {
             orientation = si.dim[0] > 1 ? si_vector : si_scalar;
         }
-        CHECK_ERR (!msr_reg_rtw_signal(si.path, si.name, "", si.offset, 
+        CHECK_ERR (!msr_reg_rtw_signal( model->properties.name,
+                    si.path, si.name, si.alias,
+                    "", si.offset, 
                     si.dim[0], si.dim[1], si.data_type, orientation,
                     si_data_width[si.data_type]), 
                 -1, out_reg_signal, "MSR Error: could not register signal");
@@ -262,12 +265,13 @@ static int start_model(const char *model_name, unsigned int model_num)
         CHECK_ERR (rv, errno, out_get_param_info,
                 "Error: could not get Parameter Info %s", strerror(errno));
         if (si.dim[1]) {
-            orientation = si_matrix_row_major;
+            orientation = si_matrix;
         }
         else {
             orientation = si.dim[0] > 1 ? si_vector : si_scalar;
         }
-        CHECK_ERR (!msr_reg_rtw_param(si.path, si.name, "", 
+        CHECK_ERR (!msr_reg_rtw_param( model->properties.name,
+                    si.path, si.name, si.alias, "", 
                     model->rtP + si.offset, 
                     si.dim[0], si.dim[1], si.data_type, orientation,
                     si_data_width[si.data_type]), 

@@ -26,10 +26,11 @@
 
 #include "rtmodel.h"    // Supplied by RTW
 
+const char* get_signal_info(struct signal_info *si);
+const char* get_param_info(struct signal_info *si);
+
 const char* rtw_capi_init(
         RT_MODEL *rtM,
-        const char* (**si)(struct signal_info*, const char**),
-        const char* (**pi)(struct signal_info*, const char**),
         unsigned int *max_signals,
         unsigned int *max_parameters,
         unsigned int *max_path_len

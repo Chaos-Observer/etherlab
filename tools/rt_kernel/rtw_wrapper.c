@@ -92,8 +92,6 @@ extern void mdl_set_error_msg(const char *msg);
 double etl_world_time[NUMST];
 unsigned int task_period[NUMST - (TID01EQ ? 1 : 0)];
 struct task_stats task_stats[NUMST - (TID01EQ ? 1 : 0)];
-unsigned int get_signal_info(struct signal_info* si, char **name);
-unsigned int get_param_info(struct signal_info* si, char **name);
 
 /* Instantiate and initialise rt_model here */
 struct rt_model rt_model = {
@@ -119,6 +117,9 @@ struct rt_model rt_model = {
     .rt_OneStepMain = rt_OneStep,
     .rt_OneStepTid = NULL,
 #endif
+
+    .get_signal_info = get_signal_info,
+    .get_param_info = get_param_info,
 
     .task_period = task_period,
 
@@ -347,8 +348,6 @@ mdl_start(void)
     }
 
     if ((errmsg = rtw_capi_init(S, 
-                    &rt_model.get_signal_info,
-                    &rt_model.get_param_info,
                     &rt_model.signal_count,
                     &rt_model.param_count,
                     &rt_model.variable_path_len))) {

@@ -497,32 +497,49 @@ fop_ioctl_model( struct file *filp, unsigned int command, unsigned long data)
         case GET_PARAM_INFO:
             {
                 struct signal_info si;
-                const char *path;
+                char *user_path;
+                char *local_path;
                 const char *err;
-                size_t len;
                 pr_debug("In GET_(SIGNAL|PARAM)_INFO\n");
 
+                // Get the index the user is interested in
                 if (copy_from_user(&si, (void*)data, sizeof(si))) {
                     rv = -EFAULT;
                     break;
                 }
 
-                err = (command == GET_SIGNAL_INFO)
-                    ? rt_model->get_signal_info(&si, &path)
-                    : rt_model->get_param_info(&si, &path);
-                if (err) {
-                    pr_info("Error occurred in get_signal_info(): %s\n",
-                            err);
-                    rv = -EINVAL;
+                /* Save the pointer to the user's path string, and make
+                 * si.path point to our own memory */
+                user_path = si.path;
+                si.path = local_path = kmalloc(si.path_len, GFP_KERNEL);
+                if (!local_path) {
+                    rv = -ENOMEM;
+                    printk("Could not allocate %u bytes\n", si.path_len);
                     break;
                 }
-                len = strlen(path) + 1;
 
-                if (copy_to_user((void*)data, &si, sizeof(si)) ||
-                        copy_to_user(si.path, path, len)) {
-                    rv = -EFAULT;
-                    break;
+                /* When rt_model->get_signal_info is called with 
+                 * si.path = NULL, the path is not copied yet. However,
+                 * path_len is set, giving the opportunity to allocate space
+                 * for the path in a second call, finally copying path */
+                err = (command == GET_SIGNAL_INFO)
+                    ? rt_model->get_signal_info(&si)
+                    : rt_model->get_param_info(&si);
+                if (err) {
+                    printk("Error: %s\n", err);
+                    rv = -ERANGE;
                 }
+                else if (copy_to_user(user_path, local_path, si.path_len)) {
+                        rv = -EFAULT;
+                }
+                else {
+                    /* Replace user's path, otherwise he will be surprised */
+                    si.path = user_path;
+                    if (copy_to_user((void*)data, &si, sizeof(si))) {
+                        rv = -EFAULT;
+                    }
+                }
+                kfree(local_path);
             }
             break;
 
@@ -639,6 +656,7 @@ static struct vm_operations_struct vm_ops = {
 static int
 fop_mmap_model(struct file *filp, struct vm_area_struct *vma)
 {
+    printk("mapping %p %p %lu\n", (void*)vma->vm_start, (void*)vma->vm_end, vma->vm_end - vma->vm_start);
     vma->vm_ops = &vm_ops;
     vma->vm_flags |= VM_RESERVED;       /* Pages will not be swapped out */
     vma->vm_private_data = filp->private_data;

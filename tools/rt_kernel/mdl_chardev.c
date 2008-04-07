@@ -200,6 +200,14 @@ static long rtp_ioctl(
                     + rt_model->num_tasks * sizeof(struct task_stats);
                 properties.rtP_size      = rt_model->rtP_size;
 
+                strncpy(properties.name, rt_model->modelName, 
+                        sizeof(properties.name));
+                properties.name[sizeof(properties.name)-1] = '\0';
+
+                strncpy(properties.version, rt_model->modelVersion, 
+                        sizeof(properties.version));
+                properties.name[sizeof(properties.version)-1] = '\0';
+
                 rv = copy_to_user((void *)data, &properties, 
                         sizeof(properties));
                 break;
@@ -272,30 +280,48 @@ static long rtp_ioctl(
         case GET_PARAM_INFO:
             /* Get properties of signal or parameter */
             {
-                struct signal_info tmp_si;
-                struct signal_info *user_si = 
-                    (struct signal_info*)data;
-                const char *path;
+                struct signal_info si;
+                char *user_path;
+                char *local_path;
                 const char *err;
 
                 // Get the index the user is interested in
-                if ((rv = copy_from_user(&tmp_si, user_si, sizeof(tmp_si))))
-                    break;
-
-                err = (command == GET_SIGNAL_INFO)
-                    ? rt_model->get_signal_info(&tmp_si, &path)
-                    : rt_model->get_param_info(&tmp_si, &path);
-                if (rv) {
-                    printk("Error: %s\n", err);
-                    rv = -ERANGE;
-                    break;
-                }
-
-                if (copy_to_user(user_si, &tmp_si, sizeof(tmp_si))
-                    || copy_to_user(user_si->path, path, strlen(path)+1)) {
+                if (copy_from_user(&si, (void*)data, sizeof(si))) {
                     rv = -EFAULT;
                     break;
                 }
+
+                /* Save the pointer to the user's path string, and make
+                 * si.path point to our own memory */
+                user_path = si.path;
+                si.path = local_path = kmalloc(si.path_len, GFP_KERNEL);
+                if (!local_path) {
+                    rv = -ENOMEM;
+                    break;
+                }
+
+                /* When rt_model->get_signal_info is called with 
+                 * si.path = NULL, the path is not copied yet. However,
+                 * path_len is set, giving the opportunity to allocate space
+                 * for the path in a second call, finally copying path */
+                err = (command == GET_SIGNAL_INFO)
+                    ? rt_model->get_signal_info(&si)
+                    : rt_model->get_param_info(&si);
+                if (err) {
+                    printk("Error: %s\n", err);
+                    rv = -ERANGE;
+                }
+                else if (copy_to_user(user_path, local_path, si.path_len+1)) {
+                        rv = -EFAULT;
+                }
+                else {
+                    /* Replace user's path, otherwise he will be surprised */
+                    si.path = user_path;
+                    if (copy_to_user((void*)data, &si, sizeof(si))) {
+                        rv = -EFAULT;
+                    }
+                }
+                kfree(local_path);
             }
             break;
 

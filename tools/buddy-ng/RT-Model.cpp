@@ -71,6 +71,7 @@ RTModel::RTModel(RTTask *parent, unsigned int _id):
     // of the longest path name, a structure can be allocated so that the
     // information can be fetched from the kernel
     si.path = new char[mdl_properties.variable_path_len + 1];
+    si.path_len = mdl_properties.variable_path_len + 1;
     std::auto_ptr<char> signal_path(si.path);
 
     std::vector<size_t> dims;
@@ -82,15 +83,14 @@ RTModel::RTModel(RTTask *parent, unsigned int _id):
             si.index++) {
         fd.ioctl(GET_SIGNAL_INFO, (long)&si, "GET_SIGNAL_INFO");
         getDims(dims, &si, GET_SIGNAL_DIMS);
-        variableList[varIdx++] = new RTSignal(si.path, si.name, 
+        variableList[varIdx++] = new RTSignal(si.path, si.name, si.alias,
                 si.data_type, dims, sampleTime.at(si.st_index));
     }
 
     for (si.index = 0; si.index < mdl_properties.param_count; si.index++) {
         fd.ioctl(GET_PARAM_INFO, (long)&si, "GET_PARAM_INFO");
         getDims(dims, &si, GET_PARAM_DIMS);
-        variableList[varIdx++] = new RTParameter(
-                std::string(si.path) + '/' + si.name, std::string(),
+        variableList[varIdx++] = new RTParameter( si.path, si.name, si.alias,
                 si.data_type, dims);
     }
 

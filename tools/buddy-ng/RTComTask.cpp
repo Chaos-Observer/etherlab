@@ -195,47 +195,49 @@ int RTComTask::read(int)
                 value[0] = oss.str();
                 os.stdOutListElement(key, value, true);
 
-                key.resize(6);
-                value.resize(6);
+                key.resize(7);
+                value.resize(7);
                 key[0] = "Path";
-                key[1] = "Index";
-                key[2] = "Datatype";
-                key[3] = "Dimensions";
-                key[4] = "Flags";
-                key[5] = "SampleTime";
+                key[1] = "Name";
+                key[2] = "Index";
+                key[3] = "Datatype";
+                key[4] = "Dimensions";
+                key[5] = "Flags";
+                key[6] = "SampleTime";
                 for( vit = variableList.begin(); vit != variableList.end(); 
                         vit++) {
                     value[0] = (*vit)->getPath();
+                    value[1] = (*vit)->getName();
                     oss.str("");
                     oss << idx++;
-                    value[1] = oss.str();
+                    value[2] = oss.str();
                     switch ((*vit)->getDataType()) {
                         case si_double_T:
-                            value[2] = "double_T";
+                            value[3] = "double_T";
                             break;
                         case si_single_T:
-                            value[2] = "single_T";
+                            value[3] = "single_T";
                             break;
                         case si_boolean_T:
-                            value[2] = "boolean_T";
+                            value[3] = "boolean_T";
                             break;
                         case si_uint8_T:
-                            value[2] = "uint8_T";
+                            value[3] = "uint8_T";
                             break;
                         case si_sint8_T:
-                            value[2] = "sint8_T";
+                            value[3] = "sint8_T";
                             break;
                         case si_uint16_T:
-                            value[2] = "uint16_T";
+                            value[3] = "uint16_T";
                             break;
                         case si_sint16_T:
-                            value[2] = "sint16_T";
+                            value[3] = "sint16_T";
                             break;
                         case si_uint32_T:
-                            value[2] = "uint32_T";
+                            value[3] = "uint32_T";
                             break;
                         case si_sint32_T:
-                            value[2] = "sint32_T";
+                            value[3] = "sint32_T";
                             break;
                         default:
                             break;
@@ -244,13 +246,13 @@ int RTComTask::read(int)
                         (*vit)->getDims();
                     oss.str("");
                     copy(dims.begin(), dims.end(), oo);
-                    value[3] = oss.str();
+                    value[4] = oss.str();
 
-                    value[4] = (*vit)->isWriteable() ? "rw" : "r-";
+                    value[5] = (*vit)->isWriteable() ? "rw" : "r-";
 
                     oss.str("");
                     oss << (*vit)->getSampleTime();
-                    value[5] = oss.str();
+                    value[6] = oss.str();
                     os.stdOutListElement(key, value, false);
                 }
                 os.stdOutListEnd();

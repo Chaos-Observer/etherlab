@@ -28,8 +28,9 @@
 
 class RTParameter: public RTVariable {
     public:
-        RTParameter(const std::string &path, const std::string &alias,
-                si_datatype_t dataType, std::vector<size_t>& dims);
+        RTParameter(const std::string &path, const std::string &name,
+                const std::string &alias, si_datatype_t dataType, 
+                std::vector<size_t>& dims);
         ~RTParameter();
 
         bool isWriteable() const { return true; }

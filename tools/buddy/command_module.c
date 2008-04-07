@@ -49,7 +49,7 @@ static int port = 5000;
 static char buf[4096];
 
 /* Network client disconnected itself */
-static void close_command_chan(int fd, void *p)
+static void __attribute__((unused)) close_command_chan(int fd, void *p)
 {
     struct sock_data __attribute__((unused)) *sock_data = p;
 

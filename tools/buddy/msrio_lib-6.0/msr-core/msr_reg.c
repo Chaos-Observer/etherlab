@@ -106,9 +106,7 @@ extern int (*newparamflag)(void*, void*, size_t);  //Funktion, die aufgerufen we
 
 #define MSR_CALC_ADR(_START,_DATASIZE,_ORIENTATION,_RNUM,_CNUM)   \
 do {                                                              \
-if (_ORIENTATION == si_matrix_col_major) 		          \
-    p = _START + (_CNUM * r + c)*_DATASIZE;	                  \
-else if (_ORIENTATION == si_matrix_row_major)		          \
+if (_ORIENTATION == si_matrix)		          \
     p = _START + (_RNUM * r + c)*_DATASIZE;	                  \
 else								  \
     p = _START + (r + c)*_DATASIZE;  			          \
@@ -1716,7 +1714,9 @@ do {                                                             \
    }            \
 } while(0)
 
-int msr_reg_rtw_param( const char *path, const char *name, const char *cTypeName,
+int msr_reg_rtw_param( const char *model_name,
+                       const char *path, const char *name, const char *alias,
+                       const char *cTypeName,
 		       void *data,
 		       unsigned int rnum, unsigned int cnum,
 		       enum si_datatype_t dataType, 
@@ -1736,16 +1736,15 @@ int msr_reg_rtw_param( const char *path, const char *name, const char *cTypeName
     if(DBG > 0) printk("reg_rtw_param_ %s,%s\n",path,name);
 
     //Hilfspuffer
-    buf = (char *)getmem(strlen(path)+strlen(name)+2+20);
+    buf = (char *)getmem(
+            strlen(model_name) + strlen(path) + strlen(name) + 4
+            +2+20);
 
     //erstmal den Namen zusammensetzten zum einem gültigen Pfad
-    if(path[0] != '/')
-	sprintf(buf,"/%s/%s",path,name);
+    if (strlen(path))
+        sprintf(buf, "/%s/%s/%s", model_name, path, name);
     else
-	sprintf(buf,"%s/%s",path,name);
-
-
-
+        sprintf(buf, "/%s/%s", model_name, name);
 
     //jetzt alle Ausdrücke, die im Pfad in <> stehen extrahieren und interpretieren
     rbuf = extractalist(&alist,buf);
@@ -1873,7 +1872,9 @@ int msr_reg_task_stats(
 *******************************************************************************
 */
 
-int msr_reg_rtw_signal( const char *path, const char *name, const char *cTypeName,
+int msr_reg_rtw_signal( const char* model_name, 
+                        const char *path, const char *name, const char *alias,
+                        const char *cTypeName,
 			unsigned long offset,                                              // !!!
 			unsigned int rnum, unsigned int cnum,
 			enum si_datatype_t dataType, 
@@ -1893,14 +1894,15 @@ int msr_reg_rtw_signal( const char *path, const char *name, const char *cTypeNam
 //    printf("Kanaloffset: %d\n",(unsigned int)offset);
     //Hilfspuffer
 
-    buf = (char *)getmem(strlen(path)+2+20);
+    buf = (char *)getmem(
+            strlen(model_name) + strlen(path) + strlen(name) + 4
+            +2+20);
 
     //erstmal den Namen zusammensetzten zum einem gültigen Pfad
-    if(path[0] != '/')
-	sprintf(buf,"/%s",path);
+    if (strlen(path))
+        sprintf(buf, "/%s/%s/%s", model_name, path, name);
     else
-	sprintf(buf,"%s",path);
-
+        sprintf(buf, "/%s/%s", model_name, name);
 
     rbuf = extractalist(&alist,buf);
 
@@ -1937,13 +1939,13 @@ int msr_reg_rtw_signal( const char *path, const char *name, const char *cTypeNam
 		    else                         //Matrize
 			sprintf(buf2,"%s/%i/%i",rbuf,r,c);
 		    //p wird in MSR_CALC_ADR berechnet !!!!!!!!!!!
-		    result |= msr_reg_kanal3(buf2,(char *)name,"",p,ETL_to_MSR(dataType),info,default_sampling_red);
+		    result |= msr_reg_kanal3(buf2,(char *)alias,"",p,ETL_to_MSR(dataType),info,default_sampling_red);
 		}
 	    }
 	    freemem(buf2);
 	}
 	else {  //ein Sklarer Kanal
-	    result |= msr_reg_kanal3(rbuf,(char *)name,"",(void *)offset,ETL_to_MSR(dataType),info,default_sampling_red);
+	    result |= msr_reg_kanal3(rbuf,(char *)alias,"",(void *)offset,ETL_to_MSR(dataType),info,default_sampling_red);
 	}
 
     }

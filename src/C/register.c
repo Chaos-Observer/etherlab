@@ -38,8 +38,8 @@
 static const char* rt_OneStepMain(void);
 static const char* rt_OneStepTid(unsigned int);
 static void        mdl_set_error_msg(const char*);
-static const char* get_signal_info(struct signal_info *si, const char** path);
-static const char* get_param_info(struct signal_info *si, const char** path);
+static const char* get_signal_info(struct signal_info *si);
+static const char* get_param_info(struct signal_info *si);
 
 static struct task_stats task_stats[NUMST];
 
@@ -102,26 +102,27 @@ mdl_set_error_msg(const char *msg)
 }
 
 static const char* 
-get_signal_info(struct signal_info *si, const char** path)
+get_signal_info(struct signal_info *si)
 {
     if (si->index >= rt_model.signal_count) {
         return "Signal index exceeded.";
     }
+    strncpy(si->path, capi_signals[si->index].si.path, si->path_len);
+    si->path[si->path_len-1] = '\0';
     memcpy(si, &capi_signals[si->index].si, sizeof(*si));
-    *path = capi_signals[si->index].si.path;
 
     return NULL;
 }
 
-// TODO: remove const char** path!
 static const char* 
-get_param_info(struct signal_info *si, const char** path)
+get_param_info(struct signal_info *si)
 {
     if (si->index >= rt_model.param_count) {
         return "Signal index exceeded.";
     }
+    strncpy(si->path, capi_signals[si->index].si.path, si->path_len);
+    si->path[si->path_len-1] = '\0';
     memcpy(si, &capi_parameters[si->index].si, sizeof(*si));
-    *path = capi_parameters[si->index].si.path;
 
     return NULL;
 }

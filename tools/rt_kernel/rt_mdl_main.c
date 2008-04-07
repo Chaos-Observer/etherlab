@@ -99,7 +99,7 @@ mod_init(void)
     rt_model.decimation = decimation ? decimation : rt_model.decimation;
     rt_model.max_overrun = overrun ? overrun : rt_model.max_overrun;
     rt_model.buffer_time = 
-        buffer_time ? buffer_time*1e6 : rt_model.buffer_time;
+        buffer_time ? buffer_time*1000000 : rt_model.buffer_time;
     rt_model.stack_size = stack_size ? stack_size : rt_model.stack_size;
 
     /* Work out how fast the model is sampled by test_manager */

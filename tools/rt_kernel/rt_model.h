@@ -71,8 +71,8 @@ struct rt_model {
         const char *(*rt_OneStepMain)(void);
         const char *(*rt_OneStepTid)(unsigned int);
         void        (*set_error_msg)(const char *);
-        const char *(*get_signal_info)(struct signal_info*, const char**);
-        const char *(*get_param_info)(struct signal_info*, const char**);
+        const char *(*get_signal_info)(struct signal_info*);
+        const char *(*get_param_info)(struct signal_info*);
 
         const char *modelVersion;
         const char *modelName;

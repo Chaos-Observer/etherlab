@@ -88,8 +88,18 @@
   <xsl:template match="subsystem">
     <xsl:param name="prefix"/>
     <xsl:param name="select"/>
+    <xsl:param name="path">
+      <xsl:choose>
+        <xsl:when test="$prefix">
+          <xsl:value-of select="concat($prefix,'/',@name)"/>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:value-of select="@name"/>
+        </xsl:otherwise>
+      </xsl:choose>
+    </xsl:param>
     <xsl:apply-templates>
-      <xsl:with-param name="prefix" select="concat($prefix,'/',@name)"/>
+      <xsl:with-param name="prefix" select="$path"/>
       <xsl:with-param name="select" select="$select"/>
     </xsl:apply-templates>
   </xsl:template>
@@ -111,10 +121,9 @@
       <xsl:call-template name="signal_attributes">
         <xsl:with-param name="structure">S</xsl:with-param>
         <xsl:with-param name="stidx" select="@sampleTimeIndex"/>
-        <xsl:with-param name="name" select="@alias"/>
-        <xsl:with-param name="path">
-          <xsl:value-of select="concat($prefix,'/',@name)"/>
-        </xsl:with-param>
+        <xsl:with-param name="name" select="@name"/>
+        <xsl:with-param name="path" select="$prefix"/>
+        <xsl:with-param name="alias" select="@alias"/>
       </xsl:call-template>
     </xsl:if>
   </xsl:template>
@@ -126,9 +135,8 @@
       <xsl:call-template name="signal_attributes">
         <xsl:with-param name="structure">P</xsl:with-param>
         <xsl:with-param name="name" select="@name"/>
-        <xsl:with-param name="path">
-          <xsl:value-of select="concat($prefix,'/',@name)"/>
-        </xsl:with-param>
+        <xsl:with-param name="path" select="$prefix"/>
+        <xsl:with-param name="alias" select="@alias"/>
       </xsl:call-template>
     </xsl:if>
   </xsl:template>
@@ -139,6 +147,7 @@
     <xsl:param name="structure"/><!-- Set to P for parameter, S for signal -->
     <xsl:param name="name"/>     <!-- Name of signal -->
     <xsl:param name="path"/>     <!-- Signal path -->
+    <xsl:param name="alias"/>    <!-- Signal alias -->
 
     <xsl:text>{ 
     .si = { </xsl:text> 
@@ -190,6 +199,11 @@
     <xsl:text>",
     </xsl:text>
 
+    <xsl:text>.alias = "</xsl:text>
+    <xsl:value-of select="$alias"/>
+    <xsl:text>",
+    </xsl:text>
+
     <!-- Now write the full path as a comment -->
     <xsl:text>.path = "</xsl:text>
     <xsl:value-of select="$path"/>
@@ -200,7 +214,7 @@
     <xsl:value-of select="concat('.address = &amp;',$structure,'(')"/>
 
     <!-- Drop the first '/' and translate all slashes to dots. -->
-    <xsl:value-of select="translate(substring($path,2),'/','.')"/>
+    <xsl:value-of select="concat(translate($path,'/','.'),'.',$name)"/>
     <xsl:for-each select="dim">
       <xsl:text>[0]</xsl:text>
     </xsl:for-each>

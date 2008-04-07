@@ -30,11 +30,14 @@
 
 class RTVariable {
     public:
-        RTVariable(const std::string &path, const std::string &alias,
-                si_datatype_t dataType, std::vector<size_t>& dims);
+        RTVariable(const std::string &path, const std::string &name,
+                const std::string &alias, si_datatype_t dataType, 
+                std::vector<size_t>& dims);
         virtual ~RTVariable();
 
         const std::string& getPath() const { return path; }
+        const std::string& getName() const { return name; }
+        const std::string& getAlias() const { return alias; }
         si_datatype_t getDataType() const { return dataType; }
         const std::vector<size_t>& getDims() const { return dims; }
 
@@ -43,6 +46,7 @@ class RTVariable {
 
     private:
         const std::string path;
+        const std::string name;
         const std::string alias;
         const si_datatype_t dataType; 
         const std::vector<size_t> dims;

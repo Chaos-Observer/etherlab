@@ -246,7 +246,6 @@ char *msr_get_attrib(char *buf,char *parbuf);
 static void msr_com_read_parameter(struct msr_dev *dev,char *params);
 static void msr_com_read_parameter_values(struct msr_dev *dev,char *params);
 static void msr_com_write_parameter(struct msr_dev *dev,char *params);
-static void msr_com_write_aic(struct msr_dev *dev,char *params);              //write input channel
 static void msr_com_read_kanaele(struct msr_dev *dev,char *params);
 static void msr_com_ping(struct msr_dev *dev,char *params);
 static void msr_dec_mod_use_count(struct msr_dev *dev,char *params);

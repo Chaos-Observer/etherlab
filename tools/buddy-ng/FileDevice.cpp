@@ -43,8 +43,9 @@ FileDevice::FileDevice(const std::string& path):
 
 FileDevice::~FileDevice()
 {
-    if (io_mem != MAP_FAILED)
+    if (io_mem != MAP_FAILED) {
         ::munmap(io_mem, io_mem_len);
+    }
     if (fd >= 0)
         ::close(fd);
 }

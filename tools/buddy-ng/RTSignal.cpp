@@ -23,10 +23,10 @@
 
 #include "RTSignal.h"
 
-RTSignal::RTSignal(const std::string &_path, const std::string &_alias,
-        si_datatype_t _dataType, std::vector<size_t>& _dims, 
-        unsigned int _sampleTime): 
-    RTVariable(_path, _alias, _dataType, _dims),
+RTSignal::RTSignal(const std::string &_path, const std::string &_name,
+        const std::string &_alias, si_datatype_t _dataType, 
+        std::vector<size_t>& _dims, unsigned int _sampleTime): 
+    RTVariable(_path, _name, _alias, _dataType, _dims),
     sampleTime(_sampleTime)
 {
 }

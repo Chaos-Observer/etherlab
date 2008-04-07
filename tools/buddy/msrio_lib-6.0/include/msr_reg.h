@@ -669,7 +669,9 @@ int msr_anz_param(void);
 *******************************************************************************
 */
 
-int msr_reg_rtw_param( const char *path, const char *name, const char *cTypeName,
+int msr_reg_rtw_param( const char *model_name,
+                   const char *path, const char *name, const char *alias,
+                   const char *cTypeName,
                    void *data,
                    unsigned int rnum, unsigned int cnum,
                    unsigned int dataType, unsigned int orientation,
@@ -702,7 +704,9 @@ int msr_reg_rtw_param( const char *path, const char *name, const char *cTypeName
 *******************************************************************************
 */
 
-int msr_reg_rtw_signal( const char *path, const char *name, const char *cTypeName,
+int msr_reg_rtw_signal( const char *model_name, 
+                    const char *path, const char *name, const char *alias,
+                    const char *cTypeName,
                     unsigned long offset,                                              // !!!
                     unsigned int rnum, unsigned int cnum,
                     unsigned int dataType, unsigned int orientation,

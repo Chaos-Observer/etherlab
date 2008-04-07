@@ -32,8 +32,8 @@
 #endif
 
 // Data organisation
-enum si_orientation_t {si_scalar, si_vector, si_matrix_row_major, 
-    si_matrix_col_major};
+enum si_orientation_t {si_scalar, si_vector, si_matrix, 
+    si_matrix_nd};
 
 // Data type definitions. 
 // DO NOT change these without updating etl_data_types.c
@@ -56,7 +56,9 @@ struct signal_info {
                                 // dim[1]. The actual dimensions has to be 
                                 // fetched in a second step.
     enum si_datatype_t data_type;      // Data Type
-    char name[256];             // Signal alias name
+    char alias[256];            // Signal alias
+    char name[256];             // Signal name
+    size_t path_len;
     char *path;                 // Path of signal
 };
 
