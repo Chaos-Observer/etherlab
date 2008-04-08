@@ -1,6 +1,13 @@
+#-----------------------------------------------------------------------------
+#
+# $Id$
+#
 # Prelude
 #                                               -*- Autoconf -*-
+#
 # Process this file with autoconf to produce a configure script.
+#
+#-----------------------------------------------------------------------------
 
 AC_PREREQ(2.59)
 AC_INIT([etherlab_rtw], [trunk], [lerich@gmx.net])
@@ -303,3 +310,5 @@ AC_CONFIG_FILES([
         lib/Makefile.rtw
 ])
 AC_OUTPUT
+
+#-----------------------------------------------------------------------------

@@ -1,3 +1,5 @@
+$Id$
+
 * The misnomer 'Downsample' has been changed to Decimation.
   When upgrading an existing model, re-enter the required decimation
   rate in 
