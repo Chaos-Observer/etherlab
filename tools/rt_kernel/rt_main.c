@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- * $Id: /local/rtw-trunk/src/C/copyright.txt 301 2008-03-22T14:43:03.529462Z rich  $
+ * $Id$
  *
  * Here is the main file for the rt_kernel. It prepares the environment in
  * which Real-Time Models can run in.

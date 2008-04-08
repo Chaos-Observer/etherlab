@@ -1,7 +1,7 @@
 /*
  * $RCSfile: el5001.c,v $
- * $Revision: 1.1 $
- * $Date: 2006/02/02 16:59:54 $
+ * $Revision$
+ * $Date$
  *
  * SFunction to implement Beckhoff's SSI input coupler EL5001.
  *

@@ -26,9 +26,9 @@
 
 /*
  *  $RCSfile: rtai_main.c,v $
- *  $Revision: 1.1 $
- *  $Author: rich $
- *  $Date: 2006/02/11 00:28:57 $
+ *  $Revision$
+ *  $Author$
+ *  $Date$
  *  $State: Exp $
  *
  *  Autor: Richard Hacker

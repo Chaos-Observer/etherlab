@@ -1,9 +1,9 @@
 /******************************************************************************
  *
  *           $RCSfile: defines.h,v $
- *           $Revision: 1.1 $
- *           $Author: rich $
- *           $Date: 2006/02/21 07:46:46 $
+ *           $Revision$
+ *           $Author$
+ *           $Date$
  *           $State: Exp $
  *
  *           Autor: Richard Hacker

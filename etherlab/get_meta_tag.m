@@ -7,7 +7,7 @@ function rv = get_meta_tag(s)
 % License: GPL
 %
 % $RCSfile: get_meta_tag.m,v $
-% $Revision: 1.2 $
+% $Revision$
 %
 % $Log: get_meta_tag.m,v $
 % Revision 1.2  2006/02/28 06:32:45  rich

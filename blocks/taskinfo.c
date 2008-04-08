@@ -1,7 +1,7 @@
 /*
  * $RCSfile: el31xx.c,v $
- * $Revision: 1.2 $
- * $Date: 2006/02/15 13:45:03 $
+ * $Revision$
+ * $Date$
  *
  * SFunction to implement the raise function
  *

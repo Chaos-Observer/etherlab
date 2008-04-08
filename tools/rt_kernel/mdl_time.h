@@ -1,6 +1,6 @@
 /*****************************************************************************
  *
- * $Id: /local/rtw-trunk/src/C/copyright.txt 301 2008-03-22T14:43:03.529462Z rich  $
+ * $Id$
  *
  * Header file defining the model global world time variable for every
  * sample time.

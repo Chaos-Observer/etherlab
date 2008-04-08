@@ -1,7 +1,7 @@
 /*
  * $RCSfile: el41xx.c,v $
- * $Revision: 1.3 $
- * $Date: 2006/07/24 22:43:46 $
+ * $Revision$
+ * $Date$
  *
  * SFunction to implement Beckhoff's series EL41xx of EtherCAT Analog Output 
  * Terminals

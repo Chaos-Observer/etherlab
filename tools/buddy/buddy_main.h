@@ -25,9 +25,9 @@
  */
 
 /* $RCSfile: rtai_main.h,v $
- * $Revision: 1.1 $
- * $Author: rich $
- * $Date: 2006/02/13 23:05:45 $
+ * $Revision$
+ * $Author$
+ * $Date$
  * $State: Exp $
  *
  * $Log: rtai_main.h,v $

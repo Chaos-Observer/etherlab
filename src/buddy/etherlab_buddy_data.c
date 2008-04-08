@@ -1,9 +1,9 @@
 /******************************************************************************
  *
  *           $RCSfile: msr_io.c,v $
- *           $Revision: 1.5 $
- *           $Author: ha $
- *           $Date: 2005/09/16 14:51:06 $
+ *           $Revision$
+ *           $Author$
+ *           $Date$
  *           $State: Exp $
  *
  *           Autor: Richard Hacker

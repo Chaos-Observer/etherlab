@@ -1,6 +1,6 @@
 /***********************************************************************
  *
- * $Id: /local/rtw-trunk/src/C/copyright.txt 301 2008-03-22T14:43:03.529462Z rich  $
+ * $Id$
  *
  * module_init() and module_exit() are defined here. This file will be 
  * compiled together with the Real-Time Model to form a kernel module,

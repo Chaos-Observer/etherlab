@@ -3,7 +3,7 @@ function etherlab_config(hDlg,hSrc)
 %          EtherLab RTW Target is selected
 % 
 % Copyright 1994-2005 IgH Essen GmbH
-% $Revision: 1.4 $  $Date: 2006/02/26 00:28:27 $
+% $Revision$  $Date$
 
   % Simulation Time
   slConfigUISetVal(hDlg,hSrc,'StartTime','0.0');

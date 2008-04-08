@@ -1,7 +1,7 @@
 /*
  * $RCSfile: el10xx.c,v $
- * $Revision: 1.2 $
- * $Date: 2006/02/15 13:43:49 $
+ * $Revision$
+ * $Date$
  *
  * SFunction to implement Beckhoff's BK1120 EtherCAT to K-Bus 
  * Terminals

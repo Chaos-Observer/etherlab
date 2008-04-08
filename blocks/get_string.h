@@ -1,7 +1,7 @@
 /*
  * $RCSfile: ethercat_ss_funcs.h,v $
- * $Revision: 1.2 $
- * $Date: 2006/02/02 16:53:32 $
+ * $Revision$
+ * $Date$
  *
  * Header function to get a string parameter
  *

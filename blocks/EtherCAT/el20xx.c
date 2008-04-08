@@ -1,7 +1,7 @@
 /*
  * $RCSfile: el20xx.c,v $
- * $Revision: 1.2 $
- * $Date: 2006/07/19 12:04:41 $
+ * $Revision$
+ * $Date$
  *
  * SFunction to implement Beckhoff's series EL200x of EtherCAT Digital Output 
  * Terminals

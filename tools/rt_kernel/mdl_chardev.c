@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- * $Id: /local/rtw-trunk/src/C/copyright.txt 301 2008-03-22T14:43:03.529462Z rich  $
+ * $Id$
  *
  * Every Real-Time model opens a character device to communicates with the 
  * user space buddy. The code here implements this char dev

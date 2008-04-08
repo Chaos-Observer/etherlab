@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- * $Id: /local/rtw-trunk/src/C/copyright.txt 301 2008-03-22T14:43:03.529462Z rich  $
+ * $Id$
  *
  * Here structures are defined that are used within rt_kernel and associated
  * files.
