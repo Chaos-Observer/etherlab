@@ -35,6 +35,7 @@
 #include <linux/sem.h>          /* semaphores */
 #include <linux/poll.h>         /* poll_wait() */
 #include <linux/mm.h>           /* mmap */
+#include <linux/device.h>       /* class_create(), etc. */
 #include <asm/uaccess.h>        /* get_user(), put_user() */
 #include <linux/delay.h>
 
