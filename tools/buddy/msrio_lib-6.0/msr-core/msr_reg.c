@@ -1103,8 +1103,12 @@ int msr_print_kanal_list(char *buf,char *aname,int mode)
 
 		//	if(strlen(element->p_einh) > 0)                            //Einheit nur, wenn auch da, eventuell steht sie auch in info
 		//FIXME tuts noch nicht mit dlsd hier darf die unit nicht fehlen
-		len+=sprintf(buf+len," unit=\"%s\"",element->p_einh);
 
+		// 2007-08-13, fp: unit-Attribut darf nicht doppelt vorkommen.
+		// FIXME: Dieser Ansatz ist nicht ganz sauber, da "unit=" auch als
+		// Attributwert vorkommen koennte...
+		if (!element->info || !strstr(element->info, "unit="))
+			len+=sprintf(buf+len," unit=\"%s\"",element->p_einh);
 
 		//Infostring
 		if(element->info && strlen(element->info) > 0) //info ist schon im Format name="value"
