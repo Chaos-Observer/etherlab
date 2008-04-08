@@ -34,8 +34,8 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "ml"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Tue Apr  8 17:08:59 2008"
-  ModelVersionFormat	  "1.%<AutoIncrement:286>"
+  LastModifiedDate	  "Tue Apr  8 17:15:03 2008"
+  ModelVersionFormat	  "1.%<AutoIncrement:287>"
   ConfigurationManager	  "rcs"
   LinearizationMsg	  "none"
   Profile		  off
@@ -129,7 +129,7 @@ Library {
   }
   System {
     Name		    "etherlab_lib"
-    Location		    [743, 509, 1338, 669]
+    Location		    [743, 509, 1338, 668]
     Open		    on
     ModelBrowserVisibility  off
     ModelBrowserWidth	    200
@@ -652,6 +652,41 @@ Library {
 	  MaskIconUnits		  "autoscale"
 	  MaskValueString	  "0|'1'|0|Bit0|off|-1"
 	  MaskTabNameString	  ",,,,,"
+	}
+	Block {
+	  BlockType		  "S-Function"
+	  Name			  "MSD_0"
+	  Ports			  [2, 2]
+	  Position		  [320, 112, 455, 183]
+	  BackgroundColor	  "yellow"
+	  FunctionName		  "moog_msd"
+	  Parameters		  "master,index,tsample,iomode"
+	  MaskType		  "Moog MSC"
+	  MaskDescription	  "Moog Servodrive Controller"
+	  MaskPromptString	  "Master|Slave Index|Sample Time|Input/Output"
+" Mode"
+	  MaskStyleString	  "edit,edit,edit,popup(Inputs and Outputs|Inp"
+"uts only|Outputs only)"
+	  MaskTunableValueString  "off,off,off,off"
+	  MaskCallbackString	  "|||moog_msd_callback('display_callback',gcb"
+")"
+	  MaskEnableString	  "on,on,on,on"
+	  MaskVisibilityString	  "on,on,on,on"
+	  MaskToolTipString	  "on,on,on,on"
+	  MaskVarAliasString	  ",,,"
+	  MaskVariables		  "master=@1;index=&2;tsample=@3;iomode=@4;"
+	  MaskInitialization	  "moog_msd_callback('display_callback',gcb)"
+	  MaskDisplay		  "fprintf('Moog Servo Drive\\nM:%i Idx:%s', m"
+"aster, index) image(imread('moog.png'), [.3, .7, .4, .2]) port_label('input',"
+" 1, 'control') port_label('input', 2, 'v_tgt') port_label('output', 1, 'statu"
+"s') port_label('output', 2, 'v_cur')"
+	  MaskSelfModifiable	  on
+	  MaskIconFrame		  on
+	  MaskIconOpaque	  on
+	  MaskIconRotate	  "none"
+	  MaskIconUnits		  "normalized"
+	  MaskValueString	  "0|0|0|Inputs and Outputs"
+	  MaskTabNameString	  ",,,"
 	}
 	Block {
 	  BlockType		  "S-Function"
