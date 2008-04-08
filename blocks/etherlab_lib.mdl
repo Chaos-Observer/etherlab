@@ -1,6 +1,6 @@
 Library {
   Name			  "etherlab_lib"
-  Version		  6.4
+  Version		  6.5
   MdlSubVersion		  0
   SavedCharacterEncoding  "ISO-8859-1"
   LibraryType		  "BlockLibrary"
@@ -32,10 +32,10 @@ Library {
   Creator		  "rich"
   UpdateHistory		  "UpdateHistoryNever"
   ModifiedByFormat	  "%<Auto>"
-  LastModifiedBy	  "rich"
+  LastModifiedBy	  "ml"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Mon Feb 25 13:10:01 2008"
-  ModelVersionFormat	  "1.%<AutoIncrement:283>"
+  LastModifiedDate	  "Tue Apr  8 16:34:28 2008"
+  ModelVersionFormat	  "1.%<AutoIncrement:284>"
   ConfigurationManager	  "rcs"
   LinearizationMsg	  "none"
   Profile		  off
@@ -129,7 +129,7 @@ Library {
   }
   System {
     Name		    "etherlab_lib"
-    Location		    [800, 572, 1395, 965]
+    Location		    [543, 255, 1138, 420]
     Open		    on
     ModelBrowserVisibility  off
     ModelBrowserWidth	    200
@@ -235,10 +235,9 @@ Library {
 	  MaskPromptString	  "Master|Slave Index|Device Model |Output Typ"
 "e |Output Full Scale|Output Offset|Output Data Type|Status Output|Output Filt"
 "er|LPF Time Constant (sec)|Sample Time"
-	  MaskStyleString	  "edit,edit,popup(EL3102|EL3104|EL3108|EL3112"
-"|EL3114|EL3122|EL3124|EL3142|EL3144|EL3148|EL3152|EL3154|EL3158|EL3162|EL3164"
-"|EL3168),popup(Vector Output|Separate Outputs),edit,edit,popup(Raw bits|Doubl"
-"e|Double with scale and offset),checkbox,checkbox,edit,edit"
+	  MaskStyleString	  "edit,edit,popup(EL3102|EL3152|EL3162),popup"
+"(Vector Output|Separate Outputs),edit,edit,popup(Raw bits|Double|Double with "
+"scale and offset),checkbox,checkbox,edit,edit"
 	  MaskTunableValueString  "off,off,off,off,off,off,off,off,off,off,off"
 	  MaskCallbackString	  "|||el31xx_check('output_type');\n|||el31xx_"
 "check('dtype');||el31xx_check('filter');||"
@@ -312,9 +311,8 @@ Library {
 "g <tt>-1</tt> will try to set the time using back propagation.\n"
 	  MaskPromptString	  "Master|Slave Index|Device Model |Input Type"
 " |Status Output|Sample Time (-1 for inherited)"
-	  MaskStyleString	  "edit,edit,popup(EL4102|EL4104|EL4108|EL4112"
-"|EL4114|EL4118|EL4122|EL4124|EL4128|EL4132|EL4134|EL4138),popup(Vector Input|"
-"Separate Inputs),checkbox,edit"
+	  MaskStyleString	  "edit,edit,popup(EL4102|EL4132),popup(Vector"
+" Input|Separate Inputs),checkbox,edit"
 	  MaskTunableValueString  "off,off,off,off,off,off"
 	  MaskCallbackString	  "|||el41xx_check('input_type');\n||"
 	  MaskEnableString	  "on,on,on,on,off,on"
@@ -378,9 +376,9 @@ Library {
 "rited sample time."
 	  MaskPromptString	  "Master|Slave Index|Device Model|Output Type"
 "|Output Data Type|Sample Time"
-	  MaskStyleString	  "edit,edit,popup(EL1002|EL1004|EL1004v2|EL10"
-"08|EL1012|EL1014|EL1018),popup(1-Byte Output|Vector Output|Separate Outputs),"
-"popup(Same as Input|double|single|Inherited via back propagation),edit"
+	  MaskStyleString	  "edit,edit,popup(EL1004|EL1004v2|EL1014|EL10"
+"14v2),popup(1-Byte Output|Vector Output|Separate Outputs),popup(Same as Input"
+"|double|single|Inherited via back propagation),edit"
 	  MaskTunableValueString  "off,off,off,off,off,off"
 	  MaskCallbackString	  "|||||"
 	  MaskEnableString	  "on,on,on,on,on,on"
@@ -444,8 +442,8 @@ Library {
 "le time, choose -1 for inherited sample time."
 	  MaskPromptString	  "Master|Slave Index|Device Model |Input Type"
 " |Status Output |Sample Time (-1 for inherited)"
-	  MaskStyleString	  "edit,edit,popup(EL2002|EL2004|EL2032),popup"
-"(1-Byte Input|Vector Input|Separate Inputs),checkbox,edit"
+	  MaskStyleString	  "edit,edit,popup(EL2004|EL2004v2|EL2032|EL20"
+"32v2),popup(1-Byte Input|Vector Input|Separate Inputs),checkbox,edit"
 	  MaskTunableValueString  "off,off,off,off,off,off"
 	  MaskCallbackString	  "||el2xxx_check('model');|el2xxx_check('inpu"
 "t_type');||"

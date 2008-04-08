@@ -73,9 +73,15 @@
 #define Beckhoff_EL2004_PDO_Outputs 0x3001, 1
 #define Beckhoff_EL2004_Outputs Beckhoff_EL2004, Beckhoff_EL2004_PDO_Outputs 
 
+#define Beckhoff_EL2004v2_PDO_Outputs 0x7000, 1
+#define Beckhoff_EL2004v2_Outputs Beckhoff_EL2004, Beckhoff_EL2004v2_PDO_Outputs 
+
 #define Beckhoff_EL2032 0x00000002, 0x07F03052
 #define Beckhoff_EL2032_PDO_Outputs 0x3001, 1
 #define Beckhoff_EL2032_Outputs Beckhoff_EL2032, Beckhoff_EL2032_PDO_Outputs
+
+#define Beckhoff_EL2032v2_PDO_Outputs 0x7000, 1
+#define Beckhoff_EL2032v2_Outputs Beckhoff_EL2032, Beckhoff_EL2032v2_PDO_Outputs
 
 #define Beckhoff_EL3102 0x00000002, 0x0C1E3052
 #define Beckhoff_EL3102_PDO_Status1 0x3101, 1
