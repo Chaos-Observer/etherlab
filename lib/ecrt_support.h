@@ -4,7 +4,6 @@
 #include <inttypes.h>
 #endif
 
-#include "ecdb.h"
 #include "ecrt.h"
 
 struct ecat_pdo;

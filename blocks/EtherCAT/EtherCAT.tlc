@@ -41,6 +41,7 @@
     %with CompiledModel
       %% EtherCAT header
       %<LibAddToCommonIncludes("ecrt_support.h")>
+      %<LibAddToCommonIncludes("ecdb_private.h")>
   
       %openfile buf
       /* Sample times for EtherCAT */
