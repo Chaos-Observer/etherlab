@@ -1,0 +1,121 @@
+%
+% Master-File
+%
+%\documentclass[12pt,a4paper]{letter}
+\documentclass[12pt,a4paper]{article}
+%\documentclass[12pt,a4paper]{report}
+
+\input{ighpreamble}     % definiert texeinstellungen und \newcommands
+
+\usepackage{listings} % Code/Befehl-Listings (fp)
+\usepackage{svn}
+
+% Fette-Typewriter Font für Markierungen in Listings (fp)
+\DeclareFontShape{OT1}{cmtt}{bx}{n}
+{
+  <5><6><7><8><9><10><10.95><12><14.4><17.28><20.74><24.88>cmttb10
+}{}
+
+% Konfiguration für "listings"-Paket (fp)
+\lstset{basicstyle=\ttfamily\small,numberstyle=\tiny,aboveskip=4mm,
+  belowskip=2mm,gobble=2,escapechar=`}
+
+\newcommand{\version}{1.1.1}
+
+%
+% Hier als Entwurf kennzeichnen
+%
+%\entwurf{Draft}
+
+\selectlanguage{english}
+
+\begin{document}
+
+%
+% nachfolgendes bedarfsweise hereinnehmen
+%
+
+% Die  zwei Titelseiten:
+%\ightitlepage{
+%               Erste Zeile Titel\\[1ex]
+%               Zweite Zeile Titel\\[1ex]
+%               vielleicht dritte Zeile\\[1ex]
+%               }{Musterfirma}{Monat 200X}
+%
+% alternativ für kurze Informationen
+% Titel entsprechend aendern
+%
+
+\begin{titlepage}
+  \begin{center}
+    \Large
+
+    \rule{\textwidth}{1.5mm}
+
+    \Huge
+    \raisebox{-0.8ex} {\includegraphics[height=5ex]{etherlabsign-gr}}\\[3ex]
+    \Large
+    {\bf EtherLab\regTM/RTW\\[1ex]
+      Version \version\\[1ex]}
+
+    \vspace{1ex}
+    \rule{\textwidth}{1.5mm}
+
+    \vspace{18ex}
+
+    \vspace{5ex}
+    created by\\[1ex]
+    Ingenieurgemeinschaft \IgH\\
+
+    \vspace{\fill}
+    \Large Essen\\[2ex]
+    \today\\[2ex]
+  \end{center}
+\end{titlepage}
+
+% Rückseite des Deckblattes
+
+\begin{titlepage}
+  \vspace*{\fill}
+  {\small
+    Ingenieurgemeinschaft IgH\\
+    Heinz-Bäcker-Str. 34\\
+    D-45356 Essen\\
+    Tel.: +49-201-36014-0\\
+    Fax.: +49-201-36014-14\\
+    E-mail: igh@igh-essen.com}
+\end{titlepage}
+
+%\tecnote{Information}
+
+%
+% Das Inhaltsverzeichnis:
+\ightoc
+\newpage
+%
+% Das Abbildungsverzeichnis:
+\ighfig
+\newpage
+%
+% Das Tabellenverzeichnis:
+%\ightab
+%
+
+% Der eigentliche Inhalt:
+\input{etherlab-rtw.tex}
+
+%
+% der Index (in Vorbereitung 10/2004)
+%\ighindex
+%
+
+% das Literaturverzeichnis (in Vorbereitung 10/2004)
+%\ighbib
+%
+
+\end{document}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:
