@@ -36,7 +36,7 @@ MODEL_SOURCES =
 
 ifeq ($(KERNELRELEASE),)
 
-all %:
+modules %:
 	$(MAKE) -C @LINUX_DIR@ M=$(shell pwd) $@
 
 .linted: $(MODEL_NAME).xml
@@ -48,6 +48,7 @@ EXTRA_CFLAGS = \
         -I@ETHERLAB_DIR@ \
         -I@prefix@ \
         -I@RTAI_DIR@ \
+        -I$(src) \
         $(MODEL_CFLAGS) \
         -DMODEL=$(MODEL_NAME)
 
@@ -64,7 +65,7 @@ clean-files := .*.dep param.h cvt.h data.c model_defines.h .linted
 # Kbuild can only compile files that are local to $(obj).
 # If a file exists in the source distribution, copy it locally.
 $(obj)/.src/%: @prefix@/src/kernel/%
-	$(Q)mkdir -p .src
+	$(Q)mkdir -p $(obj)/.src
 	$(Q)cp $< $@
 
 HEADERS = $(obj)/param.h $(obj)/signal.h $(obj)/inputptr.h
