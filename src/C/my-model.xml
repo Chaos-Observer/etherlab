@@ -27,13 +27,13 @@
   </include>
 
   <refsystem name="subsysname">
-    <subsystem name="parameter">
+    <subsystem name="subsystem_with_parameter">
       <parameter name="scalar_param" datatype="double_T"/>
     </subsystem>
-    <subsystem name="signal">
+    <subsystem name="subsystem_with_signal">
       <signal name="pressure" datatype="double_T"/>
     </subsystem>
-    <subsystem name="signalandparameter">
+    <subsystem name="subsystem_with_signal_and_parameter">
       <signal name="pressure" datatype="double_T"/>
       <parameter name="scalar_param" datatype="double_T"/>
     </subsystem>
@@ -51,7 +51,7 @@
        <dim value="30"/>
        <meta>hide="0"</meta>
       </signal>
-      <parameter name="scalar_param" datatype="double_T">
+      <parameter name="matrix_param" datatype="double_T">
        <dim value="2"/>
        <dim value="4"/>
        <value>
@@ -70,7 +70,7 @@
        </value>
       </parameter>
       <reference name="reference" value="subsysname">
-        <param path="parameter.scalar_param">
+        <param path="subsystem_with_parameter.scalar_param">
           <value>4</value>
         </param>
         <param path="scalar_param">
