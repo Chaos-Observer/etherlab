@@ -34,8 +34,8 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "ml"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Tue Apr  8 17:14:44 2008"
-  ModelVersionFormat	  "1.%<AutoIncrement:286>"
+  LastModifiedDate	  "Tue Apr  8 17:29:01 2008"
+  ModelVersionFormat	  "1.%<AutoIncrement:287>"
   ConfigurationManager	  "rcs"
   LinearizationMsg	  "none"
   Profile		  off
@@ -767,6 +767,37 @@ Library {
 	}
 	Block {
 	  BlockType		  "S-Function"
+	  Name			  "GenericEtherCAT"
+	  Ports			  [0, 2]
+	  Position		  [180, 168, 265, 217]
+	  BackgroundColor	  "yellow"
+	  FunctionName		  "generic_ethercat"
+	  Parameters		  "master,slave,vendor,product,inputs,outputs,"
+"config,tsample"
+	  MaskPromptString	  "Master index|Slave address|Sample time"
+	  MaskStyleString	  "edit,edit,edit"
+	  MaskTunableValueString  "off,off,off"
+	  MaskCallbackString	  "||"
+	  MaskEnableString	  "on,on,on"
+	  MaskVisibilityString	  "on,on,on"
+	  MaskToolTipString	  "on,on,on"
+	  MaskVarAliasString	  ",,"
+	  MaskVariables		  "master=@1;slave=@2;tsample=@3;"
+	  MaskInitialization	  "vendor = hex2dec('00000002');\nproduct = he"
+"x2dec('ffffffff');\n\noutputs(1).index = hex2dec('7000');\noutputs(1).subinde"
+"x = hex2dec('00');\noutputs(1).type = 'uint16_T';\n\noutputs(2).index = hex2d"
+"ec('7001');\noutputs(2).subindex = hex2dec('00');\noutputs(2).type = 'uint8_T"
+"';\n\ninputs = {};\nconfig = {};"
+	  MaskDisplay		  "disp('Generic\\nEtherCAT\\nSlave')"
+	  MaskIconFrame		  on
+	  MaskIconOpaque	  on
+	  MaskIconRotate	  "none"
+	  MaskIconUnits		  "autoscale"
+	  MaskValueString	  "0|0|0"
+	  MaskTabNameString	  ",,"
+	}
+	Block {
+	  BlockType		  "S-Function"
 	  Name			  "K-Bus In"
 	  Ports			  [0, 1]
 	  Position		  [25, 259, 105, 301]
@@ -875,7 +906,7 @@ Library {
 	  BlockType		  "S-Function"
 	  Name			  "MSD_0"
 	  Ports			  [2, 2]
-	  Position		  [320, 112, 455, 183]
+	  Position		  [325, 147, 460, 218]
 	  BackgroundColor	  "yellow"
 	  FunctionName		  "moog_msd"
 	  Parameters		  "master,index,tsample,iomode"
