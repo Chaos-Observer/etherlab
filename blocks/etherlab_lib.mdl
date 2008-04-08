@@ -34,8 +34,8 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "ml"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Tue Apr  8 16:34:28 2008"
-  ModelVersionFormat	  "1.%<AutoIncrement:284>"
+  LastModifiedDate	  "Tue Apr  8 17:08:59 2008"
+  ModelVersionFormat	  "1.%<AutoIncrement:286>"
   ConfigurationManager	  "rcs"
   LinearizationMsg	  "none"
   Profile		  off
@@ -129,7 +129,7 @@ Library {
   }
   System {
     Name		    "etherlab_lib"
-    Location		    [543, 255, 1138, 420]
+    Location		    [743, 509, 1338, 669]
     Open		    on
     ModelBrowserVisibility  off
     ModelBrowserWidth	    200
@@ -154,7 +154,7 @@ Library {
       MaskHideContents	      off
       System {
 	Name			"EtherCAT"
-	Location		[898, 152, 1395, 520]
+	Location		[165, 489, 662, 857]
 	Open			off
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
@@ -269,7 +269,7 @@ Library {
 	  FunctionName		  "el41xx"
 	  Parameters		  "master,index,model,input_type,status,tsampl"
 "e"
-	  MaskType		  "EL31xx"
+	  MaskType		  "EL41xx"
 	  MaskDescription	  "Beckhoff 2,4,8-Channel 16-Bit Analog Output"
 "\n\nInput Type:\n  1-Byte input: one bit coded input\n  Vector input: Input v"
 "ector is <Channels> wide\n  Separate inputs: have <Channels> number of inputs"
