@@ -60,7 +60,7 @@ $(MODEL_NAME)-y := mdl_main.o data.o $(MODEL_SOURCES:.c=.o) \
         .src/register.o .src/rt_mdl_main.o mdf.o
 # Additionally mark the source files in .src as SECONDARY, so they are 
 # not deleted, since they are needed by modpost.
-.SECONDARY: $(obj)/.src/register.c
+.SECONDARY: $(obj)/.src/register.c $(obj)/.src/rt_mdl_main.c
 
 clean-dirs := .src
 clean-files := \
