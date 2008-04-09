@@ -108,8 +108,18 @@
     <xsl:param name="prefix"/>
     <xsl:param name="select"/>
     <xsl:param name="s" select="@value"/>
+    <xsl:param name="path">
+      <xsl:choose>
+        <xsl:when test="$prefix">
+          <xsl:value-of select="concat($prefix,'/',@name)"/>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:value-of select="@name"/>
+        </xsl:otherwise>
+      </xsl:choose>
+    </xsl:param>
     <xsl:apply-templates select="/model/refsystem[@name=$s]">
-      <xsl:with-param name="prefix" select="concat($prefix,'/',@name)"/>
+      <xsl:with-param name="prefix" select="$path"/>
       <xsl:with-param name="select" select="$select"/>
     </xsl:apply-templates>
   </xsl:template>
