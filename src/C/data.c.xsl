@@ -60,41 +60,80 @@ struct signal signal;
   <xsl:template match="data">
     <xsl:text>struct param param = {
     </xsl:text>
-    <xsl:apply-templates/>
+    <xsl:apply-templates>
+      <xsl:with-param name="type">param</xsl:with-param>
+    </xsl:apply-templates>
+    <xsl:text>};
+    </xsl:text>
+    <xsl:text>struct inputptr inputptr = {
+    </xsl:text>
+    <xsl:apply-templates>
+      <xsl:with-param name="type">inputptr</xsl:with-param>
+    </xsl:apply-templates>
     <xsl:text>};
     </xsl:text>
   </xsl:template>
 
   <xsl:template match="subsystem">
     <xsl:param name="prefix"/>
-    <xsl:param name="path">
-      <xsl:value-of select="concat($prefix,'.',@name)"/>
-    </xsl:param>
+    <xsl:param name="type"/>
+    <xsl:param name="path" select="concat($prefix,'.',@name)"/>
     <!-- only descend if there are any "parameter" child elements -->
-    <xsl:if test=".//parameter">
-      <xsl:apply-templates>
-        <xsl:with-param name="prefix">
-          <xsl:value-of select="$path"/>
-        </xsl:with-param>
-      </xsl:apply-templates>
-    </xsl:if>
+    <xsl:choose>
+      <xsl:when test="$type='param'">
+        <xsl:if test=".//parameter">
+          <xsl:apply-templates>
+            <xsl:with-param name="prefix" select="$path"/>
+            <xsl:with-param name="type" select="$type"/>
+          </xsl:apply-templates>
+        </xsl:if>
+      </xsl:when>
+      <xsl:when test="$type='inputptr'">
+        <xsl:if test=".//pointer">
+          <xsl:apply-templates>
+            <xsl:with-param name="prefix" select="$path"/>
+            <xsl:with-param name="type" select="$type"/>
+          </xsl:apply-templates>
+        </xsl:if>
+      </xsl:when>
+    </xsl:choose>
   </xsl:template>
 
   <xsl:template match="reference">
     <xsl:param name="prefix"/>
-    <xsl:if test="param">
-      <xsl:value-of select="concat($prefix,'.',name())"/>
-      <xsl:text> = {
-      </xsl:text>
-      <xsl:for-each select="param">
-        <xsl:value-of select="concat('.',@path,' = ')"/>
-        <xsl:apply-templates select="value"/>
-        <xsl:text>
-        </xsl:text>
-      </xsl:for-each>
-      <xsl:text>},
-      </xsl:text>
-    </xsl:if>
+    <xsl:param name="type"/>
+    <xsl:choose>
+      <xsl:when test="$type='param'">
+        <xsl:if test="param">
+          <xsl:value-of select="concat($prefix,'.',name())"/>
+          <xsl:text> = {
+          </xsl:text>
+          <xsl:for-each select="param">
+            <xsl:value-of select="concat('.',@path,' = ')"/>
+            <xsl:apply-templates select="value"/>
+            <xsl:text>
+            </xsl:text>
+          </xsl:for-each>
+          <xsl:text>},
+          </xsl:text>
+        </xsl:if>
+      </xsl:when>
+      <xsl:when test="$type='inputptr'">
+        <xsl:if test="pointer">
+          <xsl:value-of select="concat($prefix,'.',name())"/>
+          <xsl:text> = {
+          </xsl:text>
+          <xsl:for-each select="pointer">
+            <xsl:value-of select="concat('.',@path,' = ')"/>
+            <xsl:value-of select="concat('&amp;S(',value,')')"/>
+            <xsl:text>,
+            </xsl:text>
+          </xsl:for-each>
+          <xsl:text>},
+          </xsl:text>
+        </xsl:if>
+      </xsl:when>
+    </xsl:choose>
   </xsl:template>
   
   <xsl:template match="cstruct">
@@ -102,17 +141,15 @@ struct signal signal;
   
   <xsl:template match="parameter">
     <xsl:param name="prefix"/>
-    <xsl:param name="path">
-      <xsl:value-of select="concat($prefix,'.',@name)"/>
-    </xsl:param>
-    <xsl:value-of select="$path"/>
-    <xsl:text> = </xsl:text> 
-    <xsl:apply-templates select="value"/>
+    <xsl:param name="type"/>
+    <xsl:param name="path" select="concat($prefix,'.',@name)"/>
+    <xsl:if test="$type='param'">
+      <xsl:value-of select="$path"/>
+      <xsl:text> = </xsl:text> 
+      <xsl:apply-templates select="value"/>
+    </xsl:if>
   </xsl:template>
 
-    <!-- xsl:text> { </xsl:text> 
-    <xsl:text> },
-    </xsl:text --> 
   <xsl:template match="value">
     <xsl:choose>
       <xsl:when test=".//value">

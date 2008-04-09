@@ -76,6 +76,9 @@
         <param path="scalar_param">
           <value>4</value>
         </param>
+        <pointer path="scalar_ptr">
+          <value>meters.meter1.pressure[0]</value>
+        </pointer>
       </reference>
     </subsystem>
     </subsystem>
