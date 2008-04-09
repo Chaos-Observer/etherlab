@@ -565,8 +565,13 @@ int rtp_fio_init_mdl(struct model *model, struct module *owner)
     }
     pr_debug("Added char dev for BlockIO, minor %u\n", MINOR(devno));
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 15)
+    model->sysfs_dev = class_device_create(rt_kernel.sysfs_class,
+            devno, NULL, "etl%d", model->id + 1);
+#else
     model->sysfs_dev = class_device_create(rt_kernel.sysfs_class, NULL, 
             devno, NULL, "etl%d", model->id + 1);
+#endif
     if (IS_ERR(model->sysfs_dev)) {
         printk("Could not create device etl0.\n");
         err = PTR_ERR(model->sysfs_dev);
@@ -740,8 +745,13 @@ int rtp_fio_init(void)
     }
     pr_debug("Started char dev for rt_kernel\n");
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 15)
+    rt_kernel.sysfs_dev = class_device_create(rt_kernel.sysfs_class,
+            rt_kernel.dev, NULL, "etl0");
+#else
     rt_kernel.sysfs_dev = class_device_create(rt_kernel.sysfs_class, NULL, 
             rt_kernel.dev, NULL, "etl0");
+#endif
     if (IS_ERR(rt_kernel.sysfs_dev)) {
         printk("Could not create device etl0.\n");
         err = PTR_ERR(rt_kernel.sysfs_dev);
