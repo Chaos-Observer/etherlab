@@ -281,33 +281,34 @@ AC_CHECK_FUNCS([memset mkfifo munmap select socket strdup])
 # Output files
 AC_CONFIG_FILES([
         Makefile 
-        etherlab/Makefile 
-        etherlab/etherlab_kmod.tmf
-        etherlab/setup_etherlab.m 
-        etherlab/etherlab_tools.mk 
-        etherlab/etherlab_config.m
-        blocks/Makefile 
-        blocks/setup.m 
         blocks/AddiData/Makefile 
         blocks/AddiData/setup.m 
-        blocks/Hilscher/Makefile 
-        blocks/Hilscher/setup.m 
         blocks/EtherCAT/Makefile
         blocks/EtherCAT/setup.m 
-        src/Makefile
-        src/C/Makefile
-        src/C/Kbuild.makefile
-        tools/Makefile
-        tools/buddy/Makefile
-        tools/buddy-ng/Makefile
-        tools/scripts/Makefile
-        tools/scripts/etherlab
-        tools/rt_kernel/Kbuild
-        tools/rt_kernel/Makefile
-        tools/include/Makefile
+        blocks/Hilscher/Makefile 
+        blocks/Hilscher/setup.m 
+        blocks/Makefile 
+        blocks/setup.m 
+        doc/Makefile
+        etherlab/Makefile 
+        etherlab/etherlab_config.m
+        etherlab/etherlab_kmod.tmf
+        etherlab/etherlab_tools.mk 
+        etherlab/setup_etherlab.m 
         lib/Kbuild
         lib/Makefile
         lib/Makefile.rtw
+        src/C/Kbuild.makefile
+        src/C/Makefile
+        src/Makefile
+        tools/Makefile
+        tools/buddy-ng/Makefile
+        tools/buddy/Makefile
+        tools/include/Makefile
+        tools/rt_kernel/Kbuild
+        tools/rt_kernel/Makefile
+        tools/scripts/Makefile
+        tools/scripts/etherlab
 ])
 AC_OUTPUT
 
