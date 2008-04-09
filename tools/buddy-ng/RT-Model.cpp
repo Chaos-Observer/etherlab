@@ -71,7 +71,7 @@ RTModel::RTModel(RTTask *parent, unsigned int _id):
     // of the longest path name, a structure can be allocated so that the
     // information can be fetched from the kernel
     si.path = new char[mdl_properties.variable_path_len + 1];
-    si.path_len = mdl_properties.variable_path_len + 1;
+    si.path_buf_len = mdl_properties.variable_path_len + 1;
     std::auto_ptr<char> signal_path(si.path);
 
     std::vector<size_t> dims;

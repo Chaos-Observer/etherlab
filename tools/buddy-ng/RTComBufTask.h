@@ -62,6 +62,10 @@ class RTComBufTask: public Task, public std::streambuf {
         unsigned int bufSize;
         void pbump(int);
         void setp(char*, char*);
+//        std::streampos seekoff ( std::streamoff off, 
+//                std::ios_base::seekdir way, 
+//                std::ios_base::openmode which = 
+//                   std::ios_base::in | std::ios_base::out );
 
         // Buffer list.
         // Output buffer is the first buffer

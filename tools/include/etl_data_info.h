@@ -58,7 +58,7 @@ struct signal_info {
     enum si_datatype_t data_type;      // Data Type
     char alias[256];            // Signal alias
     char name[256];             // Signal name
-    size_t path_len;
+    size_t path_buf_len;        // Length of path buffer
     char *path;                 // Path of signal
 };
 

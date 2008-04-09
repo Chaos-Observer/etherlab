@@ -150,7 +150,7 @@
     <xsl:param name="alias"/>    <!-- Signal alias -->
 
     <xsl:text>{ 
-    .si = { </xsl:text> 
+    </xsl:text> 
 
     <!-- Signal data type -->
     <xsl:value-of select="concat('.data_type = si_',@datatype)"/>
@@ -207,7 +207,7 @@
     <!-- Now write the full path as a comment -->
     <xsl:text>.path = "</xsl:text>
     <xsl:value-of select="$path"/>
-    <xsl:text>" },
+    <xsl:text>",
     </xsl:text>
 
     <!-- Address of signal -->
@@ -222,7 +222,7 @@
     </xsl:text> 
 
     <xsl:if test="count(dim)>2">
-      <xsl:value-of select="concat('.dim = dim_',generate-id(.))"/>
+      <xsl:value-of select="concat('.extra_dim = dim_',generate-id(.))"/>
       <xsl:text>,
       </xsl:text>
     </xsl:if>

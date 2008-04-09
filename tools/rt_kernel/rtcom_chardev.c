@@ -511,17 +511,13 @@ fop_ioctl_model( struct file *filp, unsigned int command, unsigned long data)
                 /* Save the pointer to the user's path string, and make
                  * si.path point to our own memory */
                 user_path = si.path;
-                si.path = local_path = kmalloc(si.path_len, GFP_KERNEL);
+                si.path = local_path = kmalloc(si.path_buf_len, GFP_KERNEL);
                 if (!local_path) {
                     rv = -ENOMEM;
-                    printk("Could not allocate %u bytes\n", si.path_len);
                     break;
                 }
 
-                /* When rt_model->get_signal_info is called with 
-                 * si.path = NULL, the path is not copied yet. However,
-                 * path_len is set, giving the opportunity to allocate space
-                 * for the path in a second call, finally copying path */
+                /* Get the information from the model */
                 err = (command == GET_SIGNAL_INFO)
                     ? rt_model->get_signal_info(&si)
                     : rt_model->get_param_info(&si);
@@ -529,7 +525,7 @@ fop_ioctl_model( struct file *filp, unsigned int command, unsigned long data)
                     printk("Error: %s\n", err);
                     rv = -ERANGE;
                 }
-                else if (copy_to_user(user_path, local_path, si.path_len)) {
+                else if (copy_to_user(user_path, local_path, si.path_buf_len)) {
                         rv = -EFAULT;
                 }
                 else {
@@ -656,7 +652,6 @@ static struct vm_operations_struct vm_ops = {
 static int
 fop_mmap_model(struct file *filp, struct vm_area_struct *vma)
 {
-    printk("mapping %p %p %lu\n", (void*)vma->vm_start, (void*)vma->vm_end, vma->vm_end - vma->vm_start);
     vma->vm_ops = &vm_ops;
     vma->vm_flags |= VM_RESERVED;       /* Pages will not be swapped out */
     vma->vm_private_data = filp->private_data;

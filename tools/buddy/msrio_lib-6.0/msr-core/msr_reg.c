@@ -107,7 +107,7 @@ extern int (*newparamflag)(void*, void*, size_t);  //Funktion, die aufgerufen we
 #define MSR_CALC_ADR(_START,_DATASIZE,_ORIENTATION,_RNUM,_CNUM)   \
 do {                                                              \
 if (_ORIENTATION == si_matrix)		          \
-    p = _START + (_RNUM * r + c)*_DATASIZE;	                  \
+    p = _START + (_CNUM * r + c)*_DATASIZE;	                  \
 else								  \
     p = _START + (r + c)*_DATASIZE;  			          \
 } while (0)							  \
@@ -1740,6 +1740,7 @@ int msr_reg_rtw_param( const char *model_name,
     if(DBG > 0) printk("reg_rtw_param_ %s,%s\n",path,name);
 
     //Hilfspuffer
+
     buf = (char *)getmem(
             strlen(model_name) + strlen(path) + strlen(name) + 4
             +2+20);

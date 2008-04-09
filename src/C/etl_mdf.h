@@ -26,9 +26,14 @@
 #include "include/etl_data_info.h"
 
 struct capi_variable {
-    struct signal_info si;
+    enum si_datatype_t data_type;
+    unsigned int st_index;
+    unsigned int dim[2];
+    const char *name;
+    const char *alias;
+    const char *path;
     void *address;
-    size_t *dim;
+    size_t *extra_dim;
 };
 
 extern struct capi_variable capi_signals[];

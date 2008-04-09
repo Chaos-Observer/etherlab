@@ -64,7 +64,7 @@ struct rt_model rt_model = {
 
     .decimation = DECIMATION > 1 ? DECIMATION : 1,
     .max_overrun = OVERRUNMAX,
-    .buffer_time = BUFFER_TIME > 0 ? BUFFER_TIME*1e6 : 0,
+    .buffer_time = BUFFER_TIME > 0 ? BUFFER_TIME*1000000 : 1000000,
     .stack_size = STACKSIZE,
     .task_stats = task_stats,
 
@@ -107,9 +107,14 @@ get_signal_info(struct signal_info *si)
     if (si->index >= rt_model.signal_count) {
         return "Signal index exceeded.";
     }
-    strncpy(si->path, capi_signals[si->index].si.path, si->path_len);
-    si->path[si->path_len-1] = '\0';
-    memcpy(si, &capi_signals[si->index].si, sizeof(*si));
+
+    si->data_type = capi_signals[si->index].data_type;
+    si->st_index  = capi_signals[si->index].st_index;
+    si->offset = capi_signals[si->index].address - (void*)&signal;
+    memcpy(si->dim, capi_signals[si->index].dim, sizeof(si->dim));
+    strncpy(si->name, capi_signals[si->index].name, sizeof(si->name));
+    strncpy(si->alias, capi_signals[si->index].alias, sizeof(si->alias));
+    strncpy(si->path, capi_signals[si->index].path, si->path_buf_len);
 
     return NULL;
 }
@@ -120,9 +125,14 @@ get_param_info(struct signal_info *si)
     if (si->index >= rt_model.param_count) {
         return "Signal index exceeded.";
     }
-    strncpy(si->path, capi_signals[si->index].si.path, si->path_len);
-    si->path[si->path_len-1] = '\0';
-    memcpy(si, &capi_parameters[si->index].si, sizeof(*si));
+
+    si->data_type = capi_parameters[si->index].data_type;
+    si->st_index  = capi_parameters[si->index].st_index;
+    si->offset = capi_parameters[si->index].address - (void*)&param;
+    memcpy(si->dim, capi_parameters[si->index].dim, sizeof(si->dim));
+    strncpy(si->name, capi_parameters[si->index].name, sizeof(si->name));
+    strncpy(si->alias, capi_parameters[si->index].alias, sizeof(si->alias));
+    strncpy(si->path, capi_parameters[si->index].path, si->path_buf_len);
 
     return NULL;
 }
@@ -153,16 +163,16 @@ mdl_start(void)
     // Count the number of signals and parameters, and also find the 
     // length of the longest path
     for (idx = 0; capi_signals[idx].address; idx++) {
-        if ((len = strlen(capi_signals[idx].si.path) )
-                > rt_model.variable_path_len) {
+        len = strlen(capi_signals[idx].path);
+        if (len > rt_model.variable_path_len) {
             rt_model.variable_path_len = len;
         }
     }
     rt_model.signal_count = idx;
 
     for (idx = 0; capi_parameters[idx].address; idx++) {
-        if ((len = strlen(capi_parameters[idx].si.path))
-                > rt_model.variable_path_len) {
+        len = strlen(capi_parameters[idx].path);
+        if (len > rt_model.variable_path_len) {
             rt_model.variable_path_len = len;
         }
     }

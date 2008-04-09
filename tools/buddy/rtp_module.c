@@ -175,8 +175,9 @@ static int start_model(const char *model_name, unsigned int model_num)
     struct model *model;
     struct task_stats *task_stats;
     unsigned int st;
-    struct signal_info si;
     enum si_orientation_t orientation;
+    char *path_buf;
+    unsigned int idx;
 
     /* Get a pointer to model, going to need it often */
     model = &rtp_io.model[model_num];
@@ -235,17 +236,25 @@ static int start_model(const char *model_name, unsigned int model_num)
 
     /* Initialise the model with the pointer obtained from the shared
      * object above */
-    si.path = (char*) malloc( model->properties.variable_path_len + 1);
-    CHECK_ERR (!si.path, errno, out_malloc_si,
+    path_buf = (char*) malloc( model->properties.variable_path_len + 1);
+    CHECK_ERR (!path_buf, errno, out_malloc_si,
             "Could not allocate memory: %s", strerror(errno));
-    si.path_len = model->properties.variable_path_len + 1;
 
-    for (si.index = 0; si.index < model->properties.signal_count; 
-            si.index++) {
+    for (idx = 0; idx < model->properties.signal_count; idx++) {
+        struct signal_info si = {
+            .index = idx,
+            .path = path_buf,
+            .path_buf_len = model->properties.variable_path_len + 1,
+        };
+
         rv = ioctl(model->rtp_fd, GET_SIGNAL_INFO, &si);
         CHECK_ERR (rv, errno, out_get_signal_info,
                 "Error: could not get Signal Info %s", strerror(errno));
-        if (si.dim[1]) {
+        if (!si.dim[0]) {
+            syslog(LOG_NOTICE, "msr cannot handle multidimensional arrays.");
+            continue;
+        }
+        else if (si.dim[1]) {
             orientation = si_matrix;
         }
         else {
@@ -257,14 +266,24 @@ static int start_model(const char *model_name, unsigned int model_num)
                     si.dim[0], si.dim[1], si.data_type, orientation,
                     si_data_width[si.data_type]), 
                 -1, out_reg_signal, "MSR Error: could not register signal");
+
     }
 
-    for (si.index = 0; si.index < model->properties.param_count; 
-            si.index++) {
+    for (idx = 0; idx < model->properties.param_count; idx++) {
+        struct signal_info si = {
+            .index = idx,
+            .path = path_buf,
+            .path_buf_len = model->properties.variable_path_len + 1,
+        };
+
         rv = ioctl(model->rtp_fd, GET_PARAM_INFO, &si);
         CHECK_ERR (rv, errno, out_get_param_info,
                 "Error: could not get Parameter Info %s", strerror(errno));
-        if (si.dim[1]) {
+        if (!si.dim[0]) {
+            syslog(LOG_NOTICE, "msr cannot handle multidimensional arrays.");
+            continue;
+        }
+        else if (si.dim[1]) {
             orientation = si_matrix;
         }
         else {
@@ -303,7 +322,7 @@ static int start_model(const char *model_name, unsigned int model_num)
     init_fd(model->rtp_fd, update_rtB, NULL, model);
 
     /* Free unused memory */
-    free(si.path);
+    free(path_buf);
 
     syslog(LOG_DEBUG, "Finished registering model with buddy");
     return 0;
@@ -313,7 +332,7 @@ out_reg_param:
 out_get_param_info:
 out_reg_signal:
 out_get_signal_info:
-    free(si.path);
+    free(path_buf);
 out_malloc_si:
     msr_cleanup();
 out_msr_init:

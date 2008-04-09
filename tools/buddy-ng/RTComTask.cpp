@@ -50,7 +50,7 @@ RTComTask::RTComTask(Task* parent, int _fd, RTTask* _rtTask):
     length("{\\d+}"),
     empty("\\s*\n$"),
     listModels("MODELS\n$"),
-    listSignals("LIST (\\w+)\n$")
+    listSignals("LIST (.+)\n$")
 //************************************************************************
 {
     sasl_callback_t callbacks[] = {
@@ -63,6 +63,7 @@ RTComTask::RTComTask(Task* parent, int _fd, RTTask* _rtTask):
 
     enableRead(fd);
     os.stdOut("RTCom v0.1");
+
     inBufPos = 0;
     parserState = Idle;
     loggedIn = false;

@@ -293,18 +293,16 @@ static long rtp_ioctl(
                 }
 
                 /* Save the pointer to the user's path string, and make
-                 * si.path point to our own memory */
+                 * si.path point to our own memory, since we cannot write
+                 * to user space directly*/
                 user_path = si.path;
-                si.path = local_path = kmalloc(si.path_len, GFP_KERNEL);
+                si.path = local_path = kmalloc(si.path_buf_len, GFP_KERNEL);
                 if (!local_path) {
                     rv = -ENOMEM;
                     break;
                 }
 
-                /* When rt_model->get_signal_info is called with 
-                 * si.path = NULL, the path is not copied yet. However,
-                 * path_len is set, giving the opportunity to allocate space
-                 * for the path in a second call, finally copying path */
+                /* Get the information from the model */
                 err = (command == GET_SIGNAL_INFO)
                     ? rt_model->get_signal_info(&si)
                     : rt_model->get_param_info(&si);
@@ -312,7 +310,7 @@ static long rtp_ioctl(
                     printk("Error: %s\n", err);
                     rv = -ERANGE;
                 }
-                else if (copy_to_user(user_path, local_path, si.path_len+1)) {
+                else if (copy_to_user(user_path, local_path, si.path_buf_len)) {
                         rv = -EFAULT;
                 }
                 else {
