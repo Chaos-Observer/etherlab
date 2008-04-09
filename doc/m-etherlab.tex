@@ -2,7 +2,7 @@
 % Master-File
 %
 %\documentclass[12pt,a4paper]{letter}
-\documentclass[12pt,a4paper]{article}
+\documentclass[12pt,a4paper]{scrartcl}
 %\documentclass[12pt,a4paper]{report}
 
 \input{ighpreamble}     % definiert texeinstellungen und \newcommands
@@ -20,7 +20,7 @@
 \lstset{basicstyle=\ttfamily\small,numberstyle=\tiny,aboveskip=4mm,
   belowskip=2mm,gobble=2,escapechar=`}
 
-\newcommand{\version}{1.1.1}
+\newcommand{\version}{devel}
 
 %
 % Hier als Entwurf kennzeichnen
@@ -49,14 +49,14 @@
 \begin{titlepage}
   \begin{center}
     \Large
+    \sf
 
     \rule{\textwidth}{1.5mm}
 
     \Huge
     \raisebox{-0.8ex} {\includegraphics[height=5ex]{etherlabsign-gr}}\\[3ex]
     \Large
-    {\bf EtherLab\regTM\\[1ex]
-      Version \version\\[1ex]}
+    Version \version\\[1ex]
 
     \vspace{1ex}
     \rule{\textwidth}{1.5mm}
@@ -68,7 +68,7 @@
     Ingenieurgemeinschaft \IgH\\
 
     \vspace{\fill}
-    \Large Essen\\[2ex]
+    Essen\\[2ex]
     \today\\[2ex]
   \end{center}
 \end{titlepage}
@@ -91,7 +91,6 @@
 %
 % Das Inhaltsverzeichnis:
 \ightoc
-\newpage
 %
 % Das Abbildungsverzeichnis:
 \ighfig

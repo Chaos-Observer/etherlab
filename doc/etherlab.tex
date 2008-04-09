@@ -1,79 +1,99 @@
-%
-% Inhaltsfile
-%
+%-----------------------------------------------------------------------------
+
 \SVN $Id$
 \rfoot{\SVNId}
 
 \begin{ighsec}{Introduction}
-\label{sec:einleitung}
+\label{sec:intro}
 
-A blockset was created for the real time connection of EtherCAT\regTM\ 
-components in MATLAB/Simulink\regTM. EtherCAT\regTM\ slaves can be
-selected from the \texttt{etherlab\_lib} in MATLAB/Simulink/RTW\regTM\ 
-and directly included into the model. After that, the model ist
-translated to C code and compiled to a loadable Linux kernel module.
+The name EtherLab\regTM\ once stood for an open-source solution of using the
+EtherCAT\regTM\ fieldbus technology with MATLAB/Simulink\regTM\ for automation
+and test purposes. Today, EtherLab is much more than this: It is neither
+depending on EtherCAT, nor on MATLAB/Simulink any more. Below is a short
+summary of what EtherLab is capable of:
+
+\begin{itemize}
+
+\item Realtime execution of multiple models with multiple tasks inside the
+Linux kernel.
+
+\item Accessing the models' signals and parameters via TCP/IP. There is a
+generic C++ library called RTCom and many tools for visualisation, data
+logging, etc. available from \url{http://etherlab.org/en/components.php}.
+
+\item Creation of realtime models with a C-API (see section~\ref{sec:api}).
+
+\item Creation of realtime models using MATLAB/Simulink and the EtherLab
+blockset (see section~\ref{sec:simulink}).
+
+\end{itemize}
 
 \end{ighsec}
 
-%--------------------------------------------------------------------
+%-----------------------------------------------------------------------------
 
-\begin{ighsec}{Concept}
-\label{sec:konzept}
+\begin{ighsec}{Architecture}
+\label{sec:arch}
 
-EtherLab\regTM/RTW is a system to create controllers using
-EtherCAT\regTM\ hardware, that run with the EtherLab\regTM\ 
-EtherCAT\regTM\ master inside the Linux kernel. The user is able to
-create models using the MATLAB/Simulink\regTM\ library
-\texttt{etherlab\_lib}, that are compiled to a loadable Linux kernel
-module by traversing Realtime Workshop and EtherLab\regTM/RTW.
-
-The EtherLab\regTM/RTW package can be subdivided into the components
-listed below:
+The EtherLab package can be subdivided into the components listed below:
 
 \begin{itemize}
-\item The \texttt{etherlab\_lib} for MATLAB/Simulink\regTM. It
-  contains all necessary blocks for the creation of models with
-  EtherCAT\regTM\ slaves.
-\item The support code, that compiles a Linux kernel module of the
-  output of Realtime Workshop. This happens in background and is not
-  visible to the user.
-\item The kernel module \texttt{rt\_kernel}, that is responsible for
-  the real time execution of the created models. On loading, the
-  modules register at the \texttt{rt\_kernel}.
-\item The EtherLab\regTM\ ``Buddy Process'', that acts as a
-  counterpart to the \texttt{rt\_kernel} in user space and is
-  responsible for providing real time data in user space (see
-  figure~\ref{fig:architektur}).
+
+\item The Linux kernel module \texttt{rt\_kernel}, that is responsible for the
+realtime execution of the created models.
+
+\item The EtherLab ``Buddy Process'', that acts as a userspace counterpart to
+the \texttt{rt\_kernel} and is responsible for providing process data via
+TCP/IP (see figure~\ref{fig:architektur}).
+
+\item The EtherLab C-API, that is used to create realtime models, basically
+consisting of tasks, signals and parameters. Models are described using and
+EtherLab model XML file that is used to create the realtime data structures
+and the model information for the buddy process.
+
+\item The MATLAB/Simulink integration of EtherLab in terms of the
+\texttt{etherlab\_lib} for Simulink (containing all necessary blocks) and the
+EtherLab target for the Realtime Workshop, that is able to create EtherLab
+models that will use the EtherLab C-API.
+
 \end{itemize}
 
 \begin{figure}[H]
   \begin{center}
     \includegraphics[width=\textwidth]{images/etl-arch}
-    \caption{EtherLab\regTM\ architecture}
+    \caption{EtherLab runtime architecture}
     \label{fig:architektur}
   \end{center}
 \end{figure}
 
 \end{ighsec}
 
-%--------------------------------------------------------------------
+%-----------------------------------------------------------------------------
 
 \begin{ighsec}{Installation}
-\label{sec:installation}
+\label{sec:install}
 
 \begin{ighsec}{Prerequisites}
 
-Prerequisites for the installation of EtherLab\regTM/RTW:
+Prerequisites for the installation of EtherLab:
 
 \begin{itemize}
-\item Linux-Kernel 2.6 (including kernel sources)
+
+\item Linux kernel 2.6 (including kernel sources)
+
 \item RTAI $\ge$ 3.3
-\item EtherLab\regTM\ EtherCAT\regTM\ Master 1.3.x
+
+\item {\it optional:} MATLAB/Simulink with Realtime Workshop, if Simulink
+shall be used to create EtherLab models. Recommended are MATLAB versions
+2006{\it x} -- 2007{\it x}.
+
+\item {\it optional:} EtherCAT master 1.4, if the Simulink EtherCAT blocks
+shall be used. See \url{http://etherlab.org/en/ethercat}.
+
 \end{itemize}
 
-It is recommended to install EtherLab\regTM\ components to
-\texttt{/opt/etherlab}. If this directory does not exist, it can be
-created with the commands below:
+It is recommended to install EtherLab components to \texttt{/opt/etherlab}. If
+this directory does not exist, it can be created with the commands below:
 
 \begin{lstlisting}
   # `\textbf{mkdir /opt/etherlab}`
@@ -83,20 +103,19 @@ created with the commands below:
 
 \end{ighsec}
 
-\begin{ighsec}{Installation of EtherLab\regTM/RTW}
+\begin{ighsec}{Installation}
 \label{sec:inst-paket}
 
-Installation is done after copying the EtherLab\regTM/RTW tarball from
-the EtherLab\regTM\ CD (or downloading from \url{etherlab.org}) as
-normal user according to the commands below. The last command installs
-EtherLab\regTM/RTW into the directory \texttt{/opt/etherlab/rtw}. A
-different target directory can be selected via the \texttt{--prefix}
-parameter of the \texttt{configure} script (see \texttt{configure
-  --help}).
+Installation is done after copying the EtherLab tarball from the EtherLab CD
+(or downloading from \url{http://etherlab.org}) as normal user according to
+the commands below. The last command installs EtherLab into the directory
+\texttt{/opt/etherlab}. A different target directory can be selected via the
+\texttt{--prefix} parameter of the \texttt{configure} script (see
+\texttt{configure --help}).
 
 \begin{lstlisting}
-  `\$` `\textbf{tar xzf etherlab\_rtw-\version.tar.gz}`
-  `\$` `\textbf{cd etherlab\_rtw-\version/}`
+  `\$` `\textbf{tar xzf etherlab-\version.tar.gz}`
+  `\$` `\textbf{cd etherlab-\version/}`
   `\$` `\textbf{./configure}`
   `\$` `\textbf{make}`
   `\$` `\textbf{make install}`
@@ -104,24 +123,23 @@ parameter of the \texttt{configure} script (see \texttt{configure
 
 \end{ighsec}
 
-\begin{ighsec}{Installation of the EtherLab\regTM\ Blockset}
+\begin{ighsec}{Installation of the Simulink Library}
 \label{sec:inst-blockset}
 
-As a prerequisite for the \texttt{setup\_etherlab} command (see below)
-to succeed, the file \textit{toolbox/local/pathdef.m} inside the
-MATLAB\regTM\ installation directory must be writable for the user
-running MATLAB\regTM. Enter the below commands (as \textit{root}) to
-make it writable for all users in the group \textit{users} (substitute
-the variable \textit{MATLABDIR} with the correct path first):
+As a prerequisite for the \texttt{setup\_etherlab} command (see below) to
+succeed, the file \texttt{toolbox/local/pathdef.m} inside the MATLAB
+installation directory must be writable for the user running MATLAB. Enter the
+below commands (as \textit{root}) to make it writable for all users in the
+group \textit{users} (substitute the variable \texttt{\$MATLABDIR} with the
+correct path first):
 
 \begin{lstlisting}
   # `\textbf{chown :users \$MATLABDIR/toolbox/local/pathdef.m}`
   # `\textbf{chmod 664 \$MATLABDIR/toolbox/local/pathdef.m}`
 \end{lstlisting}
 
-To setup the EtherLab\regTM/RTW library \texttt{etherlab\_lib} for the
-use in MATLAB\regTM, the below commands must be entered (out of
-MATLAB\regTM).
+To setup the EtherLab Simulink library \texttt{etherlab\_lib} for the use in
+MATLAB, the below commands must be entered (out of MATLAB).
 
 \begin{lstlisting}
   >> `\textbf{cd /opt/etherlab/rtw}`
@@ -130,16 +148,16 @@ MATLAB\regTM).
 
 \end{ighsec}
 
-\begin{ighsec}{Starting EtherLab\regTM/RTW as a Service}
+\begin{ighsec}{Starting EtherLab as a Service}
 \label{sec:dienst}
 
-If EtherLab\regTM/RTW is to be started as a service, the provided init
-script \texttt{etherlab} can be used. However, the insertion of the
-service is dependent on the GNU/Linux distribution used. The command
-sequence below is intended for SUSE Linux:
+If the EtherLab kernel/buddy are to be started as a service, the provided init
+script \texttt{etherlab} can be used. However, the insertion of the service is
+dependent on the GNU/Linux distribution used. The command sequence below is
+intended for openSUSE Linux:
 
 \begin{lstlisting}
-  # `\textbf{cp /opt/etherlab/rtw/bin/etherlab /etc/init.d/}`
+  # `\textbf{ln -s /opt/etherlab/etc/init.d/etherlab /etc/init.d/}`
   # `\textbf{insserv etherlab}`
 \end{lstlisting}
 
@@ -147,41 +165,51 @@ sequence below is intended for SUSE Linux:
 
 \end{ighsec}
 
-%--------------------------------------------------------------------
+%-----------------------------------------------------------------------------
 
-\begin{ighsec}{The EtherLab\regTM\ Library}
+\begin{ighsec}{The EtherLab C-API}
+\label{sec:api}
+
+\ldots
+
+\end{ighsec}
+
+%-----------------------------------------------------------------------------
+
+\begin{ighsec}{Simulink Integration}
+\label{sec:simulink}
+
+%-----------------------------------------------------------------------------
+
+\begin{ighsec}{The Simulink Library}
 \label{sec:lib}
 
-The EtherLab\regTM\ library \texttt{etherlab\_lib} was designed to
-allow the creation of EtherLab\regTM\ models. It contains blocks for
-all supported EtherCAT\regTM\ slaves. To show the library window (see
-figure~\ref{fig:blockset}), the commands below have to be entered in
-MATLAB\regTM:
+The EtherLab library \texttt{etherlab\_lib} was designed to allow the creation
+of EtherLab models using MATLAB/Simulink. For example, it contains blocks for
+all supported EtherCAT slaves. To show the library window (see
+figure~\ref{fig:blockset}), the command below have to be entered in
+MATLAB:
 
 \begin{lstlisting}
-  >> `\textbf{bdclose all; set\_param(0, 'CharacterEncoding', 'ISO-8859-1')}`
   >> `\textbf{etherlab\_lib}`
 \end{lstlisting}
 
-The first line is only necessary on non-english systems to avoid
-problems regarding character encoding.
-
 Figure~\ref{fig:blockset} shows the window containing the
-\texttt{etherlab\_lib} with the EtherCAT\regTM\ blockset. Each block
-has a configuration dialog, that shows up after double-clicking on the
-block area. There is a ``Help'' button in all of the configuration
-dialogs, that provides detailed help concerning the dialog elements.
+\texttt{etherlab\_lib} with the EtherCAT blockset. Each block has a
+configuration dialog, that shows up after double-clicking on the block area.
+There is a ``Help'' button in all of the configuration dialogs, that provides
+detailed help concerning the dialog elements.
 
 \begin{figure}[H]
   \begin{center}
     \includegraphics[width=0.9\textwidth]{images/blockset.png}
-    \caption{EtherLab\regTM\ blockset}
+    \caption{EtherLab Simulink Blockset}
     \label{fig:blockset}
   \end{center}
 \end{figure}
 
 Figure~\ref{fig:el10xx} shows the configuration dialog for the
-digital-input slaves of the Beckhoff EL10XX series.
+digital-input EtherCAT slaves of the Beckhoff EL10XX series.
 
 \begin{figure}[H]
   \begin{center}
@@ -192,7 +220,7 @@ digital-input slaves of the Beckhoff EL10XX series.
 \end{figure}
 
 Figure~\ref{fig:el20xx} shows the configuration dialog for the
-digital-output slaves of the Beckhoff EL20XX series.
+digital-output EtherCAT slaves of the Beckhoff EL20XX series.
 
 \begin{figure}[H]
   \begin{center}
@@ -203,7 +231,7 @@ digital-output slaves of the Beckhoff EL20XX series.
 \end{figure}
 
 Figure~\ref{fig:el31xx} shows the configuration dialog for the
-analog-input slaves of the Beckhoff EL31XX series.
+analog-input EtherCAT slaves of the Beckhoff EL31XX series.
 
 \begin{figure}[H]
   \begin{center}
@@ -214,7 +242,7 @@ analog-input slaves of the Beckhoff EL31XX series.
 \end{figure}
 
 Figure~\ref{fig:el41xx} shows the configuration dialog for the
-analog-output slaves of the Beckhoff EL41XX series.
+analog-output EtherCAT slaves of the Beckhoff EL41XX series.
 
 \begin{figure}[H]
   \begin{center}
@@ -225,7 +253,7 @@ analog-output slaves of the Beckhoff EL41XX series.
 \end{figure}
 
 Figure~\ref{fig:el5001} shows the configuration dialog for the SSI
-slave Beckhoff EL5001.
+EtherCAT slave Beckhoff EL5001.
 
 \begin{figure}[H]
   \begin{center}
@@ -236,7 +264,7 @@ slave Beckhoff EL5001.
 \end{figure}
 
 Figure~\ref{fig:el5101} shows the configuration dialog for the
-incremental-encoder slave Beckhoff EL5101.
+incremental-encoder EtherCAT slave Beckhoff EL5101.
 
 \begin{figure}[H]
   \begin{center}
@@ -247,7 +275,7 @@ incremental-encoder slave Beckhoff EL5101.
 \end{figure}
 
 Figure~\ref{fig:bk1120-in} shows the configuration dialog for the Beckhoff
-BK1120 KBUS-coupler input block.
+BK1120 EtherCAT-KBUS-coupler input block.
 
 \begin{figure}[H]
   \begin{center}
@@ -258,7 +286,7 @@ BK1120 KBUS-coupler input block.
 \end{figure}
 
 Figure~\ref{fig:bk1120-out} shows the configuration dialog for the Beckhoff
-BK1120 KBUS-coupler output block.
+BK1120 EtherCAT-KBUS-coupler output block.
 
 \begin{figure}[H]
   \begin{center}
@@ -269,8 +297,8 @@ BK1120 KBUS-coupler output block.
 \end{figure}
 
 Figure~\ref{fig:msd} shows the configuration dialog for the MOOG servo drive
-block. This block can be configured to be an input-only block, an output-only
-block or and input/output block.
+EtherCAT slave block. This block can be configured to be an input-only block,
+an output-only block or and input/output block.
 
 \begin{figure}[H]
   \begin{center}
@@ -293,9 +321,9 @@ master status block.
 
 \end{ighsec}
 
-%--------------------------------------------------------------------
+%-----------------------------------------------------------------------------
 
-\begin{ighsec}{Creation of EtherLab\regTM\ Models}
+\begin{ighsec}{Creation of EtherLab Models with Simulink}
 \label{sec:modelle}
 
 After creating a new model sheet within Simulink, a few parameters have to be
@@ -327,38 +355,36 @@ set up (menu \textit{Simulation/Configuration Parameters\ldots}):
 \end{itemize}
 
 After the model has been parametrized, it can be edited as usual. To use
-EtherLab blocks, open the \texttt{etherlab\_lib} (see sec.~\ref{sec:lib}) and drag the
-desired blocks on the new model sheet. When finished, \textit{Ctrl-B} will
-generate the model code including a Linux kernel module.
+EtherLab blocks, open the \texttt{etherlab\_lib} (see sec.~\ref{sec:lib})
+and drag the desired blocks on the new model sheet. When finished,
+\textit{Ctrl-B} will generate the model code including a Linux kernel module.
 
 \end{ighsec}
 
-%--------------------------------------------------------------------
+%-----------------------------------------------------------------------------
 
-\begin{ighsec}{Starting of EtherLab\regTM\ Models}
+\end{ighsec} % Simulink
+
+%-----------------------------------------------------------------------------
+
+\begin{ighsec}{Starting EtherLab Models}
 \label{sec:start}
 
-The \texttt{rt\_kernel} module must be inserted before inserting any
-EtherLab\regTM\ modules. If EtherLab\regTM/RTW is configured as a
-service (see section~\ref{sec:dienst}), this is done automatically at
-system startup. Otherwise the module can be inserted manually. It is
-recommended to start the module using the init script, because the
-necessary device files are then created automatically:
+The \texttt{rt\_kernel} module must be inserted before inserting any EtherLab
+modules. If EtherLab is configured as a service (see
+section~\ref{sec:dienst}), this is done automatically at system startup.
+Otherwise the module can be inserted manually. It is recommended to start the
+module using the init script, because the necessary device files are then
+created automatically:
 
 \begin{lstlisting}
-  # `\textbf{/opt/etherlab/rtw/bin/etherlab start}`
+  # `\textbf{/opt/etherlab/etc/init.d/etherlab start}`
 \end{lstlisting}
 
-After that, an EtherLab\regTM/RTW module can be loaded and the buddy process
-can be started, to exchange process data with user space programs (like
-EtherLab Testmanager, EtherLab DLS, \ldots). Therefore the
-\texttt{etherlab\_buddy} acts as a TCP server listening on port 2345 and
-communicating with an XML-based protocol called MSR (see the german
-documentation at \url{http://etherlab.org/download/m-igh_rt_api.pdf}).
+After that, an EtherLab module can be loaded.
 
 \begin{lstlisting}
   # `\textbf{insmod <model>\_kmod.ko}`
-  # `\textbf{/opt/etherlab/rtw/bin/etherlab\_buddy}`
 \end{lstlisting}
 
 If the \texttt{insmod} command returns with an error, the kernel ring
@@ -366,13 +392,17 @@ buffer can be analyzed for possible software or hardware
 misconfigurations:
 
 \begin{lstlisting}
-  # `\textbf{dmesg}`
+  # `\textbf{dmesg | less}`
 \end{lstlisting}
+
+If the model was loaded successfully, its process variables (i.\,e.\,signals
+and parameters) can ve accessed via TCP/IP with EtherLab tools like
+Testmanager, DLS or the RTCom library (have a look at
+\url{http://etherlab.org/en/components.php}. Therefore the
+\texttt{etherlab\_buddy} acts as a TCP server listening on port 2345 and
+communicating with an XML-based protocol called MSR (see the german
+documentation at \url{http://etherlab.org/download/m-igh_rt_api.pdf}).
 
 \end{ighsec}
 
-%--------------------------------------------------------------------
-%%% Local Variables:
-%%% mode: latex
-%%% TeX-master: "m-etherlab_rtw"
-%%% End:
+%-----------------------------------------------------------------------------
