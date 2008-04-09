@@ -22,6 +22,8 @@
  *
  *****************************************************************************/ 
 
+#include <linux/string.h> // memcpy(), etc.
+
 #include "include/model.h"
 #include "include/rt_model.h"
 #include "include/etl_data_info.h"
