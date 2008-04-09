@@ -5,7 +5,7 @@
 #-----------------------------------------------------------------------------
 
 all:
-	pdflatex m-etherlab-rtw.tex
+	pdflatex m-etherlab.tex
 
 clean-local:
 	rm -f \
