@@ -52,6 +52,7 @@ EXTRA_CFLAGS = \
         -I@RTAI_DIR@ \
         -I$(src) \
         $(MODEL_CFLAGS) \
+        @RTAI_FLAGS@ \
         -DMODEL=$(MODEL_NAME)
 
 obj-m := $(MODEL_NAME).o

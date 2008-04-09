@@ -44,8 +44,6 @@
       <xsl:when test="count(task/subtask)">
         <!-- Subtasks were defined. Add these to the base task  -->
         #define NUMST <xsl:value-of select="count(task/subtask)+1"/>
-        #define TASK_DECIMATIONS 1, <xsl:for-each select="task/subtask">
-        <xsl:value-of select="@decimation"/>, </xsl:for-each>
       </xsl:when>
       <xsl:otherwise>
         <!-- Only the base task was defined -->

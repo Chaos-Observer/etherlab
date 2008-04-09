@@ -103,7 +103,7 @@ struct signal signal;
   <xsl:template match="parameter">
     <xsl:param name="prefix"/>
     <xsl:param name="path">
-      <xsl:value-of select="$prefix"/>.<xsl:value-of select="@name"/>
+      <xsl:value-of select="concat($prefix,'.',@name)"/>
     </xsl:param>
     <xsl:value-of select="$path"/>
     <xsl:text> = </xsl:text> 
