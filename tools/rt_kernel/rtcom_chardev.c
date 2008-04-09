@@ -658,6 +658,16 @@ fop_mmap_model(struct file *filp, struct vm_area_struct *vma)
     return 0;
 }
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 14)
+void * kzalloc(size_t len, int type)
+{
+    void *p;
+    if ((p = kmalloc(len,type))) {
+        memset(p, 0, len);
+    }
+    return p;
+}
+#endif
 
 /*#########################################################################*
  * Here is general management code to initialise file handles for the 
@@ -677,7 +687,15 @@ rtcom_new_model(struct model *model)
 
     list_add_tail(&md->list, &model_list);
     md->model = model;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 20)
+    {
+        u32 id;
+        get_random_bytes(&id, sizeof(id));
+        md->id = id;
+    }
+#else
     md->id = random32();
+#endif
     rt_sem_init(&md->rt_lock, 1);
     init_waitqueue_head(&md->waitq);
     rt_sem_init(&model->rtP_sem,0);
