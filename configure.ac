@@ -10,7 +10,7 @@
 #-----------------------------------------------------------------------------
 
 AC_PREREQ(2.59)
-AC_INIT([etherlab_rtw], [trunk], [lerich@gmx.net])
+AC_INIT([etherlab], [trunk], [lerich@gmx.net])
 AC_CONFIG_AUX_DIR(config)
 AM_INIT_AUTOMAKE([-Wall -Werror])
 AC_CONFIG_SRCDIR([config.h.in])
@@ -143,12 +143,12 @@ AC_MSG_RESULT(yes)
 AC_SUBST(LINUX_DIR,$linux_dir)
 fi
 
-dnl When kernel is selected, EtherCat can be switched off
+dnl When kernel is selected, EtherCAT can be switched off
 if test "x$kernel" = "x1"; then
 AC_ARG_ENABLE([ethercat],
     AS_HELP_STRING(
         [--disable-ethercat],
-        [Do not compile in EtherCat components]),
+        [Do not compile in EtherCAT components]),
     [ case "${enableval}" in
         yes) ethercat=1 ;;
         no)  ethercat=0 ;;
@@ -166,7 +166,7 @@ fi
 AM_CONDITIONAL(ETHERCAT, test x$ethercat = x1)
 AC_SUBST(ETHERCAT,${ethercat})
 
-dnl Allow experimental stuff  for development
+dnl Allow experimental stuff for development
 AC_ARG_ENABLE([experimental],
     AS_HELP_STRING(
         [--enable-experimental],
