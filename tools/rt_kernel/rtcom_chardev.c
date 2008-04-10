@@ -687,14 +687,7 @@ rtcom_new_model(struct model *model)
 
     list_add_tail(&md->list, &model_list);
     md->model = model;
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 20)
-    {
-        u32 id;
-        get_random_bytes(&id, sizeof(id));
-        md->id = id;
-    }
-#else
-    md->id = random32();
+    get_random_bytes(&md->id, sizeof(md->id));
 #endif
     rt_sem_init(&md->rt_lock, 1);
     init_waitqueue_head(&md->waitq);
