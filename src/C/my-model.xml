@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<model name="my-model"
+<application>
      xmlns:xinclude="http://www.w3.org/2003/XInclude">
   <description>My HandCoded C Model</description>
   <version>11</version>
@@ -38,7 +38,6 @@
       <parameter name="scalar_param" datatype="double_T"/>
     </subsystem>
     <parameter name="scalar_param" datatype="double_T"/>
-    <inputpointer name="scalar_ptr" datatype="double_T"/>
   </refsystem>
   
   <data>
@@ -69,21 +68,8 @@
          </value>
        </value>
       </parameter>
-      <reference name="reference" value="subsysname">
-        <param path="subsystem_with_parameter.scalar_param">
-          <value>4</value>
-        </param>
-        <param path="scalar_param">
-          <value>4</value>
-        </param>
-        <pointer path="scalar_ptr">
-          <value>meters.meter1.pressure[0]</value>
-        </pointer>
-      </reference>
+      <reference name="reference" value="subsysname"/>
     </subsystem>
     </subsystem>
-    <cstruct structname="cstruct" name="pi">
-     <dim value="3"/>
-    </cstruct>
   </data>
-</model>
+</application>

@@ -2,15 +2,16 @@ kerneldatadir = $(prefix)/src/kernel
 handcodedir = $(prefix)/lib/C
 handcodesrcdir = $(prefix)/src/C
 
-dist_handcodesrc_DATA = Kbuild.makefile mdl_main.c my-model.xml README
-dist_handcode_DATA = header.xsl data.c.xsl model_defines.h.xsl \
-        mdf.c.xsl rt_model.xsd
+dist_handcodesrc_DATA = Kbuild.makefile app_main.c my-model.xml README
+dist_handcode_DATA = header.xsl data.c.xsl application_defines.h.xsl \
+        application_description.c.xsl rt_application.xsd
 dist_kerneldata_DATA = register.c
-include_HEADERS = etltypes.h  etl_mdf.h  model.h  msf.h
+include_HEADERS = etltypes.h  etl_application_description.h  application.h  \
+        application_data.h
 
 # for TAGS to work
 nodist_noinst_HEADERS = $(dist_kerneldata_DATA) \
-        $(dist_handcode_DATA) mdl_main.c
+        $(dist_handcode_DATA) app_main.c
 
 install-data-hook:
 	$(MV) $(DESTDIR)/$(handcodesrcdir)/Kbuild.makefile \

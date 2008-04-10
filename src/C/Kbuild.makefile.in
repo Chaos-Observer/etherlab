@@ -56,21 +56,19 @@ EXTRA_CFLAGS = \
         -DMODEL=$(MODEL_NAME)
 
 obj-m := $(MODEL_NAME).o
-$(MODEL_NAME)-y := mdl_main.o data.o $(MODEL_SOURCES:.c=.o) \
-        .src/register.o .src/rt_mdl_main.o mdf.o
+$(MODEL_NAME)-y := app_main.o data.o $(MODEL_SOURCES:.c=.o) \
+        .src/register.o .src/rt_app_main.o application_description.o
 # Additionally mark the source files in .src as SECONDARY, so they are 
 # not deleted, since they are needed by modpost.
-.SECONDARY: $(obj)/.src/register.c $(obj)/.src/rt_mdl_main.c
+.SECONDARY: $(obj)/.src/register.c $(obj)/.src/rt_app_main.c
 
 clean-dirs := .src
 clean-files := \
     .*.dep \
     .linted \
-    cvt.h \
     data.c \
-    inputptr.h \
-    mdf.c \
-    model_defines.h \
+    application_description.c \
+    application_defines.h \
     param.h \
     signal.h
 
@@ -80,14 +78,15 @@ $(obj)/.src/%: @prefix@/src/kernel/%
 	$(Q)mkdir -p $(obj)/.src
 	$(Q)cp $< $@
 
-HEADERS = $(obj)/param.h $(obj)/signal.h $(obj)/inputptr.h
-MDL_DEFINES = $(obj)/model_defines.h
+HEADERS = $(obj)/param.h $(obj)/signal.h
+MDL_DEFINES = $(obj)/application_defines.h
 
 $(obj)/data.o: $(obj)/data.c $(HEADERS) $(MDL_DEFINES)
 
-$(obj)/mdl_main.o: $(HEADERS) $(MDL_DEFINES)
+$(obj)/app_main.o: $(HEADERS) $(MDL_DEFINES)
 
-$(obj)/mdf.o: $(obj)/mdf.c $(HEADERS) $(MDL_DEFINES)
+$(obj)/application_description.o: $(obj)/application_description.c \
+        $(HEADERS) $(MDL_DEFINES)
 
 quiet_cmd_xsltproc := XSLTPROC $@
 
@@ -97,7 +96,8 @@ $(HEADERS): $(obj)/$(MODEL_NAME).xml
                 @prefix@/lib/C/header.xsl $< | @INDENT@ > $@
 
 XSLTFILE = @prefix@/lib/C/$(notdir $@).xsl
-$(MDL_DEFINES) $(obj)/data.c $(obj)/mdf.c: $(obj)/$(MODEL_NAME).xml
+$(MDL_DEFINES) $(obj)/data.c $(obj)/application_description.c: \
+                $(obj)/$(MODEL_NAME).xml
 	@XSLTPROC@ $(XSLTFILE) $< | @INDENT@ > $@
 
 endif #ifeq ($(KERNELRELEASE),)

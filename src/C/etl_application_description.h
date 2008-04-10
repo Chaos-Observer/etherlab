@@ -22,8 +22,8 @@
  *
  ************************************************************************/
 
-#include "include/etltypes.h"
-#include "include/etl_data_info.h"
+#include <include/etltypes.h>
+#include <include/etl_data_info.h>
 
 struct capi_variable {
     enum si_datatype_t data_type;

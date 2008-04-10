@@ -24,10 +24,10 @@
 
 #include <linux/string.h> // memcpy(), etc.
 
-#include "include/model.h"
-#include "include/rt_model.h"
-#include "include/etl_data_info.h"
-#include "include/etl_mdf.h"
+#include <include/application.h>
+#include <include/rt_model.h>
+#include <include/etl_data_info.h>
+#include <include/etl_application_description.h>
 
 #ifndef MODEL
 # error "must define MODEL"
@@ -89,13 +89,13 @@ struct rt_model rt_model = {
 static const char *
 rt_OneStepMain(void)
 {
-    return MdlStep(0);
+    return TaskStep(0);
 } /* end rtOneStepMain */
 
 static const char *
 rt_OneStepTid(unsigned int tid)
 {
-    return MdlStep(tid);
+    return TaskStep(tid);
 } /* end rtOneStepTid */
 
 static void
@@ -147,7 +147,7 @@ get_param_info(struct signal_info *si)
 void 
 mdl_stop(void)
 {
-    MdlExit();
+    AppExit();
 }
 
 /* Function: main ============================================================
@@ -180,7 +180,7 @@ mdl_start(void)
     }
     rt_model.param_count = idx;
 
-    error_msg = MdlInit();
+    error_msg = AppInit();
 
     return error_msg;
 

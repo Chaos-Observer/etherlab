@@ -2,9 +2,9 @@
 <!--
  * $Id$
  *
- * This file is used by an XSLT processor to generate the model description
- * file (mdf) as C-code. The mdf is used later when the model gets registered
- * with the rt_kernel.
+ * This file is used by an XSLT processor to generate the application
+ * description file (mdf) as C-code. The mdf is used later when the 
+ * application gets registered with the rt_kernel.
  * 
  * Copyright (C) 2008  Richard Hacker
  * 
@@ -33,17 +33,17 @@
 
   <xsl:template match="text()|@*"/>
   
-  <xsl:template match="/model">
+  <xsl:template match="/application">
     <xsl:text><![CDATA[
 /************************************************************************
  * This is a generated file. Do not edit.
  *
  * This file contains a list of signal and parameter descriptions that
- * is used when registering the model with rt_kernel.
+ * is used when registering the application with rt_kernel.
  *
  ************************************************************************/
 
-#include "include/etl_mdf.h"
+#include <include/etl_application_description.h>
 
 #include "signal.h"
 #include "param.h"
@@ -118,7 +118,7 @@
         </xsl:otherwise>
       </xsl:choose>
     </xsl:param>
-    <xsl:apply-templates select="/model/refsystem[@name=$s]">
+    <xsl:apply-templates select="/application/refsystem[@name=$s]">
       <xsl:with-param name="prefix" select="$path"/>
       <xsl:with-param name="select" select="$select"/>
     </xsl:apply-templates>

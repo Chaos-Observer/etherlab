@@ -32,7 +32,7 @@
 
   <xsl:template match="text()|@*"/>
   
-  <xsl:template match="/model">
+  <xsl:template match="/application">
     <xsl:text>
 /* 
  * This is a generated file. Do not edit.
@@ -45,7 +45,7 @@
  * directly, but use S(sig) instead.
  */
 
-    <![CDATA[#include "include/etltypes.h"]]>
+    <![CDATA[#include <include/etltypes.h>]]>
     </xsl:text>
 
     <!-- do include element processing -->
@@ -149,9 +149,6 @@
       <xsl:when test="$header_type='param'">
         #define P(x) param.x
       </xsl:when>
-      <xsl:when test="$header_type='inputptr'">
-        #define I(x) inputptr.x
-      </xsl:when>
     </xsl:choose>
 
   </xsl:template>
@@ -182,35 +179,12 @@
     </xsl:text>
   </xsl:template>
 
-  <xsl:template match="cstruct">
-    <xsl:if test="$header_type='signal'">
-      <xsl:text>struct </xsl:text>
-      <xsl:value-of select="@structname"/>
-      <xsl:text> </xsl:text>
-      <xsl:value-of select="@name"/>
-      <xsl:apply-templates select="dim"/>
-      <xsl:text>;
-      </xsl:text>
-    </xsl:if>
-  </xsl:template>
-
   <xsl:template match="reference">
     <xsl:param name="prefix"/>
     <xsl:text>struct </xsl:text>
     <xsl:value-of select="@value"/> 
     <xsl:value-of select="concat('_',$header_type,' ')"/>
     <xsl:value-of select="@name"/>;
-  </xsl:template>
-
-  <xsl:template match="inputpointer">
-    <xsl:if test="$header_type='inputptr'">
-      <xsl:value-of select="@datatype"/>
-      <xsl:text> *</xsl:text> 
-      <xsl:value-of select="@name"/>
-      <xsl:apply-templates select="dim"/>
-      <xsl:text>;
-      </xsl:text>
-    </xsl:if>
   </xsl:template>
 
   <xsl:template match="parameter">

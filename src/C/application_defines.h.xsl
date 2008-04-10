@@ -31,7 +31,7 @@
 
   <xsl:template match="text()|@*"/>
   
-  <xsl:template match="/model">
+  <xsl:template match="/application">
     <xsl:text>
 /* 
  * This is a generated file. Do not edit.
@@ -58,8 +58,8 @@
 
     <xsl:text>#define DECIMATION </xsl:text>
     <xsl:choose>
-      <xsl:when test="properties/@sample_decimation">
-        <xsl:value-of select="properties/@sample_decimation"/>
+      <xsl:when test="parameters/@sample_decimation">
+        <xsl:value-of select="parameters/@sample_decimation"/>
       </xsl:when>
       <xsl:otherwise>
         <xsl:text>1</xsl:text>
@@ -70,8 +70,8 @@
 
     <xsl:text>#define OVERRUNMAX </xsl:text>
     <xsl:choose>
-      <xsl:when test="properties/@max_overruns">
-        <xsl:value-of select="properties/@max_overruns"/>
+      <xsl:when test="parameters/@max_overruns">
+        <xsl:value-of select="parameters/@max_overruns"/>
       </xsl:when>
       <xsl:otherwise>
         <xsl:text>1</xsl:text>
@@ -82,20 +82,17 @@
 
     <xsl:text>#define BUFFER_TIME </xsl:text>
     <xsl:choose>
-      <xsl:when test="properties/@buffer_time">
-        <xsl:value-of select="properties/@buffer_time"/>
+      <xsl:when test="parameters/@buffer_time">
+        <xsl:value-of select="parameters/@buffer_time"/>
       </xsl:when>
-      <xsl:otherwise>
-        <xsl:text>10</xsl:text>
-      </xsl:otherwise>
     </xsl:choose>
     <xsl:text>
     </xsl:text>
 
     <xsl:text>#define STACKSIZE </xsl:text>
     <xsl:choose>
-      <xsl:when test="properties/@stacksize">
-        <xsl:value-of select="properties/@stacksize"/>
+      <xsl:when test="parameters/@stacksize">
+        <xsl:value-of select="parameters/@stacksize"/>
       </xsl:when>
       <xsl:otherwise>
         <xsl:text>2048</xsl:text>

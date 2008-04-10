@@ -22,14 +22,13 @@
  *
  *************************************************************************/
 
-#include "model_defines.h"      // Model variables
-#include "include/defines.h"   // STR()
+#include "application_defines.h"      // Model variables
+#include <include/defines.h>   // STR()
 #include "signal.h"
 #include "param.h"
-#include "inputptr.h"
 
-const char * MdlInit(void);
-const char *MdlStep(unsigned int);
-void MdlExit(void);
+const char * AppInit(void);
+const char *TaskStep(unsigned int);
+void AppExit(void);
 
 extern unsigned int task_period[];

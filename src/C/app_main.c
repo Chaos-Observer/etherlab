@@ -10,7 +10,7 @@
  *********************************************************************/
 
 /* model.h must be included in every model */
-#include "include/model.h"
+#include <include/application.h>
 
 /** Initialise the model
  *
@@ -21,7 +21,7 @@
  *    <0: Error during initialisation. The module will not be loaded
  *        and mdl_exit() is not called.
  */
-const char *MdlInit(void)
+const char *AppInit(void)
 {
     return NULL;
 }
@@ -31,7 +31,7 @@ const char *MdlInit(void)
  * This function is called when unloading the module. Here you can put code
  * to be called when the model is exited.
  */
-void MdlExit(void)
+void AppExit(void)
 {
 }
 
@@ -48,7 +48,7 @@ void MdlExit(void)
  *      0: No error
  *     <0: An error occurred. The model calculation will be stopped.
  */
-const char *MdlStep(unsigned int stidx)
+const char *TaskStep(unsigned int stidx)
 {
     return NULL;
 }

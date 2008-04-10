@@ -33,8 +33,8 @@
 
   <xsl:template match="text()|@*"/>
   
-  <xsl:template match="/model">
-#include "include/model.h"
+  <xsl:template match="/application">
+#include "include/application_data.h"
 
 /* Parameter initialisation and definition */
     <xsl:apply-templates select="data"/>
@@ -65,13 +65,6 @@ struct signal signal;
     </xsl:apply-templates>
     <xsl:text>};
     </xsl:text>
-    <xsl:text>struct inputptr inputptr = {
-    </xsl:text>
-    <xsl:apply-templates>
-      <xsl:with-param name="type">inputptr</xsl:with-param>
-    </xsl:apply-templates>
-    <xsl:text>};
-    </xsl:text>
   </xsl:template>
 
   <xsl:template match="subsystem">
@@ -79,64 +72,34 @@ struct signal signal;
     <xsl:param name="type"/>
     <xsl:param name="path" select="concat($prefix,'.',@name)"/>
     <!-- only descend if there are any "parameter" child elements -->
-    <xsl:choose>
-      <xsl:when test="$type='param'">
-        <xsl:if test=".//parameter">
-          <xsl:apply-templates>
-            <xsl:with-param name="prefix" select="$path"/>
-            <xsl:with-param name="type" select="$type"/>
-          </xsl:apply-templates>
-        </xsl:if>
-      </xsl:when>
-      <xsl:when test="$type='inputptr'">
-        <xsl:if test=".//pointer">
-          <xsl:apply-templates>
-            <xsl:with-param name="prefix" select="$path"/>
-            <xsl:with-param name="type" select="$type"/>
-          </xsl:apply-templates>
-        </xsl:if>
-      </xsl:when>
-    </xsl:choose>
+    <xsl:if test="$type='param'">
+      <xsl:if test=".//parameter">
+        <xsl:apply-templates>
+          <xsl:with-param name="prefix" select="$path"/>
+          <xsl:with-param name="type" select="$type"/>
+        </xsl:apply-templates>
+      </xsl:if>
+    </xsl:if>
   </xsl:template>
 
   <xsl:template match="reference">
     <xsl:param name="prefix"/>
     <xsl:param name="type"/>
-    <xsl:choose>
-      <xsl:when test="$type='param'">
-        <xsl:if test="param">
-          <xsl:value-of select="concat($prefix,'.',name())"/>
-          <xsl:text> = {
+    <xsl:if test="$type='param'">
+      <xsl:if test="param">
+        <xsl:value-of select="concat($prefix,'.',name())"/>
+        <xsl:text> = {
+        </xsl:text>
+        <xsl:for-each select="param">
+          <xsl:value-of select="concat('.',@path,' = ')"/>
+          <xsl:apply-templates select="value"/>
+          <xsl:text>
           </xsl:text>
-          <xsl:for-each select="param">
-            <xsl:value-of select="concat('.',@path,' = ')"/>
-            <xsl:apply-templates select="value"/>
-            <xsl:text>
-            </xsl:text>
-          </xsl:for-each>
-          <xsl:text>},
-          </xsl:text>
-        </xsl:if>
-      </xsl:when>
-      <xsl:when test="$type='inputptr'">
-        <xsl:if test="pointer">
-          <xsl:value-of select="concat($prefix,'.',name())"/>
-          <xsl:text> = {
-          </xsl:text>
-          <xsl:for-each select="pointer">
-            <xsl:value-of select="concat('.',@path,' = ')"/>
-            <xsl:value-of select="concat('&amp;S(',value,')')"/>
-            <xsl:text>,
-            </xsl:text>
-          </xsl:for-each>
-          <xsl:text>},
-          </xsl:text>
-        </xsl:if>
-      </xsl:when>
-    </xsl:choose>
-  </xsl:template>
-  
-  <xsl:template match="cstruct">
+        </xsl:for-each>
+        <xsl:text>},
+        </xsl:text>
+      </xsl:if>
+    </xsl:if>
   </xsl:template>
   
   <xsl:template match="parameter">
