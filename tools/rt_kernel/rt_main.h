@@ -46,27 +46,27 @@
 /* The calling frequency of the kernel helper */
 #define HELPER_CALL_RATE 10
 
-/* Every model can have more than one task - one of this structure is 
+/* Every application can have more than one task - one of this structure is 
  * allocated for each task */
 struct mdl_task {
     RT_TASK rtai_thread;        /** Structure for RTAI data */
 
-    int master;                 /** This is true for the first model task's
-                                 * fastest timing rate. Used by the
+    int master;                 /** This is true for the first application 
+                                 * task's fastest timing rate. Used by the
                                  * helper_thread */
 
-    struct model *model;      /** Reference to the model */
-    unsigned int mdl_tid;       /** The model's task id */
+    struct app *app;      /** Reference to the app */
+    unsigned int mdl_tid;       /** The app's task id */
 
     struct task_stats *stats;
 };
 
-struct model {
-    int id;                     /** The model index in the array 
+struct app {
+    int id;                     /** The app index in the array 
                                  * \ref rt_kernel.rt_mdl assigned by 
-                                 * rt_kernel for this model. */
-    const struct rt_model *rt_model; /** Data structure for the RTW model. 
-                                  * This gets passed to us when the model
+                                 * rt_kernel for this app. */
+    const struct rt_app *rt_app; /** Data structure for the RTW app. 
+                                  * This gets passed to us when the app
                                   * is registered */
     struct class_device *sysfs_dev;
 
@@ -100,7 +100,7 @@ struct model {
     size_t task_stats_len;
 
     struct mdl_task task[];    /** Array of length equal to the number
-                                 * of sample times the model has. */
+                                 * of sample times the app has. */
 };
 
 struct rt_kernel {
@@ -111,17 +111,17 @@ struct rt_kernel {
     struct class *sysfs_class;  /**< Pointer to SysFS class */
     struct class_device *sysfs_dev; /**< Base device of rt_kernel */
 
-    unsigned long loaded_models;  /**< The bits represent whether a RT model 
+    unsigned long loaded_apps;  /**< The bits represent whether a RT app 
                                    * is loaded in this slot. Max no of RT 
-                                   * models is thus 32 */
-    unsigned long model_state_changed;
+                                   * apps is thus 32 */
+    unsigned long app_state_changed;
     unsigned long data_mask;    /**< The bits indicate to the service request
                                  * handler that the specific RT task had data
                                  * to be processed */
 
     struct semaphore lock;      /* Protect manipulation of above vars */
 
-    struct model *model[MAX_MODELS];
+    struct app *application[MAX_MODELS];
 
     /* The following variables are used to manage the communication between
      * the main buddy process and the rt_kernel */
@@ -156,10 +156,10 @@ struct rt_kernel {
 extern struct rt_kernel rt_kernel;
 
 /* Copies the current Process Image to the internal buffer */
-void rtp_make_photo(struct model *);
+void rtp_make_photo(struct app *);
 
-int rtp_fio_init_mdl(struct model *, struct module *owner);
-void rtp_fio_clear_mdl(struct model *);
+int rtp_fio_init_mdl(struct app *, struct module *owner);
+void rtp_fio_clear_mdl(struct app *);
 int rtp_fio_init(void);
 void rtp_fio_clear(void);
 void rtp_data_avail_handler(void);

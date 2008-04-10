@@ -48,12 +48,12 @@
 
 /* Local headers */
 #include "rt_main.h"
-#include "rt_model.h"
+#include "rt_app.h"
 
-struct model_dev {
+struct app_dev {
     struct list_head list;
     SEM rt_lock;
-    struct model *model;
+    struct app *app;
     unsigned int id;
 
     unsigned int buddy_lock;
@@ -61,27 +61,27 @@ struct model_dev {
     void *rtb_buf, *rtb_last, *rp, *wp;
 
     size_t eventq_len;
-    struct model_event *event_list, *event_list_end, *event_wp, *event_rp;
+    struct app_event *event_list, *event_list_end, *event_wp, *event_rp;
     wait_queue_head_t waitq;
 };
 
-static int open_kernel(void);
-struct model_dev* open_model(unsigned int id);
+static int select_kernel(void);
+struct app_dev* select_app(unsigned int id);
 static struct page * vma_nopage(struct vm_area_struct *vma, 
         unsigned long address, int *type);
 static int fop_release_kernel( struct inode *inode, struct file *filp);
-static int fop_release_model( struct inode *inode, struct file *filp);
+static int fop_release_app( struct inode *inode, struct file *filp);
 static unsigned int fop_poll_kernel( struct file *filp, poll_table *wait);
-static unsigned int fop_poll_model( struct file *filp, poll_table *wait);
+static unsigned int fop_poll_app( struct file *filp, poll_table *wait);
 static long fop_ioctl( struct file *filp, unsigned int command, 
         unsigned long data);
-static long fop_ioctl_model( struct file *filp, unsigned int command, 
+static long fop_ioctl_app( struct file *filp, unsigned int command, 
         unsigned long data);
 static ssize_t fop_read_kernel( struct file * filp, char *buffer, 
         size_t bufLen, loff_t * offset);
-static ssize_t fop_read_model( struct file * filp, char *buffer, 
+static ssize_t fop_read_app( struct file * filp, char *buffer, 
         size_t bufLen, loff_t * offset);
-static int fop_mmap_model(struct file *filp, struct vm_area_struct *vma);
+static int fop_mmap_app(struct file *filp, struct vm_area_struct *vma);
 
 // Wait queue for poll
 static DECLARE_WAIT_QUEUE_HEAD(event_q);
@@ -90,7 +90,7 @@ static DECLARE_WAIT_QUEUE_HEAD(event_q);
 // main kernel chardev
 static unsigned int rtcom_lock = 0;
 
-static LIST_HEAD(model_list);
+static LIST_HEAD(app_list);
 
 static struct rtcom_event *event_list, *event_list_end,
                           *event_rp, *event_wp = NULL;
@@ -100,7 +100,7 @@ static struct rtcom_event *event_list, *event_list_end,
  * The chardev that is provided by rtcom has very little capabilities.
  * Opening the chardev is allways possible. The only operation allowed
  * is ioctl, thereby either selecting the handle to the kernel or
- * model.
+ * app.
  *#########################################################################*/
 static struct file_operations rtcom_fops = {
     .unlocked_ioctl = fop_ioctl,
@@ -115,13 +115,13 @@ static struct file_operations kernel_fops = {
     .owner          = THIS_MODULE,
 };
 
-/* File operations used for model */
-static struct file_operations model_fops = {
-    .unlocked_ioctl = fop_ioctl_model,
-    .poll           = fop_poll_model,
-    .read           = fop_read_model,
-    .mmap           = fop_mmap_model,
-    .release        = fop_release_model,
+/* File operations used for app */
+static struct file_operations app_fops = {
+    .unlocked_ioctl = fop_ioctl_app,
+    .poll           = fop_poll_app,
+    .read           = fop_read_app,
+    .mmap           = fop_mmap_app,
+    .release        = fop_release_app,
     .owner          = THIS_MODULE,
 };
 
@@ -135,7 +135,7 @@ fop_ioctl( struct file *filp, unsigned int command, unsigned long data)
         // Try to gain access to main rtcom kernel
         case SELECT_KERNEL:
             {
-                rv = open_kernel();
+                rv = select_kernel();
                 if (!rv) {
                     /* Put new file operations in place. 
                      * These now operate on the kernel */
@@ -144,23 +144,23 @@ fop_ioctl( struct file *filp, unsigned int command, unsigned long data)
             }
             break;
 
-        // Try to gain access to a running model
+        // Try to gain access to a running app
         case SELECT_MODEL:
             {
-                struct model_dev* md;
+                struct app_dev* app_dev;
                 unsigned int id = data;
 
-                md = open_model(id);
-                if (IS_ERR(md)) {
-                    rv = PTR_ERR(md);
-                    printk("Could not open model with id %u\n", id);
+                app_dev = select_app(id);
+                if (IS_ERR(app_dev)) {
+                    rv = PTR_ERR(app_dev);
+                    printk("Could not open app with id %u\n", id);
                     break;
                 }
                 rv = 0;
 
-                /* Exchange the file operations with that of model_fops */
-                filp->f_op = &model_fops;
-                filp->private_data = md;
+                /* Exchange the file operations with that of app_fops */
+                filp->f_op = &app_fops;
+                filp->private_data = app_dev;
             }
             break;
 
@@ -177,18 +177,18 @@ fop_ioctl( struct file *filp, unsigned int command, unsigned long data)
  * Here the file operations to control the Real-Time Kernel are defined.
  * The buddy needs this to be able to change things in the Kernel.
  *#########################################################################*/
-void signal_model_change(struct model_dev *md, char insert)
+void signal_app_change(struct app_dev *app_dev, char insert)
 {
     if (!event_wp)
         return;
 
     if (insert) {
-        event_wp->type = new_model;
+        event_wp->type = new_app;
     }
     else {
-        event_wp->type = del_model;
+        event_wp->type = del_app;
     }
-    event_wp->id = md->id;
+    event_wp->id = app_dev->id;
 
     /* Update write pointer */
     if (++event_wp == event_list_end)
@@ -200,10 +200,10 @@ void signal_model_change(struct model_dev *md, char insert)
 }
 
 static int 
-open_kernel(void)
+select_kernel(void)
 {
     int err = 0;
-    struct model_dev *md;
+    struct app_dev *app_dev;
 
     // Make sure there is only one file handle to the rtcom kernel
     if (rtcom_lock) {
@@ -222,10 +222,10 @@ open_kernel(void)
     event_wp = event_rp = event_list;
     event_list_end = &event_list[EVENTQ_LEN];
 
-    /* Inform the buddy of currently running models */
-    list_for_each_entry(md, &model_list, list) {
-        if (md->model)
-            signal_model_change(md, 1);
+    /* Inform the buddy of currently running apps */
+    list_for_each_entry(app_dev, &app_list, list) {
+        if (app_dev->app)
+            signal_app_change(app_dev, 1);
     }
 
     pr_debug("Opened rtcom file: %p\n", event_list);
@@ -308,109 +308,109 @@ fop_release_kernel( struct inode *inode, struct file *filp)
 }
 
 /*#########################################################################*
- * Here the file operations to control interact with the model are defined.
+ * Here the file operations to control interact with the app are defined.
  * The buddy needs this to be able to change things in the Kernel.
  *#########################################################################*/
-struct model_dev*
-open_model(unsigned int id) 
+struct app_dev*
+select_app(unsigned int id) 
 {
     int err = 0;
-    struct model* model = NULL;
-    struct model_dev *md;
-    const struct rt_model *rt_model;
+    struct app* app = NULL;
+    struct app_dev *app_dev;
+    const struct rt_app *rt_app;
 
-    /* Find model with name model_name. Note that since the rt_kernel is
-     * locked, no models can be added or removed, nor opening and closing
+    /* Find app with name app_name. Note that since the rt_kernel is
+     * locked, no apps can be added or removed, nor opening and closing
      * of file handles. This means that no structures will change here. */
-    list_for_each_entry(md, &model_list, list) {
-        if (md->model && md->id == id) {
-            model = md->model;
+    list_for_each_entry(app_dev, &app_list, list) {
+        if (app_dev->app && app_dev->id == id) {
+            app = app_dev->app;
             break;
         }
     }
-    if (!model) {
-        /* There is no model named model_name */
+    if (!app) {
+        /* There is no app named app_name */
         err = -ENOENT;
-        goto out_no_model;
+        goto out_no_app;
     }
-    rt_model = model->rt_model;
+    rt_app = app->rt_app;
 
-    /* Make sure there is only one file handle opened to the model */
-    if (md->buddy_lock) {
+    /* Make sure there is only one file handle opened to the app */
+    if (app_dev->buddy_lock) {
         err = -EBUSY;
         goto out_trylock;
     }
-    md->buddy_lock = 1;
+    app_dev->buddy_lock = 1;
 
     /* Allocate memory for signal output. This memory will be mmap()ed 
      * later */
-    md->io_len = 
-        rt_model->rtB_count * (rt_model->rtB_size + model->task_stats_len);
-    md->rtb_buf = vmalloc(md->io_len);
-    if (!md->rtb_buf) {
+    app_dev->io_len = 
+        rt_app->rtB_count * (rt_app->rtB_size + app->task_stats_len);
+    app_dev->rtb_buf = vmalloc(app_dev->io_len);
+    if (!app_dev->rtb_buf) {
         err = -ENOMEM;
         goto out_vmalloc;
     }
-    md->rtb_last = md->rtb_buf + model->rtB_cnt * model->rtB_len;
+    app_dev->rtb_last = app_dev->rtb_buf + app->rtB_cnt * app->rtB_len;
 
     /* Allocate memory for the event stream */
-    md->event_list = 
-        kmalloc(sizeof(*event_list) * model->rtB_cnt, GFP_KERNEL);
-    if (!md->event_list) {
+    app_dev->event_list = 
+        kmalloc(sizeof(*event_list) * app->rtB_cnt, GFP_KERNEL);
+    if (!app_dev->event_list) {
         err = -ENOMEM;
         goto out_kmalloc;
     }
-    md->event_list_end = md->event_list + model->rtB_cnt;
+    app_dev->event_list_end = app_dev->event_list + app->rtB_cnt;
 
-    pr_debug("Opened rtcom model file to %s\n", model->rt_model->modelName);
+    pr_debug("Opened rtcom app file to %s\n", app->rt_app->appName);
 
     /* Put new file operations in place. These now operate on the kernel */
-    init_waitqueue_head(&md->waitq);
+    init_waitqueue_head(&app_dev->waitq);
 
     /* Setting the write pointers is an indication that the memory has
      * been set up and writing can begin. */
-    md->rp = md->wp = md->rtb_buf;
-    md->event_rp = md->event_wp = md->event_list;
+    app_dev->rp = app_dev->wp = app_dev->rtb_buf;
+    app_dev->event_rp = app_dev->event_wp = app_dev->event_list;
 
-    return md;
+    return app_dev;
 
-    kfree(md->event_list);
+    kfree(app_dev->event_list);
 out_kmalloc:
-    vfree(md->rtb_buf);
+    vfree(app_dev->rtb_buf);
     printk("Could not kmalloc %i bytes\n", 
-            sizeof(*event_list) * model->rtB_cnt);
+            sizeof(*event_list) * app->rtB_cnt);
 out_vmalloc:
-    md->buddy_lock = 0;
+    app_dev->buddy_lock = 0;
     printk("Could not vmalloc %i segments of %i bytes\n", 
-            rt_model->rtB_count, rt_model->rtB_size);
+            rt_app->rtB_count, rt_app->rtB_size);
 out_trylock:
-    printk("Buddy already active for model %s\n", rt_model->modelName);
-out_no_model:
+    printk("Buddy already active for app %s\n", rt_app->appName);
+out_no_app:
     printk("Model with id %u not found\n", id);
     return ERR_PTR(err);
 }
 
 static int 
-fop_release_model( struct inode *inode, struct file *filp) 
+fop_release_app( struct inode *inode, struct file *filp) 
 {
-    struct model_dev *md = filp->private_data;
+    struct app_dev *app_dev = filp->private_data;
 
     /* Make sure that the kernel does not write to the buffer any more */
-    rt_sem_wait(&md->rt_lock);
-    md->wp = NULL;
-    rt_sem_signal(&md->rt_lock);
+    rt_sem_wait(&app_dev->rt_lock);
+    app_dev->wp = NULL;
+    rt_sem_signal(&app_dev->rt_lock);
 
     /* Clean up memory */
-    kfree(md->event_list);
-    vfree(md->rtb_buf);
+    kfree(app_dev->event_list);
+    vfree(app_dev->rtb_buf);
 
-    md->buddy_lock = 0;
+    app_dev->buddy_lock = 0;
 
-    /* If model does not exist any more, remove this item from the list */
+    /* If app does not exist any more, remove this item from the list */
     down(&rt_kernel.lock);
-    if (!md->model) {
-        list_del(&md->list);
-        kfree(md);
+    if (!app_dev->app) {
+        list_del(&app_dev->list);
+        kfree(app_dev);
     }
     up(&rt_kernel.lock);
 
@@ -418,16 +418,16 @@ fop_release_model( struct inode *inode, struct file *filp)
 }
 
 static unsigned int 
-fop_poll_model( struct file *filp, poll_table *wait) 
+fop_poll_app( struct file *filp, poll_table *wait) 
 {
     unsigned int mask = 0;
-    struct model_dev *md = filp->private_data;
+    struct app_dev *app_dev = filp->private_data;
 
     /* Wait for data */
-    poll_wait(filp, &md->waitq, wait);
+    poll_wait(filp, &app_dev->waitq, wait);
 
     /* Check whether there was a change in the states of a Real-Time Process */
-    if (md->event_wp != md->event_rp) {
+    if (app_dev->event_wp != app_dev->event_rp) {
         mask = POLLIN | POLLRDNORM;
     }
 
@@ -435,31 +435,31 @@ fop_poll_model( struct file *filp, poll_table *wait)
 }
 
 static long 
-fop_ioctl_model( struct file *filp, unsigned int command, unsigned long data) 
+fop_ioctl_app( struct file *filp, unsigned int command, unsigned long data) 
 {
     long rv = 0;
-    struct model_dev *md = filp->private_data;
-    struct model* model;
-    const struct rt_model* rt_model;
+    struct app_dev *app_dev = filp->private_data;
+    struct app* app;
+    const struct rt_app* rt_app;
 
     pr_debug("rt_kernel ioctl command %#x, data %lu\n", command, data);
 
     down(&rt_kernel.lock);
 
-    model = md->model;
-    if (!model) {
+    app = app_dev->app;
+    if (!app) {
         up(&rt_kernel.lock);
         return -ENODEV;
     }
 
-    rt_model = model->rt_model;
+    rt_app = app->rt_app;
     switch (command) {
         case GET_RTK_PROPERTIES:
             {
                 struct rt_kernel_prop p;
-                p.iomem_len = md->io_len;
+                p.iomem_len = app_dev->io_len;
                 p.eventq_len = 
-                    (caddr_t)md->event_list_end - (caddr_t)md->event_list;
+                    (caddr_t)app_dev->event_list_end - (caddr_t)app_dev->event_list;
                 printk("In GET_RTK_PROPERTIES\n");
 
                 if (copy_to_user((void*)data, &p, sizeof(p))) {
@@ -473,8 +473,8 @@ fop_ioctl_model( struct file *filp, unsigned int command, unsigned long data)
             {
                 printk("In GET_MDL_SAMPLETIMES\n");
 
-                if (copy_to_user((void*)data, rt_model->task_period, 
-                            rt_model->num_st*sizeof(*rt_model->task_period))) {
+                if (copy_to_user((void*)data, rt_app->task_period, 
+                            rt_app->num_st*sizeof(*rt_app->task_period))) {
                     rv = -EFAULT;
                     break;
                 }
@@ -485,8 +485,8 @@ fop_ioctl_model( struct file *filp, unsigned int command, unsigned long data)
             {
                 printk("In GET_PARAM\n");
 
-                if (copy_to_user((void*)data, rt_model->mdl_rtP, 
-                            rt_model->rtP_size)) {
+                if (copy_to_user((void*)data, rt_app->app_rtP, 
+                            rt_app->rtP_size)) {
                     rv = -EFAULT;
                     break;
                 }
@@ -517,10 +517,10 @@ fop_ioctl_model( struct file *filp, unsigned int command, unsigned long data)
                     break;
                 }
 
-                /* Get the information from the model */
+                /* Get the information from the app */
                 err = (command == GET_SIGNAL_INFO)
-                    ? rt_model->get_signal_info(&si)
-                    : rt_model->get_param_info(&si);
+                    ? rt_app->get_signal_info(&si)
+                    : rt_app->get_param_info(&si);
                 if (err) {
                     printk("Error: %s\n", err);
                     rv = -ERANGE;
@@ -544,16 +544,16 @@ fop_ioctl_model( struct file *filp, unsigned int command, unsigned long data)
                 struct mdl_properties p;
                 printk("In GET_MDL_PROPERTIES\n");
 
-                p.signal_count  = rt_model->signal_count;
-                p.param_count   = rt_model->param_count;
-                p.variable_path_len  = rt_model->variable_path_len;
-                p.num_st        = rt_model->num_st;
-                p.num_tasks     = rt_model->num_tasks;
+                p.signal_count  = rt_app->signal_count;
+                p.param_count   = rt_app->param_count;
+                p.variable_path_len  = rt_app->variable_path_len;
+                p.num_st        = rt_app->num_st;
+                p.num_tasks     = rt_app->num_tasks;
 
                 // No buffer overflow here, the array is defined as
                 // name[MAX+1]
-                strncpy(p.name, rt_model->modelName, MAX_MODEL_NAME_LEN);
-                strncpy(p.version, rt_model->modelVersion, 
+                strncpy(p.name, rt_app->appName, MAX_MODEL_NAME_LEN);
+                strncpy(p.version, rt_app->appVersion, 
                         MAX_MODEL_VER_LEN);
                 p.name[MAX_MODEL_NAME_LEN] = '\0';
                 p.version[MAX_MODEL_VER_LEN] = '\0';
@@ -576,11 +576,11 @@ fop_ioctl_model( struct file *filp, unsigned int command, unsigned long data)
 
 /* RTCom buddy reads the current event list */
 static ssize_t 
-fop_read_model( struct file * filp, char *buffer, 
+fop_read_app( struct file * filp, char *buffer, 
         size_t bufLen, loff_t * offset)
 {
-    struct model_dev* md = filp->private_data;
-    struct model_event *curr_wp = md->event_wp;
+    struct app_dev* app_dev = filp->private_data;
+    struct app_event *curr_wp = app_dev->event_wp;
     size_t len;
 
     /* If event_wp is NULL, there was a buffer overflow */
@@ -588,33 +588,33 @@ fop_read_model( struct file * filp, char *buffer,
         return -ENOSPC;
 
     /* Check whether the buffer is empty */
-    if (curr_wp == md->event_rp)
+    if (curr_wp == app_dev->event_rp)
         return 0;
 
     /* Write pointer wrapped around, so only copy to the end of the buffer
      * The buddy will have to read again to get the buffer start
      */
-    if (curr_wp < md->event_rp)
-        curr_wp = md->event_list_end;
+    if (curr_wp < app_dev->event_rp)
+        curr_wp = app_dev->event_list_end;
 
     /* The number of characters to be copied */
-    len = (caddr_t)curr_wp - (caddr_t)md->event_rp;
+    len = (caddr_t)curr_wp - (caddr_t)app_dev->event_rp;
 
     /* Check whether the buddy's buffer is long enough */
     if (len > bufLen) {
 
-        /* truncate to an integer length of struct model_event */
-        curr_wp = md->event_rp + bufLen / sizeof(*curr_wp);
-        len = (caddr_t)curr_wp - (caddr_t)md->event_rp;
+        /* truncate to an integer length of struct app_event */
+        curr_wp = app_dev->event_rp + bufLen / sizeof(*curr_wp);
+        len = (caddr_t)curr_wp - (caddr_t)app_dev->event_rp;
         if (!len)
             return 0;
     }
 
-    if (copy_to_user(buffer, md->event_rp, len))
+    if (copy_to_user(buffer, app_dev->event_rp, len))
         return -EFAULT;
 
-    md->event_rp = (curr_wp == md->event_list_end)
-        ? md->event_list : curr_wp;
+    app_dev->event_rp = (curr_wp == app_dev->event_list_end)
+        ? app_dev->event_list : curr_wp;
 
     return len;
 }
@@ -624,15 +624,15 @@ vma_nopage(struct vm_area_struct *vma, unsigned long address, int *type)
 {
     unsigned long offset;
     struct page *page = NOPAGE_SIGBUS;
-    struct model_dev* md = (struct model_dev*)vma->vm_private_data;
+    struct app_dev* app_dev = (struct app_dev*)vma->vm_private_data;
 
     offset = (address - vma->vm_start) + (vma->vm_pgoff << PAGE_SHIFT);
 
     /* Check that buddy did not want to access memory out of range */
-    if (offset >= md->model->rtB_cnt * md->model->rtB_len)
+    if (offset >= app_dev->app->rtB_cnt * app_dev->app->rtB_len)
         return NOPAGE_SIGBUS;
 
-    page = vmalloc_to_page(md->rtb_buf + offset);
+    page = vmalloc_to_page(app_dev->rtb_buf + offset);
 
 //    pr_debug("Nopage fault vma, address = %#lx, offset = %#lx, page = %p\n", 
 //            address, offset, page);
@@ -650,7 +650,7 @@ static struct vm_operations_struct vm_ops = {
 };
 
 static int
-fop_mmap_model(struct file *filp, struct vm_area_struct *vma)
+fop_mmap_app(struct file *filp, struct vm_area_struct *vma)
 {
     vma->vm_ops = &vm_ops;
     vma->vm_flags |= VM_RESERVED;       /* Pages will not be swapped out */
@@ -674,51 +674,51 @@ void * kzalloc(size_t len, int type)
  * Real-Time Kernel.
  *#########################################################################*/
 int 
-rtcom_new_model(struct model *model)
+rtcom_new_app(struct app *app)
 {
     int rv;
 
-    struct model_dev *md;
-    md = kzalloc(sizeof(*md), GFP_KERNEL);
-    if (!md) {
+    struct app_dev *app_dev;
+    app_dev = kzalloc(sizeof(*app_dev), GFP_KERNEL);
+    if (!app_dev) {
         rv = -ENOMEM;
         goto out_kmalloc;
     }
 
-    list_add_tail(&md->list, &model_list);
-    md->model = model;
-    get_random_bytes(&md->id, sizeof(md->id));
-    rt_sem_init(&md->rt_lock, 1);
-    init_waitqueue_head(&md->waitq);
-    rt_sem_init(&model->rtP_sem,1);
+    list_add_tail(&app_dev->list, &app_list);
+    app_dev->app = app;
+    get_random_bytes(&app_dev->id, sizeof(app_dev->id));
+    rt_sem_init(&app_dev->rt_lock, 1);
+    init_waitqueue_head(&app_dev->waitq);
+    rt_sem_init(&app->rtP_sem,1);
 
-    /* Append a new_model event to the end of the rtcom event list */
-    signal_model_change(md, 1);
+    /* Append a new_app event to the end of the rtcom event list */
+    signal_app_change(app_dev, 1);
 
     return 0;
 
-    kfree(md);
+    kfree(app_dev);
 out_kmalloc:
     return rv;
 }
 
-void rtcom_del_model(struct model *model)
+void rtcom_del_app(struct app *app)
 {
-    struct model_dev *md;
+    struct app_dev *app_dev;
 
-    list_for_each_entry(md, &model_list, list) {
-        if (md->model == model)
+    list_for_each_entry(app_dev, &app_list, list) {
+        if (app_dev->app == app)
             break;
     }
-    signal_model_change(md, 0);
+    signal_app_change(app_dev, 0);
 
     /* If the buddy does not not exist any more, free the memory */
-    if (md->buddy_lock) {
-        md->model = NULL;
+    if (app_dev->buddy_lock) {
+        app_dev->app = NULL;
     }
     else {
-        list_del(&md->list);
-        kfree(md);
+        list_del(&app_dev->list);
+        kfree(app_dev);
     }
 }
 

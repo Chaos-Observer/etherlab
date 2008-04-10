@@ -23,11 +23,11 @@
 
 #include "rt_main.h"
 
-/* Called when a new model is registered */
-int rtcom_new_model(struct model *model);
+/* Called when a new app is registered */
+int rtcom_new_app(struct app *app);
 
-/* Called when a model is removed */
-void rtcom_del_model(struct model *model);
+/* Called when a app is removed */
+void rtcom_del_app(struct app *app);
 
 /* Clear the Real-Time Kernel file handles */
 void rtcom_fio_clear(void);

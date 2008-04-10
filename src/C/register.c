@@ -25,7 +25,7 @@
 #include <linux/string.h> // memcpy(), etc.
 
 #include <include/application.h>
-#include <include/rt_model.h>
+#include <include/rt_app.h>
 #include <include/etl_data_info.h>
 #include <include/etl_application_description.h>
 
@@ -46,11 +46,11 @@ static const char* get_param_info(struct signal_info *si);
 static struct task_stats task_stats[NUMST];
 
 // Cannot declare static, as it is still required by rt_mdl_register.c
-struct rt_model rt_model = {
-    .mdl_rtB = &signal,
+struct rt_app rt_app = {
+    .app_rtB = &signal,
     .rtB_size = sizeof(signal),
 
-    .mdl_rtP = &param,
+    .app_rtP = &param,
     .rtP_size = sizeof(param),
 
     /* Some variables concerning sample times passed to the model */
@@ -74,8 +74,8 @@ struct rt_model rt_model = {
 
     /* Register model callbacks */
     .set_error_msg = mdl_set_error_msg,
-    .modelVersion = STR(MODELVERSION),
-    .modelName = STR(MODEL),
+    .appVersion = STR(MODELVERSION),
+    .appName = STR(MODEL),
 };
 
 /** Perform calculation step of base period
@@ -106,7 +106,7 @@ mdl_set_error_msg(const char *msg)
 static const char* 
 get_signal_info(struct signal_info *si)
 {
-    if (si->index >= rt_model.signal_count) {
+    if (si->index >= rt_app.signal_count) {
         return "Signal index exceeded.";
     }
 
@@ -124,7 +124,7 @@ get_signal_info(struct signal_info *si)
 static const char* 
 get_param_info(struct signal_info *si)
 {
-    if (si->index >= rt_model.param_count) {
+    if (si->index >= rt_app.param_count) {
         return "Signal index exceeded.";
     }
 
@@ -145,7 +145,7 @@ get_param_info(struct signal_info *si)
  *      Cleanup model to free memory
  */
 void 
-mdl_stop(void)
+app_stop(void)
 {
     AppExit();
 }
@@ -156,7 +156,7 @@ mdl_stop(void)
  *      Execute model on a generic target such as a workstation.
  */
 const char *
-mdl_start(void)
+app_start(void)
 {
     const char *error_msg = NULL;
     size_t len;
@@ -166,19 +166,19 @@ mdl_start(void)
     // length of the longest path
     for (idx = 0; capi_signals[idx].address; idx++) {
         len = strlen(capi_signals[idx].path);
-        if (len > rt_model.variable_path_len) {
-            rt_model.variable_path_len = len;
+        if (len > rt_app.variable_path_len) {
+            rt_app.variable_path_len = len;
         }
     }
-    rt_model.signal_count = idx;
+    rt_app.signal_count = idx;
 
     for (idx = 0; capi_parameters[idx].address; idx++) {
         len = strlen(capi_parameters[idx].path);
-        if (len > rt_model.variable_path_len) {
-            rt_model.variable_path_len = len;
+        if (len > rt_app.variable_path_len) {
+            rt_app.variable_path_len = len;
         }
     }
-    rt_model.param_count = idx;
+    rt_app.param_count = idx;
 
     error_msg = AppInit();
 

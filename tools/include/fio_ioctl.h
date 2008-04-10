@@ -122,25 +122,25 @@ struct mdl_properties {
 
 /* Pass the model number to the rt_kernel, and it replies with the model
  * name */
-struct rtp_model_name {
+struct rt_app_name {
     unsigned int number;
     char name[MAX_MODEL_NAME_LEN+1];
 };
-#define RTK_MODEL_NAME          _IOR(RTK_MAGIC, 2, struct rtp_model_name *)
+#define RTK_MODEL_NAME          _IOR(RTK_MAGIC, 2, struct rtp_app_name *)
 
 #define SET_PRIV_DATA           _IOW(RTK_MAGIC, 3, struct rtcom_ioctldata)
 struct rtcom_ioctldata {
-    struct model *model_id;
+    struct app *app_id;
     void *data;
     size_t data_len;
 };
 
 struct rtcom_event {
-    enum {new_model, del_model} type;
+    enum {new_app, del_app} type;
     unsigned int id;
 };
 
-struct model_event {
+struct app_event {
     enum {new_data, new_msg} type;
     void *ptr;
     size_t len;

@@ -32,11 +32,11 @@
  *
  *****************************************************************************/ 
 
-#include "rt_model.h"
+#include "rt_app.h"
 
-/* Called to register a new model with the rt_kernel */
-int start_rt_model(const struct rt_model *rt_model, size_t struct_len,
+/* Called to register a new application with the rt_kernel */
+int start_rt_app(const struct rt_app *rt_app, size_t struct_len,
         const char *revision_str, struct module *owner);
 
 /* Called when a Real-Time Model should be removed */
-void stop_rt_model(int tid);
+void stop_rt_app(int tid);

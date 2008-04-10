@@ -201,14 +201,14 @@ void update_time(void)
 /** Function: mdl_main_thread
  * arguments: long priv_data: Pointer to the mdl_task
  *
- * This is the fastest task of the model. It differs from mdl_sec_thread
+ * This is the fastest task of the app. It differs from mdl_sec_thread
  * in that it has to take care of parameter transfer and world time.
  */
 static void mdl_main_thread(long priv_data)
 {
     struct mdl_task *mdl_task = (struct mdl_task *)priv_data;
-    struct model *model = mdl_task->model;
-    const struct rt_model *rt_model = model->rt_model;
+    struct app *app = mdl_task->app;
+    const struct rt_app *rt_app = app->rt_app;
     unsigned int overrun = 0;
     unsigned long counter = 0;
     const char *errmsg;
@@ -226,26 +226,26 @@ static void mdl_main_thread(long priv_data)
         rt_start = get_cycles();
 
         /* Check for new parameters */
-        if (model->new_rtP) {
-                rt_sem_wait(&model->rtP_sem);
+        if (app->new_rtP) {
+                rt_sem_wait(&app->rtP_sem);
                 pr_debug("Got new parameter set\n");
-                memcpy(rt_model->mdl_rtP, rt_model->pend_rtP,
-                                rt_model->rtP_size);
-                model->new_rtP = 0;
-                rt_sem_signal(&model->rtP_sem);
+                memcpy(rt_app->app_rtP, rt_app->pend_rtP,
+                                rt_app->rtP_size);
+                app->new_rtP = 0;
+                rt_sem_signal(&app->rtP_sem);
         }
 
-        /* Do one calculation step of the model */
+        /* Do one calculation step of the app */
         rt_sem_wait(&rt_kernel.time.lock);
         mdl_task->stats->time = rt_kernel.time.tv;
         rt_sem_signal(&rt_kernel.time.lock);
-        if ((errmsg = rt_model->rt_OneStepMain()))
+        if ((errmsg = rt_app->rt_OneStepMain()))
             break;
 
         /* Send a copy of rtB to the buddy process */
-        if (!--model->photo_sample) {
-            rtp_make_photo(model);
-            model->photo_sample = rt_model->decimation;
+        if (!--app->photo_sample) {
+            rtp_make_photo(app);
+            app->photo_sample = rt_app->decimation;
         }
 
         /* Calculate and report execution statistics */
@@ -258,21 +258,24 @@ static void mdl_main_thread(long priv_data)
         mdl_task->stats->overrun = overrun;
 
         /* Wait until next call */
-        if (rt_task_wait_period()) {
+        if (RTE_TMROVRN == rt_task_wait_period()) {
             if (overrun++) {
                 printk(".");
             } else {
-                pr_info("Model overrun on main task ... "
-                        "tick %lu took %luus, allowed are %uus ",
+                pr_info(//"Model overrun on main task ... "
+                        "tick %lu took %lu(%lu)us, allowed are %uus %llu %llu",
                         counter,
+                        (unsigned long)(get_cycles() - rt_prevstart)/cpu_mhz,
                         (unsigned long)(get_cycles() - rt_start)/cpu_mhz,
-                        rt_model->task_period[0]);
+                        rt_app->task_period[0],
+                        get_cycles(), rt_start
+                        );
             }
 
-            if (overrun == rt_model->max_overrun) {
+            if (overrun == rt_app->max_overrun) {
                 printk("\n");
                 errmsg = "Too many overruns";
-                rt_model->set_error_msg("Abort");
+                rt_app->set_error_msg("Abort");
                 break;
             }
         } else {
@@ -286,7 +289,7 @@ static void mdl_main_thread(long priv_data)
         }
     }
     rt_printk("Model %s main task aborted. Error message:\n\t%s\n", 
-            rt_model->modelName, errmsg);
+            rt_app->appName, errmsg);
 
     /* If this task is not the master, it can end here */
     if (!mdl_task->master)
@@ -300,17 +303,17 @@ static void mdl_main_thread(long priv_data)
 }
 
 /** Function: mdl_sec_thread
- * arguments: long model_id: RT-Kernel Task Id for this task
+ * arguments: long app_id: RT-Kernel Task Id for this task
  *
- * This calls secondary model threads running more slowly than the main
+ * This calls secondary app threads running more slowly than the main
  * task.
  */
 static void mdl_sec_thread(long priv_data)
 {
     struct mdl_task *mdl_task = (struct mdl_task *)priv_data;
-    struct model *model = mdl_task->model;
+    struct app *app = mdl_task->app;
     unsigned int mdl_tid = mdl_task->mdl_tid;
-    const struct rt_model *rt_model = model->rt_model;
+    const struct rt_app *rt_app = app->rt_app;
     unsigned int overrun = 0;
     unsigned long counter = 0;
     const char *errmsg;
@@ -322,11 +325,11 @@ static void mdl_sec_thread(long priv_data)
         rt_prevstart = rt_start;
         rt_start = get_cycles();
 
-        /* Do one calculation step of the model */
+        /* Do one calculation step of the app */
         rt_sem_wait(&rt_kernel.time.lock);
         mdl_task->stats->time = rt_kernel.time.tv;
         rt_sem_signal(&rt_kernel.time.lock);
-        if ((errmsg = rt_model->rt_OneStepTid(mdl_tid))) 
+        if ((errmsg = rt_app->rt_OneStepTid(mdl_tid))) 
             break;
 
         /* Calculate and report execution statistics */
@@ -345,10 +348,10 @@ static void mdl_sec_thread(long priv_data)
                     mdl_tid,
                     counter,
                     (unsigned long)(get_cycles() - rt_start)/(cpu_khz/1000),
-                    rt_model->task_period[mdl_tid]);
-            if (++overrun == rt_model->max_overrun) {
+                    rt_app->task_period[mdl_tid]);
+            if (++overrun == rt_app->max_overrun) {
                 errmsg = "Too many overruns";
-                rt_model->set_error_msg("Abort");
+                rt_app->set_error_msg("Abort");
                 break;
             }
         } else {
@@ -357,53 +360,53 @@ static void mdl_sec_thread(long priv_data)
         }
     }
     rt_printk("Model %s tid %u aborted. Error message:\n\t%s\n", 
-            rt_model->modelName, mdl_tid, errmsg);
+            rt_app->appName, mdl_tid, errmsg);
 }
 
-void stop_rt_model(int model_id)
+void stop_rt_app(int app_id)
 {
-    struct model *model = rt_kernel.model[model_id];
+    struct app *app = rt_kernel.application[app_id];
     unsigned int i;
 
     down(&rt_kernel.lock);
 
-    for (i = 0; i < model->rt_model->num_tasks; i++) {
-        rt_task_suspend(&model->task[i].rtai_thread);
+    for (i = 0; i < app->rt_app->num_tasks; i++) {
+        rt_task_suspend(&app->task[i].rtai_thread);
         printk("Unused stack memory: %i\n", 
-            rt_task_stack_check(&model->task[i].rtai_thread,STACK_MAGIC));
+            rt_task_stack_check(&app->task[i].rtai_thread,STACK_MAGIC));
 
-        rt_task_delete(&model->task[i].rtai_thread);
+        rt_task_delete(&app->task[i].rtai_thread);
     }
 
-    clear_bit(model_id, &rt_kernel.loaded_models);
-    rtp_fio_clear_mdl(model);
-    rtcom_del_model(model);
+    clear_bit(app_id, &rt_kernel.loaded_apps);
+    rtp_fio_clear_mdl(app);
+    rtcom_del_app(app);
 
-    if (!rt_kernel.loaded_models) {
+    if (!rt_kernel.loaded_apps) {
         /* Last process to be removed */
         rt_kernel.base_period = 0;
         stop_rt_timer();
         pr_info("Stopped RT Timer\n");
     }
 
-    kfree(model);
+    kfree(app);
 
     up(&rt_kernel.lock);
 
     return;
 }
 
-int start_rt_model(const struct rt_model *rt_model,
+int start_rt_app(const struct rt_app *rt_app,
         size_t struct_len,
         const char *revision_str,
         struct module *owner)
 {
     unsigned int i;
-    unsigned int model_id;
+    unsigned int app_id;
     unsigned int decimation;
     RTIME now;
     int err = -1;
-    struct model *model;
+    struct app *app;
 
     if (strcmp(revision_str, REVISION)) {
         pr_info("Error: The header file revisions do not match.\n"
@@ -415,22 +418,22 @@ int start_rt_model(const struct rt_model *rt_model,
         return -1;
     }
 
-    if (struct_len != sizeof(struct rt_model)) {
+    if (struct_len != sizeof(struct rt_app)) {
         pr_info("Error: The header file lengths do not match.\n"
                 "Model has: %i\n"
                 "Expected: %i\n"
                 "You have probably updated and are using an old rt_kernel.\n"
                 "Recompile and reinstall all parts of " PACKAGE_NAME ".\n",
-                struct_len, sizeof(struct rt_model));
+                struct_len, sizeof(struct rt_app));
         return -1;
     }
 
     pr_debug("Registering new RTW Model %s with rtw_manager\n", 
-            rt_model->modelName);
+            rt_app->appName);
 
-    /* Make sure the model name is within range */
-    if (strlen(rt_model->modelName) > MAX_MODEL_NAME_LEN-1) {
-        pr_info("Error: model name exceeds %i bytes\n", MAX_MODEL_NAME_LEN-1);
+    /* Make sure the app name is within range */
+    if (strlen(rt_app->appName) > MAX_MODEL_NAME_LEN-1) {
+        pr_info("Error: app name exceeds %i bytes\n", MAX_MODEL_NAME_LEN-1);
         err = -E2BIG;
         goto out;
     }
@@ -438,61 +441,61 @@ int start_rt_model(const struct rt_model *rt_model,
     /* If the ticker is already running, check that the base rates are
      * compatible */
     if (rt_kernel.base_period && 
-            rt_model->task_period[0] % rt_kernel.base_period) {
+            rt_app->task_period[0] % rt_kernel.base_period) {
         pr_info("Model's base rate (%uns) is not an integer multiple of "
                 "RTAI baserate %luus\n", 
-                rt_model->task_period[0], rt_kernel.base_period);
+                rt_app->task_period[0], rt_kernel.base_period);
         err = -EINVAL;
         goto out;
     }
 
-    /* Get some memory to manage RT model */
-    model = kcalloc( 1, 
-            ( sizeof(struct model) 
-              + rt_model->num_tasks*sizeof(struct mdl_task)
-              + rt_model->num_tasks*sizeof(struct task_stats)),
+    /* Get some memory to manage RT app */
+    app = kcalloc( 1, 
+            ( sizeof(struct app) 
+              + rt_app->num_tasks*sizeof(struct mdl_task)
+              + rt_app->num_tasks*sizeof(struct task_stats)),
             GFP_KERNEL);
-    if (!model) {
+    if (!app) {
         printk("Error: Could not get memory for Real-Time Task\n");
         err = -ENOMEM;
         goto out;
     }
-    model->task_stats = 
-        (struct task_stats *)&model->task[rt_model->num_tasks];
-    model->task_stats_len = rt_model->num_tasks*sizeof(struct task_stats);
-    pr_info("Malloc'ed struct model *(%p) for rt_model *(%p)\n",
-            model, rt_model);
+    app->task_stats = 
+        (struct task_stats *)&app->task[rt_app->num_tasks];
+    app->task_stats_len = rt_app->num_tasks*sizeof(struct task_stats);
+    pr_info("Malloc'ed struct app *(%p) for rt_app *(%p)\n",
+            app, rt_app);
 
     down(&rt_kernel.lock);
 
     /* Make sure there is one free slot */
-    if (rt_kernel.loaded_models == ~0UL) {
+    if (rt_kernel.loaded_apps == ~0UL) {
         printk("Exceeded maximum number of tasks (%i)\n", MAX_MODELS);
         err = -ENOMEM;
         goto out_check_full;
     }
-    model_id = ffz(rt_kernel.loaded_models);
-    model->id = model_id;
-    set_bit(model_id, &rt_kernel.loaded_models);
-    pr_debug("Found free RTW Task %i\n", model_id);
+    app_id = ffz(rt_kernel.loaded_apps);
+    app->id = app_id;
+    set_bit(app_id, &rt_kernel.loaded_apps);
+    pr_debug("Found free RTW Task %i\n", app_id);
 
-    rt_kernel.model[model_id] = model;
+    rt_kernel.application[app_id] = app;
 
-    model->rt_model = rt_model;
+    app->rt_app = rt_app;
 
-    for (i = 0; i < rt_model->num_tasks; i++) {
-        model->task[i].mdl_tid = i;
-        model->task[i].model = model;
-        model->task[i].stats = &model->task_stats[i];
+    for (i = 0; i < rt_app->num_tasks; i++) {
+        app->task[i].mdl_tid = i;
+        app->task[i].app = app;
+        app->task[i].stats = &app->task_stats[i];
 
         /* Initialise RTAI task structure */
         if ((err = rt_task_init(
-                        &model->task[i].rtai_thread, /* RT_TASK 	*/
+                        &app->task[i].rtai_thread, /* RT_TASK 	*/
                         (i ? mdl_sec_thread 
                          : mdl_main_thread),      /* Task function 	*/
-                        (long)&model->task[i], /* Private data passed to 
+                        (long)&app->task[i], /* Private data passed to 
                                                    * task */
-                        rt_model->stack_size,   /* Stack size 	*/
+                        rt_app->stack_size,   /* Stack size 	*/
                         i,                      /* priority 	*/
                         1,                      /* use fpu 		*/
                         NULL                    /* signal		*/
@@ -503,29 +506,29 @@ int start_rt_model(const struct rt_model *rt_model,
 
         /* Fill stack with a recognisable pattern to enable stack size 
          * profiling */
-        rt_task_stack_init(&model->task[i].rtai_thread, STACK_MAGIC);
+        rt_task_stack_init(&app->task[i].rtai_thread, STACK_MAGIC);
     }
 
-    /* Check that the model's rate is a multiple of rt_kernel's baserate */
+    /* Check that the app's rate is a multiple of rt_kernel's baserate */
     if (!rt_kernel.base_period) {
         /* Use global baserate if it has been passed as a module parameter
-         * otherwise take that from the model */
+         * otherwise take that from the app */
         rt_kernel.base_period = 
-            basetick ? basetick : rt_model->task_period[0];
+            basetick ? basetick : rt_app->task_period[0];
         rt_kernel.tick_period = 
             start_rt_timer_ns(rt_kernel.base_period*1000);
-        model->task[0].master = 1;
+        app->task[0].master = 1;
         pr_info("Started RT timer at a rate of %luus\n", 
                 rt_kernel.base_period);
     } else {
-        if (rt_model->task_period[0] < rt_kernel.base_period) {
-            printk("ERROR: Period of model faster than rt_kernel's base "
-                    "period. Load fastest model first.\n");
+        if (rt_app->task_period[0] < rt_kernel.base_period) {
+            printk("ERROR: Period of app faster than rt_kernel's base "
+                    "period. Load fastest app first.\n");
             goto out_incompatible_ticks;
         } 
 
-        if (rt_model->task_period[0] % rt_kernel.base_period) {
-            printk("ERROR: Period of model not an integral multiple "
+        if (rt_app->task_period[0] % rt_kernel.base_period) {
+            printk("ERROR: Period of app not an integral multiple "
                     "of rt_kernel's base period.\n");
             goto out_incompatible_ticks;
         } 
@@ -536,23 +539,23 @@ int start_rt_model(const struct rt_model *rt_model,
      * that the process is available to the user, i.e. live), because 
      * all the setup has been completed. 
      * Create character devices for this process */
-    if ((err = rtp_fio_init_mdl(model, owner))) {
+    if ((err = rtp_fio_init_mdl(app, owner))) {
         printk("Could not initialise file io\n");
         goto out_fio_init;
     }
-    if ((err = rtcom_new_model(model))) {
+    if ((err = rtcom_new_app(app))) {
         printk("Could not initialise rtcom file io\n");
         goto out_rtcom_init_fail;
     }
 
     now = rt_get_time();
-    model->photo_sample = 1;           /* Take a photo of next calculation */
-    for (i = 0; i < rt_model->num_tasks; i++) {
+    app->photo_sample = 1;           /* Take a photo of next calculation */
+    for (i = 0; i < rt_app->num_tasks; i++) {
         pr_info("RTW Model tid %i running at %uus\n", 
-                i, rt_model->task_period[i]);
-        decimation = rt_model->task_period[i] / rt_model->task_period[0];
+                i, rt_app->task_period[i]);
+        decimation = rt_app->task_period[i] / rt_app->task_period[0];
         if ((err = rt_task_make_periodic(
-                        &model->task[i].rtai_thread, 
+                        &app->task[i].rtai_thread, 
                         now + nano2count(1e7), //rt_kernel.tick_period,
                         decimation*rt_kernel.tick_period
                         ))) {
@@ -563,27 +566,27 @@ int start_rt_model(const struct rt_model *rt_model,
 
     up(&rt_kernel.lock);
 
-    return model_id;
+    return app_id;
 
 out_make_periodic:
-    rtcom_del_model(model);
+    rtcom_del_app(app);
 out_rtcom_init_fail:
-    rtp_fio_clear_mdl(model);
+    rtp_fio_clear_mdl(app);
 out_fio_init:
 out_incompatible_ticks:
-    for (i--; i > rt_model->num_tasks; i--) {
-        rt_task_suspend(&model->task[i].rtai_thread);
-        rt_task_delete(&model->task[i].rtai_thread);
+    for (i--; i > rt_app->num_tasks; i--) {
+        rt_task_suspend(&app->task[i].rtai_thread);
+        rt_task_delete(&app->task[i].rtai_thread);
     }
 out_task_init:
-    clear_bit(model_id, &rt_kernel.loaded_models);
-    if (!rt_kernel.loaded_models) {
+    clear_bit(app_id, &rt_kernel.loaded_apps);
+    if (!rt_kernel.loaded_apps) {
         rt_kernel.base_period = 0;
         stop_rt_timer();
     }
 out_check_full:
     up(&rt_kernel.lock);
-    kfree(model);
+    kfree(app);
 out:
     return err;
 }
@@ -594,7 +597,7 @@ out:
 RT_TASK test_thread[2];
 
 /** Function: test_thread
- * arguments: long model_id: RT-Kernel Task Id for this task
+ * arguments: long app_id: RT-Kernel Task Id for this task
  *
  * This is the main task that is called by RTAI.
  */
@@ -614,7 +617,7 @@ static void test_thread_func(long priv_data)
 
         /* Wait until next call */
         if (rt_task_wait_period()) {
-            pr_info("Model overrun ... tick %lu took %luns, model run %luns\n",
+            pr_info("Model overrun ... tick %lu took %luns, app run %luns\n",
                     counter,
                     (unsigned long)((get_cycles() - rt_start)*1000)/(cpu_khz/1000),
                     (unsigned long)((rt_end - rt_start)*1000)/(cpu_khz/1000));
@@ -718,7 +721,7 @@ int __init mod_init(void)
 #endif //TEST_THREAD
 
     /* First start a separate thread to fetch world time.
-     * Do this first so that the model can initialise to the correct
+     * Do this first so that the app can initialise to the correct
      * time */
     rt_sem_init(&rt_kernel.time.lock,1);
 
@@ -726,7 +729,7 @@ int __init mod_init(void)
     init_MUTEX(&rt_kernel.lock);
     init_MUTEX(&rt_kernel.file_lock);
     init_waitqueue_head(&rt_kernel.event_q);
-    rt_kernel.loaded_models = 0;
+    rt_kernel.loaded_apps = 0;
 
     /* Initialise RTAI */
     rt_set_periodic_mode();
@@ -772,8 +775,8 @@ MODULE_DESCRIPTION("RT-Kernel for " PACKAGE_NAME);
 MODULE_AUTHOR("Richard Hacker");
 MODULE_VERSION(PACKAGE_VERSION);
 
-EXPORT_SYMBOL_GPL(start_rt_model);
-EXPORT_SYMBOL_GPL(stop_rt_model);
+EXPORT_SYMBOL_GPL(start_rt_app);
+EXPORT_SYMBOL_GPL(stop_rt_app);
 
 module_init(mod_init);
 module_exit(mod_cleanup);

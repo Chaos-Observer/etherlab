@@ -28,7 +28,7 @@
 
 //#include "defines.h"
 #include "include/fio_ioctl.h"
-#include "include/mdl_taskstats.h"
+#include "include/taskstats.h"
 #include "msr_main.h"
 #include "msr_lists.h"
 #include "msr_reg.h"
@@ -354,7 +354,7 @@ static void open_model(int fd, void *d)
 {
     int rv, i, j, pid;
     uint32_t new_models, deleted_models, running_models; 
-    struct rtp_model_name rtp_model_name;
+    struct rt_app_name rt_app_name;
 
     /* Ask the rt_kernel for the bitmask of running models. The bits in
      * running_models represent whether the model is running */
@@ -373,15 +373,15 @@ static void open_model(int fd, void *d)
             continue;
         }
 
-        rtp_model_name.number = i;
-        rv = ioctl(fd, RTK_MODEL_NAME, &rtp_model_name);
+        rt_app_name.number = i;
+        rv = ioctl(fd, RTK_MODEL_NAME, &rt_app_name);
         if (rv) {
             syslog(LOG_ERR, "ioctl() errorgetting model name: %s",
                     strerror(errno));
             continue;
         }
         syslog(LOG_DEBUG, "Starting new model number %i, name: %s", 
-                i, rtp_model_name.name);
+                i, rt_app_name.name);
 
         if (!(pid = fork())) { 
             // child here
@@ -392,7 +392,7 @@ static void open_model(int fd, void *d)
                     clr_fd(j);
                 }
             }
-            if (start_model(rtp_model_name.name, i))
+            if (start_model(rt_app_name.name, i))
                 exit(-1);
             return;
         } else if (pid > 0) {
@@ -414,7 +414,7 @@ static void open_model(int fd, void *d)
         }
 
         syslog(LOG_DEBUG, "Stopping deleted model number %i, name: %s", 
-                i, rtp_model_name.name);
+                i, rt_app_name.name);
     }
 
     active_models = running_models;

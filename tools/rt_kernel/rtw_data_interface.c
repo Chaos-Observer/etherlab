@@ -94,7 +94,7 @@ const char* get_signal_info(struct signal_info *si)
         name++;
     }
 
-    path_len = min(si->path_len, path_len);
+    path_len = min(si->path_buf_len, path_len);
 
     strncpy(si->alias, rtwCAPI_GetSignalName(signals, si->index),
             sizeof(si->alias));
@@ -215,7 +215,7 @@ const char* get_param_info(struct signal_info* si)
 
     // Skip the model name
     path += model_name_len + 1;
-    path_len = min(si->path_len, path_len - model_name_len - 1);
+    path_len = min(si->path_buf_len, path_len - model_name_len - 1);
 
     si->alias[0] = '\0';
     strncpy(si->path, path, path_len);

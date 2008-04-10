@@ -40,9 +40,9 @@
 #include <linux/init.h>
 #include <linux/moduleparam.h>
 #include <linux/autoconf.h>
-#include "include/rt_kernel.h"
+#include <include/rt_kernel.h>
 
-extern struct rt_model rt_model;
+extern struct rt_app rt_app;
 
 unsigned long stack_size = 0;
 module_param(stack_size, ulong, S_IRUGO);
@@ -67,11 +67,11 @@ MODULE_PARM_DESC(tick,"Override tick rate specified in the model.");
 static void __exit 
 mod_cleanup(void)
 {
-    stop_rt_model(rt_model.model_id);
-    kfree(rt_model.pend_rtP);
-    mdl_stop();
+    stop_rt_app(rt_app.app_id);
+    kfree(rt_app.pend_rtP);
+    app_stop();
     pr_info("Removed RTW Model \"%s\" from RT-Kernel\n", 
-            rt_model.modelName);
+            rt_app.appName);
 }
 
 
@@ -85,61 +85,61 @@ mod_init(void)
     pr_debug("Inserting RTW model\n");
 
     /* Initialise the real time model */
-    if ((errmsg = mdl_start())) {
+    if ((errmsg = app_start())) {
             printk("ERROR: Could not initialize model: %s\n", errmsg);
             err = -1;
             goto out;
     }
 
     // If a new tick is supplied, use it instead of the model's
-    for (i = rt_model.num_st; tick && i--; ) {
-        rt_model.task_period[i] = 
-            rt_model.task_period[i] / rt_model.task_period[0] * tick;
+    for (i = rt_app.num_st; tick && i--; ) {
+        rt_app.task_period[i] = 
+            rt_app.task_period[i] / rt_app.task_period[0] * tick;
     }
-    rt_model.decimation = decimation ? decimation : rt_model.decimation;
-    rt_model.max_overrun = overrun ? overrun : rt_model.max_overrun;
-    rt_model.buffer_time = 
-        buffer_time ? buffer_time*1000000 : rt_model.buffer_time;
-    rt_model.stack_size = stack_size ? stack_size : rt_model.stack_size;
+    rt_app.decimation = decimation ? decimation : rt_app.decimation;
+    rt_app.max_overrun = overrun ? overrun : rt_app.max_overrun;
+    rt_app.buffer_time = 
+        buffer_time ? buffer_time*1000000 : rt_app.buffer_time;
+    rt_app.stack_size = stack_size ? stack_size : rt_app.stack_size;
 
     /* Work out how fast the model is sampled by test_manager */
-    rt_model.sample_period = rt_model.decimation 
-        ? rt_model.task_period[0]*rt_model.decimation
-        : rt_model.task_period[0];
+    rt_app.sample_period = rt_app.decimation 
+        ? rt_app.task_period[0]*rt_app.decimation
+        : rt_app.task_period[0];
 
-    rt_model.rtB_count = rt_model.buffer_time/rt_model.sample_period;
-    rt_model.rtB_count = rt_model.rtB_count ? rt_model.rtB_count : 1;
+    rt_app.rtB_count = rt_app.buffer_time/rt_app.sample_period;
+    rt_app.rtB_count = rt_app.rtB_count ? rt_app.rtB_count : 1;
 
     /* Get area where pending parameters are stored */
-    rt_model.pend_rtP = kmalloc(rt_model.rtP_size, GFP_KERNEL);
-    if (!rt_model.pend_rtP) {
+    rt_app.pend_rtP = kmalloc(rt_app.rtP_size, GFP_KERNEL);
+    if (!rt_app.pend_rtP) {
             printk("Could not allocate memory for rtP exchange area\n");
             err = -ENOMEM;
             goto out_kmalloc;
     }
 
     /* Initialise the pending parameter area with the current parameters */
-    memcpy(rt_model.pend_rtP, rt_model.mdl_rtP, rt_model.rtP_size);
+    memcpy(rt_app.pend_rtP, rt_app.app_rtP, rt_app.rtP_size);
 
     /* Having finished all the model initialisation, it is now time to 
      * register this RTW Model with the Real-Time Kernel to be scheduled */
-    if ((rt_model.model_id = start_rt_model(&rt_model,
-                    sizeof(rt_model), REVISION, THIS_MODULE)) < 0) {
+    if ((rt_app.app_id = start_rt_app(&rt_app,
+                    sizeof(rt_app), REVISION, THIS_MODULE)) < 0) {
         printk("Could not register model with rtw_manager; rc = %i\n",
-                rt_model.model_id);
-        err = rt_model.model_id;
+                rt_app.app_id);
+        err = rt_app.app_id;
         goto out_register_mdl;
     }
 
     pr_info("Successfully registered RTW Model \"%s\" with RT-Kernel\n",
-            rt_model.modelName);
+            rt_app.appName);
 
     return 0;
 
 out_register_mdl:
-    kfree(rt_model.pend_rtP);
+    kfree(rt_app.pend_rtP);
 out_kmalloc:
-    mdl_stop();
+    app_stop();
 out:
     return err;
 }

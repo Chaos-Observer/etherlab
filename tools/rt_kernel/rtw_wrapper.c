@@ -43,11 +43,11 @@
  *
  *****************************************************************************/ 
 
-#include "include/rt_model.h"
-#include "include/mdl_time.h"
-#include "include/fio_ioctl.h"
-#include "include/rtw_data_interface.h"
-#include "include/defines.h"
+#include <include/rt_app.h>
+#include <include/mdl_time.h>
+#include <include/fio_ioctl.h>
+#include <include/rtw_data_interface.h>
+#include <include/defines.h>
 
 #include "rtmodel.h"
 #include "rt_sim.h"
@@ -93,16 +93,16 @@ double etl_world_time[NUMST];
 unsigned int task_period[NUMST - (TID01EQ ? 1 : 0)];
 struct task_stats task_stats[NUMST - (TID01EQ ? 1 : 0)];
 
-/* Instantiate and initialise rt_model here */
-struct rt_model rt_model = {
-    .mdl_rtB = &rtB,
+/* Instantiate and initialise rt_app here */
+struct rt_app rt_app = {
+    .app_rtB = &rtB,
     .rtB_size = sizeof(rtB),
 
 #ifdef rtP
-    .mdl_rtP = &rtP,
+    .app_rtP = &rtP,
     .rtP_size = sizeof(rtP),
 #else
-    .mdl_rtP = NULL,
+    .app_rtP = NULL,
     .rtP_size = 0,
 #endif
 
@@ -133,8 +133,8 @@ struct rt_model rt_model = {
 
     /* Register model callbacks */
     .set_error_msg = mdl_set_error_msg,
-    .modelVersion = STR(MODELVERSION),
-    .modelName = STR(MODEL),
+    .appVersion = STR(MODELVERSION),
+    .appName = STR(MODEL),
 };
 
 #if NCSTATES > 0
@@ -165,7 +165,7 @@ struct rt_model rt_model = {
 const char *
 rt_OneStep()
 {
-    RT_MODEL *S = rt_model.rtw_model;
+    RT_MODEL *S = rt_app.app_privdata;
     real_T tnext;
 
     etl_world_time[0] = (double)task_stats[0].time.tv_sec 
@@ -216,7 +216,7 @@ rt_OneStep()
 const char *
 rt_OneStepMain()
 {
-    RT_MODEL *S = rt_model.rtw_model;
+    RT_MODEL *S = rt_app.app_privdata;
     real_T tnext;
 
     etl_world_time[FIRST_TID] = (double)task_stats[0].time.tv_sec 
@@ -258,7 +258,7 @@ rt_OneStepMain()
 const char *
 rt_OneStepTid(uint_T tid)
 {
-    RT_MODEL *S = rt_model.rtw_model;
+    RT_MODEL *S = rt_app.app_privdata;
     uint_T rtw_tid = tid + FIRST_TID;
 
     etl_world_time[rtw_tid] = (double)task_stats[tid].time.tv_sec 
@@ -287,18 +287,18 @@ rt_OneStepTid(uint_T tid)
 void
 mdl_set_error_msg(const char *msg)
 {
-    RT_MODEL *S = rt_model.rtw_model;
+    RT_MODEL *S = rt_app.app_privdata;
 
     rtmSetErrorStatusFlag(S, msg);
 }
 
-/* Function: mdl_stop ========================================================
+/* Function: app_stop ========================================================
  *
  * Abstact:
  *      Cleanup model to free memory
  */
 void 
-mdl_stop(void)
+app_stop(void)
 {
     MdlTerminate();
 }
@@ -309,7 +309,7 @@ mdl_stop(void)
  *      Execute model on a generic target such as a workstation.
  */
 const char *
-mdl_start(void)
+app_start(void)
 {
     RT_MODEL  *S;
     const char *errmsg;
@@ -318,7 +318,7 @@ mdl_start(void)
     /************************
      * Initialize the model *
      ************************/
-    rt_model.rtw_model = S = MODEL();
+    rt_app.app_privdata = S = MODEL();
 
     if (rtmGetErrorStatus(S) != NULL) {
 	    return rtmGetErrorStatus(S);
@@ -348,19 +348,19 @@ mdl_start(void)
     }
 
     if ((errmsg = rtw_capi_init(S, 
-                    &rt_model.signal_count,
-                    &rt_model.param_count,
-                    &rt_model.variable_path_len))) {
+                    &rt_app.signal_count,
+                    &rt_app.param_count,
+                    &rt_app.variable_path_len))) {
         return errmsg;
     }
 
-    for (i = 0; i < rt_model.num_st; i++) {
+    for (i = 0; i < rt_app.num_st; i++) {
         task_period[i] = (unsigned int)
             (rtmGetSampleTime(S, i + (TID01EQ ? 1 : 0))*1.0e6 + 0.5);
     }
 
     // Cannot assign this in struct definition :(
-//    rt_model.symbol_len = model_symbols_len;
+//    rt_app.symbol_len = model_symbols_len;
 
     return NULL;
 
