@@ -123,13 +123,13 @@ static int rtp_open(
     buf_len = model->rtB_cnt * model->rtB_len;
     model->rtb_buf = vmalloc(buf_len);
     if (!model->rtb_buf) {
-        printk("Could not vmalloc buffer length %u "
-                "for Process IO\n", buf_len);
+        printk("Could not vmalloc buffer length %u*%u "
+                "for Process IO\n", model->rtB_cnt, model->rtB_len);
         err = -ENOMEM;
         goto out_vmalloc;
     }
-    pr_debug("Allocated BlockIO Buf size %u, addr %p\n", 
-            buf_len, model->rtb_buf);
+    pr_debug("Allocated BlockIO Buf size %u*%u, addr %p\n", 
+            model->rtB_cnt, model->rtB_len, model->rtb_buf);
 
     model->msg_ptr = model->msg_buf = (char *)__get_free_page(GFP_KERNEL);
     model->msg_buf_len = PAGE_SIZE;

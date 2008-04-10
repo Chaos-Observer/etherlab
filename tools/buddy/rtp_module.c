@@ -259,6 +259,7 @@ static int start_model(const char *model_name, unsigned int model_num)
         }
         else {
             orientation = si.dim[0] > 1 ? si_vector : si_scalar;
+            si.dim[1] = 1;
         }
         CHECK_ERR (!msr_reg_rtw_signal( model->properties.name,
                     si.path, si.name, si.alias,
@@ -288,6 +289,7 @@ static int start_model(const char *model_name, unsigned int model_num)
         }
         else {
             orientation = si.dim[0] > 1 ? si_vector : si_scalar;
+            si.dim[1] = 1;
         }
         CHECK_ERR (!msr_reg_rtw_param( model->properties.name,
                     si.path, si.name, si.alias, "", 
