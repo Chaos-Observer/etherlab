@@ -250,7 +250,7 @@ static void mdl_main_thread(long priv_data)
 
         /* Calculate and report execution statistics */
         rt_end = get_cycles();
-        cpu_mhz = cpu_khz/1000;  // cpu_khz is not constant
+        cpu_mhz = cpu_khz/1000;
         mdl_task->stats->exec_time = 
             ((unsigned int)(rt_end - rt_start))/cpu_mhz;
         mdl_task->stats->time_step = 
@@ -265,8 +265,7 @@ static void mdl_main_thread(long priv_data)
                 pr_info("Model overrun on main task ... "
                         "tick %lu took %luus, allowed are %uus ",
                         counter,
-                        (unsigned long)(get_cycles() - 
-                                        rt_start)/(cpu_khz/1000),
+                        (unsigned long)(get_cycles() - rt_start)/cpu_mhz,
                         rt_model->task_period[0]);
             }
 

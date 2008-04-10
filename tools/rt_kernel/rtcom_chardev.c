@@ -690,7 +690,7 @@ rtcom_new_model(struct model *model)
     get_random_bytes(&md->id, sizeof(md->id));
     rt_sem_init(&md->rt_lock, 1);
     init_waitqueue_head(&md->waitq);
-    rt_sem_init(&model->rtP_sem,0);
+    rt_sem_init(&model->rtP_sem,1);
 
     /* Append a new_model event to the end of the rtcom event list */
     signal_model_change(md, 1);
