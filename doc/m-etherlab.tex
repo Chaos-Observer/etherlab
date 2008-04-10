@@ -1,11 +1,12 @@
+%-----------------------------------------------------------------------------
 %
-% Master-File
+% $Id$
 %
-%\documentclass[12pt,a4paper]{letter}
-\documentclass[12pt,a4paper]{scrartcl}
-%\documentclass[12pt,a4paper]{report}
+%-----------------------------------------------------------------------------
 
-\input{ighpreamble}     % definiert texeinstellungen und \newcommands
+\documentclass[12pt,a4paper]{scrartcl}
+
+\input{ighpreamble}
 
 \usepackage{listings} % Code/Befehl-Listings (fp)
 \usepackage{svn}
@@ -18,33 +19,13 @@
 
 % Konfiguration für "listings"-Paket (fp)
 \lstset{basicstyle=\ttfamily\small,numberstyle=\tiny,aboveskip=4mm,
-  belowskip=2mm,gobble=2,escapechar=`}
+  belowskip=2mm,escapechar=`}
 
-\newcommand{\version}{devel}
-
-%
-% Hier als Entwurf kennzeichnen
-%
-%\entwurf{Draft}
+\newcommand{\version}{1.2}
 
 \selectlanguage{english}
 
 \begin{document}
-
-%
-% nachfolgendes bedarfsweise hereinnehmen
-%
-
-% Die  zwei Titelseiten:
-%\ightitlepage{
-%               Erste Zeile Titel\\[1ex]
-%               Zweite Zeile Titel\\[1ex]
-%               vielleicht dritte Zeile\\[1ex]
-%               }{Musterfirma}{Monat 200X}
-%
-% alternativ für kurze Informationen
-% Titel entsprechend aendern
-%
 
 \begin{titlepage}
   \begin{center}
@@ -73,8 +54,6 @@
   \end{center}
 \end{titlepage}
 
-% Rückseite des Deckblattes
-
 \begin{titlepage}
   \vspace*{\fill}
   {\small
@@ -86,31 +65,12 @@
     E-mail: igh@igh-essen.com}
 \end{titlepage}
 
-%\tecnote{Information}
-
-%
-% Das Inhaltsverzeichnis:
 \ightoc
-%
-% Das Abbildungsverzeichnis:
+
 \ighfig
 \newpage
-%
-% Das Tabellenverzeichnis:
-%\ightab
-%
 
-% Der eigentliche Inhalt:
 \input{etherlab.tex}
-
-%
-% der Index (in Vorbereitung 10/2004)
-%\ighindex
-%
-
-% das Literaturverzeichnis (in Vorbereitung 10/2004)
-%\ighbib
-%
 
 \end{document}
 
