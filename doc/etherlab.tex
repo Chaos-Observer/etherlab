@@ -194,12 +194,19 @@ parameters, to allow access from userspace.
 
 The realtime application description is done via an XML file (see
 section~\ref{sec:xml}). This file is parsed to create the C data structures
-for signals and parameters. This means the user only has to provide the
-application description XML and the C-code algorithms operating on the given
-data structures to create an EtherLab realtime application. The
-\texttt{rt\_kernel} provides machanisms to make the application's variables
-visible and accessible in userspace. See section~\ref{sec:build} on how to
-build a basic application.
+for signals and parameters (see fig.~\ref{fig:c-api}). This means the user
+only has to provide the application description XML and the C-code algorithms
+operating on the given data structures to create an EtherLab realtime
+application. The \texttt{rt\_kernel} provides machanisms to make the
+application's variables visible and accessible in userspace.
+
+\begin{figure}[H]
+  \begin{center}
+    \includegraphics[width=0.9\textwidth]{images/c-api}
+    \caption{Creation of a realtime application}
+    \label{fig:c-api}
+  \end{center}
+\end{figure}
 
 \end{ighsec}
 
@@ -222,7 +229,7 @@ Listing~\ref{lst:min-desc} shows a minimal realtime application description.
 </application>
 \end{lstlisting}
 
-\begin{ighsec}{The application element}
+\begin{ighsec}{Application}
 \label{sec:xml-app}
 
 The root of the realtime application description XML is the
@@ -261,7 +268,7 @@ application's data structure and can be considered as a system-like element
 
 \end{ighsec}
 
-\begin{ighsec}{System-like elements}
+\begin{ighsec}{Systems}
 \label{sec:xml-system}
 
 The elements \texttt{<data>}, \texttt{<subsystem>} and \texttt{<refsystem>}
@@ -410,11 +417,6 @@ strings. This has to be defined in the future.
 \end{description}
 
 \end{ighsec}
-
-\end{ighsec}
-
-\begin{ighsec}{Building a Model}
-\label{sec:build}
 
 \end{ighsec}
 
