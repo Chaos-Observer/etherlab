@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
 
 <!--
 This is the main structure of a model. It consists of 5 main elements:
@@ -11,28 +11,28 @@ This is the main structure of a model. It consists of 5 main elements:
 
 The name attribute is required.
 -->
-<xsd:element name="model">
-  <xsd:complexType>
-    <xsd:sequence>
-      <xsd:element ref="description"/>
-      <xsd:element ref="version"/>
-      <xsd:element ref="parameters" minOccurs="0"/>
-      <xsd:element ref="task"/>
-      <xsd:element ref="subsystem" minOccurs="0" maxOccurs="unbounded"/>
-      <xsd:element ref="data"/>
-    </xsd:sequence>
-    <xsd:attribute name="name" type="xsd:string" use="required"/>
-  </xsd:complexType>
-</xsd:element>
+<xs:element name="application">
+  <xs:complexType>
+    <xs:sequence>
+      <xs:element ref="description"/>
+      <xs:element ref="version"/>
+      <xs:element ref="parameters" minOccurs="0"/>
+      <xs:element ref="task"/>
+      <xs:element ref="include" minOccurs="0"/>
+      <xs:element ref="refsystem" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element ref="data"/>
+    </xs:sequence>
+  </xs:complexType>
+</xs:element>
 
-<xsd:simpleType name="cstring">
- <xsd:restriction base="xsd:string">
-  <xsd:pattern value="[a-zA-Z ]+"/>
- </xsd:restriction>
-</xsd:simpleType>
+<xs:simpleType name="cstring">
+ <xs:restriction base="xs:string">
+  <xs:pattern value="[a-zA-Z ]+"/>
+ </xs:restriction>
+</xs:simpleType>
 
-<xsd:element name="description" type="cstring"/>
-<xsd:element name="version" type="xsd:string"/>
+<xs:element name="description" type="cstring"/>
+<xs:element name="version" type="xs:string"/>
 
 <!-- 
 The parameters element defines various properties of the model. It can
@@ -47,15 +47,15 @@ define the following attributes:
 <parameters max_overruns="5" stacksize="2048" 
       photo_decimation="1" buffer_time="10"/>
 -->
-<xsd:element name="parameters">
- <xsd:complexType>
-  <xsd:attribute name="max_overruns" type="xsd:positiveInteger" default="1"/>
-  <xsd:attribute name="stacksize" type="xsd:positiveInteger" default="2048"/>
-  <xsd:attribute name="photo_decimation" type="xsd:positiveInteger" 
+<xs:element name="parameters">
+ <xs:complexType>
+  <xs:attribute name="max_overruns" type="xs:positiveInteger" default="5"/>
+  <xs:attribute name="stacksize" type="xs:positiveInteger" default="2048"/>
+  <xs:attribute name="photo_decimation" type="xs:positiveInteger" 
         default="1"/>
-  <xsd:attribute name="buffer_time" type="xsd:positiveInteger" default="10"/>
- </xsd:complexType>
-</xsd:element>
+  <xs:attribute name="buffer_time" type="xs:positiveInteger" default="2"/>
+ </xs:complexType>
+</xs:element>
 
 <!-- Element task describes the tasks to be called. Task has to appear once,
      with basetick as an attribute defining the main tasks calling period
@@ -72,19 +72,35 @@ define the following attributes:
      will define a basic calling rate of 1000us for the main task, and
      two subtasks with calling rates of 0.01ms and 0.1ms
 -->
-<xsd:element name="task">
- <xsd:complexType>
-  <xsd:sequence>
-   <xsd:element name="subtask" minOccurs="0" maxOccurs="unbounded">
-    <xsd:complexType>
-     <xsd:attribute name="decimation" type="xsd:positiveInteger" 
+<xs:element name="task">
+ <xs:complexType>
+  <xs:sequence>
+   <xs:element name="subtask" minOccurs="0" maxOccurs="unbounded">
+    <xs:complexType>
+     <xs:attribute name="decimation" type="xs:positiveInteger" 
         use="required"/>
-    </xsd:complexType>
-   </xsd:element>
-  </xsd:sequence>
-  <xsd:attribute name="basetick" type="xsd:positiveInteger" use="required"/>
- </xsd:complexType>
-</xsd:element>
+    </xs:complexType>
+   </xs:element>
+  </xs:sequence>
+  <xs:attribute name="basetick" type="xs:positiveInteger" use="required"/>
+ </xs:complexType>
+</xs:element>
+
+<!-- Element <include> is used to include header files into the sources.
+     It can have any number of the following child elements:
+       - <system> : to include system wide headers aka #include <file.h>
+       - <file> : to include local headers aka #include "file.h"
+-->
+<xs:element name="include">
+ <xs:complexType>
+  <xs:sequence maxOccurs="unbounded">
+   <xs:choice>
+    <xs:element name="file" type="xs:string"/>
+    <xs:element name="system" type="xs:string"/>
+   </xs:choice>
+  </xs:sequence>
+ </xs:complexType>
+</xs:element>
 
 <!--
 The data element describes the model's signals and parameters in a tree
@@ -97,134 +113,122 @@ It can consist of any number of the following elements:
 For the purposes of this schema, signals and parameters are grouped together
 as variables
 -->
-<xsd:element name="data">
- <xsd:complexType>
-  <xsd:sequence minOccurs="0" maxOccurs="unbounded">
-    <xsd:choice>
-     <xsd:element ref="signal"/>
-     <xsd:element ref="parameter"/>
-     <xsd:element ref="subsystem"/>
-     <xsd:element ref="cstruct"/>
-     <xsd:element ref="reference"/>
-    </xsd:choice>
-  </xsd:sequence>
- </xsd:complexType>
-</xsd:element>
+<xs:element name="data">
+ <xs:complexType>
+  <xs:complexContent>
+   <xs:extension base="DataType"/>
+  </xs:complexContent>
+ </xs:complexType>
+</xs:element>
+
+<xs:element name="refsystem">
+ <xs:complexType>
+  <xs:complexContent>
+   <xs:extension base="SystemType">
+   </xs:extension>
+  </xs:complexContent>
+ </xs:complexType>
+</xs:element>
+
+<xs:complexType name="DataType">
+ <xs:sequence minOccurs="0" maxOccurs="unbounded">
+   <xs:choice>
+    <xs:element ref="signal"/>
+    <xs:element ref="parameter"/>
+    <xs:element ref="subsystem"/>
+    <xs:element ref="reference"/>
+   </xs:choice>
+ </xs:sequence>
+</xs:complexType>
+
+<xs:complexType name="SystemType">
+ <xs:complexContent>
+  <xs:extension base="DataType">
+   <!--xs:sequence minOccurs="0">
+    <xs:element name="meta"/>
+   </xs:sequence -->
+   <xs:attribute name="name" type="xs:string" use="required"/>
+  </xs:extension>
+ </xs:complexContent>
+</xs:complexType>
 
 <!--
  A subsystem is just like the <data> element except with a mandatory
  name attribute
 -->
-<xsd:element name="subsystem">
- <xsd:complexType>
-  <xsd:complexContent>
-   <xsd:extension base="structBase">
-    <xsd:sequence maxOccurs="unbounded">
-      <xsd:choice>
-       <xsd:element ref="signal"/>
-       <xsd:element ref="parameter"/>
-       <xsd:element ref="subsystem"/>
-       <xsd:element ref="cstruct"/>
-       <xsd:element ref="reference"/>
-      </xsd:choice>
-    </xsd:sequence>
-   </xsd:extension>
-  </xsd:complexContent>
- </xsd:complexType>
-</xsd:element>
+<xs:element name="subsystem">
+ <xs:complexType>
+  <xs:complexContent>
+   <xs:extension base="SystemType"/>
+  </xs:complexContent>
+ </xs:complexType>
+</xs:element>
 
-<xsd:element name="cstruct">
- <xsd:complexType>
-  <xsd:complexContent>
-   <xsd:extension base="structBase"/>
-  </xsd:complexContent>
- </xsd:complexType>
-</xsd:element>
 
-<xsd:element name="reference">
- <xsd:complexType>
-  <xsd:complexContent>
-   <xsd:extension base="structBase">
-    <xsd:attribute name="value" type="xsd:string"/>
-   </xsd:extension>
-  </xsd:complexContent>
- </xsd:complexType>
-</xsd:element>
+<xs:element name="reference">
+ <xs:complexType>
+  <xs:complexContent>
+   <xs:extension base="structBase">
+    <xs:attribute name="system" type="xs:string"/>
+   </xs:extension>
+  </xs:complexContent>
+ </xs:complexType>
+</xs:element>
 
-<xsd:element name="signal">
- <xsd:complexType>
-  <xsd:complexContent>
-   <xsd:extension base="variableBase">
-    <xsd:attribute name="sampleTimeIndex" type="xsd:nonNegativeInteger"/>
-    <xsd:attribute name="alias" type="xsd:string"/>
-   </xsd:extension>
-  </xsd:complexContent>
- </xsd:complexType>
-</xsd:element>
+<xs:element name="signal">
+ <xs:complexType>
+  <xs:complexContent>
+   <xs:extension base="variableBase">
+    <xs:attribute name="sampleTimeIndex" type="xs:nonNegativeInteger"/>
+    <xs:attribute name="alias" type="xs:string"/>
+   </xs:extension>
+  </xs:complexContent>
+ </xs:complexType>
+</xs:element>
 
-<xsd:element name="parameter">
- <xsd:complexType>
-  <xsd:complexContent>
-   <xsd:extension base="variableBase">
-    <xsd:sequence>
-     <xsd:element name="value"/>
-    </xsd:sequence>
-   </xsd:extension>
-  </xsd:complexContent>
- </xsd:complexType>
-</xsd:element>
+<xs:element name="parameter">
+ <xs:complexType>
+  <xs:complexContent>
+   <xs:extension base="variableBase"/>
+  </xs:complexContent>
+ </xs:complexType>
+</xs:element>
 
-<xsd:complexType name="structBase">
- <xsd:sequence>
-  <xsd:element name="dim" minOccurs="0" maxOccurs="unbounded"/>
-  <xsd:element name="meta" minOccurs="0"/>
- </xsd:sequence>
- <xsd:attribute name="name" type="xsd:string" use="required"/>
-</xsd:complexType>
+<xs:complexType name="structBase">
+ <xs:attribute name="name" type="xs:string"/>
+</xs:complexType>
 
-<xsd:complexType name="variableBase">
- <xsd:complexContent>
-  <xsd:extension base="structBase">
-   <xsd:attribute name="cvar" type="xsd:string" use="required"/>
-   <xsd:attribute name="datatype" type="datatype" use="required"/>
-  </xsd:extension>
- </xsd:complexContent>
-</xsd:complexType>
+<xs:complexType name="variableBase">
+ <xs:complexContent>
+  <xs:extension base="structBase">
+   <xs:sequence>
+    <xs:element name="dim" minOccurs="0" maxOccurs="unbounded"/>
+    <xs:element name="value" type="initval" minOccurs="0"/>
+   </xs:sequence>
+   <xs:attribute name="datatype" type="datatype" use="required"/>
+  </xs:extension>
+ </xs:complexContent>
+</xs:complexType>
 
-<xsd:simpleType name="datatype">
- <xsd:restriction base="xsd:string">
-  <xsd:enumeration value="double_T"/>
-  <xsd:enumeration value="float_T"/>
-  <xsd:enumeration value="boolean_T"/>
-  <xsd:enumeration value="uint8_T"/>
-  <xsd:enumeration value="sint8_T"/>
-  <xsd:enumeration value="uint16_T"/>
-  <xsd:enumeration value="sint16_T"/>
-  <xsd:enumeration value="uint32_T"/>
-  <xsd:enumeration value="sint32_T"/>
- </xsd:restriction>
-</xsd:simpleType>
+<xs:simpleType name="datatype">
+ <xs:restriction base="xs:string">
+  <xs:enumeration value="double_T"/>
+  <xs:enumeration value="float_T"/>
+  <xs:enumeration value="uint8_T"/>
+  <xs:enumeration value="sint8_T"/>
+  <xs:enumeration value="uint16_T"/>
+  <xs:enumeration value="sint16_T"/>
+  <xs:enumeration value="uint32_T"/>
+  <xs:enumeration value="sint32_T"/>
+ </xs:restriction>
+</xs:simpleType>
 
 <!-- Not using this, but this is a proposal for a list of values that
      is used to initialise parameters -->
-<xsd:simpleType name="paraminitval">
- <xsd:list>
-  <xsd:simpleType>
-   <xsd:union>
-    <xsd:simpleType>
-     <xsd:restriction base="xsd:integer"/>
-    </xsd:simpleType>
-    <xsd:simpleType>
-     <xsd:restriction base="xsd:double"/>
-    </xsd:simpleType>
-     <xsd:simpleType>
-      <xsd:restriction base="xsd:string">
-       <xsd:pattern value=", *"/>
-      </xsd:restriction>
-     </xsd:simpleType>
-   </xsd:union>
-  </xsd:simpleType>
- </xsd:list>
-</xsd:simpleType>
+<xs:complexType name="initval" mixed="true">
+ <xs:sequence minOccurs="0" maxOccurs="unbounded">
+  <xs:element name="value" type="initval"/>
+ </xs:sequence>
+</xs:complexType>
 
-</xsd:schema>
+</xs:schema>

@@ -104,26 +104,26 @@
     </xsl:apply-templates>
   </xsl:template>
   
+  <xsl:template match="refsystem">
+    <xsl:param name="prefix"/>
+    <xsl:param name="select"/>
+    <xsl:apply-templates>
+      <xsl:with-param name="prefix" select="$prefix"/>
+      <xsl:with-param name="select" select="$select"/>
+    </xsl:apply-templates>
+  </xsl:template>
+  
   <xsl:template match="reference">
     <xsl:param name="prefix"/>
     <xsl:param name="select"/>
-    <xsl:param name="s" select="@value"/>
-    <xsl:param name="path">
-      <xsl:choose>
-        <xsl:when test="$prefix">
-          <xsl:value-of select="concat($prefix,'/',@name)"/>
-        </xsl:when>
-        <xsl:otherwise>
-          <xsl:value-of select="@name"/>
-        </xsl:otherwise>
-      </xsl:choose>
-    </xsl:param>
+    <xsl:param name="s" select="@system"/>
+    <xsl:param name="path" select="concat($prefix,'/',@name)"/>
     <xsl:apply-templates select="/application/refsystem[@name=$s]">
       <xsl:with-param name="prefix" select="$path"/>
       <xsl:with-param name="select" select="$select"/>
     </xsl:apply-templates>
   </xsl:template>
-  
+
   <xsl:template match="signal">
     <xsl:param name="select"/>
     <xsl:param name="prefix"/>

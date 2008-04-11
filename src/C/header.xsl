@@ -182,7 +182,7 @@
   <xsl:template match="reference">
     <xsl:param name="prefix"/>
     <xsl:text>struct </xsl:text>
-    <xsl:value-of select="@value"/> 
+    <xsl:value-of select="@system"/> 
     <xsl:value-of select="concat('_',$header_type,' ')"/>
     <xsl:value-of select="@name"/>;
   </xsl:template>

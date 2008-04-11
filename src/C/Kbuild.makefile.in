@@ -38,11 +38,11 @@ MODEL_SOURCES =
 
 ifeq ($(KERNELRELEASE),)
 
-modules %:
+modules %: .linted $(MODEL_NAME).c $(MODEL_SOURCES)
 	$(MAKE) -C @LINUX_DIR@ M=$(shell pwd) $@
 
 .linted: $(MODEL_NAME).xml
-	xmllint @prefix@/lib/C/rt_model.xsd $^ > $@
+	xmllint --schema @prefix@/lib/C/rt_application.xsd $^ > $@
 
 else #ifeq ($(KERNELRELEASE),)
 
