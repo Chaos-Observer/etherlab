@@ -54,10 +54,12 @@ class RTComTask: public Task {
 
         void kill(Task*, int);
 
-        char inBuf[4096];
-        unsigned int inBufPos;
+        char *inBuf;
+        char *inBufEnd;
+        char *inBufPtr;
+        unsigned int inBufLen;
 
-        enum ParserState_t {Idle, LoginInit, LoginContinue, LoginFail,
+        enum ParserState_t {Init, Idle, LoginInit, LoginContinue, LoginFail,
             //Unknown, Login, List, 
             //Subscribe, Poll, Write
         };

@@ -27,7 +27,10 @@
 #include "RTComBufTask.h"
 
 #undef DEBUG
-#define DEBUG 0
+#define DEBUG 1
+
+#include <iostream>
+#include <arpa/inet.h>
 
 using namespace std;
 
@@ -57,6 +60,40 @@ void RTComBufTask::reset()
     bufSize = 0;
     setp(0,0);
     disableWrite();
+}
+
+//************************************************************************
+void RTComBufTask::hello()
+// The hello message is sent to the client as soon as the connection is
+// established. This is used to identify the protocol being used.
+//
+// The message is composed as follows:
+// First 6 bytes: string "RTCom\0"
+// Bytes 8-11: Major version as unsigned int
+// Bytes 12-15: Minor version as unsigned int
+//************************************************************************
+{
+    unsigned char s[16] = "RTCom";
+    uint32_t len = htonl(16);
+
+    // Set version to 1.0
+    *(uint32_t *)&s[8] = htonl(1);
+    *(uint32_t *)&s[12] = htonl(0);
+
+    xsputn((char*)&len, sizeof(len));
+    xsputn((char*)s, sizeof(s));
+    sync();
+}
+
+void RTComBufTask::send(const std::string& s)
+{
+    char padchars[4];
+    streamsize pad = 4 - s.length() % 4;
+    uint32_t len = htonl(s.length() + pad);
+    xsputn((char*)&len, sizeof(len));
+    xsputn(s.c_str(), s.length());
+    xsputn(padchars, pad);
+    sync();
 }
 
 //************************************************************************
@@ -153,7 +190,7 @@ std::streamsize RTComBufTask::xsputn(const char *s, std::streamsize len)
     streamsize n, count = 0;
 
 #if DEBUG
-    cerr << "RTComBufTask::xsputn(" << string(s,len) << ")" << endl;
+    cerr << "RTComBufTask::xsputn(" << string(s,len) << ") len:" << len << endl;
 #endif
 
     while (count != len) {

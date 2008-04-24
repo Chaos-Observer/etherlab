@@ -41,6 +41,9 @@ class RTComBufTask: public Task, public std::streambuf {
 
         void reset();
 
+        void hello();
+        void send(const std::string& s);
+
     private:
         const int fd;
 

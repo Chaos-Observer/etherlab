@@ -62,10 +62,15 @@ RTComTask::RTComTask(Task* parent, int _fd, RTTask* _rtTask):
     memcpy(sasl_callbacks, callbacks, sizeof(callbacks));
 
     enableRead(fd);
-    os.stdOut("RTCom v0.1");
 
-    inBufPos = 0;
-    parserState = Idle;
+    // Say hello to the client.
+    sb.hello();
+
+    inBufLen = 4096;
+    inBufPtr = inBuf = new char[inBufLen];
+    inBufEnd = inBuf + inBufLen;
+
+    parserState = Init;
     loggedIn = false;
 
     if (SASL_OK != sasl_server_new( "login",
@@ -87,9 +92,9 @@ RTComTask::RTComTask(Task* parent, int _fd, RTTask* _rtTask):
     if (SASL_OK != sasl_listmech(
                 sasl_connection,  // sasl_conn_t *conn,
                 NULL,             // const char *user,
-                "{",              // const char *prefix,
+                "",              // const char *prefix,
                 " ",              // const char *sep,
-                "}",              // const char *suffix,
+                "",              // const char *suffix,
                 &mechanisms,      // const char **result,
                 &mechanism_len,   // unsigned *plen,
                 &mechanism_count  // unsigned *pcount
@@ -110,6 +115,7 @@ RTComTask::~RTComTask()
     rtTask->clrComTask(this);
     sasl_dispose(&sasl_connection);
     delete[] sasl_callbacks;
+    delete[] inBuf;
     cerr << "Deleting RTComTask" << this << endl;
     close(fd);
 }
@@ -152,252 +158,293 @@ int RTComTask::read(int)
 //************************************************************************
 {
     int n;
+    const char *in = inBuf;
     std::string model;
+    bool finished = false;
+    size_t left;
 
-    n = ::read(fd, inBuf + inBufPos, sizeof(inBuf) - inBufPos - 1);
+    if (inBufPtr == inBufEnd)
+        throw Exception("Input buffer full");
+
+    n = ::read(fd, inBufPtr, inBufEnd - inBufPtr);
 
     if (n <= 0) {
         return n ? errno : 0;
     }
 
-    inBufPos += n;
-    inBuf[inBufPos] = '\0';
+    inBufPtr += n;
 
-    switch (parserState) {
-        case Idle:
-        cerr << " parsing: " << inBuf << endl;
-            if (login.FullMatch(inBuf)) {
-                os.stdOut(string(mechanisms));
-                parserState = LoginInit;
-            }
-            else if (capabilities.FullMatch(inBuf)) {
-                os.stdOut(string("CAPABILITIES: STARTTLS LOGIN"));
-            }
-            else if (empty.FullMatch(inBuf)) {
-                cerr << "Found empty strin " << endl;
-            }
-            else if (listSignals.FullMatch(inBuf, &model)) {
-                unsigned int idx = 0;
-                std::ostringstream oss;
-                std::ostream_iterator<size_t> oo(oss, " ");
-                const RTTask::ModelMap& modelMap = rtTask->getModelMap();
-                RTTask::ModelMap::const_iterator it = modelMap.find(model);
-                if (it == modelMap.end()) {
-                    os.stdErr("Model unknown");
-                    break;
-                }
-                const std::vector<RTVariable*>& variableList =
-                    it->second->getVariableList();
-                std::vector<RTVariable*>::const_iterator vit;
-                os.stdOutListStart("Variable List");
+    std::cout << "Read " << n << "bytes: " << inBuf << std::endl;
 
-                std::vector<string> key(1);
-                std::vector<string> value(1);
-                key[0] = "VariableCount";
-                oss << variableList.size();
-                value[0] = oss.str();
-                os.stdOutListElement(key, value, true);
-
-                key.resize(7);
-                value.resize(7);
-                key[0] = "Path";
-                key[1] = "Name";
-                key[2] = "Index";
-                key[3] = "Datatype";
-                key[4] = "Dimensions";
-                key[5] = "Flags";
-                key[6] = "SampleTime";
-                for( vit = variableList.begin(); vit != variableList.end(); 
-                        vit++) {
-                    value[0] = (*vit)->getPath();
-                    value[1] = (*vit)->getName();
-                    oss.str("");
-                    oss << idx++;
-                    value[2] = oss.str();
-                    switch ((*vit)->getDataType()) {
-                        case si_double_T:
-                            value[3] = "double_T";
-                            break;
-                        case si_single_T:
-                            value[3] = "single_T";
-                            break;
-                        case si_boolean_T:
-                            value[3] = "boolean_T";
-                            break;
-                        case si_uint8_T:
-                            value[3] = "uint8_T";
-                            break;
-                        case si_sint8_T:
-                            value[3] = "sint8_T";
-                            break;
-                        case si_uint16_T:
-                            value[3] = "uint16_T";
-                            break;
-                        case si_sint16_T:
-                            value[3] = "sint16_T";
-                            break;
-                        case si_uint32_T:
-                            value[3] = "uint32_T";
-                            break;
-                        case si_sint32_T:
-                            value[3] = "sint32_T";
-                            break;
-                        default:
-                            break;
-                    }
-                    const std::vector<size_t> dims = 
-                        (*vit)->getDims();
-                    oss.str("");
-                    copy(dims.begin(), dims.end(), oo);
-                    value[4] = oss.str();
-
-                    value[5] = (*vit)->isWriteable() ? "rw" : "r-";
-
-                    oss.str("");
-                    oss << (*vit)->getSampleTime();
-                    value[6] = oss.str();
-                    os.stdOutListElement(key, value, false);
-                }
-                os.stdOutListEnd();
-            }
-            else if (listModels.FullMatch(inBuf)) {
-                const RTTask::ModelMap& modelMap = rtTask->getModelMap();
-                os.stdOutListStart("Model List");
-                std::vector<string> key(2);
-                std::vector<string> value(2);
-                key[0] = "Name";
-                key[1] = "Version";
-                for( RTTask::ModelMap::const_iterator it = modelMap.begin();
-                        it != modelMap.end(); it++) {
-                    value[0] = it->first;
-                    value[1] = it->second->getVersion();
-                    os.stdOutListElement(key, value, it == modelMap.begin());
-                }
-                os.stdOutListEnd();
-            }
-            else if (strchr(inBuf, '\n') || inBufPos >= sizeof(inBuf)-1) {
-                // Discard everyting in input buffer if an Enter is detected
-                // or input buffer is full but no command is matched
-                os.stdErr("Unknown command.");
-            }
-            else {
-                // Command not completed; Skip setting inBufPos to 0
-                break;
-            }
-            inBufPos = 0;
+    while (!finished) {
+        left = inBufPtr - in;
+        if (!left)
             break;
-        case LoginInit:
-            {
-                string client_mech;
-                string rest;
+        switch (parserState) {
+            case Init:
+                if (in[0] == 'R') {
+                    // User requested to enter run state
 
-                if (auth.PartialMatch(inBuf, &client_mech, &rest)) {
-                    const char* reply;
-                    unsigned int reply_len;
-                    int retval;
-
-                    retval = sasl_server_start(sasl_connection,
-                            client_mech.c_str(), 
-                            rest.length() ? rest.c_str() : NULL, 
-                            rest.length(), 
-                            &reply, &reply_len);
-
-                    switch (retval) {
-                        case SASL_CONTINUE:
-                            cerr << "SASL_CONTINUE" << endl;
-                            parserState = LoginContinue;
-                            break;
-                        case SASL_OK:
-                            cerr << "SASL_OK" << endl;
-                            parserState = Idle;
-                            loggedIn = true;
-                            break;
-                        default:
-                            os.stdErr("Login failure. Reconnect.");
-                            parserState = LoginFail;
-                            inBufPos = 0;
-                            break;
-                    }
-                }
-                else {
-                    os.stdErr("Did not find AUTH command.");
-                    parserState = Idle;
-                    inBufPos = 0;
-                }
-                break;
-            }
-        case LoginContinue:
-            {
-                const char* p = inBuf;
-
-                const char* dataStart;
-
-                while ((dataStart = strchr(p,'}'))) {
-                        unsigned int len;
-
-                        if (!dataStart)
+                    // Is there enough data?
+                    if (left < 4) {
+                        finished = true;
                         break;
+                    }
+                    in += 4;
 
-                        // Point to location after right brace
-                        dataStart++;
+                    // Send the list of currently running models
+                    const RTTask::ModelMap& modelMap = rtTask->getModelMap();
 
-                        if (length.PartialMatch(p, &len)) {
-                            int retval;
-                            const char* reply;
-                            unsigned int reply_len;
-
-                            if (inBufPos - (dataStart - p) < len) {
-                                inBufPos -= p - inBuf;
-                                memmove(inBuf, p, inBufPos);
-                                break;
-                            }
-
-                            string s(dataStart, len);
-
-                            retval = sasl_server_step(sasl_connection,
-                                    s.c_str(), s.length(),
-                                    &reply, &reply_len);
-                            if (reply_len)
-                                os.stdOut(string(reply,reply_len));
-                            break;
-                        }
-                        else {
-                        }
+                    for( RTTask::ModelMap::const_iterator it = modelMap.begin();
+                            it != modelMap.end(); it++) {
+                        std::string s("M");
+                        s.append(it->first).push_back(0);
+                        sb.send(s);
+                        std::cout << "Sendign model " << s << std::endl;
+                    }
                 }
-                break;
-            }
-        case LoginFail:
-            return -EPERM;
-            break;
+            default:
+                finished = true;
+        }
     }
-                /*
-                if (!memcmp(inBuf, "SET ", min(4U, inBufPos))) {
-                    parserState = Write;
-                }
-                else if (!memcmp(inBuf, "SUBSCRIBE ", min(10U, inBufPos))) {
-                    parserState = Subscribe;
-                }
-                else if (!memcmp(inBuf, "POLL ", min(5U, inBufPos))) {
-                    parserState = Poll;
-                }
-                else if (!memcmp(inBuf, "USER ", min(5U, inBufPos))) {
-                    parserState = SetUser;
-                }
-                else if (!memcmp(inBuf, "PASS ", min(5U, inBufPos))) {
-                    parserState = SetPass;
-                }
-                else if (!memcmp(inBuf, "LIST", min(4U, inBufPos))) {
-                    parserState = List;
-                }
-                else if (*inBuf == '\n') {
-                    consumed = 1;
-                }
-                else {
-                    consumed = inBufPos;
-                    os.stdErr("Unknown command.");
-                }
-                break;
-                */
+//        case Idle:
+//            cerr << " parsing: " << inBuf << endl;
+//            if (inBufPtr[0] == 'Q') {
+//                size_t len = *(uint32_t*)(inBufPtr+4)
+//                std::string modelName(inBufPtr+1);
+//                inBufPtr += modelName.size() + 1;
+//                char* modelNameEnd = strchr(inBufPtr, '\0');
+//
+//            }
+//            if (login.FullMatch(inBuf)) {
+//                os.stdOut(string(mechanisms));
+//                parserState = LoginInit;
+//            }
+//            else if (capabilities.FullMatch(inBuf)) {
+//                os.stdOut(string("CAPABILITIES: STARTTLS LOGIN"));
+//            }
+//            else if (empty.FullMatch(inBuf)) {
+//                cerr << "Found empty strin " << endl;
+//            }
+//            else if (listSignals.FullMatch(inBuf, &model)) {
+//                unsigned int idx = 0;
+//                std::ostringstream oss;
+//                std::ostream_iterator<size_t> oo(oss, " ");
+//                const RTTask::ModelMap& modelMap = rtTask->getModelMap();
+//                RTTask::ModelMap::const_iterator it = modelMap.find(model);
+//                if (it == modelMap.end()) {
+//                    os.stdErr("Model unknown");
+//                    break;
+//                }
+//                const std::vector<RTVariable*>& variableList =
+//                    it->second->getVariableList();
+//                std::vector<RTVariable*>::const_iterator vit;
+//                os.stdOutListStart("Variable List");
+//
+//                std::vector<string> key(1);
+//                std::vector<string> value(1);
+//                key[0] = "VariableCount";
+//                oss << variableList.size();
+//                value[0] = oss.str();
+//                os.stdOutListElement(key, value, true);
+//
+//                key.resize(7);
+//                value.resize(7);
+//                key[0] = "Path";
+//                key[1] = "Name";
+//                key[2] = "Index";
+//                key[3] = "Datatype";
+//                key[4] = "Dimensions";
+//                key[5] = "Flags";
+//                key[6] = "SampleTime";
+//                for( vit = variableList.begin(); vit != variableList.end(); 
+//                        vit++) {
+//                    value[0] = (*vit)->getPath();
+//                    value[1] = (*vit)->getName();
+//                    oss.str("");
+//                    oss << idx++;
+//                    value[2] = oss.str();
+//                    switch ((*vit)->getDataType()) {
+//                        case si_double_T:
+//                            value[3] = "double_T";
+//                            break;
+//                        case si_single_T:
+//                            value[3] = "single_T";
+//                            break;
+//                        case si_boolean_T:
+//                            value[3] = "boolean_T";
+//                            break;
+//                        case si_uint8_T:
+//                            value[3] = "uint8_T";
+//                            break;
+//                        case si_sint8_T:
+//                            value[3] = "sint8_T";
+//                            break;
+//                        case si_uint16_T:
+//                            value[3] = "uint16_T";
+//                            break;
+//                        case si_sint16_T:
+//                            value[3] = "sint16_T";
+//                            break;
+//                        case si_uint32_T:
+//                            value[3] = "uint32_T";
+//                            break;
+//                        case si_sint32_T:
+//                            value[3] = "sint32_T";
+//                            break;
+//                        default:
+//                            break;
+//                    }
+//                    const std::vector<size_t> dims = 
+//                        (*vit)->getDims();
+//                    oss.str("");
+//                    copy(dims.begin(), dims.end(), oo);
+//                    value[4] = oss.str();
+//
+//                    value[5] = (*vit)->isWriteable() ? "rw" : "r-";
+//
+//                    oss.str("");
+//                    oss << (*vit)->getSampleTime();
+//                    value[6] = oss.str();
+//                    os.stdOutListElement(key, value, false);
+//                }
+//                os.stdOutListEnd();
+//            }
+//            else if (inBuf[0] == 'M') {
+//                // Client requested model list. Send back the sequence
+//                // 'M' + "model1" + '\0' + ...
+//                const RTTask::ModelMap& modelMap = rtTask->getModelMap();
+//
+//                for( RTTask::ModelMap::const_iterator it = modelMap.begin();
+//                        it != modelMap.end(); it++) {
+//                    std::string s("M");
+//                    s.append(it->first).push_back(0);
+//                    sb.send(s);
+//                }
+//            }
+//            else if (strchr(inBuf, '\n') || inBufEnd >= sizeof(inBuf)-1) {
+//                // Discard everyting in input buffer if an Enter is detected
+//                // or input buffer is full but no command is matched
+//                os.stdErr("Unknown command.");
+//            }
+//            else {
+//                // Command not completed; Skip setting inBufPos to 0
+//                break;
+//            }
+//            inBufEnd = 0;
+//            break;
+//        case LoginInit:
+//            {
+//                string client_mech;
+//                string rest;
+//
+//                if (auth.PartialMatch(inBuf, &client_mech, &rest)) {
+//                    const char* reply;
+//                    unsigned int reply_len;
+//                    int retval;
+//
+//                    retval = sasl_server_start(sasl_connection,
+//                            client_mech.c_str(), 
+//                            rest.length() ? rest.c_str() : NULL, 
+//                            rest.length(), 
+//                            &reply, &reply_len);
+//
+//                    switch (retval) {
+//                        case SASL_CONTINUE:
+//                            cerr << "SASL_CONTINUE" << endl;
+//                            parserState = LoginContinue;
+//                            break;
+//                        case SASL_OK:
+//                            cerr << "SASL_OK" << endl;
+//                            parserState = Idle;
+//                            loggedIn = true;
+//                            break;
+//                        default:
+//                            os.stdErr("Login failure. Reconnect.");
+//                            parserState = LoginFail;
+//                            inBufEnd = 0;
+//                            break;
+//                    }
+//                }
+//                else {
+//                    os.stdErr("Did not find AUTH command.");
+//                    parserState = Idle;
+//                    inBufEnd = 0;
+//                }
+//                break;
+//            }
+//        case LoginContinue:
+//            {
+//                const char* p = inBuf;
+//
+//                const char* dataStart;
+//
+//                while ((dataStart = strchr(p,'}'))) {
+//                        unsigned int len;
+//
+//                        if (!dataStart)
+//                        break;
+//
+//                        // Point to location after right brace
+//                        dataStart++;
+//
+//                        if (length.PartialMatch(p, &len)) {
+//                            int retval;
+//                            const char* reply;
+//                            unsigned int reply_len;
+//
+//                            if (inBufEnd - (dataStart - p) < len) {
+//                                inBufEnd -= p - inBuf;
+//                                memmove(inBuf, p, inBufEnd);
+//                                break;
+//                            }
+//
+//                            string s(dataStart, len);
+//
+//                            retval = sasl_server_step(sasl_connection,
+//                                    s.c_str(), s.length(),
+//                                    &reply, &reply_len);
+//                            if (reply_len)
+//                                os.stdOut(string(reply,reply_len));
+//                            break;
+//                        }
+//                        else {
+//                        }
+//                }
+//                break;
+//            }
+//        case LoginFail:
+//            return -EPERM;
+//            break;
+//    }
+//                /*
+//                if (!memcmp(inBuf, "SET ", min(4U, inBufPos))) {
+//                    parserState = Write;
+//                }
+//                else if (!memcmp(inBuf, "SUBSCRIBE ", min(10U, inBufPos))) {
+//                    parserState = Subscribe;
+//                }
+//                else if (!memcmp(inBuf, "POLL ", min(5U, inBufPos))) {
+//                    parserState = Poll;
+//                }
+//                else if (!memcmp(inBuf, "USER ", min(5U, inBufPos))) {
+//                    parserState = SetUser;
+//                }
+//                else if (!memcmp(inBuf, "PASS ", min(5U, inBufPos))) {
+//                    parserState = SetPass;
+//                }
+//                else if (!memcmp(inBuf, "LIST", min(4U, inBufPos))) {
+//                    parserState = List;
+//                }
+//                else if (*inBuf == '\n') {
+//                    consumed = 1;
+//                }
+//                else {
+//                    consumed = inBufPos;
+//                    os.stdErr("Unknown command.");
+//                }
+//                break;
+//                */
 
     return n;
 }

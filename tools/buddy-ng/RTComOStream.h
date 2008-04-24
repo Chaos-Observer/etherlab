@@ -47,6 +47,10 @@ class RTComOStream: public std::ostream {
                 const std::vector<std::string>& value,
                 bool first);
         void stdOutListEnd();
+
+        void hello();
+        std::ostream& write( const char* s, std::streamsize n);
+
 };
 
 #endif // RTCOMOSTREAM_H

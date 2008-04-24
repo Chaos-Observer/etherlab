@@ -63,7 +63,7 @@ int RTTask::read(int)
 
     std::cout << "read " << n << "bytes." << std::endl;
     switch (event.type) {
-        case rtcom_event::new_model:
+        case rtcom_event::new_app:
             {
                 std::cout << "new RTModel " << event.id << std::endl;
 
@@ -84,7 +84,7 @@ int RTTask::read(int)
 
                 break;
             }
-        case rtcom_event::del_model:
+        case rtcom_event::del_app:
             {
                 for (ModelMap::iterator m = modelMap.begin();
                         m != modelMap.end(); m++) {

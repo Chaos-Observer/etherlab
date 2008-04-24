@@ -147,5 +147,6 @@ void Task::enableRead(int fd)
 void Task::enableWrite(int fd)
 //************************************************************************
 {
-    writeRef = dispatcher->setWriteable(this, fd);
+    if (!writeRef)
+        writeRef = dispatcher->setWriteable(this, fd);
 }

@@ -26,6 +26,8 @@
 
 #include "RTComOStream.h"
 
+#include <iostream>
+
 #undef DEBUG
 #define DEBUG 0
 
@@ -37,15 +39,34 @@ RTComOStream::RTComOStream(streambuf* sb): ostream(sb)
 {
 }
 
-////************************************************************************
-//void RTComOStream::sendStr(const std::string& s, size_t pad)
-////************************************************************************
-//{
-//    this->write(s, len);
-//    if (pad)
-//        this->seekp(pad - len, ios_base::cur);
-//}
+//************************************************************************
+void RTComOStream::hello()
+// The hello message is sent to the client as soon as the connection is
+// established. This is used to identify the protocol being used.
 //
+// The message is composed as follows:
+// First 6 bytes: string "RTCom\0"
+// Bytes 8-11: Major version as unsigned int
+// Bytes 12-15: Minor version as unsigned int
+//************************************************************************
+{
+    unsigned char s[16] = "RTCom";
+
+    // Set version to 1.0
+    *(unsigned int *)&s[8] = 1;
+    *(unsigned int *)&s[12] = 0;
+
+    std::ostream::write((char*)s, sizeof(s)).flush();
+}
+
+//************************************************************************
+std::ostream& RTComOStream::write(const char* s, std::streamsize n)
+//************************************************************************
+{
+    uint32_t len = n;
+    return std::ostream::write((const char*)&len, 4).write(s, n).flush();
+}
+
 ////************************************************************************
 //void RTComOStream::sendInt(unsigned int n)
 ////************************************************************************
