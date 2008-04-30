@@ -34,8 +34,8 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "ml"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Tue Apr  8 17:29:01 2008"
-  ModelVersionFormat	  "1.%<AutoIncrement:287>"
+  LastModifiedDate	  "Wed Apr 30 11:14:23 2008"
+  ModelVersionFormat	  "1.%<AutoIncrement:289>"
   ConfigurationManager	  "rcs"
   LinearizationMsg	  "none"
   Profile		  off
@@ -156,7 +156,7 @@ Library {
   }
   System {
     Name		    "etherlab_lib_exp"
-    Location		    [743, 509, 1338, 902]
+    Location		    [432, 411, 1027, 804]
     Open		    on
     ModelBrowserVisibility  off
     ModelBrowserWidth	    200
@@ -555,7 +555,7 @@ Library {
 	  BlockType		  "S-Function"
 	  Name			  "DIN_0"
 	  Ports			  [0, 1]
-	  Position		  [30, 29, 100, 61]
+	  Position		  [35, 29, 105, 61]
 	  BackgroundColor	  "yellow"
 	  FunctionName		  "el10xx"
 	  Parameters		  "master,index,model,output_type,dtype,tsampl"
@@ -594,9 +594,9 @@ Library {
 "rited sample time."
 	  MaskPromptString	  "Master|Slave Index|Device Model|Output Type"
 "|Output Data Type|Sample Time"
-	  MaskStyleString	  "edit,edit,popup(EL1004|EL1004v2|EL1014|EL10"
-"14v2),popup(1-Byte Output|Vector Output|Separate Outputs),popup(Same as Input"
-"|double|single|Inherited via back propagation),edit"
+	  MaskStyleString	  "edit,edit,popup(EL1004|EL1004v2|EL1008|EL10"
+"14|EL1014v2|EL1018),popup(1-Byte Output|Vector Output|Separate Outputs),popup"
+"(Same as Input|double|single|Inherited via back propagation),edit"
 	  MaskTunableValueString  "off,off,off,off,off,off"
 	  MaskCallbackString	  "|||||"
 	  MaskEnableString	  "on,on,on,on,on,on"
