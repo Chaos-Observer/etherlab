@@ -193,6 +193,7 @@ const char* get_signal_info(struct signal_info *si)
     return NULL;
 }
 
+#ifdef rtP
 const char* get_param_info(struct signal_info* si)
 {
     unsigned int dimIdx, dimArrayIdx, dataTypeIdx; 
@@ -309,6 +310,7 @@ const char* get_param_info(struct signal_info* si)
 
     return NULL;
 }
+#endif
 
 const char* rtw_capi_init(
         RT_MODEL *rtM,
@@ -356,6 +358,7 @@ const char* rtw_capi_init(
             *max_path_len = path_len;
         }
     }
+#ifdef rtP
     for (i = 0; i < maxParameterIdx; i++) {
         path_len = strlen(
                 rtwCAPI_GetBlockParameterBlockPath(blockParams, i));
@@ -363,5 +366,6 @@ const char* rtw_capi_init(
             *max_path_len = path_len;
         }
     }
+#endif
     return NULL;
 }

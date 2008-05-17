@@ -27,7 +27,9 @@
 #include "rtmodel.h"    // Supplied by RTW
 
 const char* get_signal_info(struct signal_info *si);
+#ifdef rtP
 const char* get_param_info(struct signal_info *si);
+#endif
 
 const char* rtw_capi_init(
         RT_MODEL *rtM,

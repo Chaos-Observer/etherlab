@@ -21,7 +21,8 @@
 #error "Don't have config.h"
 #endif
 
-//#define DEBUG 1
+#define DEBUG 1
+#define DEBUG_MALLOC 1
 
 #include <linux/types.h>
 #include <linux/list.h>
@@ -33,70 +34,34 @@
 char *no_mem_msg = "Could not allocate memory";
 char errbuf[256];
 
-/* Structure to temporarily store SDO objects prior to registration */
-struct sdo_init {
-    /* Linked list */
-    struct list_head list;
-
-    /* The data type of the sdo */
-    enum {sdo8, sdo16, sdo32} type;
-
-    /* SDO values. Used by EtherCAT functions */
-    uint16_t sdo_index;
-    uint8_t sdo_subindex;
-    union {
-        uint32_t u32;
-        uint16_t u16;
-        uint8_t u8;
-    } value;
-};
-
 /* Structure to temporarily store PDO objects prior to registration */
-struct ecat_pdo {
+struct ecat_slave {
     struct list_head list;      /* Linked list of pdo's */
 
-    enum {pdo_typed, pdo_range} type;
-
-    /* This structure is used with both pdo types */
-    const char *slave_address; /**< slave address string
-                                 \see ec_master_parse_slave_address() */
+    /* Data required for ecrt_master_slave_config() */
+    uint16_t alias;
+    uint16_t position;
     uint32_t vendor_id; /**< vendor ID */
     uint32_t product_code; /**< product code */
 
-    uint16_t pdo_entry_index;
-    uint8_t pdo_entry_subindex;
+    const ec_pdo_info_t *pdos;
 
-    /* This data is used only with pdo_range */
-    uint16_t pdo_offset;
-    uint16_t pdo_length;
+    unsigned int sdo_config_count;
+    const struct sdo_config *sdo_config;
 
-    void **data_ptr;
-
-    /* Set to 1 if this is an output */
-    unsigned int output;
+    unsigned int pdo_map_count;
+    struct mapped_pdo {
+        struct ecat_domain *domain;
+        const struct pdo_mapping *mapping;
+        size_t base_offset;
+    } mapped_pdo[];
 };
 
-
-/* Structure to temporarily store PDO objects prior to registration */
-struct ecat_slave_block {
-    struct list_head list;      /* Linked list of slave blocks */
-
-    struct ecat_domain *domain;
-
-    const char *slave_address; /**< slave address string
-                                 \see ec_master_parse_slave_address() */
-    uint32_t vendor_id; /**< vendor ID */
-    uint32_t product_code; /**< product code */
-
-    struct list_head sdo_list;
-    struct list_head pdo_entry_list;
-
-    /* Used to remap PDO's */
-    ec_pdomap_t *pdo_map;
-
-    /* Set to 1 if this is an output */
-    unsigned int output;
+struct endian_convert_t {
+    enum si_datatype_t pdo_datatype;
+    void *data_ptr;
 };
+
 
 /* Every domain has one of these structures. There can exist exactly one
  * domain for a sample time on an EtherCAT Master. */
@@ -109,20 +74,20 @@ struct ecat_domain {
     unsigned int id;            /* RTW id number assigned to this domain */
 
     ec_domain_t *handle;        /* used when calling EtherCAT functions */
+    ec_domain_state_t *state;   /* pointer to domain's state */
 
     struct ecat_master *master; /* The master this domain is registered
                                  * in. Every domain has exactly 1 master */
 
-    /* The following list is used for most cases where a slave is not configurable
-     * and has just one input or output */
-    struct list_head simple_pdo_list;
-
-    /* For enhanced slaves with configuration and/or multiple inputs and outputs
-     * the matter becomes a little bit trickier. These slaves are parked here */
-    struct list_head slave_block_list;
-
     unsigned int tid;           /* Id of the corresponding RealTime Workshop
                                  * task */
+
+    unsigned int io_count;      /* The number of field io's this domain has */
+    struct endian_convert_t       
+        *endian_convert_list; /* List for data copy instructions. List is
+                                  * terminated with list->from = NULL */
+
+    void *io_data;              /* IO data is located here */
 };
 
 /* For every EtherCAT Master, one such structure exists */
@@ -137,31 +102,24 @@ struct ecat_master {
 
     unsigned int id;            /* Id of the EtherCAT master */
     ec_master_t *handle;        /* Handle retured by EtherCAT code */
+    ec_master_state_t *state;   /* Pointer for master's state */
 
     SEM lock;                   /* Lock the ecat master */
-    cycles_t last_call;     /* TSC of last call. Need this to decide
-                                 * whether it is allowable to let others
-                                 * use the ecat card */
-    cycles_t grace_cycles;  /* Grant the use of the network card if the
-                                 * call comes within this grace period 
-                                 * since last call */
 
-    unsigned int slave_count;  /* Roughly keep track how many slaves are 
-                                * registered for this master. The value here
-                                * can be too high when the same slave is 
-                                * registered more than once. */
+    struct list_head slave_list; /* List of all slaves. Only active during
+                                  * initialisation */
 
     /* Temporary storage for domains registered to this master. Every
      * sample time has a read and a write list
      */
     struct {
-        struct list_head input_list;
-        struct list_head output_list;
+        struct list_head input_domain_list;
+        struct list_head output_domain_list;
     } st_domain[];
 };
 
 /* Data used by the EtherCAT support layer */
-struct ecat_data {
+static struct ecat_data {
     unsigned int nst;           /* Number of unique RTW sample times */
 
     /* This list is used to store all masters during the registration
@@ -169,14 +127,16 @@ struct ecat_data {
      * the masters and domains into the st[] struct below */
     struct list_head master_list;
 
-    struct {
+    struct st_data {
         unsigned int master_count;
-        unsigned int domain_count;
+        unsigned int input_domain_count;
+        unsigned int output_domain_count;
 
         /* Array of masters and domains in this sample time. The data area
          * are slices out of st_data */
         struct ecat_master *master;
-        struct ecat_domain *domain;
+        struct ecat_domain *input_domain;
+        struct ecat_domain *output_domain;
 
         /* The tick period in microseconds for this sample time */
         unsigned int period;
@@ -185,7 +145,7 @@ struct ecat_data {
 
 /////////////////////////////////////////////////
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,17)
-void *
+static void * __init
 kzalloc(size_t len, int type)
 {
     void *p;
@@ -195,71 +155,27 @@ kzalloc(size_t len, int type)
     return p;
 }
 #endif
+
+#if DEBUG_MALLOC
+static void* __init
+my_kcalloc(size_t nmemb, size_t size, const char* who)
+{
+    void *p = kzalloc(nmemb * size, GFP_KERNEL);
+    pr_debug("Allocated %u bytes for %s: %p\n", nmemb * size, who, p);
+    return p;
+}
+
+static void
+my_kfree(void *p, const char* who)
+{
+    pr_debug("Releasing memory for %s: %p\n", who, p);
+    kfree(p);
+}
+#else
+#define my_kcalloc(nmemb, size, who) kzalloc((nmemb)*(size), GFP_KERNEL)
+#define my_kfree(p, who) kfree(p)
+#endif
 /////////////////////////////////////////////////
-
-LIST_HEAD(temp_page_list);
-LIST_HEAD(temp_mem_list);
-struct temp_mem {
-    struct list_head list;
-
-    unsigned int free_ptr;
-
-    char data[];
-};
-
-
-/* This function returns a zero'ed section of memory similar to malloc() */
-void *
-__init get_temp_mem(size_t len)
-{
-    struct temp_mem *page, *mem;
-    void *ptr;
-
-    if (len > PAGE_SIZE - sizeof(struct temp_mem)) {
-        mem = (struct temp_mem *)kzalloc(sizeof(struct temp_mem) + len, 
-                GFP_KERNEL);
-        if (!mem)
-            return NULL;
-        list_add(&mem->list, &temp_mem_list);
-        return &mem->data[0];
-    }
-
-    page = (struct temp_mem *)temp_page_list.next;
-
-    if (list_empty(&temp_page_list) || (page->free_ptr + len > PAGE_SIZE)) {
-        page = (struct temp_mem *)__get_free_page(GFP_KERNEL);
-        if (!page)
-            return NULL;
-        memset(page, 0, PAGE_SIZE);
-        list_add(&page->list, &temp_page_list);
-        pr_debug("Got a new page %p\n", page);
-    }
-    ptr = &page->data[page->free_ptr];
-    pr_debug("New Temp mem from %u to %u\n", page->free_ptr, 
-            page->free_ptr + ALIGN(len,4));
-    page->free_ptr += ALIGN(len,4);
-    pr_debug("returning %p\n", ptr);
-    return ptr;
-}
-
-void
-free_temp_mem(void)
-{
-    struct temp_mem *page, *n1;
-
-    pr_debug("Freeing pages...\n");
-    list_for_each_entry_safe(page, n1, &temp_page_list, list) {
-        pr_debug("Freeing temp mem page %p\n", page);
-        list_del(&page->list);
-        free_page((unsigned long)page);
-    }
-
-    list_for_each_entry_safe(page, n1, &temp_mem_list, list) {
-        pr_debug("Freeing overlarge mem page %p\n", page);
-        list_del(&page->list);
-        kfree(page);
-    }
-}
 
 /* Do input processing for a RTW task. It does the following:
  *      - calls ecrt_master_receive() for every master whose fastest 
@@ -269,28 +185,44 @@ free_temp_mem(void)
 void
 ecs_receive(int tid)
 {
-    struct ecat_master *master;
-    struct ecat_domain *domain;
-    unsigned int i;
+    struct ecat_master *master = ecat_data->st[tid].master;
+    struct ecat_master * const master_end = 
+        master + ecat_data->st[tid].master_count;
+    struct ecat_domain *domain = ecat_data->st[tid].input_domain;
+    struct ecat_domain * const domain_end = 
+        domain + ecat_data->st[tid].input_domain_count;
+    struct endian_convert_t *conversion_list;
         
-    for (i = 0; i < ecat_data->st[tid].master_count; i++) {
-        master = &ecat_data->st[tid].master[i];
-        if (tid != master->fastest_tid) 
-            continue;
+    for ( ; master != master_end; master++) {
         rt_sem_wait(&master->lock);
         ecrt_master_receive(master->handle);
-//        pr_debug("\ttid %i: ecrt_master_receive(%p)\n", 
-//                tid, master->handle);
+        ecrt_master_state(master->handle, master->state);
         rt_sem_signal(&master->lock);
     }
 
-    for (i = 0; i < ecat_data->st[tid].domain_count; i++) {
-        domain = &ecat_data->st[tid].domain[i];
+    for ( ; domain != domain_end; domain++) {
         rt_sem_wait(&domain->master->lock);
         ecrt_domain_process(domain->handle);
-//        pr_debug("\ttid %i: ecrt_domain_process(%p)\n", 
-//                tid, domain->handle);
+        ecrt_domain_state(domain->handle, domain->state);
+        ecrt_domain_queue(domain->handle);
         rt_sem_signal(&domain->master->lock);
+        for (conversion_list = domain->endian_convert_list;
+                conversion_list->data_ptr;
+                conversion_list++) {
+            switch (conversion_list->pdo_datatype) {
+                case si_uint16_T:
+                case si_sint16_T:
+                    le16_to_cpus(conversion_list->data_ptr);
+                    break;
+                case si_uint32_T:
+                case si_sint32_T:
+                    le32_to_cpus(conversion_list->data_ptr);
+                    break;
+                default:
+                    /* Dont have singles and doubles in EtherCAT */
+                    break;
+            }
+        }
     }
 }
 
@@ -302,26 +234,41 @@ ecs_receive(int tid)
 void
 ecs_send(int tid) 
 {
-    struct ecat_master *master;
-    struct ecat_domain *domain;
-    unsigned int i;
+    struct ecat_master *master = ecat_data->st[tid].master;
+    struct ecat_master * const master_end = 
+        master + ecat_data->st[tid].master_count;
+    struct ecat_domain *domain = ecat_data->st[tid].output_domain;
+    struct ecat_domain * const domain_end = 
+        domain + ecat_data->st[tid].output_domain_count;
+    struct endian_convert_t *conversion_list;
 
-    for (i = 0; i < ecat_data->st[tid].domain_count; i++) {
-        domain = &ecat_data->st[tid].domain[i];
+    for ( ; domain != domain_end; domain++) {
+        for (conversion_list = domain->endian_convert_list; 
+                conversion_list->data_ptr;
+                conversion_list++) {
+            switch (conversion_list->pdo_datatype) {
+                case si_uint16_T:
+                case si_sint16_T:
+                    cpu_to_le16s(conversion_list->data_ptr);
+                    break;
+                case si_uint32_T:
+                case si_sint32_T:
+                    cpu_to_le32s(conversion_list->data_ptr);
+                    break;
+                default:
+                    break;
+            }
+        }
         rt_sem_wait(&domain->master->lock);
+        ecrt_domain_process(domain->handle);
+        ecrt_domain_state(domain->handle, domain->state);
         ecrt_domain_queue(domain->handle);
-//        pr_debug("\ttid %i: ecrt_domain_queue(%p)\n", 
-//                tid, domain->handle);
         rt_sem_signal(&domain->master->lock);
     }
 
-    for (i = 0; i < ecat_data->st[tid].master_count; i++) {
-        master = &ecat_data->st[tid].master[i];
-        master->last_call = get_cycles();
+    for ( ; master != master_end; master++) {
         rt_sem_wait(&master->lock);
         ecrt_master_send(master->handle);
-//        pr_debug("\ttid %i: ecrt_master_send(%p)\n", 
-//                tid, master->handle);
         rt_sem_signal(&master->lock);
     }
 }
@@ -335,19 +282,10 @@ ecs_send(int tid)
  * Using this function, EtherCAT has the chance to gain temporary exclusive 
  * use of the master.
  */
-int
+static int
 ecs_request_cb(void *p)
 {
 #define MASTER ((struct ecat_master *)p)
-
-    /* Make sure that the master is not required in the near future */
-    if ((get_cycles() - MASTER->last_call) > MASTER->grace_cycles) {
-        pr_debug("ecs_request_cb() %i cycles left, wanted %llu, last call %llu\n", 
-                (int)(get_cycles() - MASTER->last_call), 
-                MASTER->grace_cycles, 
-                MASTER->last_call);
-        return -1;
-    }
     rt_sem_wait(&MASTER->lock);
     return 0;
 #undef MASTER
@@ -357,7 +295,7 @@ ecs_request_cb(void *p)
  *
  * With this function the master is released again.
  */
-void
+static void
 ecs_release_cb(void *p)
 {
 #define MASTER ((struct ecat_master *)p)
@@ -365,581 +303,107 @@ ecs_release_cb(void *p)
 #undef MASTER
 }
 
-/*
- * Release all memory and free EtherCAT master
- */
-void
-__exit ecs_end(void)
+/* Initialise all slaves listed in master->slave_list. */
+static const char* __init
+init_slaves( struct ecat_master *master)
 {
-    unsigned int i, j;
-    void *st_data = NULL;
-    struct ecat_master *master, *n1;
+    struct ecat_slave *slave;
+    ec_slave_config_t *slave_config;
+    const struct sdo_config *sdo;
+    int i;
+    const char* failed_method;
 
-    if (!ecat_data)
-        return;
+    list_for_each_entry(slave, &master->slave_list, list) {
 
-    free_temp_mem();
+        pr_debug("Considering slave %p %u:%u on master %u(%p)\n", 
+                slave,
+                slave->alias, slave->position,
+                master->id, master->handle);
+        slave_config = ecrt_master_slave_config( master->handle, slave->alias,
+                slave->position, slave->vendor_id, slave->product_code);
+        if (!slave_config) {
+            failed_method = "ecrt_master_slave_config";
+            goto out_slave_failed;
+        }
 
-    list_for_each_entry_safe(master, n1, &ecat_data->master_list, list) {
-        if (master->handle) {
-            pr_debug("\tManually releasing master %p\n", master->handle);
-            ecrt_release_master(master->handle);
+        /* Inform EtherCAT of how the slave configuration is expected */
+        if (ecrt_slave_config_pdos(slave_config, EC_END, slave->pdos)) {
+            failed_method = "ecrt_slave_config_pdos";
+            goto out_slave_failed;
+        }
+
+        /* Send SDO configuration to the slave */
+        for (sdo = slave->sdo_config; 
+                sdo != &slave->sdo_config[slave->sdo_config_count]; sdo++) {
+            switch (sdo->datatype) {
+                case si_uint8_T:
+                    if (ecrt_slave_config_sdo8(slave_config, 
+                                sdo->sdo_index, sdo->sdo_subindex,
+                                (uint8_t)sdo->value)) {
+                        failed_method = "ecrt_slave_config_sdo8";
+                        goto out_slave_failed;
+                    }
+                    break;
+                case si_uint16_T:
+                    if (ecrt_slave_config_sdo16(slave_config, 
+                                sdo->sdo_index, sdo->sdo_subindex,
+                                (uint16_t)sdo->value)) {
+                        failed_method = "ecrt_slave_config_sdo16";
+                        goto out_slave_failed;
+                    }
+                    break;
+                case si_uint32_T:
+                    if (ecrt_slave_config_sdo32(slave_config, 
+                                sdo->sdo_index, sdo->sdo_subindex,
+                                sdo->value)) {
+                        failed_method = "ecrt_slave_config_sdo32";
+                        goto out_slave_failed;
+                    }
+                    break;
+                default:
+                    failed_method = "ecrt_slave_config_sdo_unknown";
+                    goto out_slave_failed;
+                    break;
+            }
+        }
+
+        /* Now map the required PDO's into the process image. The offset
+         * inside the image is returned by the function call */
+        for (i = 0; i < slave->pdo_map_count; i++) {
+            const struct pdo_mapping *mapping = slave->mapped_pdo[i].mapping;
+            const ec_pdo_info_t *pdos = 
+                &slave->pdos[mapping->pdo_info_index];
+            int offset = ecrt_slave_config_reg_pdo_entry(
+                        slave_config,
+                        pdos->entries[mapping->pdo_entry_index].index,
+                        pdos->entries[mapping->pdo_entry_index].subindex,
+                        slave->mapped_pdo[i].domain->handle);
+            if (offset < 0) {
+                failed_method = "ecrt_slave_config_reg_pdo_entry";
+                goto out_slave_failed;
+            }
+            slave->mapped_pdo[i].base_offset = offset;
         }
     }
 
-    pr_debug("going through %u sample times to find masters to release\n", 
-            ecat_data->nst);
-    for( i = 0; i < ecat_data->nst; i++) {
-        pr_debug("going through %u masters \n", 
-                ecat_data->st[i].master_count);
-        for( j = 0; j < ecat_data->st[i].master_count; j++) {
-            if (!ecat_data->st[i].master) {
-                /* This check is detects whether a malloc of the master/domain
-                 * structures has failed. In this case
-                 * ecat_data->st[i].master is NULL and there is nothing else
-                 * to do here */
-                break;
-            }
-            if (!st_data) {
-                /* The first master in the first sample time the start of 
-                 * the sample time memory - the efficient array that was defined 
-                 * in ecs_start() */
-                st_data = &ecat_data->st[i].master[j];
-            }
-            pr_debug("\tecrt_release_master(%p)\n",
-                    ecat_data->st[i].master[j].handle);
-            ecrt_release_master(ecat_data->st[i].master[j].handle);
-        }
-    }
+    return 0;
 
-    if (st_data) {
-        pr_debug("Releasing sample time data %p\n", st_data);
-        kfree(st_data);
-    }
-
-    /* Don't need to check for null here, it is done right above */
-    pr_debug("Releasing ecat_data %p\n", ecat_data);
-    kfree(ecat_data);
-}
-
-/*
- * Start EtherCAT driver.
- *
- * This function concludes the caching of all slave initialisation and 
- * registration items. Now the EtherCAT driver can be contacted to activate
- * the subsystem.
- */
-const char *
-__init ecs_start(void)
-{
-//    struct ecat_master *master, *n1;
-//    struct ecat_domain *domain, *n2;
-//    struct ecat_pdo *pdo, *n3;
-//    struct ecat_slave_block *slave_block, *n4;
-//    struct sdo_init *sdo, *n5;
-//    ec_slave_t *slave_ptr;
-//    void *ptr;
-//    uint16_t *p;
-//    size_t len;
-//    unsigned int i, j;
-//    unsigned int master_tid = 0;
-//    unsigned int total_masters = 0, total_domains = 0;
-//    int error;
-//    struct ecat_slave {
-//        ec_slave_t *slave_ptr;
-//        unsigned int locked;
-//    } *slaves;
-//
-//
-//
-//    /* Count the number of masters and their domains so that it is possible
-//     * to allocate memory for their data structures. Although memory has 
-//     * already been allocated for these, the aim here is to allocate a 
-//     * contiguous memory block and access them using array indexing instead
-//     * of crawling though a linked list. Hope this is more efficient ;-)
-//     */
-//    list_for_each_entry(master, &ecat_data->master_list, list) {
-//        total_masters++;
-//        list_for_each_entry(domain, &master->domain_list, list) {
-//            ecat_data->st[domain->tid].master_count++;
-//            total_domains++;
-//        }
-//    }
-//    pr_debug("Total number of masters = %u, domains = %u\n", 
-//            total_masters, total_domains);
-//
-//    /* Now that the master and domain counts are known, we can
-//     * get a large block of contiguous memory where the master and domain
-//     * structures are kept. This is better for caching, and list operators
-//     * are replaced with array operators */
-//    len = total_masters*sizeof(struct ecat_master)
-//        + total_domains*sizeof(struct ecat_domain);
-//    if (!(ptr = kmalloc(len, GFP_KERNEL))) {
-//        return no_mem_msg;
-//    }
-//
-//    /* Subdivide the newly allocated space into the sample times */
-//    for( i = 0; i < ecat_data->nst; i++) {
-//        if (ecat_data->st[i].master_count) {
-//            ecat_data->st[i].master = ptr;
-//            ptr += sizeof(struct ecat_master)*ecat_data->st[i].master_count;
-//            ecat_data->st[i].master_count = 0;
-//        } else {
-//            ecat_data->st[i].master = NULL;
-//        }
-//
-//        if (ecat_data->st[i].domain_count) {
-//            ecat_data->st[i].domain = ptr;
-//            ptr += sizeof(struct ecat_domain)*ecat_data->st[i].domain_count;
-//            ecat_data->st[i].domain_count = 0;
-//        } else {
-//            ecat_data->st[i].domain = NULL;
-//        }
-//    }
-//
-//    /* OK, take a deep breath, you will need to bear with me here.
-//     * Now starting from master_list, go through the domains, and register
-//     * all of simple_pdo_list.
-//     * Going back to the domains, loop through slave_block_list, registering
-//     * its pdo_list, its sdo_list, and possibly RxPDO/TxPDO */
-//
-//    /* Note that here we need to use list_for_each_entry_safe() because
-//     * the list members are removed one by one */
-//    list_for_each_entry_safe(master, n1, &ecat_data->master_list, list) {
-//        unsigned int master_idx;
-//        struct ecat_master *new_master;
-//        unsigned int slave_count = 0;
-//        unsigned int slave_idx = 0;
-//
-//        /* Find out to which tid this master will be allocated. The fastest
-//         * tid will get it */
-//        master_tid = master->fastest_tid;
-//        master_idx = ecat_data->st[master_tid].master_count++;
-//        new_master = &ecat_data->st[master_tid].master[master_idx];
-//
-//        /* Slaves is a temporary array where all registered slaves are kept.
-//         * The user has many ways of addressing a slave and the only way to 
-//         * detect whether two slaves are the same is when the master returns
-//         * the same pointer for both slaves. That is why the slaves are 
-//         * temporarily stored here */
-//        slaves = kzalloc(
-//                sizeof(struct ecat_slave) * master->slave_count, GFP_KERNEL);
-//        if (!slaves) {
-//            snprintf(errbuf, sizeof(errbuf), "%s", no_mem_msg);
-//            goto out_alloc_slaves;
-//        }
-//
-//        /* Loop through all of the masters domains */
-//        list_for_each_entry_safe(domain, n2, &master->domain_list, list) {
-//            unsigned int tid, domain_idx;
-//
-//            /* Go though the domain's simple_pdo_list. These slaves will not
-//             * be configured, i.e. no SDO's and TxPDO/RxPDO */
-//            pr_debug("Doing simple slave configuration\n");
-//            list_for_each_entry_safe(pdo, n3, &domain->simple_pdo_list, list) {
-//                /* Depending on the type of pdo (typed or range), have
-//                 * different calls to EtherCAT */
-//                pr_debug("Considering slave %s\n", pdo->slave_address);
-//                slave_ptr = ecrt_master_get_slave(master->handle, 
-//                        pdo->slave_address,
-//                        pdo->vendor_id,
-//                        pdo->product_code);
-//                if (!slave_ptr) {
-//                    snprintf(errbuf, sizeof(errbuf), 
-//                            "EtherCAT get_slave() %s on Master %u failed.",
-//                            pdo->slave_address, master->id);
-//                    goto out_get_slave;
-//                }
-//
-//                /* Find out whether this slave has already been registered. */
-//                for (slave_idx = 0; slave_idx < slave_count; slave_idx++) {
-//                    if (slaves[slave_idx].slave_ptr == slave_ptr) {
-//                        pr_debug("Slave has been registered already\n");
-//                        break;
-//                    }
-//                }
-//                if (slave_idx < slave_count) {
-//                    /* Slave has already been registered, now check whether
-//                     * either the previous slave or this new slave id
-//                     * either configured or is an output.
-//                     * */
-//                    if (slaves[slave_idx].locked || pdo->output) {
-//                        snprintf(errbuf, sizeof(errbuf), 
-//                                "Cannot register EtherCAT slave %s on Master %u "
-//                                "twice as output.",
-//                                pdo->slave_address, master->id);
-////                        goto out_get_slave;
-//                    }
-//                } else {
-//                    /* Never seen this slave before */
-//                    slaves[slave_count].slave_ptr = slave_ptr;
-//                    if (pdo->output)
-//                        slaves[slave_count].locked = 1;
-//                    slave_count++;
-//                    pr_debug("Slave has never been registered\n");
-//                }
-//
-//                switch(pdo->type) {
-//                    case pdo_typed:
-//                        error = ecrt_domain_register_pdo(
-//                                domain->handle, slave_ptr,
-//                                pdo->pdo_entry_index, 
-//                                pdo->pdo_entry_subindex, 
-//                                pdo->data_ptr);
-//                        pr_debug("\t%p = ecrt_domain_register_pdo("
-//                                "%p, \"%s\", %i, %i, %i, %i, %p)\n", slave_ptr,
-//                                domain->handle,
-//                                pdo->slave_address, pdo->vendor_id, 
-//                                pdo->product_code, pdo->pdo_entry_index, 
-//                                pdo->pdo_entry_subindex, pdo->data_ptr);
-//                        break;
-//                    case pdo_range:
-//                        error = ecrt_domain_register_pdo_range(
-//                                domain->handle, slave_ptr,
-//                                pdo->pdo_direction, 
-//                                pdo->pdo_offset, pdo->pdo_length, 
-//                                pdo->data_ptr);
-//                        pr_debug("\t%p = ecrt_domain_register_pdo_range("
-//                                "%p, \"%s\", %i, %i, %i, %i, %i, %p)\n", slave_ptr,
-//                                domain->handle,
-//                                pdo->slave_address, pdo->vendor_id, 
-//                                pdo->product_code, pdo->pdo_direction, 
-//                                pdo->pdo_offset, pdo->pdo_length, 
-//                                pdo->data_ptr);
-//                        break;
-//                    default:
-//                        error = 1;
-//                        pr_info("Unknown pdo->type in %s\n", __func__);
-//                        break;
-//                }
-//                if (error) {
-//                    snprintf(errbuf, sizeof(errbuf), 
-//                            "EtherCAT register PDO for slave %s "
-//                            "on Master %u failed.",
-//                            pdo->slave_address, master->id);
-//                    goto out_register_pdo;
-//                }
-//            }
-//
-//            /* Now go through the domain's slave_block_list. This list contains
-//             * enhanced slave configuration */
-//            pr_debug("Doing enhanced slave configuration\n");
-//            list_for_each_entry_safe(slave_block, n4, 
-//                    &domain->slave_block_list, list) {
-//                pr_debug("Considering slave %s\n", slave_block->slave_address);
-//                slave_ptr = ecrt_master_get_slave(master->handle, 
-//                        slave_block->slave_address,
-//                        slave_block->vendor_id,
-//                        slave_block->product_code);
-//                if (!slave_ptr) {
-//                    snprintf(errbuf, sizeof(errbuf), 
-//                            "EtherCAT get_slave() %s on Master %u failed.",
-//                            slave_block->slave_address, master->id);
-//                    goto out_get_slave;
-//                }
-//
-//                /* Find out whether this slave has already been registered. */
-//                for (slave_idx = 0; slave_idx < slave_count; slave_idx++) {
-//                    if (slaves[slave_idx].slave_ptr == slave_ptr) {
-//                        pr_debug("Slave has been registered already.\n");
-//                        break;
-//                    }
-//                }
-//                if (slave_idx < slave_count) {
-//                    /* Slave has already been registered, now check whether
-//                     * either the previous slave or this new slave id
-//                     * either configured or is an output.
-//                     * */
-//                    if (slaves[slave_idx].locked
-//                            || slave_block->output
-//                            || slave_block->TxPDO 
-//                            || slave_block->RxPDO 
-//                            || !list_empty(&slave_block->sdo_list)) {
-//                        snprintf(errbuf, sizeof(errbuf), 
-//                                "Cannot register EtherCAT slave %s on Master %u "
-//                                "twice as output or configured device.",
-//                                slave_block->slave_address, master->id);
-//                        goto out_get_slave;
-//                    }
-//                } else {
-//                    pr_debug("Slave has never been registered.\n");
-//                    /* Never seen this slave before.
-//                     * Put the slave into the list of known slaves */
-//                    slaves[slave_count].slave_ptr = slave_ptr;
-//                    if (slave_block->output
-//                            || slave_block->TxPDO 
-//                            || slave_block->RxPDO 
-//                            || !list_empty(&slave_block->sdo_list)) {
-//                        slaves[slave_count].locked = 1;
-//                    }
-//                    slave_idx = slave_count++;
-//                }
-//
-//                /* First do the PDO remapping if they exist */
-//                if ((p = slave_block->TxPDO)) {
-//                    pr_debug("TxPDO has changed: ");
-//                    ecrt_slave_pdo_mapping_clear(slave_ptr, EC_DIR_INPUT);
-//                    while (*p) {
-//#ifdef DEBUG
-//                        printk("0x%X ", *p);
-//#endif
-//                        if (ecrt_slave_pdo_mapping_add(slave_ptr, 
-//                                    EC_DIR_INPUT, *p++)) {
-//                            snprintf(errbuf, sizeof(errbuf), 
-//                                    "Cannot add TxPDO remapping %i for EtherCAT "
-//                                    "slave %s on Master %u.",
-//                                    *(p-1), slave_block->slave_address, 
-//                                    master->id);
-//                            goto out_get_slave;
-//                        }
-//                    }
-//#ifdef DEBUG
-//                    printk("\n");
-//#endif
-//                }
-//                if ((p = slave_block->RxPDO)) {
-//                    pr_debug("RxPDO has changed: ");
-//                    ecrt_slave_pdo_mapping_clear(slave_ptr, EC_DIR_OUTPUT);
-//                    while (*p) {
-//#ifdef DEBUG
-//                        printk("0x%X ", *p);
-//#endif
-//                        if (ecrt_slave_pdo_mapping_add(slave_ptr, 
-//                                    EC_DIR_OUTPUT, *p++)) {
-//                            snprintf(errbuf, sizeof(errbuf), 
-//                                    "Cannot add RxPDO remapping %i for EtherCAT "
-//                                    "slave %s on Master %u.",
-//                                    *(p-1), slave_block->slave_address, 
-//                                    master->id);
-//                            goto out_get_slave;
-//                        }
-//                    }
-//#ifdef DEBUG
-//                    printk("\n");
-//#endif
-//                }
-//
-//                /* Register the PDO Entries */
-//                list_for_each_entry_safe(pdo, n3, 
-//                        &slave_block->pdo_entry_list, list) {
-//                    /* Depending on the type of pdo (typed or range), have
-//                     * different calls to EtherCAT */
-//                    switch(pdo->type) {
-//                        case pdo_typed:
-//                            error = ecrt_domain_register_pdo(
-//                                    domain->handle, slave_ptr,
-//                                    pdo->pdo_entry_index, 
-//                                    pdo->pdo_entry_subindex, 
-//                                    pdo->data_ptr);
-//                            pr_debug("\t%p = ecrt_domain_register_pdo("
-//                                    "%p, %p, %i, %i, %p)\n", 
-//                                    slave_ptr, domain->handle, slave_ptr,
-//                                    pdo->pdo_entry_index, 
-//                                    pdo->pdo_entry_subindex, pdo->data_ptr);
-//                            break;
-//                        case pdo_range:
-//                            error = ecrt_domain_register_pdo_range(
-//                                    domain->handle, slave_ptr,
-//                                    pdo->pdo_direction, 
-//                                    pdo->pdo_offset, pdo->pdo_length, 
-//                                    pdo->data_ptr);
-//                            pr_debug("\t%p = ecrt_domain_register_pdo_range("
-//                                    "%p, %p, %i, %i, %i, %p)\n", 
-//                                    slave_ptr, domain->handle, slave_ptr,
-//                                    pdo->pdo_direction, 
-//                                    pdo->pdo_offset, pdo->pdo_length, 
-//                                    pdo->data_ptr);
-//                            break;
-//                        default:
-//                            error = 1;
-//                            pr_info("Unknown pdo->type in %s\n", __func__);
-//                            break;
-//                    }
-//                    if (error) {
-//                        snprintf(errbuf, sizeof(errbuf), 
-//                                "EtherCAT register PDO for slave %s "
-//                                "on Master %u failed.",
-//                                slave_block->slave_address, master->id);
-//                        goto out_register_pdo;
-//                    }
-//                }
-//
-//                /* Go through the SDO configuration parameters for a slave */
-//                list_for_each_entry_safe(sdo, n5, &slave_block->sdo_list, list) {
-//                    switch (sdo->type) {
-//                        case sdo8:
-//                            if (ecrt_slave_conf_sdo8(slave_ptr, 
-//                                        sdo->sdo_index, sdo->sdo_subindex,
-//                                        sdo->value.u8)) {
-//                                goto out_conf_sdo;
-//                            }
-//                            pr_debug ("ecrt_slave_conf_sdo8(%p, %i, %i, %i)\n",
-//                                    slave_ptr, 
-//                                    sdo->sdo_index, sdo->sdo_subindex,
-//                                    sdo->value.u8);
-//                            break;
-//                        case sdo16:
-//                            if (ecrt_slave_conf_sdo16(slave_ptr, 
-//                                        sdo->sdo_index, sdo->sdo_subindex,
-//                                        sdo->value.u16)) {
-//                                goto out_conf_sdo;
-//                            }
-//                            pr_debug ("ecrt_slave_conf_sdo16(%p, %i, %i, %i)\n",
-//                                    slave_ptr, 
-//                                    sdo->sdo_index, sdo->sdo_subindex,
-//                                    sdo->value.u16);
-//                            break;
-//                        case sdo32:
-//                            if (ecrt_slave_conf_sdo32(slave_ptr, 
-//                                        sdo->sdo_index, sdo->sdo_subindex,
-//                                        sdo->value.u32)) {
-//                                goto out_conf_sdo;
-//                            }
-//                            pr_debug ("ecrt_slave_conf_sdo32(%p, %i, %i, %i)\n",
-//                                    slave_ptr, 
-//                                    sdo->sdo_index, sdo->sdo_subindex,
-//                                    sdo->value.u32);
-//                            break;
-//                    }
-//                }
-//            }
-//
-//            /* Move the domain to the sample time list */
-//            tid = domain->tid;
-//            domain_idx = ecat_data->st[tid].domain_count++;
-//            memcpy(&ecat_data->st[tid].domain[domain_idx],
-//                    list_entry(&domain->list, struct ecat_domain, list),
-//                    sizeof(struct ecat_domain));
-//            /* Free the old domain and set domain to the new address */
-//            domain = &ecat_data->st[tid].domain[domain_idx];
-//
-//            /* Master has moved. Update pointer */
-//            domain->master = new_master;
-//        }
-//
-//        /* Now that all modifications are performed on the old master,
-//         * the data can be copied to the new location */
-//        list_del(&master->list);
-//        memcpy(new_master, 
-//                list_entry(&master->list, struct ecat_master, list),
-//                sizeof(struct ecat_master));
-//        kfree(slaves);
-//    }
-//
-//    free_temp_mem();
-//
-//    /* Now that everything is set up, let the master activate itself */
-//    for( i = 0; i < ecat_data->nst; i++) {
-//        for( j = 0; j < ecat_data->st[i].master_count; j++) {
-//            master = &ecat_data->st[i].master[j];
-//
-//            /* Setup the lock, timing  and callbacks needed for sharing 
-//             * the master.
-//             *
-//             * Grace_cycles is a value that allows others to lock the network
-//             * card if the current value of get_cycles() since the last tick
-//             * is less than this value. If it is more, a new tick cycle is 
-//             * expected soon, in which case the others should wait. Set this
-//             * value to 20 microseconds less than the sample time's period */
-//            master->grace_cycles = 
-//                (ecat_data->st[master->fastest_tid].period - 20)*(cpu_khz/1000);
-//            rt_sem_init(&master->lock,1);
-//            ecrt_master_callbacks(master->handle, 
-//                    ecs_request_cb, ecs_release_cb, master);
-//
-//            if (ecrt_master_activate(master->handle)) {
-//                goto out_master_activate;
-//            }
-//            pr_debug ("ecrt_master_activate(%p)\n", master->handle);
-//        }
-//    }
-//
-//    return NULL;
-//
-//out_conf_sdo:
-//    snprintf(errbuf, sizeof(errbuf), 
-//            "EtherCAT SDO configuration for slave %s on Master %i failed.",
-//            slave_block->slave_address, master->id);
-//out_register_pdo:
-//out_get_slave:
-//    kfree(slaves);
-//out_alloc_slaves:
-//    ecat_data->st[master_tid].master_count--;
-//    return errbuf;
-//
-//out_master_activate:
-//    snprintf(errbuf, sizeof(errbuf),
-//            "Master %i activate failed", master->id);
+out_slave_failed:
+    snprintf(errbuf, sizeof(errbuf), 
+            "EtherCAT %s() failed "
+            "for slave #%u:%u on master %u", failed_method,
+            slave->alias, slave->position, master->id);
     return errbuf;
+
 }
 
-/* 
- * Change the PDO mapping of a slave.
- *
- * This function is used to change the default PDO mapping for slaves.
- * NOTE: pointer map MUST be non-volatile (i.e. NOT on the stack)
- * */
-const char *
-__init ecs_reg_slave_pdomapping( struct ecat_slave_block *slave,
-        char dir, /* 'T' = Transmit; 'R' = Receive */
-        uint16_t *map)
-{
-    switch (dir) {
-        case 'R':
-        case 'r':
-            slave->RxPDO = map;
-            break;
-        case 'T':
-        case 't':
-            slave->TxPDO = map;
-            break;
-        default:
-            return "Invalid direction; only 't' 'T' 'r' 'R' allowed.";
-    }
-    return NULL;
-}
-
-/* This function queues SDO's after a EtherCAT slave is 
- * registered */
-const char *
-__init ecs_reg_slave_sdo( struct ecat_slave_block *slave,
-        int sdo_type, uint16_t sdo_index,
-        uint8_t sdo_subindex, uint32_t value)
-{
-    struct sdo_init *sdo;
-
-    if (!(sdo = get_temp_mem(sizeof(struct sdo_init)))) {
-        return no_mem_msg;
-    }
-    list_add_tail(&sdo->list, &slave->sdo_list);
-    sdo->sdo_index = sdo_index;
-    sdo->sdo_subindex = sdo_subindex;
-    switch (sdo_type) {
-        case 8:
-            sdo->type = sdo8;
-            sdo->value.u8 = (uint8_t)value;
-            break;
-        case 16:
-            sdo->type = sdo16;
-            sdo->value.u16 = (uint16_t)value;
-            break;
-        case 32:
-            sdo->type = sdo32;
-            sdo->value.u32 = (uint32_t)value;
-            break;
-        default:
-            return "Incorrect sdo type selected.";
-            break;
-    }
-
-    return NULL;
-}
 
 /* An internal function to return a master pointer.
  * If the master does not exist, one is created */
-struct ecat_master *
-__init get_master(
+struct ecat_master * __init
+get_master(
         unsigned int master_id,
+        unsigned int tid,
 
         const char **errmsg
         )
@@ -948,38 +412,69 @@ __init get_master(
     unsigned int i;
     ptrdiff_t len;
 
-    /* Is the master registered - if not, create it */
+    /* Is the master registered? */
     list_for_each_entry(master, &ecat_data->master_list, list) {
         if (master->id == master_id) {
-            break;
+            /* An EtherCAT master device is assigned to the fastest task
+             * in the system. All other tasks just queue their
+             * packets, waiting to be sent by the fastest task.
+             *
+             * When these code lines are reached, a master structure has 
+             * already been created. Now just check whether the new new
+             * tast period isn't maybe faster than the one the master is
+             * currently assigned to, changing the management variables
+             * if this is the case */
+            if (ecat_data->st[master->fastest_tid].period > 
+                    ecat_data->st[tid].period) {
+
+                /* Tell the previous task that it has one less master */
+                ecat_data->st[master->fastest_tid].master_count--;
+
+                /* Tell the new that task that it has a new master */
+                ecat_data->st[tid].master_count++;
+                master->fastest_tid = tid;
+            }
+            return master;
         }
     }
-    if (master == (typeof(master))&ecat_data->master_list) {
-        master = NULL;
-        len = (size_t)&master->st_domain[ecat_data->nst];
-        if (!(master = get_temp_mem(len))) {
-            *errmsg = no_mem_msg;
-            return NULL;
-        }
-        list_add_tail(&master->list, &ecat_data->master_list);
-        master->id = master_id;
-        for (i = 0; i < ecat_data->nst; i++) {
-            INIT_LIST_HEAD(&master->st_domain[i].input_list);
-            INIT_LIST_HEAD(&master->st_domain[i].output_list);
-        }
-        master->fastest_tid--;  /* wrap it around */
 
-        pr_debug("Requesting master %i\n", master->id);
-        master->handle = ecrt_request_master(master->id);
-        pr_debug("\t%p = ecrt_request_master(%i)\n",
-                master->handle, master->id);
-        if (!master->handle) {
-            snprintf(errbuf, sizeof(errbuf), 
-                    "EtherCAT Master %u initialise failed.",
-                    master->id);
-            *errmsg = errbuf;
-            return NULL;
-        }
+    /* Master with id master_id does not exist - create it */
+
+    /* Although master is not initialised here, it is not dereferenced,
+     * only address operators are being used. */
+    len = (void*)&master->st_domain[ecat_data->nst] - (void*)master;
+    if (!(master = my_kcalloc(1, len, "master"))) {
+        *errmsg = no_mem_msg;
+        return NULL;
+    }
+    list_add_tail(&master->list, &ecat_data->master_list);
+
+    /* Initialise variables */
+    master->id = master_id;
+    for (i = 0; i < ecat_data->nst; i++) {
+        INIT_LIST_HEAD(&master->st_domain[i].input_domain_list);
+        INIT_LIST_HEAD(&master->st_domain[i].output_domain_list);
+    }
+    INIT_LIST_HEAD(&master->slave_list);
+    master->fastest_tid = tid;
+    ecat_data->st[tid].master_count++;
+
+    master->state = my_kcalloc(1, sizeof(*master->state), "master state");
+    if (!master->state) {
+        *errmsg = no_mem_msg;
+        return NULL;
+    }
+
+    pr_debug("Requesting master %i\n", master->id);
+    master->handle = ecrt_request_master(master->id);
+    pr_debug("\t%p = ecrt_request_master(%i)\n",
+            master->handle, master->id);
+    if (!master->handle) {
+        snprintf(errbuf, sizeof(errbuf), 
+                "EtherCAT Master %u initialise failed.",
+                master->id);
+        *errmsg = errbuf;
+        return NULL;
     }
 
     return master;
@@ -989,8 +484,8 @@ __init get_master(
 /* An internal function to return a domain pointer of a master with sample
  * time tid.
  * If the domain does not exist, one is created */
-struct ecat_domain *
-__init get_domain(
+struct ecat_domain * __init
+get_domain(
         struct ecat_master *master,
         unsigned int domain_id,
         ec_direction_t direction,
@@ -1001,22 +496,19 @@ __init get_domain(
 {
     struct ecat_domain *domain;
     struct list_head *domain_list;
-
-    /* Check if this domain is faster than fastest known tid by the master */
-    if (ecat_data->st[tid].period 
-            < ecat_data->st[master->fastest_tid].period) {
-        master->fastest_tid = tid;
-    }
+    unsigned int *domain_counter;
 
     /* Is the domain registered - if not, create it
      * The master maintains a separate list for the read and write 
      * directions for every sample time */
     switch (direction) {
         case EC_DIR_OUTPUT:
-            domain_list = &master->st_domain[tid].output_list;
+            domain_list = &master->st_domain[tid].output_domain_list;
+            domain_counter = &ecat_data->st[tid].output_domain_count;
             break;
         case EC_DIR_INPUT:
-            domain_list = &master->st_domain[tid].input_list;
+            domain_list = &master->st_domain[tid].input_domain_list;
+            domain_counter = &ecat_data->st[tid].input_domain_count;
             break;
         default:
             snprintf(errbuf, sizeof(errbuf), 
@@ -1027,34 +519,49 @@ __init get_domain(
     };
     list_for_each_entry(domain, domain_list, list) {
         if (domain->id == domain_id) {
-            /* Yea, the domain has been registered once before */
-            break;
+            /* Yes, the domain has been registered once before */
+            pr_debug("%s domain %u:%u for tid %u exists\n",
+                    direction == EC_DIR_OUTPUT ? "Output" : "Input",
+                    master->id, domain_id, tid);
+            return domain;
         }
     }
-    if (domain == (typeof(domain))domain_list) {
-        if (!(domain = get_temp_mem(sizeof(struct ecat_domain)))) {
-            *errmsg = no_mem_msg;
-            return NULL;
-        }
-        list_add_tail( &domain->list, domain_list);
-        INIT_LIST_HEAD(&domain->simple_pdo_list);
-        INIT_LIST_HEAD(&domain->slave_block_list);
-        domain->tid = tid;
-        domain->master = master;
-        ecat_data->st[tid].domain_count++;
 
-        /* Let the EtherCAT Driver create a domain */
-        domain->handle = ecrt_master_create_domain(master->handle);
-        pr_debug("\t%p = ecrt_master_create_domain(%p)\n",
-                domain->handle, master->handle);
-        if (!domain->handle) {
-            snprintf(errbuf, sizeof(errbuf), 
-                    "EtherCAT Domain initialise on Master %u failed.",
-                    master->id);
-            *errmsg = errbuf;
-            return NULL;
-        }
+    /* This is a new domain. Allocate memory */
+    if (!(domain = my_kcalloc(1, sizeof(struct ecat_domain), "domain"))) {
+        *errmsg = no_mem_msg;
+        return NULL;
     }
+    list_add_tail( &domain->list, domain_list);
+
+    /* Initialise variables */
+    domain->tid = tid;
+    domain->master = master;
+    domain->id = domain_id;
+    (*domain_counter)++;
+
+    /* Memory for the domain's state */
+    domain->state = my_kcalloc(1, sizeof(*domain->state), "domain state");
+    if (!domain->state) {
+        *errmsg = no_mem_msg;
+        return NULL;
+    }
+
+    /* Let the EtherCAT Driver create a domain */
+    domain->handle = ecrt_master_create_domain(master->handle);
+    pr_debug("\t%p = ecrt_master_create_domain(%p)\n",
+            domain->handle, master->handle);
+    if (!domain->handle) {
+        snprintf(errbuf, sizeof(errbuf), 
+                "EtherCAT Domain initialise on Master %u failed.",
+                master->id);
+        *errmsg = errbuf;
+        return NULL;
+    }
+
+    pr_debug("New %s domain %u:%u for tid %u created\n",
+            direction == EC_DIR_OUTPUT ? "output" : "input",
+            master->id, domain_id, tid);
 
     return domain;
 
@@ -1067,219 +574,423 @@ __init get_domain(
  * This is the first function that has to be called when dealing with complex
  * slaves - those that can be parameterised, etc.
  */
-struct ecat_slave_block *
-__init ecs_reg_slave_block(
+const char* __init
+ecs_reg_slave(
         unsigned int tid,
         unsigned int master_id,
         unsigned int domain_id,
-        ec_direction_t direction,  /* Set to 1 if this is an output */
 
-        const char *slave_address,
+        uint16_t slave_alias,
+        uint16_t slave_position,
         uint32_t vendor_id, /**< vendor ID */
         uint32_t product_code, /**< product code */
 
-        const char **errmsg
+        unsigned int sdo_config_count,
+        const struct sdo_config *sdo_config,
+
+        const ec_pdo_info_t *pdos,
+
+        unsigned int pdo_mapping_count,
+        const struct pdo_mapping *pdo_mapping
         )
 {
+    const char *errmsg;
     struct ecat_master *master;
-    struct ecat_domain *domain;
-    struct ecat_slave_block *slave;
+    struct ecat_domain *input_domain = NULL;
+    struct ecat_domain *output_domain = NULL;
+    struct ecat_slave  *slave = NULL;
+    size_t len;
+    int i;
+    pr_debug( "ecs_reg_slave( tid = %u, master_id = %u, domain_id = %u, "
+        "slave_alias = %hu, slave_position = %hu, vendor_id = 0x%x, "
+        "product_code = 0x%x, sdo_config_count = %u, *sdo_config = %p, "
+        "*pdos = %p, pdo_mapping_count = %u, *pdo_mapping = %p )\n",
+        tid, master_id, domain_id,
+        slave_alias, slave_position, vendor_id,
+        product_code, sdo_config_count, sdo_config,
+        pdos, pdo_mapping_count, pdo_mapping
+        );
 
-    if (!(master = get_master(master_id, errmsg)))
-        return NULL;
-    if (!(domain = get_domain(master, domain_id, direction, tid, errmsg)))
-        return NULL;
+    /* Get a pointer to the master, creating a new one if it does not
+     * exist already */
+    if (!(master = get_master(master_id, tid, &errmsg)))
+        return errmsg;
 
-    /* Now the pointers to master and domain are set up. Register the pdo
-     * with the master */
-    if (!(slave = get_temp_mem(sizeof(struct ecat_slave_block)))) {
+    /* Get memory for the slave structure */
+    len = (void*)&slave->mapped_pdo[pdo_mapping_count] - (void*)slave;
+    slave = my_kcalloc(1, len, "slave");
+    if (!slave) {
         goto out_slave_alloc;
     }
-    list_add_tail( &slave->list, &domain->slave_block_list);
-    INIT_LIST_HEAD(&slave->sdo_list);
-    INIT_LIST_HEAD(&slave->pdo_entry_list);
+    list_add_tail(&slave->list, &master->slave_list);
 
-    slave->domain = domain;
-    slave->slave_address = slave_address;
+    /* Slave identification */
+    slave->alias = slave_alias;
+    slave->position = slave_position;
     slave->vendor_id = vendor_id;
     slave->product_code = product_code;
-    slave->RxPDO = NULL;
-    slave->TxPDO = NULL;
-    pr_debug("%s(): Registered slave block: tid = %u, master = %u, "
-            "domain = %u, slave_address = %s, vendor id = %u, "
-            "product code = %u, output = %u\n", 
-            __func__,
-            tid, master_id, domain_id,
-            slave->slave_address,
-            slave->vendor_id,
-            slave->product_code,
-            slave->output
-            );
 
-    master->slave_count++;
+    /* Copy the SDO's locally */
+    slave->sdo_config = sdo_config;
+    slave->sdo_config_count = sdo_config_count;
 
-    return slave;
+    /* Copy the PDO structures locally */
+    slave->pdos = pdos;
+
+    /* The pdo_mapping lists the PDO's that should be mapped
+     * into the process image and also contains pointers where the data
+     * should be copied, as well as the data type. 
+     * Here we go through the list assigning the mapped PDO to the correct
+     * domain depending on whether it is an input or output */
+    slave->pdo_map_count = pdo_mapping_count;
+    for (i = 0; i < pdo_mapping_count; i++) {
+        slave->mapped_pdo[i].mapping = &pdo_mapping[i];
+        switch (pdos[pdo_mapping[i].pdo_info_index].dir) {
+            /* PDO Input as seen by the slave, i.e. block inputs. The
+             * corresponding slaves in the field are outputs, 
+             * eg. analog and digital outputs */
+            case EC_DIR_INPUT: 
+                if (!input_domain) {
+                    input_domain = get_domain(master, domain_id, 
+                            EC_DIR_INPUT, tid, &errmsg);
+                    if (!input_domain) {
+                        return errmsg;
+                    }
+                }
+                slave->mapped_pdo[i].domain = input_domain;
+                input_domain->io_count++;
+                break;
+
+            /* PDO Output as seen by the slave, i.e. block outputs. The
+             * corresponding slaves in the field are inputs, 
+             * eg. analog and digital inputs */
+            case EC_DIR_OUTPUT: 
+                if (!output_domain) {
+                    output_domain = get_domain(master, domain_id, 
+                            EC_DIR_OUTPUT, tid, &errmsg);
+                    if (!output_domain) {
+                        return errmsg;
+                    }
+                }
+                slave->mapped_pdo[i].domain = output_domain;
+                output_domain->io_count++;
+                break;
+
+            default:
+                return "Unknown PDO Direction encountered.";
+        }
+    }
+
+    return NULL;
 
 out_slave_alloc:
-    *errmsg = no_mem_msg;
-    return NULL;
+    return no_mem_msg;
 }
 
-/*
- * Register a PDO Entry to a slave.
- *
- * This function is used by the RTW Model to register a PDO Entry 
- * for enhanced slaves.
- */
-const char *
-__init ecs_reg_slave_pdo(
-        struct ecat_slave_block *slave,
-
-        uint16_t pdo_index, /**< PDO index */
-        uint8_t pdo_subindex, /**< PDO subindex */
-        void **data_ptr
-        )
-{
-    struct ecat_pdo *pdo;
-
-    /* Now the pointers to master and domain are set up. Register the pdo
-     * with the master */
-    if (!(pdo = get_temp_mem(sizeof(struct ecat_pdo)))) {
-        return no_mem_msg;
-    }
-    list_add_tail( &pdo->list, &slave->pdo_entry_list);
-
-    /* Data for EtherCAT driver */
-    pdo->type = pdo_typed;
-    pdo->pdo_entry_index = pdo_index;
-    pdo->pdo_entry_subindex = pdo_subindex;
-    pdo->data_ptr = data_ptr;
-    pr_debug("%s(): Registered slave PDO for slave %s: type %u, Index %u, "
-            "subindex %u, ptr %p\n",
-            __func__, slave->slave_address, pdo_typed, pdo_index, 
-            pdo_subindex, data_ptr);
-
-    return NULL;
-}
-
-
-ec_master_t *
-__init ecs_get_master_ptr(unsigned int master_id, const char **errmsg)
+ec_master_t * __init 
+ecs_get_master_ptr(unsigned int master_id, const char **errmsg)
 {
     struct ecat_master *master;
 
-    if (!(master = get_master(master_id, errmsg)))
+    /* Get the master structure, making sure not to change the task it 
+     * is currently assigned to */
+    if (!(master = get_master(master_id, ecat_data->nst - 1, errmsg)))
         return NULL;
 
     return master->handle;
 }
 
-/* 
- * Register a single PDO Entry.
+void __init
+cleanup_mem(void)
+{
+    struct ecat_master *master, *m;
+    struct ecat_domain *domain, *d;
+    struct ecat_slave  *slave,  *s;
+    int i;
+
+    // Free all the memory allocated for master and domain structures
+    // Note that kfree(NULL) is allowed.
+    list_for_each_entry_safe(master, m, &ecat_data->master_list, list) {
+        for (i = 0; i < ecat_data->nst; i++) {
+
+            list_for_each_entry_safe(domain, d, 
+                    &master->st_domain[i].input_domain_list, list) {
+                my_kfree(domain, "domain");
+            }
+
+            list_for_each_entry_safe(domain, d, 
+                    &master->st_domain[i].output_domain_list, list) {
+                my_kfree(domain, "domain");
+            }
+        }
+
+        list_for_each_entry_safe(slave, s, &master->slave_list, list) {
+            my_kfree(slave, "slave");
+        }
+
+        // master->handle is NULL if the handle has already been transferred
+        // to ecat_data->st[].master. It will be released there.
+        if (master->handle)
+            ecrt_release_master(master->handle);
+
+        my_kfree(master, "master");
+    }
+
+    // Close the list so that it is not cleaned up again
+    INIT_LIST_HEAD(&ecat_data->master_list);
+}
+
+/*
+ * Start EtherCAT driver.
  *
- * This function is used by the RTW model to register a single PDO Entry from
- * a slave.
+ * This function concludes the caching of all slave initialisation and 
+ * registration items. Now the EtherCAT driver can be contacted to activate
+ * the subsystem.
  */
-const char *
-__init ecs_reg_pdo(
-        unsigned int tid,
-        unsigned int master_id,
-        unsigned int domain_id,
-        ec_direction_t direction,
-
-        const char *slave_address,
-        uint32_t vendor_id, /**< vendor ID */
-        uint32_t product_code, /**< product code */
-        uint16_t pdo_index, /**< PDO index */
-        uint8_t pdo_subindex, /**< PDO subindex */
-
-        void **data_ptr
-        )
+const char * __init
+ecs_start(void)
 {
     struct ecat_master *master;
     struct ecat_domain *domain;
-    struct ecat_pdo *pdo;
-    const char *errmsg;
+    struct ecat_slave  *slave;
+    unsigned int i;
+    unsigned int master_tid = 0;
+    struct st_data *st;
 
-    if (!(master = get_master(master_id, &errmsg)) ||
-            !(domain = get_domain(master, domain_id, 
-                    direction, tid, &errmsg))) {
-        return errmsg;
+    /* Allocate space for all the master and domain structures */
+    for( st = ecat_data->st; st != &ecat_data->st[ecat_data->nst]; st++) {
+        /* Although some of the *_count can be zero, kzalloc is able to 
+         * deal with it. kzalloc returns ZERO_SIZE_PTR in this case.
+         * kfree(ZERO_SIZE_PTR) is allowed! */
+
+        st->master = 
+            my_kcalloc(st->master_count, sizeof(*st->master), "master array");
+        if (!st->master)
+            return no_mem_msg;
+        st->master_count = 0;
+
+        st->input_domain = my_kcalloc(st->input_domain_count,
+                sizeof(*st->input_domain), "input domain array");
+        if (!st->input_domain)
+            return no_mem_msg;
+        st->input_domain_count = 0;
+
+        st->output_domain = my_kcalloc(st->output_domain_count,
+                sizeof(*st->output_domain), "output domain array");
+        if (!st->output_domain)
+            return no_mem_msg;
+        st->output_domain_count = 0;
+
+        /* Reset the counters. These are incremented later on again when
+         * each master and domain structure in the arrays are initialised */
     }
 
-    /* Now the pointers to master and domain are set up. Register the pdo
-     * with the master */
-    if (!(pdo = get_temp_mem(sizeof(struct ecat_pdo)))) {
-        return no_mem_msg;
+    /* Go though the master list one by one and register the slaves */
+    list_for_each_entry(master, &ecat_data->master_list, list) {
+        unsigned int master_idx;
+        struct ecat_master *new_master;
+
+        /* Find out to which tid this master will be allocated. The fastest
+         * tid will get it */
+        master_tid = master->fastest_tid;
+        master_idx = ecat_data->st[master_tid].master_count++;
+        new_master = &ecat_data->st[master_tid].master[master_idx];
+
+        if (init_slaves(master)) {
+            return errbuf;
+        }
+
+        /* Loop through all of the masters domains */
+        for (i = 0; i < ecat_data->nst; i++) {
+            unsigned int tid, domain_idx;
+
+            /* Initialise all slaves in the input domain */
+            list_for_each_entry(domain,
+                    &master->st_domain[i].input_domain_list, list) {
+
+                /* The list has to be zero terminated */
+                domain->endian_convert_list = 
+                    my_kcalloc(domain->io_count + 1,
+                            sizeof(*domain->endian_convert_list),
+                            "input copy list");
+                if (!domain->endian_convert_list)
+                    return no_mem_msg;
+
+                /* Allocate local IO memory */
+                domain->io_data = my_kcalloc(1, 
+                        ecrt_domain_size(domain->handle),
+                        "input io data");
+                if (!domain->io_data)
+                    return no_mem_msg;
+                ecrt_domain_external_memory(domain->handle, domain->io_data);
+
+                /* Move the domain to the sample time list */
+                tid = domain->tid;
+                domain_idx = ecat_data->st[tid].input_domain_count++;
+                domain->master = new_master;
+                ecat_data->st[tid].input_domain[domain_idx] = *domain;
+            }
+
+            /* Initialise all slaves in the output domain */
+            list_for_each_entry(domain,
+                    &master->st_domain[i].output_domain_list, list) {
+
+                /* The list has to be zero terminated */
+                domain->endian_convert_list = 
+                    my_kcalloc( domain->io_count + 1,
+                        sizeof(*domain->endian_convert_list),
+                        "output copy list");
+                if (!domain->endian_convert_list)
+                    return no_mem_msg;
+
+                /* Allocate local IO memory */
+                domain->io_data = my_kcalloc(1, ecrt_domain_size(domain->handle),
+                        "output io data");
+                if (!domain->io_data)
+                    return no_mem_msg;
+                ecrt_domain_external_memory(domain->handle, domain->io_data);
+
+                /* Move the domain to the sample time list */
+                tid = domain->tid;
+                domain_idx = ecat_data->st[tid].output_domain_count++;
+                domain->master = new_master;
+                ecat_data->st[tid].output_domain[domain_idx] = *domain;
+            }
+        }
+
+        /* Now that the masters are activated, we can go through the
+         * slave list again and setup the endian_convert_list in the domains
+         * that the slave is registered in */
+        list_for_each_entry(slave, &master->slave_list, list) {
+            struct endian_convert_t *endian_convert_list;
+            unsigned int pdo_info_index;
+            struct mapped_pdo *mapped_pdo;
+            for (mapped_pdo = slave->mapped_pdo;
+                    mapped_pdo != &slave->mapped_pdo[slave->pdo_map_count];
+                    mapped_pdo++) {
+
+                /* Note: mapped_pdo->domain is still a pointer to the old
+                 * domain structure (the one in the linked list), not the
+                 * one in the sample time structure 
+                 * (ecat_data->st[].input_domain). Since this will be 
+                 * thrown away soon, we can misuse its endian_convert_list
+                 * pointer as a counter. */
+                endian_convert_list = mapped_pdo->domain->endian_convert_list++;
+                pdo_info_index = mapped_pdo->mapping->pdo_info_index;
+
+                /* Have to set all data_ptr, otherwise endian processing
+                 * stops */
+                endian_convert_list->data_ptr = 
+                    mapped_pdo->domain->io_data + mapped_pdo->base_offset;
+
+                /* Set the RTW data pointer */
+                *mapped_pdo->mapping->address = endian_convert_list->data_ptr;
+
+                /* Set the data type. This is used when doing endian conversion.
+                 * Use the io_data space to indicate that the location will be
+                 * converted so that a multiple conversion is avoided */
+                if (!(*(uint8_t*)endian_convert_list->data_ptr)++) {
+                    endian_convert_list->pdo_datatype = 
+                        mapped_pdo->mapping->pdo_datatype;
+                }
+            }
+        }
+
+        /* Pass the responsibility from the master in the list structure
+         * to the one in the array */
+        *new_master = *master;
+        master->handle = NULL;
+
+        /* Setup the lock, timing  and callbacks needed for sharing 
+         * the master. */
+        rt_sem_init(&new_master->lock,1);
+        ecrt_master_callbacks(new_master->handle, 
+                ecs_request_cb, ecs_release_cb, new_master);
+
+        pr_debug ("ecrt_master_activate(%p)\n", new_master->handle);
+        if (ecrt_master_activate(new_master->handle)) {
+            snprintf(errbuf, sizeof(errbuf),
+                    "Master %i activate failed", master->id);
+            return errbuf;
+        }
     }
-    list_add_tail( &pdo->list, &domain->simple_pdo_list);
 
-    /* Data for EtherCAT driver */
-    pdo->type = pdo_typed;
-    pdo->slave_address = slave_address;
-    pdo->vendor_id = vendor_id;
-    pdo->product_code = product_code;
-    pdo->pdo_entry_index = pdo_index;
-    pdo->pdo_entry_subindex = pdo_subindex;
-    pdo->data_ptr = data_ptr;
+    /* During the coarse of this function, the data area was used.
+     * Reset it to zero here again */
+    for (st = ecat_data->st; st != &ecat_data->st[ecat_data->nst]; st++) {
+        for (domain = st->input_domain; 
+                domain != &st->input_domain[st->input_domain_count]; 
+                domain ++) {
+            memset(domain->io_data, ecrt_domain_size(domain->handle), 0);
+        }
+        for (domain = st->output_domain; 
+                domain != &st->output_domain[st->output_domain_count]; 
+                domain ++) {
+            memset(domain->io_data, ecrt_domain_size(domain->handle), 0);
+        }
+    }
 
-    master->slave_count++;
+    /* Release all temporary memory */
+    cleanup_mem();
 
     return NULL;
 }
 
-/*
- * Register a range of memory mapped data.
- *
- * This function is called from the RTW model to register a contiguous block of data 
- * from the EtherCAT image.
- */
-const char *
-__init ecs_reg_pdo_range(
-        unsigned int tid,
-        unsigned int master_id,
-        unsigned int domain_id,
-        ec_direction_t direction,
-
-        const char *slave_address,
-        uint32_t vendor_id, /**< vendor ID */
-        uint32_t product_code, /**< product code */
-        uint16_t pdo_offset,
-        uint16_t pdo_length,
-
-        void **data_ptr
-        )
+void __exit
+ecs_end(void)
 {
-    struct ecat_master *master;
-    struct ecat_domain *domain;
-    struct ecat_pdo *pdo;
-    const char *errmsg;
+    struct st_data *st;
 
-    if (!(master = get_master(master_id, &errmsg)) ||
-            !(domain = get_domain(master, domain_id, direction, tid,
-                                  &errmsg))) {
-        return errmsg;
+    pr_debug("%s()\n", __func__);
+
+    if (!ecat_data)
+        return;
+
+    if (!list_empty(&ecat_data->master_list))
+        cleanup_mem();
+
+    for (st = ecat_data->st; st != &ecat_data->st[ecat_data->nst]; st++) {
+        struct ecat_master *master;
+        struct ecat_domain *domain;
+
+        /* Free all allocated memory. Note that kfree(NULL) as well as
+         * kfree(ZERO_SIZE_PTR), i.e. pointers returned by kmalloc(0), are
+         * explicitly allowed */
+
+        /* Free masters */
+        for (master = st->master; 
+                master && master != &st->master[st->master_count]; 
+                master++) {
+            if (master->handle) {
+                ecrt_master_callbacks(master->handle, NULL, NULL, NULL);
+                ecrt_release_master(master->handle);
+            }
+            my_kfree(master->state, "master state");
+        }
+        my_kfree(st->master, "master array");
+
+        /* Free input domains */
+        for (domain = st->input_domain;
+                domain != &st->input_domain[st->input_domain_count];
+                domain++) {
+            my_kfree(domain->endian_convert_list, "input copy list");
+            my_kfree(domain->state, "domain state");
+            my_kfree(domain->io_data, "input io data");
+        }
+        my_kfree(st->input_domain, "input domain array");
+
+        /* Free output domains */
+        for (domain = st->output_domain;
+                domain != &st->output_domain[st->output_domain_count];
+                domain++) {
+            my_kfree(domain->endian_convert_list, "output copy list");
+            my_kfree(domain->state, "domain state");
+            my_kfree(domain->io_data, "output io data");
+        }
+        my_kfree(st->output_domain, "output domain array");
     }
 
-    /* Now the pointers to master and domain are set up. Register the pdo
-     * with the master */
-    if (!(pdo = get_temp_mem(sizeof(struct ecat_pdo)))) {
-        return no_mem_msg;
-    }
-    list_add_tail( &pdo->list, &domain->simple_pdo_list);
-
-    /* Data for EtherCAT driver */
-    pdo->type = pdo_range;
-    pdo->slave_address = slave_address;
-    pdo->vendor_id = vendor_id;
-    pdo->product_code = product_code;
-    pdo->pdo_offset = pdo_offset;
-    pdo->pdo_length = pdo_length;
-    pdo->data_ptr = data_ptr;
-
-    master->slave_count++;
-
-    return NULL;
+    my_kfree(ecat_data, "ecat_data");
 }
 
 /* 
@@ -1289,8 +1000,8 @@ __init ecs_reg_pdo_range(
  * structures are initialised and the sample time domains are prepared.
  * Compatability with the EtherCAT interface is also checked.
  */
-const char *
-__init ecs_init( 
+const char * __init
+ecs_init( 
         unsigned int *st    /* a 0 terminated list of sample times */
         )
 {
@@ -1318,9 +1029,8 @@ __init ecs_init(
     pr_debug("Number of sample times: %u\n", nst);
 
     /* Get memory for the data */
-    len = sizeof(struct ecat_data) + 
-        nst*sizeof(((struct ecat_data *)0)->st[0]);
-    ecat_data = kzalloc( len, GFP_KERNEL);
+    len = (void*)&ecat_data->st[nst] - (void*)ecat_data;
+    ecat_data = my_kcalloc(1, len, "ecat_data");
     if (!ecat_data) {
         return no_mem_msg;
     }

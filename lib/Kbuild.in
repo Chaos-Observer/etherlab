@@ -1,5 +1,5 @@
-EXTRA_CFLAGS := -I@STAGING_DIR@/@ETHERLAB_DIR@/include @RTAI_FLAGS@ $(DEFS) \
-        -I@abs_top_srcdir@
+EXTRA_CFLAGS := -I@STAGING_DIR@/@ETHERLAB_DIR@ @RTAI_FLAGS@ $(DEFS) \
+        -I@abs_top_srcdir@ -I@abs_top_srcdir@/tools
 
 obj-m   := raise_catch.o
 

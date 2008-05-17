@@ -32,13 +32,15 @@
 #endif
 
 // Data organisation
-enum si_orientation_t {si_scalar, si_vector, si_matrix, 
+enum si_orientation_t {si_scalar = 1, si_vector, si_matrix, 
     si_matrix_nd};
 
 // Data type definitions. 
+// Let the enumeration start at 1 so that an unset data type could
+// be detected
 // DO NOT change these without updating etl_data_types.c
 enum si_datatype_t {
-    si_double_T, si_single_T, 
+    si_double_T = 1, si_single_T, 
     si_uint8_T, si_sint8_T, 
     si_uint16_T, si_sint16_T, 
     si_uint32_T, si_sint32_T, 

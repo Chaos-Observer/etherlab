@@ -119,7 +119,9 @@ struct rt_app rt_app = {
 #endif
 
     .get_signal_info = get_signal_info,
+#ifdef rtP
     .get_param_info = get_param_info,
+#endif
 
     .task_period = task_period,
 

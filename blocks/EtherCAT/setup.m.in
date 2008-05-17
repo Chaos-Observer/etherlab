@@ -13,6 +13,7 @@ mex -I@prefix@/include -I.. bk1120_in.c
 mex -I@prefix@/include -I.. bk1120_out.c
 mex -I@prefix@/include -I.. moog_msd.c
 mex -I@prefix@/include -I.. generic_ethercat.c
+mex -I@prefix@/include -I.. ec_slave.c
 if @EXPERIMENTAL@
 end
 return

@@ -14,7 +14,8 @@ dist_ethercat_DATA = \
         bk1120_in.c  bk1120_in.tlc  bk1120_check.m \
         bk1120_out.c bk1120_out.tlc \
         moog_msd.c moog_msd.tlc moog_msd_callback.m moog.png \
-        generic_ethercat.c generic_ethercat.tlc
+        generic_ethercat.c generic_ethercat.tlc \
+        ec_slave.c ec_slave.tlc
 
 include_HEADERS = ecdb_private.h
 
