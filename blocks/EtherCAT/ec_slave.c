@@ -1,13 +1,325 @@
 /*
- * $RCSfile: el31xx.c,v $
- * $Revision$
- * $Date$
+ * $Id$
  *
- * SFunction to implement Beckhoff's series EL31xx of EtherCAT Analog Input 
- * Terminals
+ * This SFunction implements a generic EtherCAT Slave.
  *
- * Copyright (c) 2006, Richard Hacker
+ * Copyright (c) 2008, Richard Hacker
  * License: GPL
+ *
+ * Description:
+ * This generic SFunction can be used to realise any EtherCAT slave that
+ * is used in EtherLab. All the necessary information needed
+ * to configure the slave, all the outputs and inputs, scaling, 
+ * filtering, etc. is specified via the parameters passed to the SFunction.
+ *
+ * There are 14 parameters. These are described below:
+ *
+ * 1: Master - numeric scalar value
+ *   The master that this slave is connected to.
+ *
+ * 2: Domain - numeric scalar value
+ *   The domain in which this slave will exchange its data in. All slaves
+ *   with the same PDO direction having the same domain number in a
+ *   sample time will exchange data together in one atomic unit. 
+ *
+ * 3. Alias - numeric scalar value
+ *   The zero'th position reference for this slave. Every slave is 
+ *   identified by its position in the network ring. Apart from that, some
+ *   slaves have the capability to store an arbitrary number called alias 
+ *   permanently. This makes it possible to identify a slave no matter 
+ *   where it is located in the ring, under the premise that it is unique. 
+ *   Using this slave with the given alias as a reference, it is possible 
+ *   to address subsequent slaves relative to it.
+ *   Specifying an alias greater than zero uses relative addressing 
+ *   to identify the particular slave.
+ *
+ * 4. Position - numeric scalar value
+ *   Slave network position relative to an alias if alias is specified,
+ *   otherwise relative to the first slave when alias = 0. The first
+ *   EtherCAT Slave has position 0.
+ *
+ * 5. Product Name - string
+ *   An arbitrary string that identifies a slave.
+ *
+ * 6. Vendor - numeric scalar value
+ *   The EtherCAT vendor identifier assigned to the vendor
+ *
+ * 7. Product Code - numeric scalar value
+ *   The EtherCAT product code of the slave
+ *
+ * 8. Slave Revision Number - numeric scalar value
+ *   Software revision number of a slave. Increment this number if the
+ *   firmware of a slave is revised. 
+ *   Sidenote: The vendor, product code and revision constructs a key
+ *   that identifies a slave as well as its firmware state.
+ *
+ * 9. Pdo Entry Info - N-by-3 numeric matrix
+ *   A matrix of 3 columns describing the PDO entry information. It is used
+ *   to configure the slave's PDO's. The columns have the following 
+ *   functions:
+ *    1 - Index
+ *    2 - Subindex
+ *    3 - Bit length: one of 8, 16, 32
+ *
+ * 10. PDO Information - N-by-4 numeric matrix
+ *   A matrix with 4 columns that is used to assign a set of PDO's to 
+ *   a sync manager. Only data of PDO's mapped in a sync manager is exchanged
+ *   with the EtherCAT Master (TBC). The columns have the following functions:
+ *    1 - Data direction as seen by the Master; 
+ *        1 = Input, i.e. data that travels from the slave to the master
+ *        0 = Output, i.e. data that travels from the master to the slaves
+ *    2 - PDO Index to map
+ *    3 - Zero based row pointing to Pdo Entry Info where mapping starts
+ *    4 - Number of Pdo Entry Info rows to map
+ *
+ * 11. SDO Configuration - N-by-4 numeric matrix
+ *   A matrix with 4 columns that is used to configure a slave. The 
+ *   configuration is transferred to the slave during initialisation.
+ *   The columns have the following functions:
+ *    1 - Index
+ *    2 - Subindex
+ *    3 - Data type: one of 8, 16, 32
+ *    4 - Value
+ *
+ * 12. Block input port specification - Vector of a structure
+ *   This structure defines the Simulink's block inputs. The number of
+ *   elements in this structure define the block's input count, i.e.
+ *   one element for every input. The structure has the following fields:
+ *   'pdo_map':         N-by-2 numeric matrix (required)
+ *                      This matrix defines which PDO is mapped. The number
+ *                      of rows (N) define the port width. The columns have
+ *                      the following function:
+ *                      1 - Zero based PDO info from argument 10 to map.
+ *                          Only PDO Info with direction = 1 are allowed 
+ *                          for inputs.
+ *                      2 - The offset of PDO Entry Information (argument 9)
+ *                          to map. This value is added to the index pointed
+ *                          to by column 3 of PDO Info to determine the
+ *                          absolute row in PDO Entry Information to map.
+ *
+ *   'pdo_data_type':   scalar numeric value  (required)
+ *                      This is the data type of the PDO. Set it to 
+ *                      one of 8, -8, 16, -16, 32, -32 mapping to 
+ *                      uint8_t, int8_t, uint16_t, int16_t, uint32_t, int32_t
+ *
+ *   'pdo_bits':        structure with the fields 'channels', 'bitcount'
+ *                      and 'port_datatype' (optional)
+ *                      Specifying this field applies bit shift operations
+ *                      to the value of a single PDO. This implies that
+ *                      'pdo_map' may only have one row in this case.
+ *
+ *                      The fields have the following functions:
+ *                      'channels': the input port width
+ *                      'bitcount': the number of bits that every input
+ *                                  is assigned
+ *                      'port_data_type': the data type of the input port.
+ *                                        Choose one of 1, 8, -8, 16, -16,
+ *                                        32, -32 mapping to bool_t, 
+ *                                        uint8_t, int8_t, uint16_t, int16_t, 
+ *                                        uint32_t and int32_t
+ *
+ *                      Thus channels = 4, bitcount = 2, port_data_type = 8
+ *                      will switch the port to uint8_t, and consecutively
+ *                      assign 2 bits of each input to the PDO value
+ *
+ *                      Specifying this field overrides the field
+ *                      'pdo_full_scale'
+ *
+ *   'pdo_full_scale':  scalar numeric value (optional)
+ *                      Specifying 'pdo_bits' overrides this entry.
+ *                      If this field is not specified, the input port is
+ *                      the "raw" PDO value. This also means that the port
+ *                      has the same data type as specified in the field
+ *                      'pdo_data_type'.
+ *                      If this field specified, the input port value
+ *                      is multiplied by this value before writing it to
+ *                      the PDO, i.e.
+ *                      'PDO value' = input * 'pdo_full_scale'
+ *
+ *                      Ideally this value is the maximum value 
+ *                      that the PDO can assume, thus an input range of
+ *                      [-1.0 .. 1.0> for signed PDO's and [0 .. 1.0> for
+ *                      unsigned PDO's is mapped to the full PDO value range.
+ *
+ *                      For example, a pdo_full_scale = 32768 would map the 
+ *                      entire value range of a int16_t PDO data type
+ *                      from -1.0 to 1.0
+ *
+ *   'gain':            numeric vector (optional)
+ *                      An optional vector or scalar. If it is a vector,
+ *                      it must have the same number of elements as there
+ *                      are rows in 'pdo_map'. This field is only considered
+ *                      when 'pdo_full_scale' is specified.
+ *                      If this field is specified, the value written to
+ *                      the PDO is premultiplied before assignment.
+ *                      i.e.
+ *                      'PDO value' = 'gain' .* input * 'pdo_full_scale'
+ *
+ *   'gain_name':       string (optional)
+ *                      This optional field is only considered if 'gain' is
+ *                      specified. 
+ *                      If this field is specified, the 'gain' values will
+ *                      appear as an application parameter with this name.
+ *                      Thus it is possible to modify it while the model
+ *                      is running. Note that the names must all be unique
+ *                      for a block
+ *
+ *   Any other fields are ignored.
+ *
+ * 13. Block output port specification - Vector of a structure
+ *   This structure defines the Simulink's block outputs. The number of
+ *   elements in this structure define the block's output count, i.e.
+ *   one element for every output. The structure has the following fields:
+ *   'pdo_map':         N-by-2 numeric matrix (required)
+ *                      This matrix defines which PDO is mapped. The number
+ *                      of rows (N) define the port width. The columns have
+ *                      the following function:
+ *                      1 - Zero based PDO info from argument 10 to map.
+ *                          Only PDO Info with direction = 0 are allowed 
+ *                          for outputs.
+ *                      2 - The offset of PDO Entry Information (argument 9)
+ *                          to map. This value is added to the index pointed
+ *                          to by column 3 of PDO Info to determine the
+ *                          absolute row in PDO Entry Information to map.
+ *
+ *   'pdo_data_type':   scalar numeric value  (required)
+ *                      This is the data type of the PDO. Set it to 
+ *                      one of 8, -8, 16, -16, 32, -32 mapping to 
+ *                      uint8_t, int8_t, uint16_t, int16_t, uint32_t, int32_t
+ *
+ *   'pdo_bits':        structure with the fields 'channels', 'bitcount'
+ *                      and 'port_datatype' (optional)
+ *                      Specifying this field applies bit shift operations
+ *                      to the value of a single PDO. This implies that
+ *                      'pdo_map' may only have one row in this case.
+ *
+ *                      The fields have the following functions:
+ *                      'channels': the output port width
+ *                      'bitcount': the number of bits that every output
+ *                                  is assigned
+ *                      'port_data_type': the data type of the output port.
+ *                                        Choose one of 1, 8, -8, 16, -16,
+ *                                        32, -32 mapping to bool_t, 
+ *                                        uint8_t, int8_t, uint16_t, int16_t, 
+ *                                        uint32_t and int32_t
+ *
+ *                      Thus channels = 4, bitcount = 2, port_data_type = 8
+ *                      will switch the port to uint8_t, and consecutively
+ *                      assign 2 bits of the PDO value to each of the 4
+ *                      output port elements.
+ *
+ *                      Specifying this field overrides the field
+ *                      'pdo_full_scale'
+ *
+ *   'pdo_full_scale':  scalar numeric value (optional)
+ *                      Specifying 'pdo_bits' overrides this entry.
+ *                      If this field is not specified, the output port is
+ *                      the "raw" PDO value. This also means that the port
+ *                      has the same data type as specified in the field
+ *                      'pdo_data_type'.
+ *                      If this field specified, the output port has data
+ *                      type 'double_T'. The PDO value is then divided by
+ *                      this value and written to the output port, i.e.
+ *                      output = 'PDO value' / 'pdo_full_scale'
+ *
+ *                      Ideally this value is the maximum value that the 
+ *                      PDO can assume, thus mapping the PDO value range to 
+ *                      [0 .. 1.0> for unsigned PDO data types and
+ *                      [-1.0 .. 1.0> for signed PDO data types.
+ *
+ *                      For example, a pdo_full_scale = 32768 would map the 
+ *                      entire value range of a int16_t PDO data type
+ *                      from -1.0 to 1.0
+ *
+ *   'gain':            numeric vector (optional)
+ *                      An optional vector or scalar. If it is a vector,
+ *                      it must have the same number of elements as there
+ *                      are rows in 'pdo_map'. This field is only considered
+ *                      when 'pdo_full_scale' is specified.
+ *                      If this field is specified, the PDO value is further
+ *                      multiplied by it after applying 'pdo_full_scale'.
+ *                      i.e.
+ *                      output = 'gain' .* 'PDO value' / 'pdo_full_scale'
+ *
+ *   'gain_name':       string (optional)
+ *                      This optional field is only considered if 'gain' is
+ *                      specified. 
+ *                      If this field is specified, the 'gain' values will
+ *                      appear as an application parameter with this name.
+ *                      Thus it is possible to modify it while the model
+ *                      is running. Note that the names must all be unique
+ *                      for a block
+ *
+ *   'offset':          numeric vector (optional)
+ *                      An optional vector or scalar. If it is a vector,
+ *                      it must have the same number of elements as there
+ *                      are rows in 'pdo_map'. This field is only considered
+ *                      when 'pdo_full_scale' is specified.
+ *                      If this field is specified, it is added to the result
+ *                      of applying 'pdo_full_scale' and 'gain',
+ *                      i.e.
+ *                      output = 'gain' .* 'PDO value' / 'pdo_full_scale'
+ *                               .+ offset
+ *
+ *   'offset_name':     string (optional)
+ *                      This optional field is only considered if 'offset' is
+ *                      specified. 
+ *                      See 'gain_name' for an explanation
+ *
+ *   'filter':          numeric vector (optional)
+ *                      An optional vector or scalar. If it is a vector,
+ *                      it must have the same number of elements as there
+ *                      are rows in 'pdo_map'. This field is only considered
+ *                      when 'pdo_full_scale' is specified.
+ *                      If this field is specified, the output value is low
+ *                      pass filtered before written to the output port and
+ *                      after applying possible 'gain' and 'offset' values.
+ *                      The value specified here is used as the "loop gain" 
+ *                      for the low pass filter. Depending on the sample
+ *                      time specified for this block, either a continuous
+ *                      (sample time = 0.0) or a discrete (sample time > 0.0)
+ *                      filter is used. The filter equations are the
+ *                      following:
+ *                      Continuous filter:
+ *                      y' = k * (u - y) 
+ *                      where:
+ *                              y' is the output derivative
+ *                              y is the output value
+ *                              u is the filter's input
+ *                              k is the value of 'filter'
+ *
+ *                      Discrete filter:
+ *                      y(n) = k * u(n) + (1 - k) * y(n-1)
+ *                      where:
+ *                              y(n) is the filter state at sample n
+ *                              u(n) is the filter's input
+ *                              k    is the input weight
+ *
+ *                      In both cases, specifying a larger value for 'filter'
+ *                      results in a filter with a higher cutoff frequency.
+ *
+ *                      NOTE: specifying values of k where k * Ts >= 1.0
+ *                      (Ts is the sample time) will result in an unstable
+ *                      filter! This value is NOT checked!
+ *                       
+ *   'filter_name':     string (optional)
+ *                      This optional field is only considered if 'filter' is
+ *                      specified. 
+ *                      See 'gain_name' for an explanation
+ *
+ *   Any other fields are ignored.
+ *
+ * 14. Sample Time: numeric scalar value.
+ *   The sample time with which this block is executed. Specifying 0.0
+ *   executes it at the fastest sample time specified in 
+ *   Configuration Parameters -> Solver. On the other hand, if an output 
+ *   filter is specified for any output, you have to select a Solver in 
+ *   to do the required integration of the continuous filter.
+ *
+ *   Specifying a value > 0 will execute this block at the specified time
+ *   intervals. If an output filter is specified, a discrete filter is
+ *   chosen, thus it is not required to select one ODE solvers.
+ *
  */
 
 #define S_FUNCTION_NAME  ec_slave
@@ -20,17 +332,17 @@
 #define ECALIAS               mxGetScalar(ssGetSFcnParam(S,2))
 #define ECPOSITION            mxGetScalar(ssGetSFcnParam(S,3))
 
-#define PRODUCT_NAME                     (ssGetSFcnParam(S,4))
+#define PRODUCT_NAME                      ssGetSFcnParam(S,4)
 #define ECVENDOR              mxGetScalar(ssGetSFcnParam(S,5))
 #define ECPRODUCT             mxGetScalar(ssGetSFcnParam(S,6))
 #define REVISION              mxGetScalar(ssGetSFcnParam(S,7))
 
-#define PDO_ENTRY                        (ssGetSFcnParam(S,8))
-#define PDO_INFO                         (ssGetSFcnParam(S,9))
-#define SDO_CONFIG                       (ssGetSFcnParam(S,10))
+#define PDO_ENTRY_INFO                    ssGetSFcnParam(S,8)
+#define PDO_INFO                          ssGetSFcnParam(S,9)
+#define SDO_CONFIG                        ssGetSFcnParam(S,10)
 
-#define INPUT                            (ssGetSFcnParam(S,11))
-#define OUTPUT                           (ssGetSFcnParam(S,12))
+#define INPUT                             ssGetSFcnParam(S,11)
+#define OUTPUT                            ssGetSFcnParam(S,12)
 
 #define TSAMPLE               mxGetScalar(ssGetSFcnParam(S,13))
 #define PARAM_COUNT                                        14
@@ -40,31 +352,39 @@ char errmsg[256];
 struct ecat_slave {
     char *name;
 
-        /* One record for every SDO configuration element:
-         * 1: SDO Index
-         * 2: SDO_Subindex
-         * 3: DataType: SS_UINT8, SS_UINT16, SS_UINT32
-         * 4: Value */
+    /* One record for every SDO configuration element:
+     * 1: SDO Index
+     * 2: SDO_Subindex
+     * 3: DataType: SS_UINT8, SS_UINT16, SS_UINT32
+     * 4: Value */
     uint32_T (*sdo_config)[4];
     uint_T   sdo_config_len;
 
-    int32_T  (*pdo_entry)[3];
-    uint_T   pdo_entry_len;
+    int32_T  (*pdo_entry_info)[3];
+    uint_T   pdo_entry_info_len;
 
-        /* 1 = Input, PdoIndex, start row in PdoEntry, Row Num */
+    /* 1: 1 = Input, 0 = Output
+     * 2: PdoIndex, 
+     * 3: start row in PdoEntry, 
+     * 4: number of PDdoEntry rows */
     uint32_T (*pdo_info)[4];
     uint_T   pdo_info_len;
 
     uint_T port_width;
     uint_T unequal_port_widths;
 
-    struct input_spec {
+    struct io_spec {
         uint_T pdo_data_type;
         uint_T port_data_type;
         struct {
             uint32_T pdo_info_idx;
             uint32_T pdo_entry_idx;
         } *map;
+
+        /* If pdo_bits is > 0, this specifies the bit count every element
+         * of the input/output vector of the PDO value. 
+         * NOTE: In this case *map only has one element! */
+        uint_T pdo_bits;
 
         /* Number of signals that makes up the pdo.
          * If pdo_bits == 0, then this is also the number of *map entries,
@@ -73,15 +393,12 @@ struct ecat_slave {
          * max_port_width input signals. In this case, every input signal
          * occupies pdo_bits in the PDO data space. *map only has 1 element.
          */
-        uint_T pdo_bits;
-        uint_T max_port_width;
+        uint_T port_width;
 
-        uint_T port_width;      /* Signals entering the port */
-
-        /* The following specs are needed to determine whether the input
-         * value needs to be scaled before writing to the PDO. If 
-         * pdo_bits != 0, the input is raw anyway and the following values
-         * are ignored.
+        /* The following specs are needed to determine whether the 
+         * input/output value needs to be scaled before writing to 
+         * the PDO. If pdo_bits != 0, the input is raw anyway and the 
+         * following values are ignored.
          * When raw == 0, no scaling is done, otherwise the value written
          * to the PDO is:
          * gain_count == 0:  PDO = input * pdo_full_scale
@@ -89,35 +406,6 @@ struct ecat_slave {
          *
          * gain_values appears as an application parameter if supplied.
          */
-        uint_T pdo_full_scale;
-        char_T *gain_name;
-        real_T *gain_values;
-        int_T gain_count;
-    } *input_spec;
-    uint_T num_inputs;
-    uint_T input_map_count;
-    uint_T static_input_gain_count;
-
-    /*
-     * One record for every block output port:
-     * PDO data type, 
-     * Raw, ...       0 -> Block output is float, 1 -> Raw signal
-     * GainSpec, OffsetSpec, FilterSpec, ...  0 -> None
-     * 1 -> Only one value
-     * 2 -> One value for every element
-    uint32_T (*output_port_spec)[5];
-     */
-    struct output_spec {
-        uint_T pdo_bits;
-        uint_T pdo_data_type;
-        uint_T port_data_type;
-        struct {
-            uint32_T pdo_info_idx;
-            uint32_T pdo_entry_idx;
-        } *map;
-        uint_T port_width;
-
-        /* The following specs are needed when raw == 0 */
         uint_T pdo_full_scale;
         char_T *gain_name;
         char_T *offset_name;
@@ -128,9 +416,17 @@ struct ecat_slave {
         int_T gain_count;
         int_T offset_count;
         int_T filter_count;
-    } *output_spec;
+    } *output_spec, *input_spec;
+
+    /* Number of input and output ports */
+    uint_T num_inputs;
     uint_T num_outputs;
+
+    /* Total count of input and output PDO's that are used */
+    uint_T input_map_count;
     uint_T output_map_count;
+
+    uint_T static_input_gain_count;
     uint_T static_output_gain_count;
     uint_T static_output_offset_count;
     uint_T static_output_filter_count;
@@ -189,11 +485,11 @@ getPdoBitLenAndDir(uint_T *bit_len, uint_T *dir,
     /* The pdo_entry_idx passed as an argument to this function still has
      * to be offset by the PDO Entry base as specified in PDO Info */
     pdo_entry_idx += slave->pdo_info[pdo_info_idx][2];
-    if (pdo_entry_idx >= slave->pdo_entry_len) {
+    if (pdo_entry_idx >= slave->pdo_entry_info_len) {
         return "pdo_entry_idx exceeds matrix dimensions.";
     }
 
-    *bit_len = slave->pdo_entry[pdo_entry_idx][2];
+    *bit_len = slave->pdo_entry_info[pdo_entry_idx][2];
     *dir = slave->pdo_info[pdo_info_idx][0];
     return NULL;
 }
@@ -253,24 +549,24 @@ get_parameter_name(SimStruct* S, const mxArray* output, uint_T port,
 }
 
 const char_T* 
-get_input_config(SimStruct *S, struct input_spec *input_spec, 
-        struct ecat_slave *slave)
+get_ioport_config(SimStruct *S, const mxArray* src, struct io_spec *io_spec, 
+        uint_T *total_map_count, const struct ecat_slave *slave,
+        uint_T port, uint_T dir)
 {
-    uint_T port = input_spec - slave->input_spec;
-    const mxArray* input = INPUT;
-    const mxArray* pdo_map = mxGetField(input, port, "pdo_map");
-    const mxArray* pdo_bits = mxGetField(input, port, "pdo_bits");
-    const mxArray* pdo_dtype = mxGetField(input, port, "pdo_data_type");
-    const mxArray* pdo_full_scale = mxGetField(input, port, "pdo_full_scale");
+    const mxArray* pdo_map = mxGetField(src, port, "pdo_map");
+    const mxArray* pdo_dtype = mxGetField(src, port, "pdo_data_type");
+    const mxArray* pdo_bits = mxGetField(src, port, "pdo_bits");
+    const mxArray* pdo_full_scale = mxGetField(src, port, "pdo_full_scale");
     const char_T* errfield = NULL;
     const char_T* err;
+    const char_T* dir_str = dir ? "input" : "output";
     real_T *pdo_info_idx;
     real_T *pdo_entry_idx;
     uint_T pdo_bit_len = 0;
-    uint_T i;
     uint_T map_count;
+    uint_T i;
 
-    /* Check that the required fields for input port are specified */
+    /* Check that the required fields for port are specified */
     if (!pdo_map) {
         errfield = "pdo_map";
     } else if (!pdo_dtype) {
@@ -278,8 +574,8 @@ get_input_config(SimStruct *S, struct input_spec *input_spec,
     }
     if (errfield) {
         snprintf(errmsg, sizeof(errmsg),
-                "Required field '%s' in structure for input port %u "
-                "not defined.", errfield, port+1);
+                "Required field '%s' in structure for %s port %u "
+                "not defined.", errfield, dir_str, port+1);
         return errmsg;
     }
 
@@ -287,243 +583,37 @@ get_input_config(SimStruct *S, struct input_spec *input_spec,
     if (mxGetN(pdo_map) != 2 || !mxIsDouble(pdo_map)) {
         /* PDO map must have 2 columns */
         snprintf(errmsg, sizeof(errmsg),
-                "Matrix specified for input(%u).%s must be a numeric array "
+                "Matrix specified for %s(%u).%s must be a numeric array "
                 "with 2 columns.",
-                port+1, "pdo_map");
+                dir_str, port+1, "pdo_map");
         return errmsg;
     }
 
     if (!mxIsDouble(pdo_dtype)) {
         snprintf(errmsg, sizeof(errmsg),
-                "Value specified for input(%u).%s must be a numeric value.",
-                port+1, "pdo_data_type");
+                "Value specified for %s(%u).%s must be a numeric value.",
+                dir_str, port+1, "pdo_data_type");
         return errmsg;
     }
 
     if ((err = getDataType( mxGetScalar(pdo_dtype), 
-                    &input_spec->pdo_data_type))) {
+                    &io_spec->pdo_data_type))) {
         snprintf(errmsg, sizeof(errmsg),
                 "Error occurred while determinig PDO data type "
-                "for input %u: %s", port+1, err);
+                "for %s(%u): %s", dir_str, port+1, err);
         return errmsg;
     }
-    if (input_spec->pdo_data_type != SS_UINT8 
-            && input_spec->pdo_data_type != SS_INT8
-            && input_spec->pdo_data_type != SS_UINT16
-            && input_spec->pdo_data_type != SS_INT16
-            && input_spec->pdo_data_type != SS_UINT32
-            && input_spec->pdo_data_type != SS_INT32 
+    if (io_spec->pdo_data_type != SS_UINT8 
+            && io_spec->pdo_data_type != SS_INT8
+            && io_spec->pdo_data_type != SS_UINT16
+            && io_spec->pdo_data_type != SS_INT16
+            && io_spec->pdo_data_type != SS_UINT32
+            && io_spec->pdo_data_type != SS_INT32 
             ) {
         snprintf(errmsg, sizeof(errmsg),
-                "PDO data type for input %u not one of the known types:\n"
+                "PDO data type for %s(%u) not one of the known types:\n"
                 "8, -8, 16, -16, 32, -32\n",
-                port+1);
-        return errmsg;
-    }
-
-    map_count = mxGetM(pdo_map);
-
-    /* pdo_info_idx is the first column of pdo_map;
-     * pdo_entry_idx is the second column of pdo_map */
-    pdo_info_idx = mxGetPr(pdo_map);
-    pdo_entry_idx = pdo_info_idx + map_count;
-
-    input_spec->map = mxCalloc(map_count, sizeof(*input_spec->map));
-    if (!input_spec->map)
-        return ssGetErrorStatus(S);
-    slave->input_map_count += map_count;
-
-    for (i = 0; i < map_count; i++) {
-        uint_T bl, dir;
-
-        if ((err = getPdoBitLenAndDir(&bl, &dir, slave,  
-                        pdo_info_idx[i], pdo_entry_idx[i]))) {
-            snprintf(errmsg, sizeof(errmsg),
-                    "Error occurred while determinig data type "
-                    "of a PDO[%u] for input %u: %s", i, port+1, err);
-            return errmsg;
-        }
-
-        if (dir != 1) {
-            snprintf(errmsg, sizeof(errmsg),
-                    "PDO direction has wrong direction for input %u",
-                    port+1);
-            return errmsg;
-        }
-
-        if (pdo_bit_len) {
-            if (bl != pdo_bit_len) {
-                snprintf(errmsg, sizeof(errmsg),
-                        "Cannot mix different PDO bit lengths on "
-                        "input %u.", port+1);
-                return errmsg;
-            }
-        }
-        else {
-            pdo_bit_len = bl;
-        }
-
-        input_spec->map[i].pdo_info_idx = pdo_info_idx[i];
-        input_spec->map[i].pdo_entry_idx = pdo_entry_idx[i];
-    }
-
-    /* When specifying pdo_bits, only one pdo_map is allowed, the
-     * port width is determined by the first element of pdo_bits and
-     * the number of bits that is operated on is the second element thereof
-     */
-    if (pdo_bits) {
-        const mxArray* channels = mxGetField(pdo_bits, 0, "channels");
-        const mxArray* bitcount = mxGetField(pdo_bits, 0, "bitcount");
-        const mxArray* datatype = mxGetField(pdo_bits, 0, "port_datatype");
-
-        if (!mxIsStruct(pdo_bits) || !channels || !bitcount || !datatype
-                || !mxIsDouble(channels) || !mxIsDouble(bitcount) 
-                || !mxIsDouble(datatype)) {
-            snprintf(errmsg, sizeof(errmsg),
-                    "SFunction parameter input(%u).pdo_bits must be "
-                    "specified as a structure with the "
-                    "scalar numeric fields:\n"
-                    "'channels' 'bitcount' and 'port_datatype'", port+1);
-            return errmsg;
-        }
-
-        if (map_count > 1) {
-            snprintf(errmsg, sizeof(errmsg),
-                    "Only allowed to specify one pdo_map "
-                    "when using field 'pdo_bits' for input %u.",
-                    port+1);
-            return errmsg;
-        }
-
-        input_spec->max_port_width = mxGetScalar(channels);
-        input_spec->pdo_bits = mxGetScalar(bitcount);
-        if ((err = getDataType( mxGetScalar(datatype), 
-                        &input_spec->port_data_type))) {
-            snprintf(errmsg, sizeof(errmsg),
-                    "Error occurred while determinig PDO data type "
-                    "for input(%u).pdo_bits.datatype: %s", port+1, err);
-            return errmsg;
-        }
-    }
-    else {
-        input_spec->max_port_width = map_count;
-        input_spec->port_data_type = input_spec->pdo_data_type;
-    }
-
-    if (pdo_bits || !pdo_full_scale)
-        return NULL;
-
-    /* Output is double. This means that the source value must be scaled 
-     * so that the source value range is mapped to [0..1] */
-    if (!mxIsDouble(pdo_full_scale)) {
-        snprintf(errmsg, sizeof(errmsg),
-                "Specified field input(%u).%s must be a numeric scalar.",
-                port+1, "pdo_full_scale");
-        return errmsg;
-    }
-    input_spec->pdo_full_scale = mxGetScalar(pdo_full_scale);
-
-    /* Check that the vector length is either 1 or port_width
-     * for the fields 'gain' if they are specified */
-    errfield = get_parameter_values(S, input, port, "gain",
-            &input_spec->gain_count, map_count, 
-            &input_spec->gain_values);
-    if (errfield) {
-        snprintf(errmsg, sizeof(errmsg),
-                "Vector for input(%u).%s is not a valid numeric array "
-                "with 1 or %u elements.", 
-                port+1, errfield, input_spec->port_width);
-        return errmsg;
-    }
-
-    if (!input_spec->gain_count) {
-        snprintf(errmsg, sizeof(errmsg),
-                "Required field '%s' in structure for input port %u "
-                "not defined.", "gain", port+1);
-        return errmsg;
-    }
-
-    /* Get the names for the parameters */
-    if (input_spec->gain_count) {
-        errfield = get_parameter_name(S, input, port, "gain_name",
-                &input_spec->gain_name);
-    }
-    if (errfield) {
-        snprintf(errmsg, sizeof(errmsg),
-                "No valid string for input(%u).%s supplied.", 
-                port+1, errfield);
-        return errmsg;
-    }
-
-    return NULL;
-}
-
-const char_T* 
-get_output_config(SimStruct *S, struct output_spec *output_spec, 
-        struct ecat_slave *slave)
-{
-    uint_T port = output_spec - slave->output_spec;
-    const mxArray* output = OUTPUT;
-    const mxArray* pdo_map = mxGetField(output, port, "pdo_map");
-    const mxArray* pdo_dtype = mxGetField(output, port, "pdo_data_type");
-    const mxArray* pdo_bits = mxGetField(output, port, "pdo_bits");
-    const mxArray* pdo_full_scale = mxGetField(output, port, "pdo_full_scale");
-    const char_T* errfield = NULL;
-    const char_T* err;
-    real_T *pdo_info_idx;
-    real_T *pdo_entry_idx;
-    uint_T pdo_bit_len = 0;
-    uint_T map_count;
-    uint_T i;
-
-    /* Check that the required fields for output port are specified */
-    if (!pdo_map) {
-        errfield = "pdo_map";
-    } else if (!pdo_dtype) {
-        errfield = "pdo_data_type";
-    }
-    if (errfield) {
-        snprintf(errmsg, sizeof(errmsg),
-                "Required field '%s' in structure for output port %u "
-                "not defined.", errfield, port+1);
-        return errmsg;
-    }
-
-    /* Make sure matrices have the right dimensions */
-    if (mxGetN(pdo_map) != 2 || !mxIsDouble(pdo_map)) {
-        /* PDO map must have 2 columns */
-        snprintf(errmsg, sizeof(errmsg),
-                "Matrix specified for output(%u).%s must be a numeric array "
-                "with 2 columns.",
-                port+1, "pdo_map");
-        return errmsg;
-    }
-
-    if (!mxIsDouble(pdo_dtype)) {
-        snprintf(errmsg, sizeof(errmsg),
-                "Value specified for output(%u).%s must be a numeric value.",
-                port+1, "pdo_data_type");
-        return errmsg;
-    }
-
-    if ((err = getDataType( mxGetScalar(pdo_dtype), 
-                    &output_spec->pdo_data_type))) {
-        snprintf(errmsg, sizeof(errmsg),
-                "Error occurred while determinig PDO data type "
-                "for output %u: %s", port+1, err);
-        return errmsg;
-    }
-    if (output_spec->pdo_data_type != SS_UINT8 
-            && output_spec->pdo_data_type != SS_INT8
-            && output_spec->pdo_data_type != SS_UINT16
-            && output_spec->pdo_data_type != SS_INT16
-            && output_spec->pdo_data_type != SS_UINT32
-            && output_spec->pdo_data_type != SS_INT32 
-            ) {
-        snprintf(errmsg, sizeof(errmsg),
-                "PDO data type for output %u not one of the known types:\n"
-                "8, -8, 16, -16, 32, -32\n",
-                port+1);
+                dir_str, port+1);
         return errmsg;
     }
 
@@ -532,43 +622,45 @@ get_output_config(SimStruct *S, struct output_spec *output_spec,
     pdo_info_idx = mxGetPr(pdo_map);
     pdo_entry_idx = pdo_info_idx + map_count;
 
-    output_spec->map = mxCalloc(map_count, sizeof(*output_spec->map));
-    if (!output_spec->map)
+    io_spec->map = mxCalloc(map_count, sizeof(*io_spec->map));
+    if (!io_spec->map)
         return ssGetErrorStatus(S);
-    slave->output_map_count += map_count;
+    *total_map_count += map_count;
 
     for (i = 0; i < map_count; i++) {
-        uint_T bl, dir;
+        uint_T bit_len, pdo_dir;
 
-        if ((err = getPdoBitLenAndDir(&bl, &dir, slave,  
+        if ((err = getPdoBitLenAndDir(&bit_len, &pdo_dir, slave,  
                         pdo_info_idx[i], pdo_entry_idx[i]))) {
             snprintf(errmsg, sizeof(errmsg),
                     "Error occurred while determinig data type "
-                    "of a PDO[%u] for output %u: %s", i, port+1, err);
+                    "of a PDO[%u] for %s(%u): %s", i, dir_str, port+1, err);
             return errmsg;
         }
 
-        if (dir != 0) {
+        if (pdo_dir != dir) {
             snprintf(errmsg, sizeof(errmsg),
-                    "PDO direction has wrong direction for output %u",
-                    port+1);
+                    "PDO direction has wrong direction for %s(%u)",
+                    dir_str, port+1);
             return errmsg;
         }
 
+        /* If pdo_bit_len has been assigned already, check that the 
+         * subsequent bit_len's have the same length */
         if (pdo_bit_len) {
-            if (bl != pdo_bit_len) {
+            if (bit_len != pdo_bit_len) {
                 snprintf(errmsg, sizeof(errmsg),
-                        "Cannot mix different PDO bit lengths on "
-                        "output %u.", port+1);
+                        "Cannot mix different PDO bit lengths for "
+                        "%s(%u).", dir_str, port+1);
                 return errmsg;
             }
         }
         else {
-            pdo_bit_len = bl;
+            pdo_bit_len = bit_len;
         }
 
-        output_spec->map[i].pdo_info_idx = pdo_info_idx[i];
-        output_spec->map[i].pdo_entry_idx = pdo_entry_idx[i];
+        io_spec->map[i].pdo_info_idx = pdo_info_idx[i];
+        io_spec->map[i].pdo_entry_idx = pdo_entry_idx[i];
     }
 
     if (pdo_bits) {
@@ -580,45 +672,35 @@ get_output_config(SimStruct *S, struct output_spec *output_spec,
                 || !mxIsDouble(channels) || !mxIsDouble(bitcount) 
                 || !mxIsDouble(datatype)) {
             snprintf(errmsg, sizeof(errmsg),
-                    "SFunction parameter output(%u).pdo_bits must be "
+                    "SFunction parameter %s(%u).pdo_bits must be "
                     "specified as a structure with the "
                     "scalar numeric fields:\n"
-                    "'channels' 'bitcount' and 'port_datatype'", port+1);
+                    "'channels' 'bitcount' and 'port_datatype'", 
+                    dir_str, port+1);
             return errmsg;
         }
 
         if (map_count > 1) {
             snprintf(errmsg, sizeof(errmsg),
                     "Only allowed to specify one pdo_map "
-                    "when using field 'pdo_bits' for output %u.",
-                    port+1);
+                    "when using field 'pdo_bits' for %s(%u).",
+                    dir_str, port+1);
             return errmsg;
         }
 
-        output_spec->port_width = mxGetScalar(channels);
-        output_spec->pdo_bits = mxGetScalar(bitcount);
+        io_spec->port_width = mxGetScalar(channels);
+        io_spec->pdo_bits = mxGetScalar(bitcount);
         if ((err = getDataType( mxGetScalar(datatype), 
-                        &output_spec->port_data_type))) {
+                        &io_spec->port_data_type))) {
             snprintf(errmsg, sizeof(errmsg),
                     "Error occurred while determinig PDO data type "
-                    "for output(%u).pdo_bits.datatype: %s", port+1, err);
+                    "for %s(%u).pdo_bits.datatype: %s", dir_str, port+1, err);
             return errmsg;
         }
     }
     else {
-        output_spec->port_width = map_count;
-        output_spec->port_data_type = output_spec->pdo_data_type;
-    }
-
-    /* Make sure that port widths are the same when > 1 */
-    if (slave->port_width > 1) {
-        if (output_spec->port_width > 1 
-                && slave->port_width != output_spec->port_width) {
-            slave->unequal_port_widths = 1;
-        }
-    }
-    else {
-        slave->port_width = output_spec->port_width;
+        io_spec->port_width = map_count;
+        io_spec->port_data_type = io_spec->pdo_data_type;
     }
 
     if (pdo_bits || !pdo_full_scale)
@@ -628,63 +710,65 @@ get_output_config(SimStruct *S, struct output_spec *output_spec,
      * so that the source value range is mapped to [0..1] */
     if (!mxIsDouble(pdo_full_scale)) {
         snprintf(errmsg, sizeof(errmsg),
-                "Specified field output(%u).%s must be a numeric scalar.",
-                port+1, "pdo_full_scale");
+                "Specified field %s(%u).%s must be a numeric scalar.",
+                dir_str, port+1, "pdo_full_scale");
         return errmsg;
     }
-    output_spec->pdo_full_scale = mxGetScalar(pdo_full_scale);
+    io_spec->pdo_full_scale = mxGetScalar(pdo_full_scale);
 
     /* Check that the vector length is either 1 or port_width
      * for the fields 'gain', 'offset' and 'filter' if they are specified */
     do {
-        errfield = get_parameter_values(S, output, port, "gain",
-            &output_spec->gain_count, output_spec->port_width, 
-            &output_spec->gain_values);
+        errfield = get_parameter_values(S, src, port, "gain",
+            &io_spec->gain_count, io_spec->port_width, 
+            &io_spec->gain_values);
         if (errfield) break;
 
-        errfield = get_parameter_values(S, output, port, "offset",
-            &output_spec->offset_count, output_spec->port_width, 
-            &output_spec->offset_values);
+        if (dir == 1) break;
+
+        errfield = get_parameter_values(S, src, port, "offset",
+            &io_spec->offset_count, io_spec->port_width, 
+            &io_spec->offset_values);
         if (errfield) break;
 
-        errfield = get_parameter_values(S, output, port, "filter",
-            &output_spec->filter_count, output_spec->port_width, 
-            &output_spec->filter_values);
+        errfield = get_parameter_values(S, src, port, "filter",
+            &io_spec->filter_count, io_spec->port_width, 
+            &io_spec->filter_values);
         if (errfield) break;
 
     } while(0);
     if (errfield) {
         snprintf(errmsg, sizeof(errmsg),
-                "Vector for output(%u).%s is not a valid numeric array "
+                "Vector for %s(%u).%s is not a valid numeric array "
                 "with 1 or %u elements.", 
-                port+1, errfield, output_spec->port_width);
+                dir_str, port+1, errfield, io_spec->port_width);
         return errmsg;
     }
 
     /* Get the names for the parameters */
     do {
-        if (output_spec->gain_count) {
-            errfield = get_parameter_name(S, output, port, "gain_name",
-                    &output_spec->gain_name);
+        if (io_spec->gain_count) {
+            errfield = get_parameter_name(S, src, port, "gain_name",
+                    &io_spec->gain_name);
             if (errfield) break;
         }
 
-        if (output_spec->offset_count) {
-            errfield = get_parameter_name(S, output, port, "offset_name",
-                    &output_spec->offset_name);
+        if (io_spec->offset_count) {
+            errfield = get_parameter_name(S, src, port, "offset_name",
+                    &io_spec->offset_name);
             if (errfield) break;
         }
 
-        if (output_spec->filter_count) {
-            errfield = get_parameter_name(S, output, port, "filter_name",
-                    &output_spec->filter_name);
+        if (io_spec->filter_count) {
+            errfield = get_parameter_name(S, src, port, "filter_name",
+                    &io_spec->filter_name);
             if (errfield) break;
         }
     } while(0);
     if (errfield) {
         snprintf(errmsg, sizeof(errmsg),
-                "No valid string for output(%u).%s supplied.", 
-                port+1, errfield);
+                "No valid string for %s(%u).%s supplied.", 
+                dir_str, port+1, errfield);
         return errmsg;
     }
 
@@ -705,9 +789,9 @@ static void mdlInitializeSizes(SimStruct *S)
 {
     uint_T i, j;
     struct ecat_slave *slave;
-    real_T *pdo_info_value, *pdo_entry_value, *sdo_config_value;
-    struct output_spec *output_spec;
-    struct input_spec *input_spec;
+    real_T *pdo_info_value, *pdo_entry_info_value, *sdo_config_value;
+    struct io_spec *output_spec;
+    struct io_spec *input_spec;
     
     ssSetNumSFcnParams(S, PARAM_COUNT);  /* Number of expected parameters */
     if (ssGetNumSFcnParams(S) != ssGetSFcnParamsCount(S)) {
@@ -727,25 +811,25 @@ static void mdlInitializeSizes(SimStruct *S)
 
     /* Fetch the PDO Entries from Simulink. This matrix has 3 columns, and 
      * describes which objects can be mapped */
-    slave->pdo_entry_len = mxGetM(PDO_ENTRY);
-    if (slave->pdo_entry_len) {
-        if (!mxIsDouble(PDO_ENTRY) || mxGetN(PDO_ENTRY) != 3 
-                || !slave->pdo_entry_len) {
+    slave->pdo_entry_info_len = mxGetM(PDO_ENTRY_INFO);
+    if (slave->pdo_entry_info_len) {
+        if (!mxIsDouble(PDO_ENTRY_INFO) || mxGetN(PDO_ENTRY_INFO) != 3 
+                || !slave->pdo_entry_info_len) {
             ssSetErrorStatus(S, "SFunction parameter pdo_entry must be "
                     "a n-by-3 numeric matrix");
             return;
         }
 
-        slave->pdo_entry = 
-            mxCalloc(slave->pdo_entry_len, sizeof(*slave->pdo_entry));
-        if (!slave->pdo_entry)
+        slave->pdo_entry_info = mxCalloc(slave->pdo_entry_info_len,
+                sizeof(*slave->pdo_entry_info));
+        if (!slave->pdo_entry_info)
             return;
-        pdo_entry_value = mxGetPr(PDO_ENTRY);
-        for (i = 0; i < slave->pdo_entry_len; i++) {
+        pdo_entry_info_value = mxGetPr(PDO_ENTRY_INFO);
+        for (i = 0; i < slave->pdo_entry_info_len; i++) {
             for (j = 0; j < 3; j++) {
                 /* Note: mxArrays are stored column major! */
-                slave->pdo_entry[i][j] = 
-                    pdo_entry_value[i + j * slave->pdo_entry_len];
+                slave->pdo_entry_info[i][j] = 
+                    pdo_entry_info_value[i + j * slave->pdo_entry_info_len];
             }
         }
     }
@@ -836,7 +920,8 @@ static void mdlInitializeSizes(SimStruct *S)
                 input_spec++, port++) {
             const char_T *err;
 
-            if ((err = get_input_config(S, input_spec, slave))) {
+            if ((err = get_ioport_config(S, INPUT, input_spec, 
+                            &slave->input_map_count, slave, port, 1))) {
                 ssSetErrorStatus(S, err);
                 return;
             }
@@ -890,10 +975,22 @@ static void mdlInitializeSizes(SimStruct *S)
                 output_spec++, port++) {
             const char_T *err;
 
-            if ((err = get_output_config(S, output_spec, slave))) {
+            if ((err = get_ioport_config(S, OUTPUT, output_spec, 
+                            &slave->output_map_count, slave, port, 0))) {
                 ssSetErrorStatus(S, err);
                 return;
             }
+            /* Make sure that port widths are the same when > 1 */
+            if (slave->port_width > 1) {
+                if (output_spec->port_width > 1 
+                        && slave->port_width != output_spec->port_width) {
+                    slave->unequal_port_widths = 1;
+                }
+            }
+            else {
+                slave->port_width = output_spec->port_width;
+            }
+
 
             /* port width is determined by now. Set it */
             ssSetOutputPortWidth(S, port, output_spec->port_width);
@@ -941,7 +1038,7 @@ static void mdlInitializeSizes(SimStruct *S)
     }
 
     mexMakeMemoryPersistent(slave);
-    mexMakeMemoryPersistent(slave->pdo_entry);
+    mexMakeMemoryPersistent(slave->pdo_entry_info);
     mexMakeMemoryPersistent(slave->pdo_info);
     mexMakeMemoryPersistent(slave->sdo_config);
     mexMakeMemoryPersistent(slave->output_spec);
@@ -997,18 +1094,17 @@ static void mdlSetOutputPortWidth(SimStruct *S, int_T port, int_T width)
 static void mdlSetInputPortWidth(SimStruct *S, int_T port, int_T width)
 {
     struct ecat_slave *slave = ssGetUserData(S);
-    struct input_spec *input_spec = &slave->input_spec[port];
+    struct io_spec *input_spec = &slave->input_spec[port];
 
-    if (width > input_spec->max_port_width) {
+    if (width > input_spec->port_width) {
         snprintf(errmsg, sizeof(errmsg),
                 "Maximum port width for input port %u is %u.\n"
                 "Tried to set it to %i.", 
-                port+1, input_spec->max_port_width, width);
+                port+1, input_spec->port_width, width);
         ssSetErrorStatus(S, errmsg);
         return;
     }
 
-    input_spec->port_width = width;
     ssSetInputPortWidth(S, port, width);
 
     if (slave->port_width > 1) {
@@ -1029,7 +1125,7 @@ static void mdlSetInputPortWidth(SimStruct *S, int_T port, int_T width)
 static void mdlSetDefaultPortDimensionInfo(SimStruct *S)
 {
     struct ecat_slave *slave = ssGetUserData(S);
-    struct input_spec *input_spec;
+    struct io_spec *input_spec;
     int_T port;
 
     for (input_spec = slave->input_spec, port = 0;
@@ -1045,8 +1141,8 @@ static void mdlSetDefaultPortDimensionInfo(SimStruct *S)
 static void mdlSetWorkWidths(SimStruct *S)
 {
     struct ecat_slave *slave = ssGetUserData(S);
-    struct output_spec *output_spec;
-    struct input_spec *input_spec;
+    struct io_spec *output_spec;
+    struct io_spec *input_spec;
     uint_T param_idx = 0;
 
     if (slave->unequal_port_widths) {
@@ -1162,8 +1258,8 @@ static void mdlDerivatives(SimStruct *S)
 static void mdlTerminate(SimStruct *S)
 {
     struct ecat_slave *slave = ssGetUserData(S);
-    struct output_spec *output_spec;
-    struct input_spec *input_spec;
+    struct io_spec *output_spec;
+    struct io_spec *input_spec;
 
     for (input_spec = slave->input_spec; 
             input_spec != &slave->input_spec[slave->num_inputs]; 
@@ -1186,7 +1282,7 @@ static void mdlTerminate(SimStruct *S)
     mxFree(slave->output_spec);
     mxFree(slave->sdo_config);
     mxFree(slave->pdo_info);
-    mxFree(slave->pdo_entry);
+    mxFree(slave->pdo_entry_info);
     mxFree(slave);
 }
 
@@ -1235,8 +1331,8 @@ static void mdlRTW(SimStruct *S)
     uint_T port, i;
     uint_T len;
     uint32_T map_idx;
-    struct output_spec *output_spec;
-    struct input_spec *input_spec;
+    struct io_spec *output_spec;
+    struct io_spec *input_spec;
     uint_T gain_idx;
     uint_T offset_idx;
     uint_T filter_idx;
@@ -1278,7 +1374,7 @@ static void mdlRTW(SimStruct *S)
 
         for (i = 0; 
                 i < (input_spec->pdo_bits 
-                    ? 1 : input_spec->max_port_width);
+                    ? 1 : input_spec->port_width);
                 i++, map_idx++) {
             input_map[0][map_idx] = input_spec->map[i].pdo_info_idx;
             input_map[1][map_idx] = input_spec->map[i].pdo_entry_idx;
@@ -1373,18 +1469,18 @@ static void mdlRTW(SimStruct *S)
                 return;
         }
     }
-    { /* Transpose slave->pdo_entry */
-        uint32_T pdo_entry[3][slave->pdo_entry_len];
+    { /* Transpose slave->pdo_entry_info */
+        uint32_T pdo_entry_info[3][slave->pdo_entry_info_len];
         uint_T i, j;
 
-        for (i = 0; i < slave->pdo_entry_len; i++) {
+        for (i = 0; i < slave->pdo_entry_info_len; i++) {
             for (j = 0; j < 3; j++) {
-                pdo_entry[j][i] = slave->pdo_entry[i][j];
+                pdo_entry_info[j][i] = slave->pdo_entry_info[i][j];
             }
         }
 
-        if (!ssWriteRTW2dMatParam(S, "PdoEntryInfo", pdo_entry, 
-                    SS_UINT32, slave->pdo_entry_len, 3))
+        if (!ssWriteRTW2dMatParam(S, "PdoEntryInfo", pdo_entry_info, 
+                    SS_UINT32, slave->pdo_entry_info_len, 3))
             return;
     }
     { /* Transpose slave->pdo_info */
