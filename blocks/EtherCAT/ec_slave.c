@@ -123,9 +123,9 @@
  *                      assign 2 bits of each input to the PDO value
  *
  *                      Specifying this field overrides the field
- *                      'pdo_full_scale'
+ *                      'full_scale_bits'
  *
- *   'pdo_full_scale':  scalar numeric value (optional)
+ *   'full_scale_bits': scalar numeric value (optional)
  *                      Specifying 'pdo_bits' overrides this entry.
  *                      If this field is not specified, the input port is
  *                      the "raw" PDO value. This also means that the port
@@ -134,14 +134,14 @@
  *                      If this field specified, the input port value
  *                      is multiplied by this value before writing it to
  *                      the PDO, i.e.
- *                      'PDO value' = input * 'pdo_full_scale'
+ *                      'PDO value' = input * 2^'full_scale_bits'
  *
  *                      Ideally this value is the maximum value 
  *                      that the PDO can assume, thus an input range of
  *                      [-1.0 .. 1.0> for signed PDO's and [0 .. 1.0> for
  *                      unsigned PDO's is mapped to the full PDO value range.
  *
- *                      For example, a pdo_full_scale = 32768 would map the 
+ *                      For example, a full_scale_bits = 32768 would map the 
  *                      entire value range of a int16_t PDO data type
  *                      from -1.0 to 1.0
  *
@@ -149,11 +149,11 @@
  *                      An optional vector or scalar. If it is a vector,
  *                      it must have the same number of elements as there
  *                      are rows in 'pdo_map'. This field is only considered
- *                      when 'pdo_full_scale' is specified.
+ *                      when 'full_scale_bits' is specified.
  *                      If this field is specified, the value written to
  *                      the PDO is premultiplied before assignment.
  *                      i.e.
- *                      'PDO value' = 'gain' .* input * 'pdo_full_scale'
+ *                      'PDO value' = 'gain' .* input * 'full_scale_bits'
  *
  *   'gain_name':       string (optional)
  *                      This optional field is only considered if 'gain' is
@@ -209,9 +209,9 @@
  *                      output port elements.
  *
  *                      Specifying this field overrides the field
- *                      'pdo_full_scale'
+ *                      'full_scale_bits'
  *
- *   'pdo_full_scale':  scalar numeric value (optional)
+ *   'full_scale_bits':  scalar numeric value (optional)
  *                      Specifying 'pdo_bits' overrides this entry.
  *                      If this field is not specified, the output port is
  *                      the "raw" PDO value. This also means that the port
@@ -220,14 +220,14 @@
  *                      If this field specified, the output port has data
  *                      type 'double_T'. The PDO value is then divided by
  *                      this value and written to the output port, i.e.
- *                      output = 'PDO value' / 'pdo_full_scale'
+ *                      output = 'PDO value' / 'full_scale_bits'
  *
  *                      Ideally this value is the maximum value that the 
  *                      PDO can assume, thus mapping the PDO value range to 
  *                      [0 .. 1.0> for unsigned PDO data types and
  *                      [-1.0 .. 1.0> for signed PDO data types.
  *
- *                      For example, a pdo_full_scale = 32768 would map the 
+ *                      For example, a full_scale_bits = 32768 would map the 
  *                      entire value range of a int16_t PDO data type
  *                      from -1.0 to 1.0
  *
@@ -235,11 +235,11 @@
  *                      An optional vector or scalar. If it is a vector,
  *                      it must have the same number of elements as there
  *                      are rows in 'pdo_map'. This field is only considered
- *                      when 'pdo_full_scale' is specified.
+ *                      when 'full_scale_bits' is specified.
  *                      If this field is specified, the PDO value is further
- *                      multiplied by it after applying 'pdo_full_scale'.
+ *                      multiplied by it after applying 'full_scale_bits'.
  *                      i.e.
- *                      output = 'gain' .* 'PDO value' / 'pdo_full_scale'
+ *                      output = 'gain' .* 'PDO value' / 'full_scale_bits'
  *
  *   'gain_name':       string (optional)
  *                      This optional field is only considered if 'gain' is
@@ -254,11 +254,11 @@
  *                      An optional vector or scalar. If it is a vector,
  *                      it must have the same number of elements as there
  *                      are rows in 'pdo_map'. This field is only considered
- *                      when 'pdo_full_scale' is specified.
+ *                      when 'full_scale_bits' is specified.
  *                      If this field is specified, it is added to the result
- *                      of applying 'pdo_full_scale' and 'gain',
+ *                      of applying 'full_scale_bits' and 'gain',
  *                      i.e.
- *                      output = 'gain' .* 'PDO value' / 'pdo_full_scale'
+ *                      output = 'gain' .* 'PDO value' / 'full_scale_bits'
  *                               .+ offset
  *
  *   'offset_name':     string (optional)
@@ -270,7 +270,7 @@
  *                      An optional vector or scalar. If it is a vector,
  *                      it must have the same number of elements as there
  *                      are rows in 'pdo_map'. This field is only considered
- *                      when 'pdo_full_scale' is specified.
+ *                      when 'full_scale_bits' is specified.
  *                      If this field is specified, the output value is low
  *                      pass filtered before written to the output port and
  *                      after applying possible 'gain' and 'offset' values.
@@ -401,12 +401,12 @@ struct ecat_slave {
          * following values are ignored.
          * When raw == 0, no scaling is done, otherwise the value written
          * to the PDO is:
-         * gain_count == 0:  PDO = input * pdo_full_scale
-         * gain_count != 0:  PDO = input * gain_values * pdo_full_scale
+         * gain_count == 0:  PDO = input * full_scale_bits
+         * gain_count != 0:  PDO = input * gain_values * full_scale_bits
          *
          * gain_values appears as an application parameter if supplied.
          */
-        uint_T pdo_full_scale;
+        uint_T full_scale_bits;
         char_T *gain_name;
         char_T *offset_name;
         char_T *filter_name;
@@ -556,7 +556,7 @@ get_ioport_config(SimStruct *S, const mxArray* src, struct io_spec *io_spec,
     const mxArray* pdo_map = mxGetField(src, port, "pdo_map");
     const mxArray* pdo_dtype = mxGetField(src, port, "pdo_data_type");
     const mxArray* pdo_bits = mxGetField(src, port, "pdo_bits");
-    const mxArray* pdo_full_scale = mxGetField(src, port, "pdo_full_scale");
+    const mxArray* full_scale_bits = mxGetField(src, port, "full_scale_bits");
     const char_T* errfield = NULL;
     const char_T* err;
     const char_T* dir_str = dir ? "input" : "output";
@@ -703,18 +703,18 @@ get_ioport_config(SimStruct *S, const mxArray* src, struct io_spec *io_spec,
         io_spec->port_data_type = io_spec->pdo_data_type;
     }
 
-    if (pdo_bits || !pdo_full_scale)
+    if (pdo_bits || !full_scale_bits)
         return NULL;
 
     /* Output is double. This means that the source value must be scaled 
      * so that the source value range is mapped to [0..1] */
-    if (!mxIsDouble(pdo_full_scale)) {
+    if (!mxIsDouble(full_scale_bits)) {
         snprintf(errmsg, sizeof(errmsg),
                 "Specified field %s(%u).%s must be a numeric scalar.",
-                dir_str, port+1, "pdo_full_scale");
+                dir_str, port+1, "full_scale_bits");
         return errmsg;
     }
-    io_spec->pdo_full_scale = mxGetScalar(pdo_full_scale);
+    io_spec->full_scale_bits = mxGetScalar(full_scale_bits);
 
     /* Check that the vector length is either 1 or port_width
      * for the fields 'gain', 'offset' and 'filter' if they are specified */
@@ -927,7 +927,7 @@ static void mdlInitializeSizes(SimStruct *S)
             }
 
             ssSetInputPortWidth(S, port, DYNAMICALLY_SIZED);
-            if (input_spec->pdo_full_scale) {
+            if (input_spec->full_scale_bits) {
                 ssSetInputPortDataType(S, port, DYNAMICALLY_TYPED);
             }
             else {
@@ -995,7 +995,7 @@ static void mdlInitializeSizes(SimStruct *S)
             /* port width is determined by now. Set it */
             ssSetOutputPortWidth(S, port, output_spec->port_width);
 
-            if (output_spec->pdo_full_scale) {
+            if (output_spec->full_scale_bits) {
                 /* Double output */
                 ssSetOutputPortDataType(S, port, SS_DOUBLE);
             }
@@ -1362,7 +1362,7 @@ static void mdlRTW(SimStruct *S)
 
         input_port_spec[0][port] = input_spec->pdo_data_type;
         input_port_spec[1][port] = input_spec->pdo_bits;
-        input_port_spec[2][port] = input_spec->pdo_full_scale;
+        input_port_spec[2][port] = input_spec->full_scale_bits;
         input_port_spec[3][port] = input_spec->gain_count;
         input_gain_name_ptr[port] = input_spec->gain_count
             ? input_spec->gain_name : "";
@@ -1390,7 +1390,7 @@ static void mdlRTW(SimStruct *S)
 
         output_port_spec[0][port] = output_spec->pdo_data_type;
         output_port_spec[1][port] = output_spec->pdo_bits;
-        output_port_spec[2][port] = output_spec->pdo_full_scale;
+        output_port_spec[2][port] = output_spec->full_scale_bits;
         output_port_spec[3][port] = output_spec->gain_count > 0;
         output_port_spec[4][port] = output_spec->offset_count > 0;
         output_port_spec[5][port] = output_spec->filter_count > 0;

@@ -736,7 +736,7 @@
     %case "Bits"
       %return Spec[Port][1]
     %case "PDOFullScale"
-      %return CAST("Real",Spec[Port][2])
+      %return FEVAL("pow2",Spec[Port][2])
     %case "Gain"
       %return Spec[Port][3]
     %case "Offset"

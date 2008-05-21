@@ -45,9 +45,9 @@ function el5001_check(section)
         end
     case 'frame'
         if (strncmp(values.frame,'Variable',8))
-            en.size = 'on';
+            en.fsize = 'on';
         else
-            en.size = 'off';
+            en.fsize = 'off';
         end
     case 'inh_time'
         if (str2num(values.inh_time) > 65535)
