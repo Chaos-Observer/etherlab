@@ -310,8 +310,8 @@ init_slaves( struct ecat_master *master)
     struct ecat_slave *slave;
     ec_slave_config_t *slave_config;
     const struct sdo_config *sdo;
-    int i;
     const char* failed_method;
+    struct mapped_pdo *mapped_pdo;
 
     list_for_each_entry(slave, &master->slave_list, list) {
 
@@ -369,20 +369,23 @@ init_slaves( struct ecat_master *master)
 
         /* Now map the required PDO's into the process image. The offset
          * inside the image is returned by the function call */
-        for (i = 0; i < slave->pdo_map_count; i++) {
-            const struct pdo_mapping *mapping = slave->mapped_pdo[i].mapping;
+        for (mapped_pdo = slave->mapped_pdo;
+                mapped_pdo != &slave->mapped_pdo[slave->pdo_map_count]; 
+                mapped_pdo++) {
+            const struct pdo_mapping *mapping = mapped_pdo->mapping;
             const ec_pdo_info_t *pdos = 
                 &slave->pdos[mapping->pdo_info_index];
             int offset = ecrt_slave_config_reg_pdo_entry(
                         slave_config,
                         pdos->entries[mapping->pdo_entry_index].index,
                         pdos->entries[mapping->pdo_entry_index].subindex,
-                        slave->mapped_pdo[i].domain->handle);
+                        mapped_pdo->domain->handle,
+                        mapping->bitoffset);
             if (offset < 0) {
                 failed_method = "ecrt_slave_config_reg_pdo_entry";
                 goto out_slave_failed;
             }
-            slave->mapped_pdo[i].base_offset = offset;
+            mapped_pdo->base_offset = offset;
         }
     }
 
@@ -878,8 +881,10 @@ ecs_start(void)
                 endian_convert_list = mapped_pdo->domain->endian_convert_list++;
                 pdo_info_index = mapped_pdo->mapping->pdo_info_index;
 
-                /* Have to set all data_ptr, otherwise endian processing
-                 * stops */
+                /* data_ptr in endian_convert_list must be set even though
+                 * this data type might not need processing. Not setting an 
+                 * address marks the end of endian processing and this could
+                 * be premature */
                 endian_convert_list->data_ptr = 
                     mapped_pdo->domain->io_data + mapped_pdo->base_offset;
 

@@ -183,7 +183,7 @@
     }
     #endif
     %closefile buf
-    %<LibSystemOutputCustomCode(system,buf,"trailer")>
+    %<LibSystemUpdateCustomCode(system,buf,"trailer")>
 
   %endwith
 

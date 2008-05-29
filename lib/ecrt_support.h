@@ -14,6 +14,7 @@ struct pdo_mapping {
 
     enum si_datatype_t pdo_datatype;
     void **address;
+    unsigned int *bitoffset;
 };
 
 /* Structure to temporarily store SDO objects prior to registration */

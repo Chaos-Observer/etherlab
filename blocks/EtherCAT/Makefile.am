@@ -2,26 +2,17 @@ ethercatdir = $(prefix)/$(subdir)
 
 dist_ethercat_DATA = \
         EtherCAT.tlc \
-        ethercat_ss_funcs.h \
         master_stats.c master_stats.tlc \
-        el10xx.c el10xx.tlc \
-        el20xx.c el20xx.tlc el2xxx_check.m \
-        el31xx.c el31xx.tlc el31xx_check.m \
-        el41xx.c el41xx.tlc el41xx_check.m \
-        el5001.c el5001.tlc el5001_check.m \
-        el5101.c el5101.tlc el5101_check.m \
-        old_el5101.c old_el5101.tlc old_el5101_check.m \
-        bk1120_in.c  bk1120_in.tlc  bk1120_check.m \
-        bk1120_out.c bk1120_out.tlc \
-        moog_msd.c moog_msd.tlc moog_msd_callback.m moog.png \
-        generic_ethercat.c generic_ethercat.tlc \
+        el31xx_check.m \
+        el41xx_check.m \
+        el5001_check.m \
+        el5101_check.m \
         ec_slave.c ec_slave.tlc
 
 include_HEADERS = ecdb_private.h
 
 if EXPERIMENTAL
 dist_ethercat_DATA += 
-#        bk1120_out.c bk1120_out.tlc
 endif
 
 ethercat_DATA = setup.m
