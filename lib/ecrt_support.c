@@ -52,7 +52,7 @@ struct ecat_slave {
     unsigned int pdo_map_count;
     struct mapped_pdo {
         struct ecat_domain *domain;
-        const struct pdo_mapping *mapping;
+        const struct pdo *mapping;
         size_t base_offset;
     } mapped_pdo[];
 };
@@ -372,13 +372,13 @@ init_slaves( struct ecat_master *master)
         for (mapped_pdo = slave->mapped_pdo;
                 mapped_pdo != &slave->mapped_pdo[slave->pdo_map_count]; 
                 mapped_pdo++) {
-            const struct pdo_mapping *mapping = mapped_pdo->mapping;
+            const struct pdo *mapping = mapped_pdo->mapping;
             const ec_pdo_info_t *pdos = 
                 &slave->pdos[mapping->pdo_info_index];
             int offset = ecrt_slave_config_reg_pdo_entry(
                         slave_config,
-                        pdos->entries[mapping->pdo_entry_index].index,
-                        pdos->entries[mapping->pdo_entry_index].subindex,
+                        pdos->entries[mapping->pdo_entry_info_index].index,
+                        pdos->entries[mapping->pdo_entry_info_index].subindex,
                         mapped_pdo->domain->handle,
                         mapping->bitoffset);
             if (offset < 0) {
@@ -594,7 +594,7 @@ ecs_reg_slave(
         const ec_pdo_info_t *pdos,
 
         unsigned int pdo_mapping_count,
-        const struct pdo_mapping *pdo_mapping
+        const struct pdo *pdo
         )
 {
     const char *errmsg;
@@ -607,11 +607,11 @@ ecs_reg_slave(
     pr_debug( "ecs_reg_slave( tid = %u, master_id = %u, domain_id = %u, "
         "slave_alias = %hu, slave_position = %hu, vendor_id = 0x%x, "
         "product_code = 0x%x, sdo_config_count = %u, *sdo_config = %p, "
-        "*pdos = %p, pdo_mapping_count = %u, *pdo_mapping = %p )\n",
+        "*pdos = %p, pdo_mapping_count = %u, *pdo = %p )\n",
         tid, master_id, domain_id,
         slave_alias, slave_position, vendor_id,
         product_code, sdo_config_count, sdo_config,
-        pdos, pdo_mapping_count, pdo_mapping
+        pdos, pdo_mapping_count, pdo
         );
 
     /* Get a pointer to the master, creating a new one if it does not
@@ -640,15 +640,15 @@ ecs_reg_slave(
     /* Copy the PDO structures locally */
     slave->pdos = pdos;
 
-    /* The pdo_mapping lists the PDO's that should be mapped
+    /* The pdo lists the PDO's that should be mapped
      * into the process image and also contains pointers where the data
      * should be copied, as well as the data type. 
      * Here we go through the list assigning the mapped PDO to the correct
      * domain depending on whether it is an input or output */
     slave->pdo_map_count = pdo_mapping_count;
     for (i = 0; i < pdo_mapping_count; i++) {
-        slave->mapped_pdo[i].mapping = &pdo_mapping[i];
-        switch (pdos[pdo_mapping[i].pdo_info_index].dir) {
+        slave->mapped_pdo[i].mapping = &pdo[i];
+        switch (pdos[pdo[i].pdo_info_index].dir) {
             /* PDO Input as seen by the slave, i.e. block inputs. The
              * corresponding slaves in the field are outputs, 
              * eg. analog and digital outputs */

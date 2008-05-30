@@ -298,7 +298,7 @@
 char errmsg[256];
 
 struct ecat_slave {
-    char *name;
+    char *product_name;
 
     /* One record for every SDO configuration element:
      * 1: SDO Index
@@ -308,7 +308,11 @@ struct ecat_slave {
     uint32_T (*sdo_config)[4];
     uint_T   sdo_config_len;
 
-    uint32_T  (*pdo_entry_info)[4];
+    struct pdo_entry_info {
+        uint_T index;
+        uint_T subindex;
+        int_T bitlen;
+    } *pdo_entry_info;
     uint_T   pdo_entry_info_len;
 
     /* 1: 1 = Input, 0 = Output
@@ -322,11 +326,17 @@ struct ecat_slave {
     uint_T unequal_port_widths;
 
     struct io_spec {
-        uint_T pdo_data_type;
         struct {
             uint32_T pdo_info_idx;
             uint32_T pdo_entry_idx;
         } *map;
+
+        /* Data type after applying the mask. If Raw block IO is used, the
+         * port will have this data type */
+        uint_T data_type;
+
+        /* The data type of the PDO. */
+        uint_T pdo_data_type;
 
         /* Number of signals for the port
          * This is also the number of *map entries,
@@ -338,24 +348,33 @@ struct ecat_slave {
          * input/output value needs to be scaled before writing to 
          * the PDO. If pdo_bits != 0, the input is raw anyway and the 
          * following values are ignored.
-         * When raw == 0, no scaling is done, otherwise the value written
-         * to the PDO is:
-         * gain_count == 0:  PDO = input * full_scale_bits
-         * gain_count != 0:  PDO = input * gain_values * full_scale_bits
+         * If raw is set, the output is raw, i.e. no scaling is done
+         * raw is bit coded:
+         *      bit 1:   Raw output
+         *      bit 2:   Bit masking is required, otherwise output is
+         *               one of the native types u/int8 u/int16 u/int32
+         *
+         * If raw is unset, the value written to / read from the PDO
+         * is scaled using gain and/or offset; see introduction concerning
+         * full_scale_bits
          *
          * gain_values appears as an application parameter if supplied.
          */
         uint_T raw;
         uint_T full_scale_bits;
+
+        uint_T  gain_count;
         char_T *gain_name;
-        char_T *offset_name;
-        char_T *filter_name;
         real_T *gain_values;
+
+        uint_T  offset_count;
+        char_T *offset_name;
         real_T *offset_values;
+
+        uint_T  filter_count;
+        char_T *filter_name;
         real_T *filter_values;
-        int_T gain_count;
-        int_T offset_count;
-        int_T filter_count;
+
     } *output_spec, *input_spec;
 
     /* Number of input and output ports */
@@ -371,48 +390,55 @@ struct ecat_slave {
     uint_T static_output_offset_count;
     uint_T static_output_filter_count;
 
-    uint_T output_filter;
+    uint_T output_filter_count;
     uint_T runtime_param_count;
 
     uint_T iwork_count;
 };
 
 const char_T* 
-getDataType(int_T width, uint_T *data_type)
+get_data_type(int_T width, uint_T *data_type)
 {
-    switch (width) {
-        case 1:
-        case -1:
-            *data_type = SS_BOOLEAN;
-            break;
-        case 8:
-            *data_type = SS_UINT8;
-            break;
-        case -8:
-            *data_type = SS_INT8;
-            break;
-        case 16:
-            *data_type = SS_UINT16;
-            break;
-        case -16:
-            *data_type = SS_INT16;
-            break;
-        case 32:
-            *data_type = SS_UINT32;
-            break;
-        case -32:
-            *data_type = SS_INT32;
-            break;
-        default:
-            return "Unknown data type specified. Allowed are: "
-                    "1, -8, 8, -16, 16, -32, 32.";
+    if (!width) {
+        return "Error: Data type with zero width not allowed.";
+    } 
+    else if (width < 0) {
+        switch (width) {
+            case -8:
+                *data_type = SS_INT8;
+                break;
+            case -16:
+                *data_type = SS_INT16;
+                break;
+            case -32:
+                *data_type = SS_INT32;
+                break;
+            default:
+                return "Error: Non byte-aligned signed data type chosen; "
+                    "Allowed are -8, -16 or -32.";
+                break;
+        }
+    }
+    else if (width > 32) {
+        return "Error: Unsigned data type must be in the range [1..32].";
+    } 
+    else if (width > 16) {
+        *data_type = SS_UINT32;
+    } 
+    else if (width > 8) {
+        *data_type = SS_UINT16;
+    } 
+    else if (width > 1) {
+        *data_type = SS_UINT8;
+    } else {
+        *data_type = SS_BOOLEAN;
     }
 
     return NULL;
 }
 
 const char_T* 
-getPdoDataTypeAndDir(uint_T *data_type, uint_T *dir, 
+get_pdo_bit_spec_and_dir(int_T *bit_len, uint_T *dir, 
         const struct ecat_slave *slave, uint_T pdo_info_idx, 
         uint_T pdo_entry_idx) 
 {
@@ -433,11 +459,7 @@ getPdoDataTypeAndDir(uint_T *data_type, uint_T *dir,
         return "pdo_entry_idx exceeds matrix dimensions.";
     }
 
-    err = getDataType(
-            (slave->pdo_entry_info[pdo_entry_idx][3] 
-             ? -slave->pdo_entry_info[pdo_entry_idx][2]
-             :  slave->pdo_entry_info[pdo_entry_idx][2]),
-            data_type);
+    *bit_len = slave->pdo_entry_info[pdo_entry_idx].bitlen;
     *dir = slave->pdo_info[pdo_info_idx][0];
     return err;
 }
@@ -485,7 +507,7 @@ get_parameter_name(SimStruct* S, const mxArray* output, uint_T port,
     if (!plhs)
         return NULL;
 
-    len = mxGetNumberOfElements(plhs) + 1;
+    len = mxGetN(plhs) + 1;
     *name = mxMalloc(len);
     if (!*name)
         return ssGetErrorStatus(S);
@@ -499,16 +521,18 @@ get_parameter_name(SimStruct* S, const mxArray* output, uint_T port,
 const char_T* 
 get_ioport_config(SimStruct *S, const mxArray* src, struct io_spec *io_spec, 
         uint_T *total_map_count, uint_T *iwork_count,
-        const struct ecat_slave *slave, uint_T port, uint_T dir)
+        const struct ecat_slave *slave, uint_T port, uint_T port_dir)
 {
     const mxArray* pdo_map = mxGetField(src, port, "pdo_map");
     const mxArray* full_scale_bits = mxGetField(src, port, "full_scale_bits");
+    const mxArray* pdo_data_type = mxGetField(src, port, "pdo_data_type");
     const char_T* errfield = NULL;
     const char_T* err;
-    const char_T* dir_str = dir ? "input" : "output";
+    const char_T* dir_str = port_dir ? "input" : "output";
     real_T *pdo_info_idx;
     real_T *pdo_entry_idx;
     uint_T i;
+    int_T port_bit_len = 0;
 
     /* Check that the required fields for port are specified */
     if (!pdo_map) {
@@ -539,13 +563,11 @@ get_ioport_config(SimStruct *S, const mxArray* src, struct io_spec *io_spec,
     *total_map_count += io_spec->port_width;
     io_spec->port_width = io_spec->port_width;
 
-    io_spec->pdo_data_type = ~0U;
-
     for (i = 0; i < io_spec->port_width; i++) {
-        uint_T data_type;
+        int_T pdo_bit_len;
         uint_T pdo_dir;
 
-        if ((err = getPdoDataTypeAndDir(&data_type, &pdo_dir, slave,  
+        if ((err = get_pdo_bit_spec_and_dir(&pdo_bit_len, &pdo_dir, slave,  
                         pdo_info_idx[i], pdo_entry_idx[i]))) {
             snprintf(errmsg, sizeof(errmsg),
                     "Error occurred while determinig data type "
@@ -553,24 +575,78 @@ get_ioport_config(SimStruct *S, const mxArray* src, struct io_spec *io_spec,
             return errmsg;
         }
 
-        if (pdo_dir != dir) {
+        if (pdo_dir != port_dir) {
             snprintf(errmsg, sizeof(errmsg),
                     "PDO direction has wrong direction for %s(%u)",
                     dir_str, port+1);
             return errmsg;
         }
 
-        /* If pdo_data_type has been assigned already, check that the 
+        /* If port_bit_len has been assigned already, check that the 
          * subsequent bit_len's have the same length */
-        if (io_spec->pdo_data_type == ~0U) {
-            io_spec->pdo_data_type = data_type;
-        }
-        else {
-            if (data_type != io_spec->pdo_data_type) {
+        if (port_bit_len) {
+            if (port_bit_len != pdo_bit_len) {
                 snprintf(errmsg, sizeof(errmsg),
                         "Cannot mix different PDO data types for "
                         "%s(%u).", dir_str, port+1);
                 return errmsg;
+            }
+        }
+        else {
+            port_bit_len = pdo_bit_len;
+
+            if ((err = get_data_type(port_bit_len, &io_spec->data_type))) {
+                snprintf(errmsg, sizeof(errmsg),
+                        "An error occurred while determining the data type "
+                        "specified by %s(%u).%s: %s",
+                        dir_str, port+1, "pdo_data_type", err);
+                return errmsg;
+            }
+
+            /* Test whether a custom PDO data type is specified for the port 
+             * that is different from the default as derived from the type
+             * specified by the bitlen of pdo_entry_info. */
+            if (!pdo_data_type) {
+                /* No custom PDO data type specified. 
+                 * Use that of pdo_entry_info. */
+                io_spec->pdo_data_type = io_spec->data_type;
+            }
+            else {
+                int_T user_data_type = mxGetScalar(pdo_data_type);
+
+                if (!mxIsDouble(pdo_data_type)) {
+                    snprintf(errmsg, sizeof(errmsg),
+                            "Specified field %s(%u).%s must be a numeric "
+                            "scalar.", dir_str, port+1, "pdo_data_type");
+                    return errmsg;
+                }
+
+                if (abs(pdo_bit_len) > abs(user_data_type)) {
+                    snprintf(errmsg, sizeof(errmsg),
+                            "Data type specified by %s(%u).%s has %u bits. "
+                            "Required is at least %u bits.",
+                            dir_str, port+1, "pdo_data_type", 
+                            abs(user_data_type), abs(pdo_bit_len));
+                    return errmsg;
+                }
+
+                if (user_data_type % 8) {
+                    snprintf(errmsg, sizeof(errmsg),
+                            "Data type specified by %s(%u).%s has %u bits. "
+                            "This must be a multiple of 8.",
+                            dir_str, port+1, "pdo_data_type", 
+                            abs(user_data_type));
+                    return errmsg;
+                }
+
+                if ((err = get_data_type(
+                                user_data_type, &io_spec->pdo_data_type))) {
+                    snprintf(errmsg, sizeof(errmsg),
+                            "An error occurred while determining the data type "
+                            "specified by %s(%u).%s: %s",
+                            dir_str, port+1, "pdo_data_type", err);
+                    return errmsg;
+                }
             }
         }
 
@@ -578,7 +654,7 @@ get_ioport_config(SimStruct *S, const mxArray* src, struct io_spec *io_spec,
         io_spec->map[i].pdo_entry_idx = pdo_entry_idx[i];
     }
 
-    if (io_spec->pdo_data_type == SS_BOOLEAN) {
+    if (port_bit_len % 8) {
         if (full_scale_bits) {
             snprintf(errmsg, sizeof(errmsg),
                     "Boolean signals cannot be scaled for %s(%u).",
@@ -586,10 +662,15 @@ get_ioport_config(SimStruct *S, const mxArray* src, struct io_spec *io_spec,
             return errmsg;
         }
         *iwork_count += io_spec->port_width;
+
+        /* Set bit 2 of raw to indicate that bit mask operations are
+         * required */
+        io_spec->raw |= 0x2;
     }
 
     if (!full_scale_bits) {
-        io_spec->raw = 1;
+        /* Set bit 1 of raw to indicate that the output is raw */
+        io_spec->raw |= 0x1;
         return NULL;
     }
 
@@ -612,7 +693,7 @@ get_ioport_config(SimStruct *S, const mxArray* src, struct io_spec *io_spec,
         if (errfield) break;
 
         /* Block inputs do not have offset and filter features */
-        if (dir == 1) break;
+        if (port_dir == 1) break;
 
         errfield = get_parameter_values(S, src, port, "offset",
             &io_spec->offset_count, io_spec->port_width, 
@@ -691,6 +772,8 @@ static void mdlInitializeSizes(SimStruct *S)
     struct ecat_slave *slave;
     struct io_spec *output_spec;
     struct io_spec *input_spec;
+    const mxArray *product_name = PRODUCT_NAME;
+    uint_T len;
     
     ssSetNumSFcnParams(S, PARAM_COUNT);  /* Number of expected parameters */
     if (ssGetNumSFcnParams(S) != ssGetSFcnParamsCount(S)) {
@@ -706,6 +789,17 @@ static void mdlInitializeSizes(SimStruct *S)
         return;
     }
     ssSetUserData(S,slave);
+
+    len = mxGetN(product_name) + 1;
+    slave->product_name = mxCalloc(len, 1);
+    if (!slave->product_name)
+        return;
+
+    if (!mxIsChar(product_name) || 
+            mxGetString(product_name, slave->product_name, len)) {
+        ssSetErrorStatus(S, "Invalid product name parameter supplied.");
+        return;
+    }
 
     /* Fetch the PDO Entries from Simulink. This matrix has 3 columns, and 
      * describes which objects can be mapped */
@@ -730,10 +824,9 @@ static void mdlInitializeSizes(SimStruct *S)
             return;
 
         for (i = 0; i < slave->pdo_entry_info_len; i++) {
-            slave->pdo_entry_info[i][0] = *pdo_entry_info_index++;
-            slave->pdo_entry_info[i][1] = *pdo_entry_info_subindex++;
-            slave->pdo_entry_info[i][2] = abs(*pdo_entry_info_data_type);
-            slave->pdo_entry_info[i][3] = *pdo_entry_info_data_type++ < 0;
+            slave->pdo_entry_info[i].index = *pdo_entry_info_index++;
+            slave->pdo_entry_info[i].subindex = *pdo_entry_info_subindex++;
+            slave->pdo_entry_info[i].bitlen = *pdo_entry_info_data_type++;
         }
     }
 
@@ -789,7 +882,7 @@ static void mdlInitializeSizes(SimStruct *S)
                 slave->sdo_config[i][j] = 
                     sdo_config_value[i + j * slave->sdo_config_len];
             }
-            if ((err = getDataType( slave->sdo_config[i][2], 
+            if ((err = get_data_type( slave->sdo_config[i][2], 
                             &slave->sdo_config[i][2]))) {
                 snprintf(errmsg, sizeof(errmsg),
                         "An error occurred while determining the data type "
@@ -842,16 +935,18 @@ static void mdlInitializeSizes(SimStruct *S)
 
             ssSetInputPortWidth(S, port, DYNAMICALLY_SIZED);
             if (input_spec->raw) {
-                ssSetInputPortDataType(S, port, input_spec->pdo_data_type);
+                ssSetInputPortDataType(S, port, input_spec->data_type);
             }
             else {
                 ssSetInputPortDataType(S, port, DYNAMICALLY_TYPED);
             }
 
-            if (input_spec->gain_name) {
-                slave->runtime_param_count += input_spec->gain_count;
-            } else {
-                slave->static_input_gain_count += input_spec->gain_count;
+            if (input_spec->gain_count) {
+                if (input_spec->gain_name) {
+                    slave->runtime_param_count += input_spec->gain_count;
+                } else {
+                    slave->static_input_gain_count += input_spec->gain_count;
+                }
             }
         }
     }
@@ -912,47 +1007,55 @@ static void mdlInitializeSizes(SimStruct *S)
 
             if (output_spec->raw) {
                 /* Raw output. */
-                ssSetOutputPortDataType(S, port, output_spec->pdo_data_type);
+                ssSetOutputPortDataType(S, port, output_spec->data_type);
             }
             else {
                 /* Double output */
                 ssSetOutputPortDataType(S, port, SS_DOUBLE);
             }
 
-            if (output_spec->gain_name) {
-                slave->runtime_param_count += output_spec->gain_count;
-            } else {
-                slave->static_output_gain_count += output_spec->gain_count;
+            if (output_spec->gain_count) {
+                if (output_spec->gain_name) {
+                    slave->runtime_param_count += output_spec->gain_count;
+                } else {
+                    slave->static_output_gain_count += output_spec->gain_count;
+                }
             }
 
-            if (output_spec->offset_name) {
-                slave->runtime_param_count += output_spec->offset_count;
-            } else {
-                slave->static_output_offset_count += output_spec->offset_count;
+            if (output_spec->offset_count) {
+                if (output_spec->offset_name) {
+                    slave->runtime_param_count += output_spec->offset_count;
+                } else {
+                    slave->static_output_offset_count += 
+                        output_spec->offset_count;
+                }
             }
 
-            if (output_spec->filter_name) {
-                slave->runtime_param_count += output_spec->filter_count;
-            } else {
-                slave->static_output_filter_count += output_spec->filter_count;
+            if (output_spec->filter_count) {
+                if (output_spec->filter_name) {
+                    slave->runtime_param_count += output_spec->filter_count;
+                } else {
+                    slave->static_output_filter_count += 
+                        output_spec->filter_count;
+                }
+                slave->output_filter_count += output_spec->port_width;
             }
-
-            slave->output_filter += output_spec->port_width;
         }
     }
 
     ssSetNumSampleTimes(S, 1);
     ssSetNumPWork(S, slave->output_map_count + slave->input_map_count);
     ssSetNumIWork(S, slave->iwork_count);
-    if (slave->output_filter) {
+    if (slave->output_filter_count) {
         if (TSAMPLE) {
-            ssSetNumDiscStates(S, slave->output_filter);
+            ssSetNumDiscStates(S, slave->output_filter_count);
         } else {
-            ssSetNumContStates(S, slave->output_filter);
+            ssSetNumContStates(S, slave->output_filter_count);
         }
     }
 
     mexMakeMemoryPersistent(slave);
+    mexMakeMemoryPersistent(slave->product_name);
     mexMakeMemoryPersistent(slave->pdo_entry_info);
     mexMakeMemoryPersistent(slave->pdo_info);
     mexMakeMemoryPersistent(slave->sdo_config);
@@ -1198,6 +1301,7 @@ static void mdlTerminate(SimStruct *S)
     mxFree(slave->sdo_config);
     mxFree(slave->pdo_info);
     mxFree(slave->pdo_entry_info);
+    mxFree(slave->product_name);
     mxFree(slave);
 }
 
@@ -1242,9 +1346,7 @@ static void mdlRTW(SimStruct *S)
     uint_T vendor = ECVENDOR;
     uint_T product = ECPRODUCT;
     uint_T revision = REVISION;
-    char_T *product_name;
     uint_T port, i;
-    uint_T len;
     uint32_T map_idx;
     struct io_spec *output_spec;
     struct io_spec *input_spec;
@@ -1252,13 +1354,13 @@ static void mdlRTW(SimStruct *S)
     uint_T offset_idx;
     uint_T filter_idx;
 
-    int32_T input_port_spec[4][slave->num_inputs];
+    uint32_T input_port_spec[4][slave->num_inputs];
     uint32_T input_map[2][slave->input_map_count];
     const char_T *input_gain_str;
     const char_T *input_gain_name_ptr[slave->num_inputs + 1];
     real_T input_gain[slave->static_input_gain_count];
 
-    int32_T output_port_spec[6][slave->num_outputs];
+    uint32_T output_port_spec[6][slave->num_outputs];
     uint32_T output_map[2][slave->output_map_count];
     const char_T *output_gain_str;
     const char_T *output_offset_str;
@@ -1344,13 +1446,6 @@ static void mdlRTW(SimStruct *S)
     output_offset_str = createStrVect(output_offset_name_ptr);
     output_filter_str = createStrVect(output_filter_name_ptr);
 
-    len = mxGetN(PRODUCT_NAME) + 1;
-    product_name = mxCalloc(len, 1);
-    if (mxGetString(PRODUCT_NAME, product_name, len)) {
-        ssSetErrorStatus(S, "Invalid product name parameter supplied.");
-        return;
-    }
-
     if (!ssWriteRTWScalarParam(S, "MasterId", &master, SS_UINT32))
         return;
     if (!ssWriteRTWScalarParam(S, "DomainId", &domain, SS_UINT32))
@@ -1360,7 +1455,7 @@ static void mdlRTW(SimStruct *S)
     if (!ssWriteRTWScalarParam(S, "SlavePosition", &position, SS_UINT32))
         return;
 
-    if (!ssWriteRTWStrParam(S, "ProductName", product_name))
+    if (!ssWriteRTWStrParam(S, "ProductName", slave->product_name))
         return;
     if (!ssWriteRTWScalarParam(S, "VendorId", &vendor, SS_UINT32))
         return;
@@ -1386,17 +1481,17 @@ static void mdlRTW(SimStruct *S)
         }
     }
     { /* Transpose slave->pdo_entry_info */
-        uint32_T pdo_entry_info[4][slave->pdo_entry_info_len];
-        uint_T i, j;
+        uint32_T pdo_entry_info[3][slave->pdo_entry_info_len];
+        uint_T i;
 
         for (i = 0; i < slave->pdo_entry_info_len; i++) {
-            for (j = 0; j < 4; j++) {
-                pdo_entry_info[j][i] = slave->pdo_entry_info[i][j];
-            }
+            pdo_entry_info[0][i] = slave->pdo_entry_info[i].index;
+            pdo_entry_info[1][i] = slave->pdo_entry_info[i].subindex;
+            pdo_entry_info[2][i] = abs(slave->pdo_entry_info[i].bitlen);
         }
 
         if (!ssWriteRTW2dMatParam(S, "PdoEntryInfo", pdo_entry_info, 
-                    SS_UINT32, slave->pdo_entry_info_len, 4))
+                    SS_UINT32, slave->pdo_entry_info_len, 3))
             return;
     }
     { /* Transpose slave->pdo_info */
@@ -1419,7 +1514,7 @@ static void mdlRTW(SimStruct *S)
                     SS_UINT32, slave->input_map_count, 2))
             return;
         if (!ssWriteRTW2dMatParam(S, "InputPortSpec", input_port_spec, 
-                    SS_INT32, slave->num_inputs, 4))
+                    SS_UINT32, slave->num_inputs, 4))
             return;
         if (!ssWriteRTWStrVectParam(S, "InputGainName", input_gain_str, 
                     slave->num_inputs))
@@ -1434,7 +1529,7 @@ static void mdlRTW(SimStruct *S)
                     SS_UINT32, slave->output_map_count, 2))
             return;
         if (!ssWriteRTW2dMatParam(S, "OutputPortSpec", output_port_spec, 
-                    SS_INT32, slave->num_outputs, 6))
+                    SS_UINT32, slave->num_outputs, 6))
             return;
         if (!ssWriteRTWStrVectParam(S, "OutputGainName", output_gain_str, 
                     slave->num_outputs))

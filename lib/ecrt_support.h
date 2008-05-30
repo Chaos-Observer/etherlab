@@ -8,9 +8,9 @@
 #include <include/ecrt.h>
 #include <include/etl_data_info.h>
 
-struct pdo_mapping {
+struct pdo {
     unsigned int pdo_info_index;
-    unsigned int pdo_entry_index;
+    unsigned int pdo_entry_info_index;
 
     enum si_datatype_t pdo_datatype;
     void **address;
@@ -56,7 +56,7 @@ __init ecs_reg_slave(
 
         unsigned int pdo_mapping_count, /**< Number of PDO mapping objects 
                                              passed in \a pdo_mapping */
-        const struct pdo_mapping *pdo_mapping /**< PDO mapping objects */
+        const struct pdo *pdo /**< PDO mapping objects */
         );
 
 ec_master_t *ecs_get_master_ptr(
