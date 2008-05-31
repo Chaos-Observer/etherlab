@@ -34,8 +34,8 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "rich"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Fri May 30 18:58:36 2008"
-  ModelVersionFormat	  "1.%<AutoIncrement:442>"
+  LastModifiedDate	  "Sat May 31 03:15:20 2008"
+  ModelVersionFormat	  "1.%<AutoIncrement:443>"
   ConfigurationManager	  "rcs"
   LinearizationMsg	  "none"
   Profile		  off
@@ -372,7 +372,7 @@ Library {
       MaskHideContents	      off
       System {
 	Name			"EtherCAT"
-	Location		[899, 177, 1396, 545]
+	Location		[898, 197, 1395, 565]
 	Open			on
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
@@ -534,6 +534,7 @@ Library {
 "\ninput = [];\n"
 	  MaskDisplay		  "fprintf(...\n    '%s\\n%s AIn\\n%s Idx:%s',"
 "...\n    model,...\n    func,...\n    masterid,...\n    positionStr\n)\n"
+	  MaskSelfModifiable	  on
 	  MaskIconFrame		  on
 	  MaskIconOpaque	  on
 	  MaskIconRotate	  "none"
