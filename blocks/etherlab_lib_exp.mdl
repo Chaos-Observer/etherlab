@@ -34,8 +34,8 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "rich"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Fri May 30 17:54:05 2008"
-  ModelVersionFormat	  "1.%<AutoIncrement:441>"
+  LastModifiedDate	  "Fri May 30 18:58:36 2008"
+  ModelVersionFormat	  "1.%<AutoIncrement:442>"
   ConfigurationManager	  "rcs"
   LinearizationMsg	  "none"
   Profile		  off
