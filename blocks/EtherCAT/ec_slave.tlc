@@ -142,7 +142,7 @@
         %else
           %assign BitOffsetAddr = "NULL"
         %endif
-        %% PdoInfoIndex, PdoEntryIdx, PdoDataType
+        %% PdoInfoIndex, PdoEntryInfoIdx, PdoDataType
         { %<InputMap[MapIdx][0]>, \
           %<InputMap[MapIdx][1]>, \
           %<DstDType>, \
@@ -199,8 +199,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   %% Cache the C variable name that is assigned to this block defining
   %% the PDO Map
-  %assign PDOMapId = GetPDOMapId(ProductName, VendorId, ProductCode, ...
-                                 ProductRevision, PdoInfo, PdoEntryInfo)
 
   /* %<Type> Block: %<Name> 
    * Registering EtherCAT block %<ProductName> with Driver
@@ -211,7 +209,7 @@
            %<SlaveAlias>, %<SlavePosition>, \
            %<VendorId>, %<ProductCode>, \
            %<SdoConfigCount>, %<SdoVar>, \
-           %<PDOMapId>, \
+           %<GetPDOMapId()>, \
            %<PdoCount>, %<PdoVar>))) {
         snprintf(%<ETL.ErrMsg>, sizeof(%<ETL.ErrMsg>), 
            "EtherCAT slave %<LibGetFormattedBlockPath(block)> register "
@@ -271,20 +269,21 @@
                 ? [0:%<PortWidth-1>] : RollRegions
         %assign RollVars = ["y%<port>", "<pwork>/DataPtr", ...
               "<iwork>/BitOffset"]
-        %assign Mask = 1U 
-        %%GetMask()
-        %trace %<Mask>
+        %assign Mask = GetMask(OutputMap[ECatOutput[port].MapIdx])
         %roll sigIdx = rollRegions, lcv = RollThreshold, block, ...
               "Roller", RollVars
-          %assign srcIdx = sigIdx + ECatOutput[port].MapIdx
+          %%
+          %assign PWorkIdx = sigIdx + ECatOutput[port].MapIdx
+          %assign PWorkLcv = ...
+                (lcv != "" && PWorkIdx) ? "%<lcv>+%<PWorkIdx>" : lcv
+          %%
           %assign shiftIdx = sigIdx + ECatOutput[port].BitIdx
-
-          %assign srcLcv = (lcv != "" && srcIdx) ? "%<lcv>+%<srcIdx>" : lcv
           %assign shiftLcv = ...
-              (lcv != "" && shiftIdx) ? "%<lcv>+%<shiftIdx>" : lcv
-          %assign src = ...
-              "*(uint8_T*)%<LibBlockPWork(DataPtr,"",srcLcv,srcIdx)>"
+                (lcv != "" && shiftIdx) ? "%<lcv>+%<shiftIdx>" : lcv
+          %%
+          %assign src = GetSrc(port, Raw, PWorkLcv, PWorkIdx, "", 0) 
           %assign shift = LibBlockIWork(BitOffset,"",shiftLcv,shiftIdx)
+          %%
           %<LibBlockOutputSignal(port,"",lcv,sigIdx)> = \
               %<src> >> %<shift> & %<Mask>;
         %endroll
@@ -340,36 +339,38 @@
     %assign PDODataTypeId = GetIOPortSpec(InputPortSpec, "PDODataTypeId",  port)
     %assign PortWidth = LibBlockInputSignalWidth(port)
     %%
-    %if PDODataTypeId == tSS_BOOLEAN
+    %if Raw
       %%
       %assign rollRegions = RollRegions == [] ...
               ? [0:%<PortWidth-1>] : RollRegions
-      %assign RollVars = ["u%<port>", "<iwork>/BitOffset", "<pwork>/DataPtr"]
+      %assign RollVars = (Raw & 2) ...
+                ? ["u%<port>", "<iwork>/BitOffset", "<pwork>/DataPtr"] ...
+                : ["u%<port>", "<pwork>/DataPtr"]
       %roll sigIdx = rollRegions, lcv = RollThreshold, block, ...
               "Roller", RollVars
-        %assign dstIdx = sigIdx + ECatInput[port].MapIdx
-        %assign shiftIdx = sigIdx + ECatInput[port].BitIdx
-        %assign dstLcv = (lcv != "" && dstIdx) ? "%<lcv>+%<dstIdx>" : lcv
-        %assign shiftLcv = (lcv != "" && shiftIdx) ? "%<lcv>+%<shiftIdx>" : lcv
-        %assign dst = "*(uint8_T*)%<LibBlockPWork(DataPtr,"",dstLcv,dstIdx)>"
-        %assign shift = LibBlockIWork(BitOffset,"",shiftLcv,shiftIdx)
-        %assign mask = "~(1U << %<shift>)"
-        %assign src = LibBlockInputSignal(port,"",lcv,sigIdx)
-        %<dst> = (%<dst> & %<mask>) | (%<src> & 1U) << %<shift>; 
-      %endroll
-      %%
-    %elseif Raw
-      %assign rollRegions = RollRegions == [] ...
-              ? [0:%<PortWidth-1>] : RollRegions
-      %assign RollVars = ["u%<port>", "<pwork>/DataPtr"]
-      %roll sigIdx = rollRegions, lcv = RollThreshold, block, ...
-              "Roller", RollVars
-        %assign src = LibBlockInputSignal(port,"",lcv,sigIdx)
+        %%
         %assign PWorkIdx = sigIdx + ECatInput[port].MapIdx
         %assign PWorkLcv = ...
-              (lcv != "" && PWorkIdx) ? "%<lcv>+%<PWorkIdx>" : lcv
-        %<GetDst(port,"",PWorkLcv,PWorkIdx)> = %<src>;
+                (lcv != "" && PWorkIdx) ? "%<lcv>+%<PWorkIdx>" : lcv
+        %%
+        %assign src = LibBlockInputSignal(port,"",lcv,sigIdx)
+        %assign dst = GetDst(port,PWorkLcv,PWorkIdx)
+        %%
+        %if Raw & 2
+          %assign ShiftIdx = sigIdx + ECatInput[port].BitIdx
+          %assign ShiftLcv = ...
+                  (lcv != "" && ShiftIdx) ? "%<lcv>+%<ShiftIdx>" : lcv
+          %%
+          %assign Shift = LibBlockIWork(BitOffset,"",ShiftLcv,ShiftIdx)
+          %assign Mask = GetMask(InputMap[ECatInput[port].MapIdx])
+          %%
+          %<dst> = (%<dst> & ~(%<Mask> << %<Shift>)) 
+                  | (%<src> & %<Mask>) << %<Shift>; 
+        %else
+          %<dst> = %<src>;
+        %endif
       %endroll
+      %%
     %else
       %assign FullScale = GetIOPortSpec(InputPortSpec, "PDOFullScale", port)
       %assign MaxValue = FullScale - 1.0
@@ -396,11 +397,11 @@
             value = %<src> * %<FullScale> * %<scale>;
           %endif
           if (value > %<MaxValue>) {
-            %<GetDst(port,"",PWorkLcv,PWorkIdx)> = %<MaxValue>;
+            %<GetDst(port,PWorkLcv,PWorkIdx)> = %<MaxValue>;
           } else if (value < %<MinValue>) {
-            %<GetDst(port,"",PWorkLcv,PWorkIdx)> = %<MinValue>;
+            %<GetDst(port,PWorkLcv,PWorkIdx)> = %<MinValue>;
           } else {
-            %<GetDst(port,"",PWorkLcv,PWorkIdx)> = value;
+            %<GetDst(port,PWorkLcv,PWorkIdx)> = value;
           }
         %endroll
       }
@@ -464,12 +465,12 @@
 %endfunction
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%function GetDst(port, PWorkUcv, PWorkLcv, PWorkIdx)
+%function GetDst(port, PWorkLcv, PWorkIdx)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   %return SPRINTF("*(%s*)(%s)", ...
       ECatInput[port].RTWDType, ...
-      LibBlockPWork(DataPtr, PWorkUcv, PWorkLcv, PWorkIdx) ...
+      LibBlockPWork(DataPtr, "", PWorkLcv, PWorkIdx) ...
       )
 
 %endfunction
@@ -509,29 +510,36 @@
 %endfunction
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%function GetPDOMapId( name, vendorId, prodCode, revision, \
-        pdoMap, pdoEntryInfo) void
+%function GetMask(PortMap)
+  %assign PdoInfoIdx = PortMap[0]
+  %assign PdoEntryInfoIdx = PdoInfo[PdoInfoIdx][2] + PortMap[1]
+  %assign bitlen = PdoEntryInfo[PdoEntryInfoIdx][2]
+  %return SPRINTF("0x%x", (1U << bitlen) - 1)
+%endfunction
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function GetPDOMapId()
 %% 
 %% This function is used to define variables that are required to specify
 %% the pdo mapping of an EtherCAT slave. The string that is returned
 %% is the variable name that should be used when calling 
 %% ecrt_slave_config_pdos()
-%% Parameters:
-%%   name       string  Common name of the slave
-%%   vendorId   int     Vendor Identification number
-%%   prodCode   int     Product Code of the slave
-%%   revision   int     Revision code of the slave
-%%   pdoMap        This is a vector of integers organised in groups of 4:
+%% This function depends on the following global Parameters:
+%%   ProductName     string  Common name of the slave
+%%   VendorId        int     Vendor Identification number
+%%   ProductCode     int     Product Code of the slave
+%%   ProductRevision int     Revision code of the slave
+%%   PdoInfo        This is a vector of integers organised in groups of 4:
 %%                   entry0:    1 = Input; 0 = Output
 %%                   entry1:    Index of PDO to map
-%%                   entry2:    Group index of pdoEntryInfo
-%%                   entry3:    Number of pdoEntryInfo groups
-%%   pdoEntryInfo  This is a vector of integers organised in groups of 3:
+%%                   entry2:    Group index of PdoEntryInfo
+%%                   entry3:    Number of PdoEntryInfo groups
+%%   PdoEntryInfo  This is a vector of integers organised in groups of 3:
 %%                   entry0:    Index of the PDO
 %%                   entry1:    Subindex of the PDO
 %%                   entry2:    PDO bit length
 %%
-%% A typical value for pdoEntryInfo is:
+%% A typical value for PdoEntryInfo is:
 %%      [[ 0x3101, 1,  8 ],   <- Group 0
 %%       [ 0x3101, 2, 16 ],   <- Group 1
 %%       [ 0x3102, 1,  8 ],   <- Group 2
@@ -539,18 +547,19 @@
 %% describing the PDO entry information for the el31xx series. Here
 %% are 4 groups of 3 values.
 %%
-%% A typical value for pdoMap is:
+%% A typical value for PdoInfo is:
 %%     [[ 1,       <- Input
 %%        0x1A00,  <- Pdo Index to map
-%%        0,       <- starting with group[0] of pdoEntryInfo
+%%        0,       <- starting with group[0] of PdoEntryInfo
 %%        2     ], <- going on for 2 groups (i.e. group[0] and group[1])
 %%
-%%      [ 1, 0x1A01 2, 2 ]] <- Second group entry of pdoMap, mapping 0x1A01
-%%                             to group[2] and group[3] of pdoEntryInfo
+%%      [ 1, 0x1A01 2, 2 ]] <- Second group entry of PdoInfo, mapping 0x1A01
+%%                             to group[2] and group[3] of PdoEntryInfo
 %%                             (indices [6..11])
 %% 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  %assign suffix = SPRINTF("0x%08x_0x%08x_0x%08x", vendorId, prodCode, revision)
+  %assign suffix = ...
+        SPRINTF("%x_0x%08x_0x%x", VendorId, ProductCode, ProductRevision)
   %assign varName = "pdo_info_%<suffix>"
   %if ISFIELD(CompiledModel.EtherCAT.PDOMap,varName)
     %return varName
@@ -559,15 +568,16 @@
 
   %assign PdoEntryInfoId = "pdo_entry_info_%<suffix>"
   %openfile buf
-  %<SPRINTF("/* PDO Mapping for %s Rev. 0x%08X */", name, revision)>
+  %<SPRINTF("/* PDO Mapping for %s Rev. 0x%X */", ...
+        ProductName, ProductRevision)>
   ec_pdo_entry_info_t %<PdoEntryInfoId>[] = {
-  %foreach i = SIZE(pdoEntryInfo)[0]
-    %<SPRINTF("{ 0x%04X, %u, %u }, /* %u */", pdoEntryInfo[i][0], ...
-        pdoEntryInfo[i][1], pdoEntryInfo[i][2], i)>
+  %foreach i = SIZE(PdoEntryInfo)[0]
+    %<SPRINTF("{ 0x%04X, %u, %u }, /* %u */", PdoEntryInfo[i][0], ...
+        PdoEntryInfo[i][1], PdoEntryInfo[i][2], i)>
   %endforeach
   };
   ec_pdo_info_t %<varName>[] = {
-  %foreach i = SIZE(pdoMap)[0]
+  %foreach i = SIZE(PdoInfo)[0]
     { \
     %% The value 0 or 1 indicates a simulink block output or input
     %% respectively. This in turn maps to EC_DIR_INPUT and EC_DIR_OUTPUT
@@ -580,7 +590,7 @@
     %%              |         EtherCAT Master       |       
     %%              |                               |       
     %%              |          +---------+          |       
-    %%  pdoMap[][0] |   EC_DIR |Slave    | EC_DIR   | pdoMap[][0]
+    %% PdoInfo[][0] |   EC_DIR |Slave    | EC_DIR   | PdoInfo[][0]
     %%          = 1 |   OUTPUT |         | INPUT    | = 0      
     %%         ----->----------> Rx   Tx >---------->-----  
     %%              |          |   PDO   |          |      
@@ -590,21 +600,21 @@
     %%              |                  input domain |      
     %%              +-------------------------------+      
     %%
-    %if pdoMap[i][0] == 0
+    %if PdoInfo[i][0] == 0
       %% simulink block output
       EC_DIR_INPUT, \
     %else
       %% simulink block input
       EC_DIR_OUTPUT, \
     %endif
-    %<SPRINTF("0x%04X, %u", pdoMap[i][1], pdoMap[i][3])>, \
-    &%<PdoEntryInfoId>[%<pdoMap[i][2]>] },
-    %if SIZE(pdoEntryInfo)[0] < pdoMap[i][2] + pdoMap[i][3]
-       %error ############# Error creating PDO map for %<name> for block ...
-              %<LibGetFormattedBlockPath(block)>: ...
-             struct ec_pdo_entry_info_t only has %<SIZE(pdoEntryInfo)[0]> ...
+    %<SPRINTF("0x%04X, %u", PdoInfo[i][1], PdoInfo[i][3])>, \
+    &%<PdoEntryInfoId>[%<PdoInfo[i][2]>] },
+    %if SIZE(PdoEntryInfo)[0] < PdoInfo[i][2] + PdoInfo[i][3]
+       %error ############# Error creating PDO map for %<ProductName> ...
+             for block %<LibGetFormattedBlockPath(block)>: ...
+             struct ec_pdo_entry_info_t only has %<SIZE(PdoEntryInfo)[0]> ...
              elements, whereas you requested to map element ...
-             %<pdoMap[i][2] + pdoMap[i][3]>. This will cause a segv!
+             %<PdoInfo[i][2] + PdoInfo[i][3]>. This will cause a segv!
               #############
     %endif
   %endforeach

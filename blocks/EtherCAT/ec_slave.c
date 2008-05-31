@@ -609,7 +609,15 @@ get_ioport_config(SimStruct *S, const mxArray* src, struct io_spec *io_spec,
             if (!pdo_data_type) {
                 /* No custom PDO data type specified. 
                  * Use that of pdo_entry_info. */
-                io_spec->pdo_data_type = io_spec->data_type;
+                io_spec->pdo_data_type = io_spec->data_type == SS_BOOLEAN 
+                    ? SS_UINT8 : io_spec->data_type;
+            }
+            else if (!(pdo_bit_len % 8)) {
+                snprintf(errmsg, sizeof(errmsg),
+                        "Only allowed to specify field %s(%u).%s when "
+                        "the PDO does not have a native data type.",
+                        dir_str, port+1, "pdo_data_type");
+                return errmsg;
             }
             else {
                 int_T user_data_type = mxGetScalar(pdo_data_type);
@@ -647,6 +655,9 @@ get_ioport_config(SimStruct *S, const mxArray* src, struct io_spec *io_spec,
                             dir_str, port+1, "pdo_data_type", err);
                     return errmsg;
                 }
+                printf("%s pdo_data_type specified %u %u %u\n", 
+                        slave->product_name, user_data_type, 
+                        io_spec->pdo_data_type, SS_UINT16);
             }
         }
 
