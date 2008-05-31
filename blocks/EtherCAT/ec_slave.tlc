@@ -241,110 +241,75 @@
       %% If the port is filtered, the output is the value of the filter's
       %% state variable
       %%
-      %if RollRegions == []
-        %assign ucv = ECatOutput[port].FilterIdx ...
-                ? "i+%<ECatOutput[port].FilterIdx>" : "i"
+      %assign rollRegions = RollRegions == [] ...
+              ? [0:%<PortWidth-1>] : RollRegions
+      %assign RollVars = ["y%<port>"]
+      %roll sigIdx = rollRegions, lcv = RollThreshold, block, ...
+                "Roller", RollVars
+        %%
+        %assign FilterIdx = sigIdx + ECatOutput[port].FilterIdx
+        %assign FilterLcv = ...
+              (lcv != "" && FilterIdx) ? "%<lcv> + %<FilterIdx>" : lcv
+        %%
         %if FilterType == 1
-          %assign u0 = LibBlockContinuousState(ucv,"",0)
+          %assign u0 = LibBlockContinuousState("",FilterLcv,FilterIdx)
         %else
-          %assign u0 = LibBlockDiscreteState(ucv,"",0)
+          %assign u0 = LibBlockDiscreteState("",FilterLcv,FilterIdx)
         %endif
         %%
-        { uint_T i;
-
-          for (i = 0; i < %<PortWidth>; i++) {
-            %<LibBlockOutputSignal(port,"i","",0)> = %<u0>;
-          }
-        }
-      %else
-        %assign RollVars = ["y%<port>"]
-        %roll sigIdx = RollRegions, lcv = RollThreshold, block, ...
-                  "Roller", RollVars
-          %%
-          %assign FilterIdx = sigIdx + ECatOutput[port].FilterIdx
-          %assign FilterLcv = ...
-                (lcv != "" && FilterIdx) ? "%<lcv> + %<FilterIdx>" : lcv
-          %%
-          %if FilterType == 1
-            %assign u0 = LibBlockContinuousState("",FilterLcv,FilterIdx)
-          %else
-            %assign u0 = LibBlockDiscreteState("",FilterLcv,FilterIdx)
-          %endif
-          %%
-          %<LibBlockOutputSignal(port,"",lcv,sigIdx)> = %<u0>;
-        %endroll
-      %endif
+        %<LibBlockOutputSignal(port,"",lcv,sigIdx)> = %<u0>;
+      %endroll
     %else
       %%
       %assign Raw   = GetIOPortSpec(OutputPortSpec, "Raw",   port)
       %assign PDODataTypeId = ...
                 GetIOPortSpec(OutputPortSpec, "PDODataTypeId",  port)
-      %if Raw
+      %%
+      %if Raw & 2
         /* Raw output port %<port+1> */
+        %assign rollRegions = RollRegions == [] ...
+                ? [0:%<PortWidth-1>] : RollRegions
+        %assign RollVars = ["y%<port>", "<pwork>/DataPtr", ...
+              "<iwork>/BitOffset"]
+        %assign Mask = 1U 
+        %%GetMask()
+        %trace %<Mask>
+        %roll sigIdx = rollRegions, lcv = RollThreshold, block, ...
+              "Roller", RollVars
+          %assign srcIdx = sigIdx + ECatOutput[port].MapIdx
+          %assign shiftIdx = sigIdx + ECatOutput[port].BitIdx
+
+          %assign srcLcv = (lcv != "" && srcIdx) ? "%<lcv>+%<srcIdx>" : lcv
+          %assign shiftLcv = ...
+              (lcv != "" && shiftIdx) ? "%<lcv>+%<shiftIdx>" : lcv
+          %assign src = ...
+              "*(uint8_T*)%<LibBlockPWork(DataPtr,"",srcLcv,srcIdx)>"
+          %assign shift = LibBlockIWork(BitOffset,"",shiftLcv,shiftIdx)
+          %<LibBlockOutputSignal(port,"",lcv,sigIdx)> = \
+              %<src> >> %<shift> & %<Mask>;
+        %endroll
       %else
         /* Unfiltered output port %<port+1> */
-      %endif
-      %if PDODataTypeId == tSS_BOOLEAN
-        %if RollRegions == []
-          %assign srcUcv = "i+%<ECatOutput[port].MapIdx>"
-          %assign shiftUcv = "i+%<ECatOutput[port].BitIdx>"
-          %assign src = "*(uint8_T*)%<LibBlockPWork(DataPtr,srcUcv,"",0)>"
-          %assign shift = LibBlockIWork(BitOffset,shiftUcv,"",0)
-          { uint_T i;
-
-            for (i = 0; i < %<PortWidth>; i++) {
-              %<LibBlockOutputSignal(port,"i","",0)> = %<src> >> %<shift> & 1U;
-            }
-          }
+        %%
+        %assign rollRegions = RollRegions == [] ...
+                ? [0:%<PortWidth-1>] : RollRegions
+        %if Raw
+          %assign RollVars = ["y%<port>", "<pwork>/DataPtr"]
         %else
           %assign RollVars = ["y%<port>", "<pwork>/DataPtr", ...
-                "<iwork>/BitOffset"]
-          %roll sigIdx = RollRegions, lcv = RollThreshold, block, ...
-                "Roller", RollVars
-            %assign srcIdx = sigIdx + ECatOutput[port].MapIdx
-            %assign shiftIdx = sigIdx + ECatOutput[port].BitIdx
-
-            %assign srcLcv = (lcv != "" && srcIdx) ? "%<lcv>+%<srcIdx>" : lcv
-            %assign shiftLcv = ...
-                (lcv != "" && shiftIdx) ? "%<lcv>+%<shiftIdx>" : lcv
-            %assign src = ...
-                "*(uint8_T*)%<LibBlockPWork(DataPtr,"",srcLcv,srcIdx)>"
-            %assign shift = LibBlockIWork(BitOffset,"",shiftLcv,shiftIdx)
-            %<LibBlockOutputSignal(port,"",lcv,sigIdx)> = \
-                %<src> >> %<shift> & 1U;
-          %endroll
+                "<param>/%<OutputGainName[port]>", ...
+                "<param>/%<OutputOffsetName[port]>"]
         %endif
-      %else
-        %%
-        %if RollRegions == []
-          %assign PWorkUcv = "i+%<ECatOutput[port].MapIdx>"
-          %assign u0 = GetSrc(port,PWorkUcv,"",0,"i","",0)
-          %assign y0 = LibBlockOutputSignal(port,"i","",0)
-          { uint_T i;
-
-            for (i = 0; i < %<PortWidth>; i++) {
-              %<y0> = %<u0>;
-            }
-          }
-        %else
-          %if Raw
-            %assign RollVars = ["y%<port>", "<pwork>/DataPtr"]
-          %else
-            %assign RollVars = ["y%<port>", "<pwork>/DataPtr", ...
-                  "<param>/%<OutputGainName[port]>", ...
-                  "<param>/%<OutputOffsetName[port]>"]
-          %endif
-          %roll sigIdx = RollRegions, lcv = RollThreshold, block, ...
-                    "Roller", RollVars
-            %%
-            %assign PWorkIdx = sigIdx + ECatOutput[port].MapIdx
-            %assign PWorkLcv = ...
-                (lcv != "" && PWorkIdx) ? "%<lcv> + %<PWorkIdx>" : lcv
-            %%
-            %assign u0 = GetSrc(port,"",PWorkLcv,PWorkIdx,"",lcv,sigIdx)
-            %<LibBlockOutputSignal(port,"",lcv,sigIdx)> = %<u0>;
-          %endroll
-        %endif
+        %roll sigIdx = rollRegions, lcv = RollThreshold, block, ...
+                  "Roller", RollVars
+          %%
+          %assign PWorkIdx = sigIdx + ECatOutput[port].MapIdx
+          %assign PWorkLcv = ...
+              (lcv != "" && PWorkIdx) ? "%<lcv> + %<PWorkIdx>" : lcv
+          %%
+          %assign u0 = GetSrc(port,Raw,PWorkLcv,PWorkIdx,lcv,sigIdx)
+          %<LibBlockOutputSignal(port,"",lcv,sigIdx)> = %<u0>;
+        %endroll
       %endif
     %endif
   %endforeach
@@ -377,60 +342,34 @@
     %%
     %if PDODataTypeId == tSS_BOOLEAN
       %%
-      %if RollRegions == []
-        %assign dstUcv = ...
-                ECatInput[port].MapIdx ? "i+%<ECatInput[port].MapIdx>" : "i"
-        %assign dst = "*(uint8_T*)%<LibBlockPWork(DataPtr,dstUcv,"",0)>"
-        %%
-        %assign shiftUcv = ...
-                ECatInput[port].BitIdx ? "i+%<ECatInput[port].BitIdx>" : "i"
-        %assign shift = LibBlockIWork(BitOffset,shiftUcv,"",0)
+      %assign rollRegions = RollRegions == [] ...
+              ? [0:%<PortWidth-1>] : RollRegions
+      %assign RollVars = ["u%<port>", "<iwork>/BitOffset", "<pwork>/DataPtr"]
+      %roll sigIdx = rollRegions, lcv = RollThreshold, block, ...
+              "Roller", RollVars
+        %assign dstIdx = sigIdx + ECatInput[port].MapIdx
+        %assign shiftIdx = sigIdx + ECatInput[port].BitIdx
+        %assign dstLcv = (lcv != "" && dstIdx) ? "%<lcv>+%<dstIdx>" : lcv
+        %assign shiftLcv = (lcv != "" && shiftIdx) ? "%<lcv>+%<shiftIdx>" : lcv
+        %assign dst = "*(uint8_T*)%<LibBlockPWork(DataPtr,"",dstLcv,dstIdx)>"
+        %assign shift = LibBlockIWork(BitOffset,"",shiftLcv,shiftIdx)
         %assign mask = "~(1U << %<shift>)"
-        %%
-        %assign src = LibBlockInputSignal(port,"i","",0)
-        { uint_T i;
-
-          for (i = 0; i < %<PortWidth>; i++) {
-            %<dst> = (%<dst> & %<mask>) | (%<src> & 1U) << %<shift>; 
-          }
-        }
-      %else
-        %assign RollVars = ["u%<port>", "<iwork>/BitOffset", "<pwork>/DataPtr"]
-        %roll sigIdx = RollRegions, lcv = RollThreshold, block, ...
-                "Roller", RollVars
-          %assign dstIdx = sigIdx + ECatInput[port].MapIdx
-          %assign shiftIdx = sigIdx + ECatInput[port].BitIdx
-          %assign dstLcv = (lcv != "" && dstIdx) ? "%<lcv>+%<dstIdx>" : lcv
-          %assign shiftLcv = (lcv != "" && shiftIdx) ? "%<lcv>+%<shiftIdx>" : lcv
-          %assign dst = "*(uint8_T*)%<LibBlockPWork(DataPtr,"",dstLcv,dstIdx)>"
-          %assign shift = LibBlockIWork(BitOffset,"",shiftLcv,shiftIdx)
-          %assign mask = "~(1U << %<shift>)"
-          %assign src = LibBlockInputSignal(port,"",lcv,sigIdx)
-          %<dst> = (%<dst> & %<mask>) | (%<src> & 1U) << %<shift>; 
-        %endroll
-      %endif
+        %assign src = LibBlockInputSignal(port,"",lcv,sigIdx)
+        %<dst> = (%<dst> & %<mask>) | (%<src> & 1U) << %<shift>; 
+      %endroll
       %%
     %elseif Raw
-      %if RollRegions == []
-        { uint_T i;
-        %assign src = LibBlockInputSignal(port,"i","",0)
-        %assign PWorkUcv = ...
-                ECatInput[port].MapIdx ? "i+%<ECatInput[port].MapIdx>" : "i"
-        for (i = 0; i < %<PortWidth>; i++) {
-          %<GetDst(port,PWorkUcv,"",0)> = %<src>;
-        }
-        }
-      %else
-        %assign RollVars = ["u%<port>", "<pwork>/DataPtr"]
-        %roll sigIdx = RollRegions, lcv = RollThreshold, block, ...
-                "Roller", RollVars
-          %assign src = LibBlockInputSignal(port,"",lcv,sigIdx)
-          %assign PWorkIdx = sigIdx + ECatInput[port].MapIdx
-          %assign PWorkLcv = ...
-                (lcv != "" && PWorkIdx) ? "%<lcv>+%<PWorkIdx>" : lcv
-          %<GetDst(port,"",PWorkLcv,PWorkIdx)> = %<src>;
-        %endroll
-      %endif
+      %assign rollRegions = RollRegions == [] ...
+              ? [0:%<PortWidth-1>] : RollRegions
+      %assign RollVars = ["u%<port>", "<pwork>/DataPtr"]
+      %roll sigIdx = rollRegions, lcv = RollThreshold, block, ...
+              "Roller", RollVars
+        %assign src = LibBlockInputSignal(port,"",lcv,sigIdx)
+        %assign PWorkIdx = sigIdx + ECatInput[port].MapIdx
+        %assign PWorkLcv = ...
+              (lcv != "" && PWorkIdx) ? "%<lcv>+%<PWorkIdx>" : lcv
+        %<GetDst(port,"",PWorkLcv,PWorkIdx)> = %<src>;
+      %endroll
     %else
       %assign FullScale = GetIOPortSpec(InputPortSpec, "PDOFullScale", port)
       %assign MaxValue = FullScale - 1.0
@@ -438,36 +377,17 @@
                 GetIOPortSpec(InputPortSpec, "PDODataTypeSigned", port) ...
                 ? -FullScale : 0.0
       { real_T value;
-      %if RollRegions == []
-        uint_T i;
 
-        %assign src = LibBlockInputSignal(port,"i","",0)
-        %assign PWorkUcv = ...
-                ECatInput[port].MapIdx ? "i+%<ECatInput[port].MapIdx>" : "i"
-        for (i = 0; i < %<PortWidth>; i++) {
-          %if InputGainName[port] == ""
-            value = %<src> * %<FullScale>;
-          %else
-            %assign scale = LibBlockParameter(%<InputGainName[port]>,"i","",0)
-            value = %<src> * %<FullScale> * %<scale>;
-          %endif
-          if (value > %<MaxValue>) {
-            %<GetDst(port,PWorkUcv,"",0)> = %<MaxValue>;
-          } else if (value < %<MinValue>) {
-            %<GetDst(port,PWorkUcv,"",0)> = %<MinValue>;
-          } else {
-            %<GetDst(port,PWorkUcv,"",0)> = value;
-          }
-        }
-      %else
-
+        %assign rollRegions = RollRegions == [] ...
+                ? [0:%<PortWidth-1>] : RollRegions
         %assign RollVars = ["u%<port>", "<pwork>/DataPtr", ...
                 "<param>/%<InputGainName[port]>"]
-        %roll sigIdx = RollRegions, lcv = RollThreshold, block, ...
+        %roll sigIdx = rollRegions, lcv = RollThreshold, block, ...
                 "Roller", RollVars
           %assign src = LibBlockInputSignal(port,"",lcv,sigIdx)
           %assign PWorkIdx = sigIdx + ECatInput[port].MapIdx
-          %assign PWorkLcv = (lcv != "" && PWorkIdx) ? "%<lcv>+%<PWorkIdx>" : lcv
+          %assign PWorkLcv = ...
+                  (lcv != "" && PWorkIdx) ? "%<lcv>+%<PWorkIdx>" : lcv
           %if InputGainName[port] == ""
             value = %<src> * %<FullScale>;
           %else
@@ -483,7 +403,6 @@
             %<GetDst(port,"",PWorkLcv,PWorkIdx)> = value;
           }
         %endroll
-      %endif
       }
     %endif
   %endforeach
@@ -511,58 +430,35 @@
     %if ECatOutput[port].FilterSpec
       /* Filtered output port %<port+1> */
       %%
-      %if RollRegions == []
-        %assign PWorkUcv = ...
-                ECatOutput[port].MapIdx ? "i+%<ECatOutput[port].MapIdx>" : "i"
-        %assign u0 = GetSrc(port,PWorkUcv,"",0,"i","",0)
-        %assign k  = LibBlockParameter(%<OutputFilterName[port]>,"i","",0)
-        %assign FilterUcv = ECatOutput[port].FilterIdx ...
-                ? "i+%<ECatOutput[port].FilterIdx>" : "i"
-        { uint_T i;
-
-          for (i = 0; i < %<PortWidth>; i++) {
-          %if FilterType == 1
-            %assign y0 = LibBlockContinuousState(FilterUcv,"",0)
-            %assign d0 = LibBlockContinuousStateDerivative(FilterUcv,"",0)
-            %%
-            %% The following is equivalent to:
-            %%   <d0> = %<k>*(%<u0>) + (1 - %<k>)*%<d0>;
-            %<d0>  = %<k>*(%<u0> - %<y0>);
-          %else
-            %assign d0 = LibBlockDiscreteState(FilterUcv,"",0)
-            %<d0> += %<k>*(%<u0> - %<d0>);
-          %endif
-          }
-        }
-      %else
-        %assign RollVars = ["<param>/%<OutputGainName[port]>", ...
-                  "<param>/%<OutputOffsetName[port]>", ...
-                  "<param>/%<OutputFilterName[port]>", "<pwork>/DataPtr"]
+      %assign rollRegions = RollRegions == [] ...
+              ? [0:%<PortWidth-1>] : RollRegions
+      %assign RollVars = ["<param>/%<OutputGainName[port]>", ...
+                "<param>/%<OutputOffsetName[port]>", ...
+                "<param>/%<OutputFilterName[port]>", "<pwork>/DataPtr"]
+      %%
+      %roll sigIdx = rollRegions, lcv = RollThreshold, block, ...
+                "Roller", RollVars
         %%
-        %roll sigIdx = RollRegions, lcv = RollThreshold, block, ...
-                  "Roller", RollVars
+        %assign PWorkIdx = sigIdx + ECatOutput[port].MapIdx
+        %assign FilterIdx = sigIdx + ECatOutput[port].FilterIdx
+        %assign PWorkLcv = (lcv != "" && PWorkIdx) ? "%<lcv>+%<PWorkIdx>" : lcv
+        %assign FilterLcv = ...
+              (lcv != "" && FilterIdx) ? "%<lcv>+%<FilterIdx>" : lcv
+        %%
+        %assign u0 = GetSrc(port,0,PWorkLcv,PWorkIdx,lcv,sigIdx)
+        %assign k  = LibBlockParameter(%<OutputFilterName[port]>,"",lcv,sigIdx)
+        %if FilterType == 1
+          %assign y0 = LibBlockContinuousState("",FilterLcv,FilterIdx)
+          %assign d0 = LibBlockContinuousStateDerivative("",FilterLcv,FilterIdx)
           %%
-          %assign PWorkIdx = sigIdx + ECatOutput[port].MapIdx
-          %assign FilterIdx = sigIdx + ECatOutput[port].FilterIdx
-          %assign PWorkLcv = (lcv != "" && PWorkIdx) ? "%<lcv>+%<PWorkIdx>" : lcv
-          %assign FilterLcv = ...
-                (lcv != "" && FilterIdx) ? "%<lcv>+%<FilterIdx>" : lcv
-          %%
-          %assign u0 = GetSrc(port,"",PWorkLcv,PWorkIdx,"",lcv,sigIdx)
-          %assign k  = LibBlockParameter(%<OutputFilterName[port]>,"",lcv,sigIdx)
-          %if FilterType == 1
-            %assign y0 = LibBlockContinuousState("",FilterLcv,FilterIdx)
-            %assign d0 = LibBlockContinuousStateDerivative("",FilterLcv,FilterIdx)
-            %%
-            %% The following is equivalent to:
-            %%   <d0> = %<k>*(%<u0>) + (1 - %<k>)*%<d0>;
-            %<d0>  = %<k> * (%<u0> - %<y0>);
-          %else
-            %assign d0 = LibBlockDiscreteState("",FilterLcv,FilterIdx)
-            %<d0> += %<k> * (%<u0> - %<d0>);
-          %endif
-        %endroll
-      %endif
+          %% The following is equivalent to:
+          %%   <d0> = %<k>*(%<u0>) + (1 - %<k>)*%<d0>;
+          %<d0>  = %<k> * (%<u0> - %<y0>);
+        %else
+          %assign d0 = LibBlockDiscreteState("",FilterLcv,FilterIdx)
+          %<d0> += %<k> * (%<u0> - %<d0>);
+        %endif
+      %endroll
     %endif
   %endforeach
 %endfunction
@@ -579,15 +475,14 @@
 %endfunction
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%function GetSrc(port, PWorkUcv, PWorkLcv, PWorkIdx, ...
-        GainUcv, GainLcv, GainIdx) 
+%function GetSrc(port, Raw, PWorkLcv, PWorkIdx, GainLcv, GainIdx) 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   %assign src = SPRINTF("*(%s*)(%s)", ...
        ECatOutput[port].RTWDType, ...
-       LibBlockPWork(DataPtr,PWorkUcv,PWorkLcv,PWorkIdx))
+       LibBlockPWork(DataPtr,"",PWorkLcv,PWorkIdx))
 
-  %if GetIOPortSpec(OutputPortSpec, "Raw",   port)
+  %if Raw
     %return src
   %endif
 
@@ -595,18 +490,18 @@
   %assign OffsetType = GetIOPortSpec(OutputPortSpec, "Offset", port)
   %assign src = SPRINTF("*(%s*)(%s)/%.1f", ...
        ECatOutput[port].RTWDType, ...
-       LibBlockPWork(DataPtr,PWorkUcv,PWorkLcv,PWorkIdx), ...
+       LibBlockPWork(DataPtr,"",PWorkLcv,PWorkIdx), ...
        GetIOPortSpec(OutputPortSpec, "PDOFullScale", port))
 
   %assign u0 = src
   %if GainType
-    %assign gain = LibBlockParameter(...
-          %<OutputGainName[port]>,GainUcv,GainLcv,GainIdx)
+    %assign gain = ...
+        LibBlockParameter(%<OutputGainName[port]>,"",GainLcv,GainIdx)
     %assign u0 = "%<gain>*%<u0>"
   %endif
   %if OffsetType
-    %assign offset = LibBlockParameter( ...
-          %<OutputOffsetName[port]>,GainUcv,GainLcv,GainIdx)
+    %assign offset = ...
+        LibBlockParameter(%<OutputOffsetName[port]>,"",GainLcv,GainIdx)
     %assign u0 = "%<u0> + %<offset>"
   %endif
 
@@ -635,13 +530,12 @@
 %%                   entry0:    Index of the PDO
 %%                   entry1:    Subindex of the PDO
 %%                   entry2:    PDO bit length
-%%                   entry3:    PDO value is signed
 %%
 %% A typical value for pdoEntryInfo is:
-%%      [[ 0x3101, 1,  8, 0 ],   <- Group 0
-%%       [ 0x3101, 2, 16, 0 ],   <- Group 1
-%%       [ 0x3102, 1,  8, 0 ],   <- Group 2
-%%       [ 0x3102, 2, 16, 1 ]]   <- Group 3
+%%      [[ 0x3101, 1,  8 ],   <- Group 0
+%%       [ 0x3101, 2, 16 ],   <- Group 1
+%%       [ 0x3102, 1,  8 ],   <- Group 2
+%%       [ 0x3102, 2, 16 ]]   <- Group 3
 %% describing the PDO entry information for the el31xx series. Here
 %% are 4 groups of 3 values.
 %%
@@ -665,7 +559,7 @@
 
   %assign PdoEntryInfoId = "pdo_entry_info_%<suffix>"
   %openfile buf
-  /* PDO Mapping for %<name> Rev. %<revision> */
+  %<SPRINTF("/* PDO Mapping for %s Rev. 0x%08X */", name, revision)>
   ec_pdo_entry_info_t %<PdoEntryInfoId>[] = {
   %foreach i = SIZE(pdoEntryInfo)[0]
     %<SPRINTF("{ 0x%04X, %u, %u }, /* %u */", pdoEntryInfo[i][0], ...
