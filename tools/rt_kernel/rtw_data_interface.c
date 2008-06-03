@@ -42,6 +42,10 @@
 #define min(x1,x2) ((x2) > (x1) ? (x1) : (x2))
 #endif
 
+extern unsigned int etl_strlen(const char *);
+extern char * etl_strrchr(const char *, int);
+extern char *etl_strncpy(char *, const char *, unsigned int);
+
 rtwCAPI_ModelMappingInfo* mmi;
 const rtwCAPI_DimensionMap*    dimMap;
 const rtwCAPI_DataTypeMap*     dTypeMap;
@@ -67,7 +71,7 @@ const char* get_signal_info(struct signal_info *si)
     }
 
     path = rtwCAPI_GetSignalBlockPath(signals, si->index);
-    path_len = strlen(path);
+    path_len = etl_strlen(path);
 
     /* Check whether RTW still composes the path as
      * <model-name>/<path-to-signal> */
@@ -81,7 +85,7 @@ const char* get_signal_info(struct signal_info *si)
 
     // Separate the RTW path into a path and a name section. The name is
     // the string after the last '/'
-    name = strrchr(path, '/');
+    name = etl_strrchr(path, '/');
     if (name < path) {
         /* There is no path, only a name */
         name = path;
@@ -96,10 +100,10 @@ const char* get_signal_info(struct signal_info *si)
 
     path_len = min(si->path_buf_len, path_len);
 
-    strncpy(si->alias, rtwCAPI_GetSignalName(signals, si->index),
+    etl_strncpy(si->alias, rtwCAPI_GetSignalName(signals, si->index),
             sizeof(si->alias));
-    strncpy(si->path, path, path_len);
-    strncpy(si->name, name, sizeof(si->name));
+    etl_strncpy(si->path, path, path_len);
+    etl_strncpy(si->name, name, sizeof(si->name));
 
     // Make sure the strings are terminated
     si->alias[sizeof(si->alias)-1] = '\0';
@@ -206,7 +210,7 @@ const char* get_param_info(struct signal_info* si)
 
     path = rtwCAPI_GetBlockParameterBlockPath(blockParams, si->index);
     name = rtwCAPI_GetBlockParameterName(blockParams, si->index);
-    path_len = strlen(path);
+    path_len = etl_strlen(path);
 
     /* Check whether RTW still composes the path as
      * <model-name>/<path-to-signal> */
@@ -219,8 +223,8 @@ const char* get_param_info(struct signal_info* si)
     path_len = min(si->path_buf_len, path_len - model_name_len - 1);
 
     si->alias[0] = '\0';
-    strncpy(si->path, path, path_len);
-    strncpy(si->name, name, sizeof(si->name));
+    etl_strncpy(si->path, path, path_len);
+    etl_strncpy(si->name, name, sizeof(si->name));
 
     // Make sure the strings are terminated
     si->name[sizeof(si->name)-1] = '\0';
@@ -322,7 +326,7 @@ const char* rtw_capi_init(
     unsigned int i;
     size_t path_len;
 
-    model_name_len = strlen(STR(MODEL));
+    model_name_len = etl_strlen(STR(MODEL));
 
     mmi = &(rtmGetDataMapInfo(rtM).mmi);
     dimMap   = rtwCAPI_GetDimensionMap(mmi);
@@ -353,14 +357,14 @@ const char* rtw_capi_init(
     // Find out the length of the longest path. This is necessary for the
     // user space buddy to allocate enough space.
     for (i = 0; i < maxSignalIdx; i++) {
-        path_len = strlen(rtwCAPI_GetSignalBlockPath(signals, i));
+        path_len = etl_strlen(rtwCAPI_GetSignalBlockPath(signals, i));
         if (*max_path_len < path_len) {
             *max_path_len = path_len;
         }
     }
 #ifdef rtP
     for (i = 0; i < maxParameterIdx; i++) {
-        path_len = strlen(
+        path_len = etl_strlen(
                 rtwCAPI_GetBlockParameterBlockPath(blockParams, i));
         if (*max_path_len < path_len) {
             *max_path_len = path_len;

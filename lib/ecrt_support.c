@@ -1051,3 +1051,16 @@ ecs_init(
 
     return NULL;
 }
+
+unsigned int etl_strlen(const char *str) {
+    return strlen(str);
+}
+
+extern char *etl_strrchr(const char *str, int c) {
+    return strrchr(str, c);
+}
+
+extern char *etl_strncpy(char *target, const char *source, unsigned int n) {
+    return strncpy(target, source, n);
+}
+
