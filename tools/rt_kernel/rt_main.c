@@ -258,7 +258,11 @@ static void mdl_main_thread(long priv_data)
         mdl_task->stats->overrun = overrun;
 
         /* Wait until next call */
+#ifdef RTE_TMROVRN
         if (RTE_TMROVRN == rt_task_wait_period()) {
+#else
+        if (rt_task_wait_period()) {
+#endif
             if (overrun++) {
                 printk(".");
             } else {
