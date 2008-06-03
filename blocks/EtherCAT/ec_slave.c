@@ -326,7 +326,7 @@ struct ecat_slave {
     uint_T unequal_port_widths;
 
     struct io_spec {
-        struct {
+        struct io_spec_map {
             uint32_T pdo_info_idx;
             uint32_T pdo_entry_idx;
         } *map;
@@ -1387,7 +1387,7 @@ static void mdlRTW(SimStruct *S)
     for (input_spec = slave->input_spec, port = 0;
             input_spec != &slave->input_spec[slave->num_inputs];
             input_spec++, port++) {
-        typeof(input_spec->map) map;
+        struct io_spec_map *map;
 
         input_port_spec[0][port] = input_spec->pdo_data_type;
         input_port_spec[1][port] = input_spec->raw;
@@ -1415,7 +1415,7 @@ static void mdlRTW(SimStruct *S)
     for (output_spec = slave->output_spec, port = 0; 
             output_spec != &slave->output_spec[slave->num_outputs]; 
             output_spec++, port++) {
-        typeof(output_spec->map) map;
+        struct io_spec_map *map;
 
         output_port_spec[0][port] = output_spec->pdo_data_type;
         output_port_spec[1][port] = output_spec->raw;
