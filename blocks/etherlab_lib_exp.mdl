@@ -34,8 +34,8 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "rich"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Fri Jun 13 23:43:50 2008"
-  ModelVersionFormat	  "1.%<AutoIncrement:444>"
+  LastModifiedDate	  "Sat Jun 14 00:27:49 2008"
+  ModelVersionFormat	  "1.%<AutoIncrement:449>"
   ConfigurationManager	  "rcs"
   LinearizationMsg	  "none"
   Profile		  off
@@ -372,7 +372,7 @@ Library {
       MaskHideContents	      off
       System {
 	Name			"EtherCAT"
-	Location		[898, 217, 1395, 585]
+	Location		[898, 257, 1395, 625]
 	Open			on
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
@@ -887,33 +887,37 @@ Library {
 	Block {
 	  BlockType		  "S-Function"
 	  Name			  "Domain State"
-	  Ports			  [0, 3]
-	  Position		  [320, 79, 390, 111]
+	  Ports			  [0, 2]
+	  Position		  [315, 81, 390, 114]
 	  BackgroundColor	  "yellow"
-	  FunctionName		  "master_stats"
-	  Parameters		  "master,tsample"
-	  MaskType		  "Master Status"
-	  MaskDescription	  "Collects status information from EtherCAT M"
-"aster\nOutputs:\n1) Bus Failure\n2) Bus topology has changed\n3) Slaves on th"
-"e bus"
-	  MaskPromptString	  "Master|Sample Time"
-	  MaskStyleString	  "edit,edit"
-	  MaskTunableValueString  "off,off"
-	  MaskCallbackString	  "|"
-	  MaskEnableString	  "on,on"
-	  MaskVisibilityString	  "on,on"
-	  MaskToolTipString	  "on,on"
-	  MaskVarAliasString	  ","
-	  MaskVariables		  "master=@1;tsample=@2;"
-	  MaskInitialization	  "domain = num2str(master(1));\nif sum(size(m"
-"aster)) == 3\n    domain = [domain '/' num2str(master(2))];\nend\n"
-	  MaskDisplay		  "fprintf('Master Status\\nM/d:%s',\ndomain);"
+	  FunctionName		  "domain_stats"
+	  Parameters		  "master,domain,input,output,tsample"
+	  MaskType		  "Domain Status"
+	  MaskDescription	  "Displays the following domain status inform"
+"ation:\n* Working Counter\n* Domain state:\n	0 - No slaves\n	1 "
+"- Domain incomplete\n	2 - Domain complete"
+	  MaskPromptString	  "Master|Domain|Direction|Sample Time"
+	  MaskStyleString	  "edit,edit,popup(Input Only|Output Only|Inpu"
+"t and Output),edit"
+	  MaskTunableValueString  "off,off,off,off"
+	  MaskCallbackString	  "|||"
+	  MaskEnableString	  "on,on,on,on"
+	  MaskVisibilityString	  "on,on,on,on"
+	  MaskToolTipString	  "on,on,on,on"
+	  MaskVarAliasString	  ",,,"
+	  MaskVariables		  "master=@1;domain=@2;direction=@3;tsample=@4"
+";"
+	  MaskInitialization	  "switch direction\n    case 1\n        input"
+" = 1;\n        output = 0;\n    case 2\n        input = 0;\n        output = "
+"1;\n    case 3\n        input = 1;\n        output = 1;\nend"
+	  MaskDisplay		  "fprintf('Domain Status\\nM:%u d:%u',\nmaste"
+"r,domain);"
 	  MaskIconFrame		  on
 	  MaskIconOpaque	  on
 	  MaskIconRotate	  "none"
 	  MaskIconUnits		  "autoscale"
-	  MaskValueString	  "0|1"
-	  MaskTabNameString	  ","
+	  MaskValueString	  "0|0|Input Only|1"
+	  MaskTabNameString	  ",,,"
 	}
 	Block {
 	  BlockType		  "S-Function"
@@ -1178,14 +1182,13 @@ Library {
 	  BlockType		  "S-Function"
 	  Name			  "Master State"
 	  Ports			  [0, 3]
-	  Position		  [320, 29, 390, 61]
+	  Position		  [315, 29, 390, 61]
 	  BackgroundColor	  "yellow"
 	  FunctionName		  "master_stats"
 	  Parameters		  "master,tsample"
 	  MaskType		  "Master Status"
-	  MaskDescription	  "Collects status information from EtherCAT M"
-"aster\nOutputs:\n1) Bus Failure\n2) Bus topology has changed\n3) Slaves on th"
-"e bus"
+	  MaskDescription	  "Outputs master status:\n* number of respond"
+"ing slaves\n* Slave states\n* Link up\n"
 	  MaskPromptString	  "Master|Sample Time"
 	  MaskStyleString	  "edit,edit"
 	  MaskTunableValueString  "off,off"
@@ -1195,9 +1198,7 @@ Library {
 	  MaskToolTipString	  "on,on"
 	  MaskVarAliasString	  ","
 	  MaskVariables		  "master=@1;tsample=@2;"
-	  MaskInitialization	  "domain = num2str(master(1));\nif sum(size(m"
-"aster)) == 3\n    domain = [domain '/' num2str(master(2))];\nend\n"
-	  MaskDisplay		  "fprintf('Master Status\\nM/d:%s',\ndomain);"
+	  MaskDisplay		  "fprintf('Master Status\\nM: %u',\nmaster);"
 	  MaskIconFrame		  on
 	  MaskIconOpaque	  on
 	  MaskIconRotate	  "none"
