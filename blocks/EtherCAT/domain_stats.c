@@ -1,23 +1,22 @@
 /*
- * $RCSfile: el31xx.c,v $
- * $Revision$
- * $Date$
+ * This S-Function implements the EtherCAT domain status function
  *
- * SFunction to implement the raise function
- *
- * Copyright (c) 2006, Richard Hacker
+ * Copyright (c) 2008, Richard Hacker
  * License: GPL
  */
 
 
-#define S_FUNCTION_NAME  master_stats
+#define S_FUNCTION_NAME  domain_stats
 #define S_FUNCTION_LEVEL 2
 
 #include "simstruc.h"
 
 #define MASTER             mxGetScalar(ssGetSFcnParam(S,0))
-#define TSAMPLE            mxGetScalar(ssGetSFcnParam(S,1))
-#define PARAM_COUNT                                     2
+#define DOMAIN             mxGetScalar(ssGetSFcnParam(S,1))
+#define INPUT              mxGetScalar(ssGetSFcnParam(S,2))
+#define OUTPUT             mxGetScalar(ssGetSFcnParam(S,3))
+#define TSAMPLE            mxGetScalar(ssGetSFcnParam(S,4))
+#define PARAM_COUNT                                     5
 
 
 /*====================*
@@ -32,6 +31,7 @@
 static void mdlInitializeSizes(SimStruct *S)
 {
     uint_T i;
+    uint_T width;
     
     ssSetNumSFcnParams(S, PARAM_COUNT);  /* Number of expected parameters */
     if (ssGetNumSFcnParams(S) != ssGetSFcnParamsCount(S)) {
@@ -43,16 +43,16 @@ static void mdlInitializeSizes(SimStruct *S)
 
     if (!ssSetNumInputPorts(S, 0)) return;
 
-    if (!ssSetNumOutputPorts(S, 3)) return;
-    ssSetOutputPortWidth(S, 0, 1);
+    width = INPUT && OUTPUT ? 2 : 1;
+
+    if (!ssSetNumOutputPorts(S, 2)) return;
+    ssSetOutputPortWidth(S, 0, width);
     ssSetOutputPortDataType(S, 0, SS_UINT32);
-    ssSetOutputPortWidth(S, 1, 1);
+    ssSetOutputPortWidth(S, 1, width);
     ssSetOutputPortDataType(S, 1, SS_UINT8);
-    ssSetOutputPortWidth(S, 2, 1);
-    ssSetOutputPortDataType(S, 2, SS_BOOLEAN);
 
     ssSetNumSampleTimes(S, 1);
-    ssSetNumPWork(S, 1);
+    ssSetNumPWork(S, width);
 
     ssSetOptions(S, 
             SS_OPTION_WORKS_WITH_CODE_REUSE | 
@@ -93,11 +93,20 @@ static void mdlTerminate(SimStruct *S)
 #define MDL_RTW
 static void mdlRTW(SimStruct *S)
 {
-    int32_T master = MASTER;
+    uint32_T master = MASTER;
+    uint32_T domain = DOMAIN;
+    boolean_T input = INPUT;
+    boolean_T output = OUTPUT;
 
-    if (!ssWriteRTWScalarParam(S, "MasterId", &master, SS_INT32))
+    if (!ssWriteRTWScalarParam(S, "MasterId", &master, SS_UINT32))
         return;
-    if (!ssWriteRTWWorkVect(S, "PWork", 1, "MasterPtr", 1))
+    if (!ssWriteRTWScalarParam(S, "DomainId", &domain, SS_UINT32))
+        return;
+    if (!ssWriteRTWScalarParam(S, "Input", &input, SS_BOOLEAN))
+        return;
+    if (!ssWriteRTWScalarParam(S, "Output", &output, SS_BOOLEAN))
+        return;
+    if (!ssWriteRTWWorkVect(S, "PWork", 1, "DomainPtr", ssGetNumPWork(S)))
         return;
 }
 
