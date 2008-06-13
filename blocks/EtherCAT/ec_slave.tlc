@@ -130,13 +130,14 @@
     %foreach port = NumInputs
       /* Mapping for Input Port %<port+1> */
       %assign PDODataTypeId = GetIOPortSpec(InputPortSpec, "PDODataTypeId", port)
+      %assign Raw = GetIOPortSpec(InputPortSpec, "Raw",   port)
       %assign DstDType = GetDTypeName(PDODataTypeId)
       %assign ECatInput[port].MapIdx = MapIdx
       %assign ECatInput[port].BitIdx = IWorkIdx
       %assign PortWidth = LibBlockInputSignalWidth(port)
       %assign block.PdoCount = PdoCount + PortWidth
       %foreach sigIdx = PortWidth
-        %if PDODataTypeId == tSS_BOOLEAN
+        %if Raw & 2
           %assign BitOffsetAddr = "&%<LibBlockIWork(BitOffset,"","",IWorkIdx)>"
           %assign IWorkIdx = IWorkIdx + 1
         %else
@@ -161,13 +162,14 @@
     %foreach port = NumOutputs
       /* Mapping for Output Port %<port+1> */
       %assign PDODataTypeId = GetIOPortSpec(OutputPortSpec, "PDODataTypeId", port)
+      %assign Raw = GetIOPortSpec(OutputPortSpec, "Raw",   port)
       %assign SrcDType = GetDTypeName(PDODataTypeId)
       %assign ECatOutput[port].MapIdx = MapIdx
       %assign ECatOutput[port].BitIdx = IWorkIdx
       %assign PortWidth = LibBlockOutputSignalWidth(port)
       %assign block.PdoCount = PdoCount + PortWidth
       %foreach sigIdx = PortWidth
-        %if PDODataTypeId == tSS_BOOLEAN
+        %if Raw & 2
           %assign BitOffsetAddr = "&%<LibBlockIWork(BitOffset,"","",IWorkIdx)>"
           %assign IWorkIdx = IWorkIdx + 1
         %else
