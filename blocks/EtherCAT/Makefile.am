@@ -7,6 +7,7 @@ dist_ethercat_DATA = \
         el41xx_check.m \
         el5001_check.m \
         el5101_check.m \
+        getEtherCATLocation.m getSlaveDescription.m \
         ec_slave.c ec_slave.tlc
 
 include_HEADERS = ecdb_private.h
