@@ -63,6 +63,13 @@ ec_master_t *ecs_get_master_ptr(
         unsigned int master_id, 
         const char **errmsg);
 
+ec_domain_t *ecs_get_domain_ptr(
+        unsigned int master_id, 
+        unsigned int domain_id, 
+        ec_direction_t dir,
+        unsigned int tid,
+        const char **errmsg);
+
 void ecs_end(void);
 
 const char *ecs_init( 

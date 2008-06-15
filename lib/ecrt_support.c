@@ -703,6 +703,24 @@ ecs_get_master_ptr(unsigned int master_id, const char **errmsg)
     return master->handle;
 }
 
+ec_domain_t * __init 
+ecs_get_domain_ptr(unsigned int master_id, unsigned int domain_id, 
+        ec_direction_t dir, unsigned int tid, const char **errmsg)
+{
+    struct ecat_master *master;
+    struct ecat_domain *domain;
+
+    /* Get the master structure, making sure not to change the task it 
+     * is currently assigned to */
+    if (!(master = get_master(master_id, ecat_data->nst - 1, errmsg)))
+        return NULL;
+
+    if (!(domain = get_domain(master, domain_id, dir, tid, errmsg)))
+        return NULL;
+
+    return domain->handle;
+}
+
 void __init
 cleanup_mem(void)
 {

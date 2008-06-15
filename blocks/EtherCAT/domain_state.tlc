@@ -1,0 +1,70 @@
+%implements "domain_state" "C"
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function BlockTypeSetup( block, system) void
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  %<InitEtherCAT()>
+%endfunction
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function BlockInstanceSetup( block, system) void
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  %addtorecord block EtherCATTid InitEtherCATTask(block,system)
+%endfunction
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function Start( block, system) Output
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  /* %<Type> Block: %<Name>
+   */
+  %assign DomainIdx = 0
+  %if Input
+    %<LibBlockPWork(DomainPtr, "", "", DomainIdx)> = \
+        ecs_get_domain_ptr(%<MasterId>, %<DomainId>, EC_DIR_INPUT, \
+                %<EtherCATTid>, &%<ETL.ErrStr>);
+    if (!%<LibBlockPWork(DomainPtr, "", "", DomainId)>) {
+          snprintf(%<ETL.ErrMsg>, sizeof(%<ETL.ErrMsg>), 
+             "Getting input domain pointer in "
+             "%<LibGetFormattedBlockPath(block)> failed: %s", 
+             %<ETL.ErrStr>);
+          %<LibSetRTModelErrorStatus("%<ETL.ErrMsg>")>;
+          return;
+    }
+    %assign DomainIdx = DomainIdx + 1
+  %endif
+  %if Output
+    %<LibBlockPWork(DomainPtr, "", "", DomainIdx)> = \
+        ecs_get_domain_ptr(%<MasterId>, %<DomainId>, EC_DIR_OUTPUT, \
+                %<EtherCATTid>, &%<ETL.ErrStr>);
+    if (!%<LibBlockPWork(DomainPtr, "", "", DomainId)>) {
+          snprintf(%<ETL.ErrMsg>, sizeof(%<ETL.ErrMsg>), 
+             "Getting output domain pointer in "
+             "%<LibGetFormattedBlockPath(block)> failed: %s", 
+             %<ETL.ErrStr>);
+          %<LibSetRTModelErrorStatus("%<ETL.ErrMsg>")>;
+          return;
+    }
+    %assign DomainIdx = DomainIdx + 1
+  %endif
+  %addtorecord block PortWidth DomainIdx
+%endfunction
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function Outputs( block, system) Output
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  /* %<Type> Block: %<Name>
+   */
+  {
+     ec_domain_state_t state;
+
+     %foreach idx = PortWidth
+       ecrt_domain_state(\
+          (ec_domain_t*)%<LibBlockPWork(DomainPtr, "", "", idx)>, &state);
+       %<LibBlockOutputSignal(0,"","",idx)> = state.working_counter;
+       %<LibBlockOutputSignal(1,"","",idx)> = state.wc_state;
+
+     %endforeach
+  }
+%endfunction
