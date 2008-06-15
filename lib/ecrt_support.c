@@ -829,6 +829,18 @@ ecs_start(void)
             list_for_each_entry(domain,
                     &master->st_domain[i].input_domain_list, list) {
 
+                /* If the domain does not exchange any data, then there
+                 * is no slave registered. This happens when only the
+                 * domain state is requested in which there are no slaves */
+                if (!domain->io_count) {
+                    snprintf(errbuf, sizeof(errbuf),
+                            "Domain %u, tid %u on master %u does not "
+                            "exchange any data. Probably wrong domain state "
+                            "is being requested.", 
+                            domain->id, domain->tid, master->id);
+                    return errbuf;
+                }
+
                 /* The list has to be zero terminated */
                 domain->endian_convert_list = 
                     my_kcalloc(domain->io_count + 1,
@@ -865,8 +877,9 @@ ecs_start(void)
                     return no_mem_msg;
 
                 /* Allocate local IO memory */
-                domain->io_data = my_kcalloc(1, ecrt_domain_size(domain->handle),
-                        "output io data");
+                domain->io_data = 
+                    my_kcalloc(1, ecrt_domain_size(domain->handle),
+                            "output io data");
                 if (!domain->io_data)
                     return no_mem_msg;
                 ecrt_domain_external_memory(domain->handle, domain->io_data);
