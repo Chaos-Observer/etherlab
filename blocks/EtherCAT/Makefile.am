@@ -2,7 +2,7 @@ ethercatdir = $(prefix)/$(subdir)
 
 dist_ethercat_DATA = \
         EtherCAT.tlc \
-        master_stats.c master_stats.tlc \
+        master_state.c master_state.tlc \
         el31xx_check.m \
         el41xx_check.m \
         el5001_check.m \

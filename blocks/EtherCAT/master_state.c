@@ -3,14 +3,13 @@
  * $Revision$
  * $Date$
  *
- * SFunction to implement the raise function
  *
- * Copyright (c) 2006, Richard Hacker
+ * Copyright (c) 2008, Richard Hacker
  * License: GPL
  */
 
 
-#define S_FUNCTION_NAME  master_stats
+#define S_FUNCTION_NAME  master_state
 #define S_FUNCTION_LEVEL 2
 
 #include "simstruc.h"

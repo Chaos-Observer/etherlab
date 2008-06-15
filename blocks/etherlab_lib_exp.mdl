@@ -34,8 +34,8 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "rich"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Sat Jun 14 17:32:50 2008"
-  ModelVersionFormat	  "1.%<AutoIncrement:455>"
+  LastModifiedDate	  "Sun Jun 15 13:23:57 2008"
+  ModelVersionFormat	  "1.%<AutoIncrement:456>"
   ConfigurationManager	  "rcs"
   LinearizationMsg	  "none"
   Profile		  off
@@ -372,7 +372,7 @@ Library {
       MaskHideContents	      off
       System {
 	Name			"EtherCAT"
-	Location		[898, 297, 1395, 665]
+	Location		[898, 317, 1395, 685]
 	Open			on
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
@@ -850,12 +850,12 @@ Library {
 	  Ports			  [0, 2]
 	  Position		  [315, 81, 390, 114]
 	  BackgroundColor	  "yellow"
-	  FunctionName		  "domain_stats"
+	  FunctionName		  "domain_state"
 	  Parameters		  "master,domain,input,output,tsample"
-	  MaskType		  "Domain Status"
-	  MaskDescription	  "Displays the following domain status inform"
-"ation:\n* Working Counter\n* Domain state:\n	0 - No slaves\n	1 "
-"- Domain incomplete\n	2 - Domain complete"
+	  MaskType		  "Domain State"
+	  MaskDescription	  "Displays the following domain state informa"
+"tion:\n* Working Counter\n* Domain state:\n	0 - No slaves\n	1 -"
+" Domain incomplete\n	2 - Domain complete"
 	  MaskPromptString	  "Master|Domain|Direction|Sample Time"
 	  MaskStyleString	  "edit,edit,popup(Input Only|Output Only|Inpu"
 "t and Output),edit"
@@ -870,8 +870,8 @@ Library {
 	  MaskInitialization	  "switch direction\n    case 1\n        input"
 " = 1;\n        output = 0;\n    case 2\n        input = 0;\n        output = "
 "1;\n    case 3\n        input = 1;\n        output = 1;\nend"
-	  MaskDisplay		  "fprintf('Domain Status\\nM:%u d:%u',\nmaste"
-"r,domain);"
+	  MaskDisplay		  "fprintf('Domain State\\nM:%u d:%u',\nmaster"
+",domain);"
 	  MaskIconFrame		  on
 	  MaskIconOpaque	  on
 	  MaskIconRotate	  "none"
@@ -1124,11 +1124,11 @@ Library {
 	  Ports			  [0, 3]
 	  Position		  [315, 29, 390, 61]
 	  BackgroundColor	  "yellow"
-	  FunctionName		  "master_stats"
+	  FunctionName		  "master_state"
 	  Parameters		  "master,tsample"
-	  MaskType		  "Master Status"
-	  MaskDescription	  "Outputs master status:\n* number of respond"
-"ing slaves\n* Slave states\n* Link up\n"
+	  MaskType		  "Master State"
+	  MaskDescription	  "Outputs master state:\n* number of respondi"
+"ng slaves\n* Slave states\n* Link up\n"
 	  MaskPromptString	  "Master|Sample Time"
 	  MaskStyleString	  "edit,edit"
 	  MaskTunableValueString  "off,off"
@@ -1138,7 +1138,7 @@ Library {
 	  MaskToolTipString	  "on,on"
 	  MaskVarAliasString	  ","
 	  MaskVariables		  "master=@1;tsample=@2;"
-	  MaskDisplay		  "fprintf('Master Status\\nM: %u',\nmaster);"
+	  MaskDisplay		  "fprintf('Master State\\nM: %u',\nmaster);"
 	  MaskIconFrame		  on
 	  MaskIconOpaque	  on
 	  MaskIconRotate	  "none"

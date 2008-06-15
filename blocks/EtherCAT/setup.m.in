@@ -1,7 +1,7 @@
 function setup()
 
 disp(['Precompiling functions in ' pwd]);
-mex master_stats.c
+mex master_state.c
 mex ec_slave.c
 if @EXPERIMENTAL@
 end

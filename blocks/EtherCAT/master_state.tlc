@@ -1,4 +1,4 @@
-%implements "master_stats" "C"
+%implements "master_state" "C"
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %function BlockTypeSetup( block, system) void

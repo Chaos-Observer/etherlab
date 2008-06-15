@@ -6,7 +6,7 @@
  */
 
 
-#define S_FUNCTION_NAME  domain_stats
+#define S_FUNCTION_NAME  domain_state
 #define S_FUNCTION_LEVEL 2
 
 #include "simstruc.h"
