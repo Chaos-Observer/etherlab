@@ -36,12 +36,12 @@
   /* %<Type> Block: %<Name>
    */
   {
-     ec_master_status_t status;
+     ec_master_state_t state;
 
-     ecrt_master_get_status(\
-        (ec_master_t*)%<LibBlockPWork(MasterPtr, "", "", 0)>, &status);
-    %<LibBlockOutputSignal(0,"","",0)> = status.bus_status ? 1 : 0;
-    %<LibBlockOutputSignal(1,"","",0)> = status.bus_tainted ? 1 : 0;
-    %<LibBlockOutputSignal(2,"","",0)> = status.slaves_responding;
+     ecrt_master_state(\
+        (ec_master_t*)%<LibBlockPWork(MasterPtr, "", "", 0)>, &state);
+    %<LibBlockOutputSignal(0,"","",0)> = state.slaves_responding;
+    %<LibBlockOutputSignal(1,"","",0)> = state.slave_states;
+    %<LibBlockOutputSignal(2,"","",0)> = state.link_up ? 1 : 0;
   }
 %endfunction
