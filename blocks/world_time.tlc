@@ -3,7 +3,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %function BlockTypeSetup( block, system) void
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%<LibAddToCommonIncludes("mdl_time.h")>
+%<LibAddToCommonIncludes("include/mdl_time.h")>
 %endfunction
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -14,11 +14,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %function Start( block, system) Output
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-  /* %<Type> Block: %<Name>
-   */
-  %<LibBlockPWork(TimeSrc,"","",0)> = \
-    etl_get_world_time_ptr(%<LibGetGlobalTIDFromLocalSFcnTID(0)>);
 %endfunction
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -28,5 +23,5 @@
   /* %<Type> Block: %<Name>
    */
   %<LibBlockOutputSignal(0,"","",0)> = \
-        *(double *)%<LibBlockPWork(TimeSrc,"","",0)>;
+        etl_world_time[%<LibGetGlobalTIDFromLocalSFcnTID(0)>];
 %endfunction

@@ -47,13 +47,6 @@ static void mdlInitializeSizes(SimStruct *S)
     ssSetOutputPortDataType(S, 0, SS_DOUBLE);
 
     ssSetNumSampleTimes(S, 1);
-    ssSetNumContStates(S, 0);
-    ssSetNumDiscStates(S, 0);
-    ssSetNumRWork(S, 0);
-    ssSetNumIWork(S, 0);
-    ssSetNumPWork(S, 1);
-    ssSetNumModes(S, 0);
-    ssSetNumNonsampledZCs(S, 0);
 
     ssSetOptions(S, 
             SS_OPTION_WORKS_WITH_CODE_REUSE | 
@@ -94,8 +87,6 @@ static void mdlTerminate(SimStruct *S)
 #define MDL_RTW
 static void mdlRTW(SimStruct *S)
 {
-    if (!ssWriteRTWWorkVect(S, "PWork", 1, "TimeSrc", 1))
-        return;
 }
 
 
