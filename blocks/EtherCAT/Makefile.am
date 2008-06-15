@@ -10,8 +10,6 @@ dist_ethercat_DATA = \
         getEtherCATLocation.m getSlaveDescription.m \
         ec_slave.c ec_slave.tlc
 
-include_HEADERS = ecdb_private.h
-
 if EXPERIMENTAL
 dist_ethercat_DATA += 
 endif
