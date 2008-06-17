@@ -1,4 +1,4 @@
-function slave = getSlaveInfo(xmlfile, productCode, revision)
+function slave = getSlaveDescription(xmlfile, productCode, revision)
 
     tree = xmlread(xmlfile);
 
@@ -16,7 +16,7 @@ function slave = getSlaveInfo(xmlfile, productCode, revision)
         devices = descriptions.item(0).getElementsByTagName('Devices');
         device = devices.item(0).getElementsByTagName('Device');
         if ~device.getLength
-            error(' ')
+            error('sdfj')
         end
     catch
         p = '';
@@ -39,26 +39,37 @@ function slave = getSlaveInfo(xmlfile, productCode, revision)
     parent = [parent '/Descriptions/Devices/Device'];
     slave = struct();
 
+    candidates = [];
+    idx = 1;
     for i = 0:device.getLength-1
-        s = device.item(i);
-        type = s.getElementsByTagName('Type');
-        if ~type.getLength
-            continue
+        try
+            s = device.item(i);
+            type = s.getElementsByTagName('Type').item(0);
+            pc = fromHexString(type.getAttribute('ProductCode'));
+            if productCode ==  pc
+                candidates(idx).slave = s;
+                candidates(idx).revision = fromHexString(type.getAttribute('RevisionNo'));
+                idx = idx + 1;
+            end
         end
-        type = type.item(0);
-        c = fromHexString(type.getAttribute('ProductCode'));
-        r = fromHexString(type.getAttribute('RevisionNo'));
+    end
 
-        if productCode ~=  c || revision ~= r
-            continue
+    if ~size(candidates,2)
+        error('getSlaveInfo:getSlaveInfo:noDevices', ...
+            ['XML Document does not have device #x' dec2hex(productCode)]);
+    elseif size(candidates,2) > 1 && isempty(revision)
+        error('getSlaveInfo:getSlaveInfo:multipleDevices', ...
+            'XML Document has more than 1 device candidate. Supply revision number.');
+    end
+    
+    for i = 1:size(candidates,2)
+        if isempty(revision) || revision == candidates(i).revision
+            slave.product_code = productCode;
+            slave.revision = candidates(i).revision;
+            slave.TxPdo = getPdo(candidates(i).slave, parent, 'TxPdo');
+            slave.RxPdo = getPdo(candidates(i).slave, parent, 'RxPdo');
+            break
         end
-
-        slave.product_code = productCode;
-        slave.revision = revision;
-        slave.TxPdo = getPdo(s, parent, 'TxPdo');
-        slave.RxPdo = getPdo(s, parent, 'RxPdo');
-
-        break
     end
 
 % Parses slave xml element for the pdo and returns a structure
