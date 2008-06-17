@@ -5,7 +5,6 @@ dist_ethercat_DATA = \
         master_state.c master_state.tlc \
         domain_state.c domain_state.tlc \
         el31xx_check.m \
-        el41xx_check.m \
         el5001_check.m \
         el5101_check.m \
         getEtherCATLocation.m getSlaveDescription.m \
