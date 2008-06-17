@@ -34,8 +34,8 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "rich"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Mon Jun 16 18:22:12 2008"
-  ModelVersionFormat	  "1.%<AutoIncrement:506>"
+  LastModifiedDate	  "Mon Jun 16 23:59:58 2008"
+  ModelVersionFormat	  "1.%<AutoIncrement:507>"
   ConfigurationManager	  "rcs"
   LinearizationMsg	  "none"
   Profile		  off
@@ -372,7 +372,7 @@ Library {
       MaskHideContents	      off
       System {
 	Name			"EtherCAT"
-	Location		[898, 397, 1395, 765]
+	Location		[898, 417, 1395, 785]
 	Open			on
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
@@ -631,7 +631,7 @@ Library {
 "ps ???\n% It is a matrix, every row having 4 elements:\n% 1: PDO direction as"
 " seen by the slave: 0 = output; 1 = Input\n% 2: PDO Index\n% 3: Starting row "
 "of PDO entry (Zero based)\n% 4: Number of PDO entry rows\npdo_info = repmat(["
-"1 0 0 2],channels,1);\npdo_info(:,2) = hex2dec('1600') + [0:channels-1]';\npd"
+"1 0 0 1],channels,1);\npdo_info(:,2) = hex2dec('1600') + [0:channels-1]';\npd"
 "o_info(:,3) = [0:channels-1]';\n   \n% Vector output chosen\ninput_pdo_map = "
 "[0:channels-1; zeros(1,channels)]';\n\nif input_type == 1\n    input.pdo_map "
 "= input_pdo_map;\n    input.full_scale_bits = 15;\n    if ~isempty(scale)\n  "
