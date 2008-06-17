@@ -283,7 +283,7 @@
 #define PRODUCT_NAME                      ssGetSFcnParam(S,4)
 #define ECVENDOR              mxGetScalar(ssGetSFcnParam(S,5))
 #define ECPRODUCT             mxGetScalar(ssGetSFcnParam(S,6))
-#define REVISION              mxGetScalar(ssGetSFcnParam(S,7))
+#define LAYOUT                mxGetScalar(ssGetSFcnParam(S,7))
 
 #define PDO_ENTRY_INFO                    ssGetSFcnParam(S,8)
 #define PDO_INFO                          ssGetSFcnParam(S,9)
@@ -1356,7 +1356,7 @@ static void mdlRTW(SimStruct *S)
     uint_T position = ECPOSITION;
     uint_T vendor = ECVENDOR;
     uint_T product = ECPRODUCT;
-    uint_T revision = REVISION;
+    uint_T layout = LAYOUT;
     uint_T port, i;
     uint32_T map_idx;
     struct io_spec *output_spec;
@@ -1472,7 +1472,7 @@ static void mdlRTW(SimStruct *S)
         return;
     if (!ssWriteRTWScalarParam(S, "ProductCode", &product, SS_UINT32))
         return;
-    if (!ssWriteRTWScalarParam(S, "ProductRevision", &revision, SS_UINT32))
+    if (!ssWriteRTWScalarParam(S, "ConfigLayout", &layout, SS_UINT32))
         return;
 
     { /* Transpose slave->sdo_config */

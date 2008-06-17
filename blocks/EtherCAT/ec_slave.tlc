@@ -215,7 +215,7 @@
            %<SlaveAlias>, %<SlavePosition>, \
            %<VendorId>, %<ProductCode>, \
            %<SdoConfigCount>, %<SdoVar>, \
-           %<GetPDOMapId()>, \
+           %<GetPDOMapId(block)>, \
            %<PdoCount>, %<PdoVar>))) {
         snprintf(%<ETL.ErrMsg>, sizeof(%<ETL.ErrMsg>), 
            "EtherCAT slave %<LibGetFormattedBlockPath(block)> register "
@@ -528,7 +528,7 @@
 %endfunction
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%function GetPDOMapId()
+%function GetPDOMapId(block)
 %% 
 %% This function is used to define variables that are required to specify
 %% the pdo mapping of an EtherCAT slave. The string that is returned
@@ -538,7 +538,7 @@
 %%   ProductName     string  Common name of the slave
 %%   VendorId        int     Vendor Identification number
 %%   ProductCode     int     Product Code of the slave
-%%   ProductRevision int     Revision code of the slave
+%%   ConfigLayout    int     Layout of slave memory - SDO, PDO, etc
 %%   PdoInfo        This is a vector of integers organised in groups of 4:
 %%                   entry0:    1 = Input; 0 = Output
 %%                   entry1:    Index of PDO to map
@@ -569,7 +569,7 @@
 %% 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   %assign suffix = ...
-        SPRINTF("%x_0x%08x_0x%x", VendorId, ProductCode, ProductRevision)
+        SPRINTF("%x_0x%08x_0x%x", VendorId, ProductCode, ConfigLayout)
   %assign varName = "pdo_info_%<suffix>"
   %if ISFIELD(CompiledModel.EtherCAT.PDOMap,varName)
     %return varName
@@ -579,7 +579,7 @@
   %assign PdoEntryInfoId = "pdo_entry_info_%<suffix>"
   %openfile buf
   %<SPRINTF("/* PDO Mapping for %s Rev. 0x%X */", ...
-        ProductName, ProductRevision)>
+        ProductName, ConfigLayout)>
   ec_pdo_entry_info_t %<PdoEntryInfoId>[] = {
   %foreach i = SIZE(PdoEntryInfo)[0]
     %<SPRINTF("{ 0x%04X, %u, %u }, /* %u */", PdoEntryInfo[i][0], ...
