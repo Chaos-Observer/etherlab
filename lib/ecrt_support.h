@@ -54,8 +54,8 @@ __init ecs_reg_slave(
 
         const ec_pdo_info_t *pdo_info, /**< PDO Configuration objects */
 
-        unsigned int pdo_mapping_count, /**< Number of PDO mapping objects 
-                                             passed in \a pdo_mapping */
+        unsigned int pdo_count, /**< Number of PDO mapping objects 
+                                             passed in \a pdo */
         const struct pdo *pdo /**< PDO mapping objects */
         );
 

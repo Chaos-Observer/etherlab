@@ -593,7 +593,7 @@ ecs_reg_slave(
 
         const ec_pdo_info_t *pdos,
 
-        unsigned int pdo_mapping_count,
+        unsigned int pdo_count,
         const struct pdo *pdo
         )
 {
@@ -607,11 +607,11 @@ ecs_reg_slave(
     pr_debug( "ecs_reg_slave( tid = %u, master_id = %u, domain_id = %u, "
         "slave_alias = %hu, slave_position = %hu, vendor_id = 0x%x, "
         "product_code = 0x%x, sdo_config_count = %u, *sdo_config = %p, "
-        "*pdos = %p, pdo_mapping_count = %u, *pdo = %p )\n",
+        "*pdos = %p, pdo_count = %u, *pdo = %p )\n",
         tid, master_id, domain_id,
         slave_alias, slave_position, vendor_id,
         product_code, sdo_config_count, sdo_config,
-        pdos, pdo_mapping_count, pdo
+        pdos, pdo_count, pdo
         );
 
     /* Get a pointer to the master, creating a new one if it does not
@@ -620,7 +620,7 @@ ecs_reg_slave(
         return errmsg;
 
     /* Get memory for the slave structure */
-    len = (void*)&slave->mapped_pdo[pdo_mapping_count] - (void*)slave;
+    len = (void*)&slave->mapped_pdo[pdo_count] - (void*)slave;
     slave = my_kcalloc(1, len, "slave");
     if (!slave) {
         goto out_slave_alloc;
@@ -645,8 +645,8 @@ ecs_reg_slave(
      * should be copied, as well as the data type. 
      * Here we go through the list assigning the mapped PDO to the correct
      * domain depending on whether it is an input or output */
-    slave->pdo_map_count = pdo_mapping_count;
-    for (i = 0; i < pdo_mapping_count; i++) {
+    slave->pdo_map_count = pdo_count;
+    for (i = 0; i < pdo_count; i++) {
         slave->mapped_pdo[i].mapping = &pdo[i];
         switch (pdos[pdo[i].pdo_info_index].dir) {
             /* PDO Input as seen by the slave, i.e. block inputs. The
