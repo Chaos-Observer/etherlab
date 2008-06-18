@@ -48,7 +48,7 @@
 
 /* Every application can have more than one task - one of this structure is 
  * allocated for each task */
-struct mdl_task {
+struct rt_task {
     RT_TASK rtai_thread;        /** Structure for RTAI data */
 
     int master;                 /** This is true for the first application 
@@ -96,10 +96,9 @@ struct app {
     char *msg_ptr;
     size_t msg_buf_len;
 
-    struct task_stats *task_stats; /* Array of stats with numst elements */
     size_t task_stats_len;
 
-    struct mdl_task task[];    /** Array of length equal to the number
+    struct rt_task task[];    /** Array of length equal to the number
                                  * of sample times the app has. */
 };
 

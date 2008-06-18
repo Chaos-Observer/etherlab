@@ -498,7 +498,7 @@ void rtp_make_photo(struct app *app)
      * when not initialised or when the buffer is full), set wp to NULL */
     if (app->wp) {
         memcpy(app->wp, rt_app->app_rtB, rt_app->rtB_size);
-        memcpy(app->wp + rt_app->rtB_size, app->task_stats,
+        memcpy(app->wp + rt_app->rtB_size, rt_app->task_stats,
                 app->task_stats_len);
 
         /* Update write pointer, wrapping if necessary */

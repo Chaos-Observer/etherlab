@@ -199,15 +199,15 @@ void update_time(void)
 }
 
 /** Function: mdl_main_thread
- * arguments: long priv_data: Pointer to the mdl_task
+ * arguments: long priv_data: Pointer to the rt_task
  *
  * This is the fastest task of the app. It differs from mdl_sec_thread
  * in that it has to take care of parameter transfer and world time.
  */
 static void mdl_main_thread(long priv_data)
 {
-    struct mdl_task *mdl_task = (struct mdl_task *)priv_data;
-    struct app *app = mdl_task->app;
+    struct rt_task *rt_task = (struct rt_task *)priv_data;
+    struct app *app = rt_task->app;
     const struct rt_app *rt_app = app->rt_app;
     unsigned int overrun = 0;
     unsigned long counter = 0;
@@ -215,7 +215,7 @@ static void mdl_main_thread(long priv_data)
     cycles_t rt_start = get_cycles(), rt_end, rt_prevstart;
     unsigned int cpu_mhz;
 
-    if (mdl_task->master) {
+    if (rt_task->master) {
         /* This task is the master time keeper. Initialise the clock */
         init_time();
     }
@@ -237,7 +237,7 @@ static void mdl_main_thread(long priv_data)
 
         /* Do one calculation step of the app */
         rt_sem_wait(&rt_kernel.time.lock);
-        mdl_task->stats->time = rt_kernel.time.tv;
+        rt_task->stats->time = rt_kernel.time.tv;
         rt_sem_signal(&rt_kernel.time.lock);
         if ((errmsg = rt_app->rt_OneStepMain()))
             break;
@@ -251,11 +251,11 @@ static void mdl_main_thread(long priv_data)
         /* Calculate and report execution statistics */
         rt_end = get_cycles();
         cpu_mhz = cpu_khz/1000;
-        mdl_task->stats->exec_time = 
+        rt_task->stats->exec_time = 
             ((unsigned int)(rt_end - rt_start))/cpu_mhz;
-        mdl_task->stats->time_step = 
+        rt_task->stats->time_step = 
             ((unsigned int)(rt_start - rt_prevstart))/cpu_mhz;
-        mdl_task->stats->overrun = overrun;
+        rt_task->stats->overrun = overrun;
 
         /* Wait until next call */
 #ifdef RTE_TMROVRN
@@ -288,7 +288,7 @@ static void mdl_main_thread(long priv_data)
                     printk("\n");
         }
 
-        if (mdl_task->master) {
+        if (rt_task->master) {
             update_time();
         }
     }
@@ -296,7 +296,7 @@ static void mdl_main_thread(long priv_data)
             rt_app->appName, errmsg);
 
     /* If this task is not the master, it can end here */
-    if (!mdl_task->master)
+    if (!rt_task->master)
         return;
 
     /* Master task has to continue to keep the time ticking... */
@@ -314,9 +314,9 @@ static void mdl_main_thread(long priv_data)
  */
 static void mdl_sec_thread(long priv_data)
 {
-    struct mdl_task *mdl_task = (struct mdl_task *)priv_data;
-    struct app *app = mdl_task->app;
-    unsigned int mdl_tid = mdl_task->mdl_tid;
+    struct rt_task *rt_task = (struct rt_task *)priv_data;
+    struct app *app = rt_task->app;
+    unsigned int mdl_tid = rt_task->mdl_tid;
     const struct rt_app *rt_app = app->rt_app;
     unsigned int overrun = 0;
     unsigned long counter = 0;
@@ -331,7 +331,7 @@ static void mdl_sec_thread(long priv_data)
 
         /* Do one calculation step of the app */
         rt_sem_wait(&rt_kernel.time.lock);
-        mdl_task->stats->time = rt_kernel.time.tv;
+        rt_task->stats->time = rt_kernel.time.tv;
         rt_sem_signal(&rt_kernel.time.lock);
         if ((errmsg = rt_app->rt_OneStepTid(mdl_tid))) 
             break;
@@ -339,11 +339,11 @@ static void mdl_sec_thread(long priv_data)
         /* Calculate and report execution statistics */
         rt_end = get_cycles();
         cpu_mhz = cpu_khz/1000;  // cpu_khz is not constant
-        mdl_task->stats->exec_time = 
+        rt_task->stats->exec_time = 
             ((unsigned int)(rt_end - rt_start))/cpu_mhz;
-        mdl_task->stats->time_step = 
+        rt_task->stats->time_step = 
             ((unsigned int)(rt_start - rt_prevstart))/cpu_mhz;
-        mdl_task->stats->overrun = overrun;
+        rt_task->stats->overrun = overrun;
 
         /* Wait until next call */
         if (rt_task_wait_period()) {
@@ -405,12 +405,12 @@ int start_rt_app(const struct rt_app *rt_app,
         const char *revision_str,
         struct module *owner)
 {
-    unsigned int i;
+    unsigned int tid;
     unsigned int app_id;
     unsigned int decimation;
     RTIME now;
     int err = -1;
-    struct app *app;
+    struct app *app = NULL;
 
     if (strcmp(revision_str, REVISION)) {
         pr_info("Error: The header file revisions do not match.\n"
@@ -454,19 +454,13 @@ int start_rt_app(const struct rt_app *rt_app,
     }
 
     /* Get some memory to manage RT app */
-    app = kcalloc( 1, 
-            ( sizeof(struct app) 
-              + rt_app->num_tasks*sizeof(struct mdl_task)
-              + rt_app->num_tasks*sizeof(struct task_stats)),
+    app = kcalloc( 1, (void*)&app->task[rt_app->num_tasks] - (void*)app,
             GFP_KERNEL);
     if (!app) {
         printk("Error: Could not get memory for Real-Time Task\n");
         err = -ENOMEM;
         goto out;
     }
-    app->task_stats = 
-        (struct task_stats *)&app->task[rt_app->num_tasks];
-    app->task_stats_len = rt_app->num_tasks*sizeof(struct task_stats);
     pr_info("Malloc'ed struct app *(%p) for rt_app *(%p)\n",
             app, rt_app);
 
@@ -486,21 +480,23 @@ int start_rt_app(const struct rt_app *rt_app,
     rt_kernel.application[app_id] = app;
 
     app->rt_app = rt_app;
+    app->task_stats_len = rt_app->num_st * sizeof(struct task_stats);
 
-    for (i = 0; i < rt_app->num_tasks; i++) {
-        app->task[i].mdl_tid = i;
-        app->task[i].app = app;
-        app->task[i].stats = &app->task_stats[i];
+    for (tid = 0; tid < rt_app->num_tasks; tid++) {
+        struct rt_task *task = &app->task[tid];
+        task->mdl_tid = tid;
+        task->app = app;
+        task->stats = &rt_app->task_stats[tid];
 
         /* Initialise RTAI task structure */
         if ((err = rt_task_init(
-                        &app->task[i].rtai_thread, /* RT_TASK 	*/
-                        (i ? mdl_sec_thread 
+                        &task->rtai_thread, /* RT_TASK 	*/
+                        (tid ? mdl_sec_thread 
                          : mdl_main_thread),      /* Task function 	*/
-                        (long)&app->task[i], /* Private data passed to 
+                        (long)task, /* Private data passed to 
                                                    * task */
                         rt_app->stack_size,   /* Stack size 	*/
-                        i,                      /* priority 	*/
+                        tid,                      /* priority 	*/
                         1,                      /* use fpu 		*/
                         NULL                    /* signal		*/
                         ))) {
@@ -510,7 +506,7 @@ int start_rt_app(const struct rt_app *rt_app,
 
         /* Fill stack with a recognisable pattern to enable stack size 
          * profiling */
-        rt_task_stack_init(&app->task[i].rtai_thread, STACK_MAGIC);
+        rt_task_stack_init(&task->rtai_thread, STACK_MAGIC);
     }
 
     /* Check that the app's rate is a multiple of rt_kernel's baserate */
@@ -554,12 +550,12 @@ int start_rt_app(const struct rt_app *rt_app,
 
     now = rt_get_time();
     app->photo_sample = 1;           /* Take a photo of next calculation */
-    for (i = 0; i < rt_app->num_tasks; i++) {
+    for (tid = 0; tid < rt_app->num_tasks; tid++) {
         pr_info("RTW Model tid %i running at %uus\n", 
-                i, rt_app->task_period[i]);
-        decimation = rt_app->task_period[i] / rt_app->task_period[0];
+                tid, rt_app->task_period[tid]);
+        decimation = rt_app->task_period[tid] / rt_app->task_period[0];
         if ((err = rt_task_make_periodic(
-                        &app->task[i].rtai_thread, 
+                        &app->task[tid].rtai_thread, 
                         now + nano2count(1e7), //rt_kernel.tick_period,
                         decimation*rt_kernel.tick_period
                         ))) {
@@ -578,9 +574,9 @@ out_rtcom_init_fail:
     rtp_fio_clear_mdl(app);
 out_fio_init:
 out_incompatible_ticks:
-    for (i--; i > rt_app->num_tasks; i--) {
-        rt_task_suspend(&app->task[i].rtai_thread);
-        rt_task_delete(&app->task[i].rtai_thread);
+    while (tid--) {
+        rt_task_suspend(&app->task[tid].rtai_thread);
+        rt_task_delete(&app->task[tid].rtai_thread);
     }
 out_task_init:
     clear_bit(app_id, &rt_kernel.loaded_apps);
