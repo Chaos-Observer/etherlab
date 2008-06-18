@@ -577,7 +577,7 @@
 
   %assign PdoEntryInfoId = "pdo_entry_info_%<suffix>"
   %openfile buf
-  %<SPRINTF("/* PDO Mapping for %s with config layout %u */", ...
+  %<SPRINTF("/* PDO Entry Information for %s with config layout %u */", ...
         ProductName, ConfigLayout)>
   ec_pdo_entry_info_t %<PdoEntryInfoId>[] = {
   %foreach i = SIZE(PdoEntryInfo)[0]
