@@ -468,7 +468,7 @@ get_pdo_bit_spec_and_dir(int_T *bit_len, uint_T *dir,
     
 const char_T*
 get_parameter_values(SimStruct* S, const mxArray* output, uint_T port,
-        const char_T* field, uint_T *count, uint_T port_width, 
+        const char_T* field, int_T *count, uint_T port_width, 
         real_T **values )
 {
     real_T *value;
