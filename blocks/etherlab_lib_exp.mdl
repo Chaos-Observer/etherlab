@@ -34,8 +34,8 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "rich"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Tue Jun 17 12:21:17 2008"
-  ModelVersionFormat	  "1.%<AutoIncrement:510>"
+  LastModifiedDate	  "Tue Jun 17 15:50:21 2008"
+  ModelVersionFormat	  "1.%<AutoIncrement:513>"
   ConfigurationManager	  "rcs"
   LinearizationMsg	  "none"
   Profile		  off
@@ -392,8 +392,8 @@ Library {
 	  Position		  [25, 80, 105, 120]
 	  BackgroundColor	  "yellow"
 	  FunctionName		  "ec_slave"
-	  Parameters		  "master,domain,alias,position,model,vendor,m"
-"odel,layout,pdo_entry,pdo_info,sdo_config,input,output,tsample"
+	  Parameters		  "master,domain,alias,position,model,vendor,p"
+"roduct_code,layout,pdo_entry,pdo_info,sdo_config,input,output,tsample"
 	  MaskType		  "EL31xx"
 	  MaskDescription	  "Beckhoff 2,4,8-Channel 16-Bit Analog Input"
 "\n\nOutput Type:\n  1-Byte output: one bit coded input\n  Vector output: Outp"
@@ -544,8 +544,8 @@ Library {
 	  Position		  [180, 80, 260, 120]
 	  BackgroundColor	  "yellow"
 	  FunctionName		  "ec_slave"
-	  Parameters		  "master,domain,alias,position,model,vendor,m"
-"odel,layout,pdo_entry,pdo_info,sdo_config,input,output,tsample"
+	  Parameters		  "master,domain,alias,position,model,vendor,p"
+"roduct_code,layout,pdo_entry,pdo_info,sdo_config,input,output,tsample"
 	  MaskType		  "EL41xx"
 	  MaskDescription	  "Beckhoff 2,4,8-Channel 16-Bit Analog Output"
 "\n\nInput Type:\n  1-Byte input: one bit coded input\n  Vector input: Input v"
