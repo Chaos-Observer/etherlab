@@ -41,7 +41,7 @@
      ecrt_master_state(\
         (ec_master_t*)%<LibBlockPWork(MasterPtr, "", "", 0)>, &state);
     %<LibBlockOutputSignal(0,"","",0)> = state.slaves_responding;
-    %<LibBlockOutputSignal(1,"","",0)> = state.slave_states;
+    %<LibBlockOutputSignal(1,"","",0)> = state.al_states;
     %<LibBlockOutputSignal(2,"","",0)> = state.link_up ? 1 : 0;
   }
 %endfunction
