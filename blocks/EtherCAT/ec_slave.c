@@ -365,15 +365,15 @@ struct ecat_slave {
         uint_T raw;
         real_T pdo_full_scale;
 
-        uint_T  gain_count;
+        int_T  gain_count;
         char_T *gain_name;
         real_T *gain_values;
 
-        uint_T  offset_count;
+        int_T  offset_count;
         char_T *offset_name;
         real_T *offset_values;
 
-        uint_T  filter_count;
+        int_T  filter_count;
         char_T *filter_name;
         real_T *filter_values;
 
