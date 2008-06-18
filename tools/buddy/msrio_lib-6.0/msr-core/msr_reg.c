@@ -1663,17 +1663,17 @@ int msr_anz_param(void)
 
 enum enum_var_typ ETL_to_MSR(unsigned int datatyp) {
 
-/*     SS_DOUBLE  =  0,    /\* real_T    *\/ */
-/*     SS_SINGLE  =  1,    /\* real32_T  *\/ */
-/*     SS_INT8    =  2,    /\* int8_T    *\/ */
-/*     SS_UINT8   =  3,    /\* uint8_T   *\/ */
-/*     SS_INT16   =  4,    /\* int16_T   *\/ */
-/*     SS_UINT16  =  5,    /\* uint16_T  *\/ */
-/*     SS_INT32   =  6,    /\* int32_T   *\/ */
-/*     SS_UINT32  =  7,    /\* uint32_T  *\/ */
-/*     SS_BOOLEAN =  8   */
+/*     SS_DOUBLE  =  1,    /\* real_T    *\/ */
+/*     SS_SINGLE  =  2,    /\* real32_T  *\/ */
+/*     SS_INT8    =  3,    /\* int8_T    *\/ */
+/*     SS_UINT8   =  4,    /\* uint8_T   *\/ */
+/*     SS_INT16   =  5,    /\* int16_T   *\/ */
+/*     SS_UINT16  =  6,    /\* uint16_T  *\/ */
+/*     SS_INT32   =  7,    /\* int32_T   *\/ */
+/*     SS_UINT32  =  8,    /\* uint32_T  *\/ */
+/*     SS_BOOLEAN =  9   */
 
-    enum enum_var_typ tt[9] = {TDBL,TFLT,TUCHAR,TCHAR,TUSHORT,TSHORT,TUINT,TINT,TCHAR};
+    enum enum_var_typ tt[] = {0, TDBL,TFLT,TUCHAR,TCHAR,TUSHORT,TSHORT,TUINT,TINT,TCHAR};
 
     return tt[datatyp];
 }

@@ -31,7 +31,7 @@
 
 // Data type widths. 
 // DO NOT change these without updating etl_data_types.h
-size_t si_data_width[] = {
+size_t si_data_width[] = { 0,
     sizeof(double), sizeof(float),
     sizeof(uint8_t), sizeof(int8_t),
     sizeof(uint16_t), sizeof(int16_t),
