@@ -82,7 +82,7 @@
  *    3 - Data type: one of 8, 16, 32
  *    4 - Value
  *
- * 12. Block input port specification - Vector of a structure
+ * 12. Block input port specification - structure vector
  *   This structure defines the Simulink's block inputs. The number of
  *   elements in this structure define the block's input count, i.e.
  *   one element for every input. The structure has the following fields:
@@ -98,37 +98,42 @@
  *                          to by column 3 of PDO Info to determine the
  *                          absolute row in PDO Entry Information to map.
  *
- *   'full_scale_bits': scalar numeric value (optional)
+ *   'pdo_full_scale':  scalar numeric value (optional)
  *                      If this field is not specified, the input port is
  *                      the "raw" PDO value. This also means that the port
  *                      has the same data type as specified in the data type
- *                      of the PDO.
+ *                      field of the PDO.
  *                      If this field specified, the input port value
  *                      is multiplied by this value before writing it to
  *                      the PDO, i.e.
- *                      'PDO value' = input * 2^'full_scale_bits'
+ *                      'PDO value' = input * 'pdo_full_scale'
  *
  *                      Ideally this value is the maximum value 
  *                      that the PDO can assume, thus an input range of
  *                      [-1.0 .. 1.0> for signed PDO's and [0 .. 1.0> for
  *                      unsigned PDO's is mapped to the full PDO value range.
  *
- *                      This value can also be assigned to 0, meaning that
- *                      no scaling is performed (2^0 = 1)
+ *                      For example, a pdo_full_scale = 32768 would map the 
+ *                      input -1.0..1.0 to the entire value range of a int16_t 
+ *                      PDO data type
  *
- *                      For example, a full_scale_bits = 15 would map the 
- *                      entire value range of a int16_t PDO data type
- *                      from -1.0 to 1.0
+ *                      Note that integer overflow and underflow is checked
+ *                      before the value is written to the PDO, thus avoiding
+ *                      "wrapping" effects
  *
  *   'gain':            numeric vector (optional)
  *                      An optional vector or scalar. If it is a vector,
  *                      it must have the same number of elements as there
  *                      are rows in 'pdo_map'. This field is only considered
- *                      when 'full_scale_bits' is specified.
+ *                      when 'pdo_full_scale' is specified.
  *                      If this field is specified, the value written to
  *                      the PDO is premultiplied before assignment.
  *                      i.e.
- *                      'PDO value' = 'gain' .* input * 'full_scale_bits'
+ *                      'PDO value' = 'gain' .* input * 'pdo_full_scale'
+ *
+ *                      Note that integer overflow and underflow is checked
+ *                      before the value is written to the PDO, thus avoiding
+ *                      "wrapping" effects
  *
  *   'gain_name':       string (optional)
  *                      This optional field is only considered if 'gain' is
@@ -141,7 +146,7 @@
  *
  *   Any other fields are ignored.
  *
- * 13. Block output port specification - Vector of a structure
+ * 13. Block output port specification - structure vector
  *   This structure defines the Simulink's block outputs. The number of
  *   elements in this structure define the block's output count, i.e.
  *   one element for every output. The structure has the following fields:
@@ -157,7 +162,7 @@
  *                          to by column 3 of PDO Info to determine the
  *                          absolute row in PDO Entry Information to map.
  *
- *   'full_scale_bits': scalar numeric value (optional)
+ *   'pdo_full_scale':  scalar numeric value (optional)
  *                      If this field is not specified, the output port is
  *                      the "raw" PDO value. This also means that the port
  *                      has the same data type as specified in the data type
@@ -165,17 +170,14 @@
  *                      If this field specified, the output port has data
  *                      type 'double_T'. The PDO value is then divided by
  *                      this value and written to the output port, i.e.
- *                      output = 'PDO value' / 2^'full_scale_bits'
+ *                      output = 'PDO value' / 'pdo_full_scale'
  *
  *                      Ideally this value is the maximum value that the 
  *                      PDO can assume, thus mapping the PDO value range to 
  *                      [0 .. 1.0> for unsigned PDO data types and
  *                      [-1.0 .. 1.0> for signed PDO data types.
  *
- *                      This value can also be assigned to 0, meaning that
- *                      no scaling is performed (2^0 = 1)
- *
- *                      For example, a full_scale_bits = 15 would map the 
+ *                      For example, a pdo_full_scale = 32768 would map the 
  *                      entire value range of a int16_t PDO data type
  *                      from -1.0 to 1.0
  *
@@ -183,11 +185,11 @@
  *                      An optional vector or scalar. If it is a vector,
  *                      it must have the same number of elements as there
  *                      are rows in 'pdo_map'. This field is only considered
- *                      when 'full_scale_bits' is specified.
+ *                      when 'pdo_full_scale' is specified.
  *                      If this field is specified, the PDO value is further
- *                      multiplied by it after applying 'full_scale_bits'.
+ *                      multiplied by it after applying 'pdo_full_scale'.
  *                      i.e.
- *                      output = 'gain' .* 'PDO value' / 'full_scale_bits'
+ *                      output = 'gain' .* 'PDO value' / 'pdo_full_scale'
  *
  *   'gain_name':       string (optional)
  *                      This optional field is only considered if 'gain' is
@@ -202,11 +204,11 @@
  *                      An optional vector or scalar. If it is a vector,
  *                      it must have the same number of elements as there
  *                      are rows in 'pdo_map'. This field is only considered
- *                      when 'full_scale_bits' is specified.
+ *                      when 'pdo_full_scale' is specified.
  *                      If this field is specified, it is added to the result
- *                      of applying 'full_scale_bits' and 'gain',
+ *                      of applying 'pdo_full_scale' and 'gain',
  *                      i.e.
- *                      output = 'gain' .* 'PDO value' / 'full_scale_bits'
+ *                      output = 'gain' .* 'PDO value' / 'pdo_full_scale'
  *                               .+ offset
  *
  *   'offset_name':     string (optional)
@@ -218,7 +220,7 @@
  *                      An optional vector or scalar. If it is a vector,
  *                      it must have the same number of elements as there
  *                      are rows in 'pdo_map'. This field is only considered
- *                      when 'full_scale_bits' is specified.
+ *                      when 'pdo_full_scale' is specified.
  *                      If this field is specified, the output value is low
  *                      pass filtered before written to the output port and
  *                      after applying possible 'gain' and 'offset' values.
@@ -356,7 +358,7 @@ struct ecat_slave {
          *
          * If raw is unset, the value written to / read from the PDO
          * is scaled using gain and/or offset; see introduction concerning
-         * full_scale_bits
+         * pdo_full_scale
          *
          * gain_values appears as an application parameter if supplied.
          */
