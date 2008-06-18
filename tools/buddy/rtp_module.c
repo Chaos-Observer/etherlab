@@ -249,7 +249,8 @@ static int start_model(const char *model_name, unsigned int model_num)
 
         rv = ioctl(model->rtp_fd, GET_SIGNAL_INFO, &si);
         CHECK_ERR (rv, errno, out_get_signal_info,
-                "Error: could not get Signal Info %s", strerror(errno));
+                "Error: could not get Signal Info for signal %u: %s", 
+                idx, strerror(errno));
         if (!si.dim[0]) {
             syslog(LOG_NOTICE, "msr cannot handle multidimensional arrays.");
             continue;
