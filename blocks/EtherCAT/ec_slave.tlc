@@ -32,7 +32,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   %if EXISTS(InputPortSpec)
     %assign nm = SIZE(InputPortSpec)
-    %if nm[1] > 0 && nm[1] != 4
+    %if nm[1] > 0 && nm[1] != 3
       %error Unexpected column count for InputPortSpec %<InputPortSpec>
     %endif
     %addtorecord block NumInputs nm[0]
@@ -42,7 +42,7 @@
 
   %if EXISTS(OutputPortSpec)
     %assign nm = SIZE(OutputPortSpec)
-    %if nm[1] > 0 && nm[1] != 6
+    %if nm[1] > 0 && nm[1] != 5
       %error Unexpected column count for OutputPortSpec %<OutputPortSpec>
     %endif
     %addtorecord block NumOutputs nm[0]
@@ -379,11 +379,10 @@
       %endroll
       %%
     %else
-      %assign FullScale = GetIOPortSpec(InputPortSpec, "PDOFullScale", port)
-      %assign MaxValue = FullScale - 1.0
+      %assign MaxValue = InputPDOFullScale[port] - 1.0
       %assign MinValue = ...
                 GetIOPortSpec(InputPortSpec, "PDODataTypeSigned", port) ...
-                ? -FullScale : 0.0
+                ? -InputPDOFullScale[port] : 0.0
       { real_T value;
 
         %assign rollRegions = RollRegions == [] ...
@@ -397,11 +396,11 @@
           %assign PWorkLcv = ...
                   (lcv != "" && PWorkIdx) ? "%<lcv>+%<PWorkIdx>" : lcv
           %if InputGainName[port] == ""
-            value = %<src> * %<FullScale>;
+            value = %<src> * %<InputPDOFullScale[port]>;
           %else
             %assign scale = ...
                 LibBlockParameter(%<InputGainName[port]>,"",lcv,sigIdx)
-            value = %<src> * %<FullScale> * %<scale>;
+            value = %<src> * %<InputPDOFullScale[port]> * %<scale>;
           %endif
           if (value > %<MaxValue>) {
             %<GetDst(port,PWorkLcv,PWorkIdx)> = %<MaxValue>;
@@ -502,7 +501,7 @@
   %assign src = SPRINTF("*(%s*)(%s)/%.1f", ...
        ECatOutput[port].RTWDType, ...
        LibBlockPWork(DataPtr,"",PWorkLcv,PWorkIdx), ...
-       GetIOPortSpec(OutputPortSpec, "PDOFullScale", port))
+       OutputPDOFullScale[port])
 
   %assign u0 = src
   %if GainType
@@ -569,7 +568,7 @@
 %% 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   %assign suffix = ...
-        SPRINTF("%x_0x%08x_0x%x", VendorId, ProductCode, ConfigLayout)
+        SPRINTF("%x_0x%08x_%u", VendorId, ProductCode, ConfigLayout)
   %assign varName = "pdo_info_%<suffix>"
   %if ISFIELD(CompiledModel.EtherCAT.PDOMap,varName)
     %return varName
@@ -578,7 +577,7 @@
 
   %assign PdoEntryInfoId = "pdo_entry_info_%<suffix>"
   %openfile buf
-  %<SPRINTF("/* PDO Mapping for %s Rev. 0x%X */", ...
+  %<SPRINTF("/* PDO Mapping for %s with config layout %u */", ...
         ProductName, ConfigLayout)>
   ec_pdo_entry_info_t %<PdoEntryInfoId>[] = {
   %foreach i = SIZE(PdoEntryInfo)[0]
@@ -650,14 +649,12 @@
       %return GetDTypeSigned(Spec[Port][0])
     %case "Raw"
       %return Spec[Port][1]
-    %case "PDOFullScale"
-      %return FEVAL("pow2",Spec[Port][2])
     %case "Gain"
-      %return Spec[Port][3]
+      %return Spec[Port][2]
     %case "Offset"
-      %return Spec[Port][4]
+      %return Spec[Port][3]
     %case "Filter"
-      %return Spec[Port][5]
+      %return Spec[Port][4]
     %default
       %error Unknown request %<Entry> for GetIOPortSpec()
   %endswitch

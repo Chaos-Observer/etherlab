@@ -361,7 +361,7 @@ struct ecat_slave {
          * gain_values appears as an application parameter if supplied.
          */
         uint_T raw;
-        uint_T full_scale_bits;
+        real_T pdo_full_scale;
 
         uint_T  gain_count;
         char_T *gain_name;
@@ -524,7 +524,7 @@ get_ioport_config(SimStruct *S, const mxArray* src, struct io_spec *io_spec,
         const struct ecat_slave *slave, uint_T port, uint_T port_dir)
 {
     const mxArray* pdo_map = mxGetField(src, port, "pdo_map");
-    const mxArray* full_scale_bits = mxGetField(src, port, "full_scale_bits");
+    const mxArray* pdo_full_scale = mxGetField(src, port, "pdo_full_scale");
     const mxArray* pdo_data_type = mxGetField(src, port, "pdo_data_type");
     const char_T* errfield = NULL;
     const char_T* err;
@@ -666,7 +666,7 @@ get_ioport_config(SimStruct *S, const mxArray* src, struct io_spec *io_spec,
     }
 
     if (port_bit_len % 8) {
-        if (full_scale_bits) {
+        if (pdo_full_scale) {
             snprintf(errmsg, sizeof(errmsg),
                     "Boolean signals cannot be scaled for %s(%u).",
                     dir_str, port+1);
@@ -679,7 +679,7 @@ get_ioport_config(SimStruct *S, const mxArray* src, struct io_spec *io_spec,
         io_spec->raw |= 0x2;
     }
 
-    if (!full_scale_bits) {
+    if (!pdo_full_scale) {
         /* Set bit 1 of raw to indicate that the output is raw */
         io_spec->raw |= 0x1;
         return NULL;
@@ -687,13 +687,13 @@ get_ioport_config(SimStruct *S, const mxArray* src, struct io_spec *io_spec,
 
     /* Output is double. This means that the source value must be scaled 
      * so that the source value range is mapped to [0..1] */
-    if (!mxIsDouble(full_scale_bits)) {
+    io_spec->pdo_full_scale = mxGetScalar(pdo_full_scale);
+    if (!mxIsDouble(pdo_full_scale) || io_spec->pdo_full_scale <= 0.0) {
         snprintf(errmsg, sizeof(errmsg),
-                "Specified field %s(%u).%s must be a numeric scalar.",
-                dir_str, port+1, "full_scale_bits");
+                "Specified field %s(%u).%s must be a positive numeric scalar.",
+                dir_str, port+1, "pdo_full_scale");
         return errmsg;
     }
-    io_spec->full_scale_bits = mxGetScalar(full_scale_bits);
 
     /* Check that the vector length is either 1 or port_width
      * for the fields 'gain', 'offset' and 'filter' if they are specified */
@@ -1367,12 +1367,14 @@ static void mdlRTW(SimStruct *S)
 
     uint32_T input_port_spec[4][slave->num_inputs];
     uint32_T input_map[2][slave->input_map_count];
+    real_T   input_pdo_full_scale[slave->input_map_count];
     const char_T *input_gain_str;
     const char_T *input_gain_name_ptr[slave->num_inputs + 1];
     real_T input_gain[slave->static_input_gain_count];
 
     uint32_T output_port_spec[6][slave->num_outputs];
     uint32_T output_map[2][slave->output_map_count];
+    real_T   output_pdo_full_scale[slave->output_map_count];
     const char_T *output_gain_str;
     const char_T *output_offset_str;
     const char_T *output_filter_str;
@@ -1389,11 +1391,11 @@ static void mdlRTW(SimStruct *S)
             input_spec++, port++) {
         struct io_spec_map *map;
 
-        input_port_spec[0][port] = input_spec->pdo_data_type;
-        input_port_spec[1][port] = input_spec->raw;
-        input_port_spec[2][port] = input_spec->full_scale_bits;
-        input_port_spec[3][port] = input_spec->gain_count;
-        input_gain_name_ptr[port] = input_spec->gain_count
+        input_port_spec[0][port]   = input_spec->pdo_data_type;
+        input_port_spec[1][port]   = input_spec->raw;
+        input_port_spec[2][port]   = input_spec->gain_count;
+        input_pdo_full_scale[port] = input_spec->pdo_full_scale;
+        input_gain_name_ptr[port]  = input_spec->gain_count
             ? input_spec->gain_name : "";
 
         for (i = 0; !input_spec->gain_name && i < input_spec->gain_count;
@@ -1417,13 +1419,13 @@ static void mdlRTW(SimStruct *S)
             output_spec++, port++) {
         struct io_spec_map *map;
 
-        output_port_spec[0][port] = output_spec->pdo_data_type;
-        output_port_spec[1][port] = output_spec->raw;
-        output_port_spec[2][port] = output_spec->full_scale_bits;
-        output_port_spec[3][port] = output_spec->gain_count > 0;
-        output_port_spec[4][port] = output_spec->offset_count > 0;
-        output_port_spec[5][port] = output_spec->filter_count > 0;
-        output_gain_name_ptr[port] = output_spec->gain_count
+        output_port_spec[0][port]   = output_spec->pdo_data_type;
+        output_port_spec[1][port]   = output_spec->raw;
+        output_port_spec[2][port]   = output_spec->gain_count;
+        output_port_spec[3][port]   = output_spec->offset_count;
+        output_port_spec[4][port]   = output_spec->filter_count;
+        output_pdo_full_scale[port] = output_spec->pdo_full_scale;
+        output_gain_name_ptr[port]  = output_spec->gain_count
             ? output_spec->gain_name : "";
         output_offset_name_ptr[port] = output_spec->offset_count
             ? output_spec->offset_name : "";
@@ -1525,7 +1527,10 @@ static void mdlRTW(SimStruct *S)
                     SS_UINT32, slave->input_map_count, 2))
             return;
         if (!ssWriteRTW2dMatParam(S, "InputPortSpec", input_port_spec, 
-                    SS_UINT32, slave->num_inputs, 4))
+                    SS_UINT32, slave->num_inputs, 3))
+            return;
+        if (!ssWriteRTWVectParam(S, "InputPDOFullScale", 
+                    input_pdo_full_scale, SS_DOUBLE, slave->num_inputs))
             return;
         if (!ssWriteRTWStrVectParam(S, "InputGainName", input_gain_str, 
                     slave->num_inputs))
@@ -1540,7 +1545,10 @@ static void mdlRTW(SimStruct *S)
                     SS_UINT32, slave->output_map_count, 2))
             return;
         if (!ssWriteRTW2dMatParam(S, "OutputPortSpec", output_port_spec, 
-                    SS_UINT32, slave->num_outputs, 6))
+                    SS_UINT32, slave->num_outputs, 5))
+            return;
+        if (!ssWriteRTWVectParam(S, "OutputPDOFullScale", 
+                    output_pdo_full_scale, SS_DOUBLE, slave->num_outputs))
             return;
         if (!ssWriteRTWStrVectParam(S, "OutputGainName", output_gain_str, 
                     slave->num_outputs))
