@@ -167,7 +167,7 @@
                 GetIOPortSpec(OutputPortSpec, "PDODataTypeId", port)
       %assign Raw = GetIOPortSpec(OutputPortSpec, "Raw",   port)
       %assign SrcDType = GetDTypeName(PDODataTypeId)
-      %assign ECatOutput[port].MapIdx = MapIdx
+      %assign ECatOutput[port].MapIdx = MapIdx - InputMapMax
       %assign ECatOutput[port].BitIdx = IWorkIdx
       %assign PortWidth = LibBlockOutputSignalWidth(port)
       %assign block.PdoCount = PdoCount + PortWidth
