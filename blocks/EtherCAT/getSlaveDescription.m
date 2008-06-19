@@ -140,12 +140,19 @@ function pdo = getPdo(slave, parent, dir)
                 error('getSlaveInfo:getPDO:elementNotFound',...
                     'XML element <%s/Entry> does not have child <SubIndex>.', ...
                     parent);
-            elseif ~size(datatype)
+            end
+            pdo(i).entry(j).subindex = ...
+                fromHexString(subindex.getTextContent.trim);
+
+            if ~pdo(i).entry(j).bitlen
+                continue
+            end
+
+            if ~size(datatype)
                 error('getSlaveInfo:getPDO:elementNotFound',...
                     'XML element <%s/Entry> does not have child <DataType>.', ...
                     parent);
             end
-            pdo(i).entry(j).subindex = fromHexString(subindex.getTextContent.trim);
             pdo(i).entry(j).signed = isSigned(datatype.getTextContent.trim);
         end
     end
