@@ -34,8 +34,8 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "rich"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Tue Jun 17 15:50:21 2008"
-  ModelVersionFormat	  "1.%<AutoIncrement:513>"
+  LastModifiedDate	  "Thu Jun 19 14:52:54 2008"
+  ModelVersionFormat	  "1.%<AutoIncrement:524>"
   ConfigurationManager	  "rcs"
   LinearizationMsg	  "none"
   Profile		  off
@@ -156,7 +156,7 @@ Library {
   }
   System {
     Name		    "etherlab_lib_exp"
-    Location		    [800, 601, 1395, 994]
+    Location		    [695, 672, 1290, 1065]
     Open		    on
     ModelBrowserVisibility  off
     ModelBrowserWidth	    200
@@ -372,7 +372,7 @@ Library {
       MaskHideContents	      off
       System {
 	Name			"EtherCAT"
-	Location		[898, 417, 1395, 785]
+	Location		[898, 477, 1395, 845]
 	Open			on
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
@@ -1026,6 +1026,49 @@ Library {
 	}
 	Block {
 	  BlockType		  "S-Function"
+	  Name			  "Generic Slave"
+	  Ports			  [0, 2]
+	  Position		  [170, 254, 250, 296]
+	  BackgroundColor	  "yellow"
+	  FunctionName		  "ec_slave"
+	  Parameters		  "master,domain,alias,position,product_name,v"
+"endor,product_code,layout,pdo_entry,pdo_info,sdo_config,input,output,tsample"
+	  MaskType		  "Generic EtherCAT Slave"
+	  MaskDescription	  "Implements a generic EtherCAT Slave as desc"
+"ribed in the EtherCATInfo XML File"
+	  MaskPromptString	  "Master|Slave Index|EtherCATInfo XML file|Pr"
+"oduct Code|Revision (empty for latest)|Mapped PDO (empty for all)|SDO Config|"
+"Sample Time (-1 inherited)"
+	  MaskStyleString	  "edit,edit,edit,edit,edit,edit,edit,edit"
+	  MaskTunableValueString  "off,off,off,off,off,off,off,off"
+	  MaskCallbackString	  "|||||||"
+	  MaskEnableString	  "on,on,on,on,on,on,on,on"
+	  MaskVisibilityString	  "on,on,on,on,on,on,on,on"
+	  MaskToolTipString	  "on,on,on,on,on,on,on,on"
+	  MaskVarAliasString	  ",,,,,,,"
+	  MaskVariables		  "master=@1;index=@2;ethercatinfo=@3;product_"
+"code=@4;revision=@5;pdo_list=@6;sdo_config=@7;tsample=@8;"
+	  MaskInitialization	  "try\n    [master domain alias position mast"
+"erStr positionStr] = ...\n        getEtherCATLocation(gcb,master,index);\ncat"
+"ch\n    errordlg(lasterr);\n    masterStr = '';\n    positionStr = '';\nend\n"
+"\nvendor = 0;\nproduct_name = 'Unknown';\nTxPdo = [];\nRxPdo = [];\nif ischar"
+"(ethercatinfo) && max(size(ethercatinfo))\n    if ~isempty(product_code)\n   "
+"     [vendor product_name revision TxPdo RxPdo] = ...\n            getSlaveDe"
+"scription(ethercatinfo,product_code,revision,pdo_list);\n    end\nelse\n    i"
+"f max(size(ethercatinfo))\n        errordlg([gcb ': Enter a file name for Eth"
+"erCATInfo.']);\n    end\nend\nlayout = revision;\n\n[pdo_info pdo_entry input"
+" output] = generateIOs(TxPdo,RxPdo);\n"
+	  MaskDisplay		  "fprintf('%s\\nM:%s Idx:%s',...\n    product"
+"_name,masterStr,positionStr);\n"
+	  MaskIconFrame		  on
+	  MaskIconOpaque	  on
+	  MaskIconRotate	  "none"
+	  MaskIconUnits		  "autoscale"
+	  MaskValueString	  "0|1|''|hex2dec('0')|[]|[]|[]|0"
+	  MaskTabNameString	  ",,,,,,,"
+	}
+	Block {
+	  BlockType		  "S-Function"
 	  Name			  "K-Bus"
 	  Ports			  [0, 1]
 	  Position		  [25, 259, 105, 301]
@@ -1064,37 +1107,14 @@ Library {
 	  MaskInitialization	  "try\n    [master domain alias position mast"
 "erStr positionStr] = ...\n        getEtherCATLocation(gcb,master,index);\ncat"
 "ch\n    errordlg(lasterr);\n    masterStr = '';\n    positionStr = '';\nend\n"
-"\nmodel = 'BK1120';\nproduct = hex2dec('04602c22');\nvendor = 2;\n\n% Make a "
-"random revision number for every instance. This\n% ensures that a separate co"
-"nfiguration is written for every\n% BK1120\nlayout = uint32(2^32*rand);\n\nif"
-" ischar(ethercatinfo) && max(size(ethercatinfo))\n    slave = getSlaveDescrip"
-"tion(ethercatinfo,product,[]);\nelse\n    if max(size(ethercatinfo))\n       "
-" errordlg([gcb ': Enter a file name for EtherCATInfo.']);\n    end\n    slave"
-" = struct('TxPdo', [], 'RxPdo', []);\nend\n\nsdo_config = [];\npdo_info = [];"
-"\npdo_entry = [];\n\npdo_entry_idx = 1;\npdo_info_idx = 1;\n\noutput = [];\np"
-"ort_idx = 1;\nfor i = 1:size(slave.TxPdo,2)\n    pdo_info(pdo_info_idx, :) = "
-"[ 0 slave.TxPdo(i).index, ...\n        pdo_entry_idx-1 size(slave.TxPdo(i).en"
-"try,2)];\n    for j = 1:size(slave.TxPdo(i).entry,2)\n        \n        if sl"
-"ave.TxPdo(i).entry(j).signed\n            bitlen = -slave.TxPdo(i).entry(j).b"
-"itlen;\n        else\n            bitlen = slave.TxPdo(i).entry(j).bitlen;\n "
-"       end\n        pdo_entry(pdo_entry_idx, :) = [...\n            slave.TxP"
-"do(i).entry(j).index, ...\n            slave.TxPdo(i).entry(j).subindex, ..."
-"\n            bitlen, ...\n            ];\n        pdo_entry_idx = pdo_entry_"
-"idx + 1;\n        \n        if ~slave.TxPdo(i).entry(j).index\n            co"
-"ntinue\n        end\n\n        output(port_idx).pdo_map = [pdo_info_idx-1 j-1"
-"];\n        \n        port_idx = port_idx + 1;\n    end\n    pdo_info_idx = p"
-"do_info_idx + 1;\nend\n\ninput = [];\nport_idx = 1;\nfor i = 1:size(slave.RxP"
-"do,2)\n    pdo_info(pdo_info_idx, :) = [ 1 slave.RxPdo(i).index, ...\n       "
-" pdo_entry_idx-1 size(slave.RxPdo(i).entry,2)];\n    for j = 1:size(slave.RxP"
-"do(i).entry,2)\n        \n        if slave.RxPdo(i).entry(j).signed\n        "
-"    bitlen = -slave.RxPdo(i).entry(j).bitlen;\n        else\n            bitl"
-"en = slave.RxPdo(i).entry(j).bitlen;\n        end\n        pdo_entry(pdo_entr"
-"y_idx, :) = [...\n            slave.RxPdo(i).entry(j).index, ...\n           "
-" slave.RxPdo(i).entry(j).subindex, ...\n            bitlen, ...\n            "
-"];\n        pdo_entry_idx = pdo_entry_idx + 1;\n        \n        if ~slave.R"
-"xPdo(i).entry(j).index\n            continue\n        end\n\n        input(po"
-"rt_idx).pdo_map = [pdo_info_idx-1 j-1];\n        \n        port_idx = port_id"
-"x + 1;\n    end\n    pdo_info_idx = pdo_info_idx + 1;\nend\n"
+"\nmodel = 'BK1120';\nproduct = hex2dec('04602c22');\n\n% Make a random revisi"
+"on number for every instance. This\n% ensures that a separate configuration i"
+"s written for every\n% BK1120\nlayout = uint32(2^32*rand);\n\nif ischar(ether"
+"catinfo) && max(size(ethercatinfo))\n    [vendor name revision TxPdo RxPdo] ="
+" ...\n        getSlaveDescription(ethercatinfo,product,[],[]);\nelse\n    if "
+"max(size(ethercatinfo))\n        errordlg([gcb ': Enter a file name for Ether"
+"CATInfo.']);\n    end\n    TxPdo = [];\n    RxPdo = [];\nend\n\nsdo_config = "
+"[];\n\n[pdo_info pdo_entry input output] = generateIOs(TxPdo,RxPdo);\n"
 	  MaskDisplay		  "fprintf('BK1120\\nK-Bus Coupler\\nM:%s Idx:"
 "%s',...\n    masterStr,positionStr);\n"
 	  MaskIconFrame		  on
