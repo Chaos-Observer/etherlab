@@ -121,13 +121,15 @@ function pdo = getPdo(slave, parent, dir)
                 error('getSlaveInfo:getPDO:elementNotFound',...
                     'XML element <%s/Entry> does not have child <Index>.', ...
                     parent);
+            elseif ~size(bitlen)
+                error('getSlaveInfo:getPDO:elementNotFound',...
+                    'XML element <%s/Entry> does not have child <BitLen>.', ...
+                    parent);
             end
             
             pdo(i).entry(j).index = fromHexString(index.getTextContent.trim);
             pdo(i).entry(j).subindex = 0;
-            if size(bitlen)
-                pdo(i).entry(j).bitlen = fromHexString(bitlen.getTextContent.trim);
-            end
+            pdo(i).entry(j).bitlen = fromHexString(bitlen.getTextContent.trim);
             
             if ~pdo(i).entry(j).index
                 % Empty node if index == 0
@@ -137,10 +139,6 @@ function pdo = getPdo(slave, parent, dir)
             if ~size(subindex)
                 error('getSlaveInfo:getPDO:elementNotFound',...
                     'XML element <%s/Entry> does not have child <SubIndex>.', ...
-                    parent);
-            elseif ~size(bitlen)
-                error('getSlaveInfo:getPDO:elementNotFound',...
-                    'XML element <%s/Entry> does not have child <BitLen>.', ...
                     parent);
             elseif ~size(datatype)
                 error('getSlaveInfo:getPDO:elementNotFound',...
@@ -173,4 +171,8 @@ function x = fromHexString(v)
         x = hex2dec(char(v.substring(2,v.length)));
     else
         x = str2double(v);
+    end
+    if isnan(x)
+        error('getSlaveInfo:getPDO:NaN', ...
+            ['Value "' char(v) '" does not represent a number']);
     end
