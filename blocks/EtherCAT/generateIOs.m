@@ -1,62 +1,57 @@
-function [pdo_info pdo_entry input output] = generateIOs(TxPdo,RxPdo);
-pdo_info = [];
-pdo_entry = [];
-
-pdo_entry_idx = 1;
-pdo_info_idx = 1;
-
-output = [];
-for i = 1:size(TxPdo,2)
-    pdo_info(pdo_info_idx, :) = [ 0 TxPdo(i).index, ...
-        pdo_entry_idx-1 size(TxPdo(i).entry,2)];
-    for j = 1:size(TxPdo(i).entry,2)
-        
-        if TxPdo(i).entry(j).signed
-            bitlen = -TxPdo(i).entry(j).bitlen;
-        else
-            bitlen = TxPdo(i).entry(j).bitlen;
-        end
-        pdo_entry(pdo_entry_idx, :) = [...
-            TxPdo(i).entry(j).index, ...
-            TxPdo(i).entry(j).subindex, ...
-            bitlen, ...
-            ];
-        pdo_entry_idx = pdo_entry_idx + 1;
-        
-        if ~TxPdo(i).entry(j).index
-            continue
-        end
-
-        output(size(output,2)+1).pdo_map = [pdo_info_idx-1 j-1];
-        
+function [PdoInfo PdoEntryInfo input output] = generateIOs(TxPdo,RxPdo)
+    [output TxPdoInfo TxPdoEntryInfo ] = getIOSpec(TxPdo, 0);
+    [ input RxPdoInfo RxPdoEntryInfo ] = getIOSpec(RxPdo, 1);
+    
+    % The first element of input(x).pdo_map points to a rows in
+    % RxPdoInfo. Since RxPdoInfo is appended to TxPdoInfo to create
+    % a joint PdoInfo, the element input(x).pdo_map(1) has to be 
+    % incremented by the number of rows of TxPdoInfo
+    TxPdoInfoLen = size(TxPdoInfo,1);
+    for i = 1:size(input,2)
+        input(i).pdo_map(1) = input(i).pdo_map(1) + TxPdoInfoLen;
     end
-    pdo_info_idx = pdo_info_idx + 1;
-end
-
-input = [];
-for i = 1:size(RxPdo,2)
-    pdo_info(pdo_info_idx, :) = [ 1 RxPdo(i).index, ...
-        pdo_entry_idx-1 size(RxPdo(i).entry,2)];
-    for j = 1:size(RxPdo(i).entry,2)
-        
-        if RxPdo(i).entry(j).signed
-            bitlen = -RxPdo(i).entry(j).bitlen;
-        else
-            bitlen = RxPdo(i).entry(j).bitlen;
-        end
-        pdo_entry(pdo_entry_idx, :) = [...
-            RxPdo(i).entry(j).index, ...
-            RxPdo(i).entry(j).subindex, ...
-            bitlen, ...
-            ];
-        pdo_entry_idx = pdo_entry_idx + 1;
-        
-        if ~RxPdo(i).entry(j).index
-            continue
-        end
-
-        input(size(input,2)+1).pdo_map = [pdo_info_idx-1 j-1];
-        
+    
+    % The third column of RxPdoInfo points to a row in RxPdoEntryInfo.
+    % Since RxPdoEntryInfo is appended to TxPdoEntryInfo to create
+    % a joint PdoEntryInfo, the element RxPdoInfo(x,3) has to be 
+    % incremented by the row count of TxPdoEntryInfo
+    TxPdoEntryInfoLen = size(TxPdoEntryInfo,1);
+    if ~isempty(RxPdoInfo)
+        RxPdoInfo(:,3) = RxPdoInfo(:,3) + TxPdoEntryInfoLen;
     end
-    pdo_info_idx = pdo_info_idx + 1;
-end
+    
+    % Now create the joint PdoInfo and PdoEntryInfo
+    PdoInfo = [TxPdoInfo; RxPdoInfo];
+    PdoEntryInfo = [TxPdoEntryInfo; RxPdoEntryInfo];
+
+function [io PdoInfo PdoEntryInfo] = getIOSpec(Pdo, dir)
+    PdoInfo = [];
+    PdoEntryInfo = [];
+    io = [];
+    pdo_info_idx = 1;
+    pdo_entry_idx = 1;
+    io_idx = 1;
+
+    for i = 1:size(Pdo,2)
+        PdoInfo(pdo_info_idx, :) = [ dir Pdo(i).index, ...
+            pdo_entry_idx-1 size(Pdo(i).entry,2)];
+
+        for j = 1:PdoInfo(pdo_info_idx,4)
+            PdoEntryInfo(pdo_entry_idx, :) = [...
+                Pdo(i).entry(j).index, ...
+                Pdo(i).entry(j).subindex, ...
+                Pdo(i).entry(j).bitlen, ...
+                Pdo(i).entry(j).datatype, ...
+                ];
+            pdo_entry_idx = pdo_entry_idx + 1;
+
+            if ~Pdo(i).entry(j).index
+                continue
+            end
+
+            io(io_idx).pdo_map = [pdo_info_idx-1 j-1];
+            io_idx = io_idx + 1;
+
+        end
+        pdo_info_idx = pdo_info_idx + 1;
+    end
