@@ -146,8 +146,8 @@
           %assign BitOffsetAddr = "NULL"
         %endif
         %% PdoInfoIndex, PdoEntryInfoIdx, PdoDataType
-        { %<InputMap[i][0]>, \
-          %<InputMap[i][1]>, \
+        { %<InputMap[MapIdx][0]>, \
+          %<InputMap[MapIdx][1]>, \
           %<DstDType>, \
           %%
           %% Source address for the data. If floating point is used
@@ -181,8 +181,8 @@
           %assign BitOffsetAddr = "NULL"
         %endif
         %% PdoInfoIndex, PdoEntryIdx, PdoDataType
-        { %<OutputMap[i][0]>, \
-          %<OutputMap[i][1]>, \
+        { %<OutputMap[MapIdx][0]>, \
+          %<OutputMap[MapIdx][1]>, \
           %<SrcDType>, \
           %%
           %% Source address for the data. If floating point is used
@@ -486,7 +486,7 @@
         %assign FilterLcv = ...
                 (lcv != "" && FilterIdx) ? "%<lcv>+%<FilterIdx>" : lcv
         %%
-        %assign u0 = GetSrc(port,0,PWorkLcv,PWorkIdx,lcv,sigIdx)
+        %assign u0 = GetSrc(port,0,0,PWorkLcv,PWorkIdx,lcv,sigIdx)
         %assign k  = ...
                 LibBlockParameter(%<OutputFilterName[port]>,"",lcv,sigIdx)
         %if FilterType == 1
