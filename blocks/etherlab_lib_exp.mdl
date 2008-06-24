@@ -34,8 +34,8 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "rich"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Tue Jun 24 11:10:18 2008"
-  ModelVersionFormat	  "1.%<AutoIncrement:539>"
+  LastModifiedDate	  "Tue Jun 24 16:08:45 2008"
+  ModelVersionFormat	  "1.%<AutoIncrement:540>"
   ConfigurationManager	  "rcs"
   LinearizationMsg	  "none"
   Profile		  off
@@ -156,7 +156,7 @@ Library {
   }
   System {
     Name		    "etherlab_lib_exp"
-    Location		    [715, 601, 1310, 994]
+    Location		    [723, 601, 1318, 994]
     Open		    on
     ModelBrowserVisibility  off
     ModelBrowserWidth	    200
@@ -372,7 +372,7 @@ Library {
       MaskHideContents	      off
       System {
 	Name			"EtherCAT"
-	Location		[898, 577, 1395, 945]
+	Location		[898, 617, 1395, 985]
 	Open			on
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
@@ -1165,12 +1165,13 @@ Library {
 "ch\n    errordlg(lasterr);\n    masterStr = '';\n    positionStr = '';\nend\n"
 "\nmodel = 'BK1120';\nproduct = hex2dec('04602c22');\n\n% Make a random revisi"
 "on number for every instance. This\n% ensures that a separate configuration i"
-"s written for every\n% BK1120\nlayout = uint32(2^32*rand);\n\nif ischar(ether"
-"catinfo) && max(size(ethercatinfo))\n    [vendor name revision TxPdo RxPdo] ="
-" ...\n        getSlaveDescription(ethercatinfo,product,[],[]);\nelse\n    if "
-"max(size(ethercatinfo))\n        errordlg([gcb ': Enter a file name for Ether"
-"CATInfo.']);\n    end\n    TxPdo = [];\n    RxPdo = [];\nend\n\nsdo_config = "
-"[];\n\n[pdo_info pdo_entry input output] = generateIOs(TxPdo,RxPdo);\n\n"
+"s written for every\n% BK1120\nlayout = uint32(2^32*rand);\n\nvendor = 0;\nna"
+"me = '';\nrevision = 0;\nTxPdo = [];\nRxPdo = [];\n\nif ischar(ethercatinfo) "
+"&& max(size(ethercatinfo))\n    [vendor name revision TxPdo RxPdo] = ...\n   "
+"     getSlaveDescription(ethercatinfo,product,[],[]);\nelse\n    if max(size("
+"ethercatinfo))\n        errordlg([gcb ': Enter a file name for EtherCATInfo.'"
+"]);\n    end\n    TxPdo = [];\n    RxPdo = [];\nend\n\nsdo_config = [];\n\n[p"
+"do_info pdo_entry input output] = generateIOs(TxPdo,RxPdo);\n\n"
 	  MaskDisplay		  "fprintf('BK1120\\nK-Bus Coupler\\nM:%s Idx:"
 "%s',...\n    masterStr,positionStr);\n"
 	  MaskIconFrame		  on
