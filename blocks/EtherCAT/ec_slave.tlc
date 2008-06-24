@@ -400,7 +400,7 @@
           %else
             %assign scale = ...
                 LibBlockParameter(%<InputGainName[port]>,"",lcv,sigIdx)
-            value = %<src> * %<InputPDOFullScale[port]> * %<scale>;
+            value = %<src> * %<InputPDOFullScale[port]> / %<scale>;
           %endif
           if (value > %<MaxValue>) {
             %<GetDst(port,PWorkLcv,PWorkIdx)> = %<MaxValue>;
