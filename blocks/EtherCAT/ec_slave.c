@@ -1537,7 +1537,7 @@ static void mdlRTW(SimStruct *S)
     if (!ssWriteRTWScalarParam(S, "ConfigLayout", &layout, SS_UINT32))
         return;
 
-    { /* Transpose slave->sdo_config */
+    if (slave->sdo_config_len) { /* Transpose slave->sdo_config */
         uint32_T sdo_config[4][slave->sdo_config_len];
         uint_T i, j;
 
@@ -1547,13 +1547,11 @@ static void mdlRTW(SimStruct *S)
             }
         }
 
-        if (slave->sdo_config_len) {
-            if (!ssWriteRTW2dMatParam(S, "SdoConfig", sdo_config,
-                        SS_UINT32, slave->sdo_config_len, 4))
-                return;
-        }
+        if (!ssWriteRTW2dMatParam(S, "SdoConfig", sdo_config,
+                    SS_UINT32, slave->sdo_config_len, 4))
+            return;
     }
-    { /* Transpose slave->pdo_entry_info */
+    if (slave->pdo_entry_info_len) { /* Transpose slave->pdo_entry_info */
         uint32_T pdo_entry_info[3][slave->pdo_entry_info_len];
         uint_T i;
 
@@ -1567,7 +1565,7 @@ static void mdlRTW(SimStruct *S)
                     SS_UINT32, slave->pdo_entry_info_len, 3))
             return;
     }
-    { /* Transpose slave->pdo_info */
+    if (slave->pdo_info_len) { /* Transpose slave->pdo_info */
         uint32_T pdo_info[4][slave->pdo_info_len];
         uint_T i, j;
 

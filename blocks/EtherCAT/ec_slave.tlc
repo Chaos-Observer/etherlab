@@ -614,6 +614,10 @@
 %%                             (indices [6..11])
 %% 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  %if !EXISTS(PdoInfo)
+    %return "NULL"
+  %endif
+
   %assign suffix = ...
         SPRINTF("%x_0x%08x_%u", VendorId, ProductCode, ConfigLayout)
   %assign varName = "pdo_info_%<suffix>"
