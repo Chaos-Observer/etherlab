@@ -327,7 +327,9 @@
         %roll sigIdx = rollRegions, lcv = RollThreshold, block, ...
                   "Roller", RollVars
           %%
-          %assign PWorkIdx = sigIdx + ECatOutput[port].MapIdx + InputMapMax
+          %assign PWorkIdx = VectorOutput ...
+                ?  ECatOutput[port].MapIdx + InputMapMax ...
+                :  ECatOutput[port].MapIdx + InputMapMax + sigIdx
           %assign PWorkLcv = ...
               (lcv != "" && PWorkIdx) ? "%<lcv> + %<PWorkIdx>" : lcv
           %%
@@ -386,13 +388,15 @@
       %roll sigIdx = rollRegions, lcv = RollThreshold, block, ...
               "Roller", RollVars
         %%
-        %assign PWorkIdx = sigIdx + ECatInput[port].MapIdx
+        %assign PWorkIdx = VectorInput ...
+                ? ECatInput[port].MapIdx ...
+                : ECatInput[port].MapIdx + sigIdx
         %assign PWorkLcv = ...
                 (lcv != "" && PWorkIdx) ? "%<lcv>+%<PWorkIdx>" : lcv
         %%
         %assign src = LibBlockInputSignal(port,"",lcv,sigIdx)
         %assign dst = GetDst(port, PortWidth != MapCount, ...
-                PWorkLcv, PWorkIdx, lcv)
+                PWorkLcv, PWorkIdx, lcv, sigIdx)
         %%
         %if Raw & 2
           %assign ShiftIdx = sigIdx + ECatInput[port].BitIdx
@@ -429,7 +433,9 @@
         %roll sigIdx = rollRegions, lcv = RollThreshold, block, ...
                 "Roller", RollVars
           %assign src = LibBlockInputSignal(port,"",lcv,sigIdx)
-          %assign PWorkIdx = sigIdx + ECatInput[port].MapIdx
+          %assign PWorkIdx = VectorInput ...
+                ? ECatInput[port].MapIdx ...
+                : ECatInput[port].MapIdx + sigIdx
           %assign PWorkLcv = ...
                   (lcv != "" && PWorkIdx) ? "%<lcv>+%<PWorkIdx>" : lcv
           %if InputGainName[port] == ""
@@ -440,7 +446,7 @@
             value = %<src> * %<InputPDOFullScale[port]> / %<scale>;
           %endif
           %assign dst = GetDst(port, PortWidth != MapCount, ...
-                PWorkLcv, PWorkIdx, lcv)
+                PWorkLcv, PWorkIdx, lcv, sigIdx)
           if (value > %<MaxValue>) {
             %<dst> = %<MaxValue>;
           } else if (value < %<MinValue>) {
@@ -517,14 +523,15 @@
 %endfunction
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%function GetDst(port, VectorInput, PWorkLcv, PWorkIdx, lcv)
+%function GetDst(port, VectorInput, PWorkLcv, PWorkIdx, lcv, sigIdx)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   %if VectorInput
     %assign dst = SPRINTF("((%s*)%s)", ...
         ECatInput[port].RTWDType, ...
         LibBlockPWork(DataPtr, "", "", PWorkIdx))
-    %assign dst = "%<dst>[%<lcv>]"
+    %assign sigIdx = lcv == "" ? sigIdx : lcv
+    %assign dst = "%<dst>[%<sigIdx>]"
   %else
     %assign dst = SPRINTF("*(%s*)(%s)", ...
         ECatInput[port].RTWDType, ...
@@ -544,7 +551,8 @@
     %assign src = SPRINTF("((%s*)%s)", ...
          ECatOutput[port].RTWDType, ...
          LibBlockPWork(DataPtr,"","",PWorkIdx))
-    %assign src = "%<src>[%<lcv>]"
+    %assign sigIdx = lcv == "" ? sigIdx : lcv
+    %assign src = "%<src>[%<sigIdx>]"
   %else
     %assign src = SPRINTF("*(%s*)(%s)", ...
          ECatOutput[port].RTWDType, ...
