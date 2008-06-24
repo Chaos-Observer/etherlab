@@ -6,7 +6,7 @@
 # Copyright (c) 2006, Richard Hacker
 # License: GPL
 
-OPT_OPTS = -O -ffloat-store -fno-common
+OPT_OPTS = -O -fno-common
 
 ifneq ($(DEBUG),)
 CODE_DEBUG = -g
