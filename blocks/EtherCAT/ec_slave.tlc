@@ -181,8 +181,8 @@
           %assign BitOffsetAddr = "NULL"
         %endif
         %% PdoInfoIndex, PdoEntryIdx, PdoDataType
-        { %<OutputMap[MapIdx][0]>, \
-          %<OutputMap[MapIdx][1]>, \
+        { %<OutputMap[MapIdx - InputMapMax][0]>, \
+          %<OutputMap[MapIdx - InputMapMax][1]>, \
           %<SrcDType>, \
           %%
           %% Source address for the data. If floating point is used
@@ -315,8 +315,10 @@
           %assign rollRegions = RollRegions == [] ...
                   ? [0:%<PortWidth-1>] : RollRegions
         %endif
+        %assign VectorOutput = MapCount != PortWidth
         %if Raw
-          %assign RollVars = ["y%<port>", "<pwork>/DataPtr"]
+          %assign RollVars = ...
+                VectorOutput ? ["y%<port>"] : ["y%<port>", "<pwork>/DataPtr"]
         %else
           %assign RollVars = ["y%<port>", "<pwork>/DataPtr", ...
                 "<param>/%<OutputGainName[port]>", ...
@@ -329,7 +331,7 @@
           %assign PWorkLcv = ...
               (lcv != "" && PWorkIdx) ? "%<lcv> + %<PWorkIdx>" : lcv
           %%
-          %assign u0 = GetSrc(port, Raw, MapCount != PortWidth, ...
+          %assign u0 = GetSrc(port, Raw, VectorOutput, ...
                 PWorkLcv, PWorkIdx, lcv, sigIdx)
           %<LibBlockOutputSignal(port,"",lcv,sigIdx)> = %<u0>;
         %endroll
@@ -363,6 +365,8 @@
     %assign PDODataTypeId = ...
                 GetIOPortSpec(InputPortSpec, "PDODataTypeId",  port)
     %assign PortWidth = LibBlockInputSignalWidth(port)
+    %assign MapCount = GetIOPortSpec(InputPortSpec, "MapCount", port)
+    %assign VectorInput = PortWidth != MapCount
     %%
     %if Raw
       %%
@@ -372,9 +376,13 @@
         %assign rollRegions = RollRegions == [] ...
                 ? [0:%<PortWidth-1>] : RollRegions
       %endif
-      %assign RollVars = (Raw & 2) ...
-                ? ["u%<port>", "<iwork>/BitOffset", "<pwork>/DataPtr"] ...
-                : ["u%<port>", "<pwork>/DataPtr"]
+      %if Raw & 2
+        %assign RollVars = ...
+                ["u%<port>", "<iwork>/BitOffset", "<pwork>/DataPtr"]
+      %else
+        %assign RollVars = VectorInput ...
+                ? ["u%<port>"] : ["u%<port>", "<pwork>/DataPtr"]
+      %endif
       %roll sigIdx = rollRegions, lcv = RollThreshold, block, ...
               "Roller", RollVars
         %%
@@ -383,7 +391,8 @@
                 (lcv != "" && PWorkIdx) ? "%<lcv>+%<PWorkIdx>" : lcv
         %%
         %assign src = LibBlockInputSignal(port,"",lcv,sigIdx)
-        %assign dst = GetDst(port,0,PWorkLcv,PWorkIdx,sigIdx)
+        %assign dst = GetDst(port, PortWidth != MapCount, ...
+                PWorkLcv, PWorkIdx, lcv)
         %%
         %if Raw & 2
           %assign ShiftIdx = sigIdx + ECatInput[port].BitIdx
@@ -407,15 +416,16 @@
                 ? -InputPDOFullScale[port] : 0.0
       { real_T value;
 
-        %assign MapCount = GetIOPortSpec(InputPortSpec, "MapCount", port)
         %if PortWidth == 1
           %assign rollRegions = [0:0]
         %else
           %assign rollRegions = RollRegions == [] ...
                   ? [0:%<PortWidth-1>] : RollRegions
         %endif
-        %assign RollVars = ["u%<port>", "<pwork>/DataPtr", ...
-                "<param>/%<InputGainName[port]>"]
+        %assign RollVars = VectorInput ...
+                ? ["u%<port>", "<param>/%<InputGainName[port]>"] ...
+                : ["u%<port>", "<pwork>/DataPtr", ...
+                   "<param>/%<InputGainName[port]>"]
         %roll sigIdx = rollRegions, lcv = RollThreshold, block, ...
                 "Roller", RollVars
           %assign src = LibBlockInputSignal(port,"",lcv,sigIdx)
@@ -429,8 +439,8 @@
                 LibBlockParameter(%<InputGainName[port]>,"",lcv,sigIdx)
             value = %<src> * %<InputPDOFullScale[port]> / %<scale>;
           %endif
-          %assign dst = GetDst(port, PortWidth == MapCount, ...
-                PWorkLcv, PWorkIdx, sigIdx)
+          %assign dst = GetDst(port, PortWidth != MapCount, ...
+                PWorkLcv, PWorkIdx, lcv)
           if (value > %<MaxValue>) {
             %<dst> = %<MaxValue>;
           } else if (value < %<MinValue>) {
@@ -507,21 +517,23 @@
 %endfunction
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%function GetDst(port, VectorInput, PWorkLcv, PWorkIdx, sigIdx)
+%function GetDst(port, VectorInput, PWorkLcv, PWorkIdx, lcv)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   %if VectorInput
     %assign dst = SPRINTF("((%s*)%s)", ...
         ECatInput[port].RTWDType, ...
-        LibBlockPWork(DataPtr, "", PWorkLcv, PWorkIdx))
-    %assign dst = "%<dst>[%<sigIdx>]"
-    %return dst
+        LibBlockPWork(DataPtr, "", "", PWorkIdx))
+    %assign dst = "%<dst>[%<lcv>]"
   %else
-    %return SPRINTF("*(%s*)(%s)", ...
+    %assign dst = SPRINTF("*(%s*)(%s)", ...
         ECatInput[port].RTWDType, ...
         LibBlockPWork(DataPtr, "", PWorkLcv, PWorkIdx))
         )
   %endif
+
+  %return dst
+
 %endfunction
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -531,8 +543,8 @@
   %if VectorInput
     %assign src = SPRINTF("((%s*)%s)", ...
          ECatOutput[port].RTWDType, ...
-         LibBlockPWork(DataPtr,"",PWorkLcv,PWorkIdx))
-    %assign src = "%<src>[%<sigIdx>]"
+         LibBlockPWork(DataPtr,"","",PWorkIdx))
+    %assign src = "%<src>[%<lcv>]"
   %else
     %assign src = SPRINTF("*(%s*)(%s)", ...
          ECatOutput[port].RTWDType, ...
