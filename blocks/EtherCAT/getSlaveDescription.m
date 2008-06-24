@@ -102,7 +102,8 @@ function [VendorId name RevisionNo TxPdo RxPdo] = ...
 
     if isempty(slaveElem)
         error('getSlaveInfo:getSlaveInfo:noDevice', ...
-            ['XML Document does not have device #x' dec2hex(ProductCode)]);
+            ['XML Document does not have device #x' dec2hex(ProductCode) ...
+            ' Revision #x' dec2hex(RevisionNo)]);
     end
 
     TxPdo = getPdo(slaveElem, parent, 'TxPdo', PdoList);

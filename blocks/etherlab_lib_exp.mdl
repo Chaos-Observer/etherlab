@@ -34,8 +34,8 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "rich"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Tue Jun 24 17:08:08 2008"
-  ModelVersionFormat	  "1.%<AutoIncrement:542>"
+  LastModifiedDate	  "Tue Jun 24 17:19:24 2008"
+  ModelVersionFormat	  "1.%<AutoIncrement:543>"
   ConfigurationManager	  "rcs"
   LinearizationMsg	  "none"
   Profile		  off
@@ -156,7 +156,7 @@ Library {
   }
   System {
     Name		    "etherlab_lib_exp"
-    Location		    [723, 601, 1318, 994]
+    Location		    [727, 601, 1322, 994]
     Open		    on
     ModelBrowserVisibility  off
     ModelBrowserWidth	    200
@@ -372,7 +372,7 @@ Library {
       MaskHideContents	      off
       System {
 	Name			"EtherCAT"
-	Location		[898, 617, 1395, 985]
+	Location		[898, 626, 1395, 994]
 	Open			on
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
@@ -1072,8 +1072,8 @@ Library {
 	Block {
 	  BlockType		  "S-Function"
 	  Name			  "Infrastructure"
-	  Ports			  [0, 1]
-	  Position		  [315, 135, 405, 175]
+	  Ports			  []
+	  Position		  [315, 140, 405, 180]
 	  BackgroundColor	  "yellow"
 	  FunctionName		  "ec_slave"
 	  Parameters		  "master,domain,alias,position,model,vendor,p"
@@ -1121,7 +1121,7 @@ Library {
 	  MaskIconOpaque	  on
 	  MaskIconRotate	  "none"
 	  MaskIconUnits		  "autoscale"
-	  MaskValueString	  "0|1|EK1100|0"
+	  MaskValueString	  "0|0|EK1100|0"
 	  MaskTabNameString	  ",,,"
 	}
 	Block {
