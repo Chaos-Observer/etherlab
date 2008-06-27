@@ -151,16 +151,30 @@ function EtherCATInfo =  ...
     % Get the list of slaves assigned to the SyncManagers
     TxSm = getSmPdos(slaveElem, parent, 'TxPdo', PdoList);
     RxSm = getSmPdos(slaveElem, parent, 'RxPdo', PdoList);
-    Sm = cellfun(@(t,r) [t r], TxSm, RxSm, 'UniformOutput', false);
 
-    EtherCATInfo.SyncManager = struct('SmIndex',0,'pdo',{});
+    EtherCATInfo.SyncManager = {};
     sm_idx = 1;
     for i = 1:16
-        if ~isempty(Sm{i})
-            EtherCATInfo.SyncManager{sm_idx} = ...
-                struct('SmIndex', i-1, 'Pdo', Sm{i});
-            sm_idx = sm_idx + 1;
+        Sm = {};
+        dir = 0;
+        if ~isempty(TxSm{i})
+            dir = 1;
+            Sm = TxSm{i};
         end
+        if ~isempty(RxSm{i})
+            if ~isempty(Sm)
+                error('getEtherCATInfo:getEtherCATInfo:configError',...
+                    'SyncManager %u can only have one direction.',i-1);
+            end
+            dir = 0;
+            Sm = RxSm{i};
+        end
+        if isempty(Sm)
+            continue
+        end
+        EtherCATInfo.SyncManager{sm_idx} = ...
+            struct('SmIndex', i-1, 'SmDir', dir, 'Pdo', Sm);
+        sm_idx = sm_idx + 1;
     end
 end
 
