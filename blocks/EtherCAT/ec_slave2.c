@@ -351,6 +351,8 @@ struct ecat_slave {
         unsigned int pdo_count;
     } *sync_manager;
     uint_T sync_manager_count;
+    uint_T pdo_count;
+    uint_T pdo_entry_count;
 
     /* Maximum port width of both input and output ports. This is a 
      * temporary value that is used to check whether the Simulink block
@@ -425,10 +427,24 @@ struct ecat_slave {
     uint_T input_port_count;
     uint_T output_port_count;
 
+    /* IWork is needed to store the bit offsets when and IO requires
+     * bit operations */
     uint_T iwork_count;
+
+    /* PWork is used to store the address of the data */
     uint_T pwork_count;
-    uint_T filter_count;
+    
+    /* Runtime parameters are used to store parameters where a name was
+     * supplied for gain_name, offset_name and filter_name. These
+     * parameters are exported in the C-API */
     uint_T runtime_param_count;
+
+    /* RWork  used to store parameters where no name was
+     * supplied for gain_name, offset_name and filter_name. These
+     * parameters are not exported in the C-API */
+    uint_T rwork_count;
+
+    uint_T filter_count;
 };
 
 
@@ -864,25 +880,22 @@ get_numeric_field(SimStruct *S, const char_T *variable,
 
 int_T
 get_string_field(SimStruct *S, const char_T *variable,
-        const mxArray *src, uint_T idx, boolean_T zero_not_allowed,
-        const char_T *field_name, char_T **dest)
+        const mxArray *src, uint_T idx, 
+        const char_T *field_name, const char_T *dflt, char_T **dest)
 {
     const mxArray *field = mxGetField(src, idx, field_name);
-    uint_T len;
+    uint_T len = 0;
 
     if (!field || !mxIsChar(field)) {
-        return err_no_str_field(S, variable, field_name);
+        goto not_available;
     }
 
     len = mxGetN(field);
 
     if (!len) {
-        *dest = NULL;
-
-        return zero_not_allowed
-            ? err_no_empty_string_field(S, variable, field_name)
-            : 0;
+        goto not_available;
     }
+    len++;
 
     CHECK_CALLOC(S,len,1,*dest);
 
@@ -890,6 +903,21 @@ get_string_field(SimStruct *S, const char_T *variable,
         return err_no_str_field(S, variable, field_name);
     }
 
+    return 0;
+
+not_available:
+    if (!dflt || !(len = strlen(dflt))) {
+        *dest = NULL;
+        if (!len) {
+            return err_no_str_field(S, variable, field_name);
+        }
+        else {
+            return err_no_empty_string_field(S, variable, field_name);
+        }
+    }
+    len++;
+    CHECK_CALLOC(S,len,1,*dest);
+    strcpy(*dest, dflt);
     return 0;
 }
 
@@ -941,8 +969,8 @@ get_ethercat_info(SimStruct *S, struct ecat_slave *slave)
     RETURN_ON_ERROR(get_numeric_field(S, param, ec_info, 0, 1,
                 "ProductCode", &val));
     slave->product_code = val;
-    RETURN_ON_ERROR(get_string_field(S, param, ec_info, 0, 0,
-                "Type", &slave->type));
+    RETURN_ON_ERROR(get_string_field(S, param, ec_info, 0,
+                "Type", "Unspecified", &slave->type));
 
     sm_field = mxGetField(ec_info, 0, "SyncManager");
     if (!sm_field)
@@ -1067,8 +1095,12 @@ get_ethercat_info(SimStruct *S, struct ecat_slave *slave)
                 printf("\t\t\tDataType %u %i\n", 
                         dummy_datatype, entry->datatype);
             }
+            slave->pdo_entry_count += pdo->entry_count;
         }
+        slave->pdo_count += sm->pdo_count;
     }
+    printf("sync_manager_count %u, pdo_count %u, pdo_entry_count %u\n",
+            slave->sync_manager_count, slave->pdo_count, slave->pdo_entry_count);
 
     return 0;
 }
@@ -1372,15 +1404,7 @@ get_ioport_config(SimStruct *S, struct ecat_slave *slave,
                 return -1;
         }
 
-        if (port->width > 1 && slave->max_port_width != port->width) {
-            slave->mixed_port_widths = 1;
-        }
-
-        slave->max_port_width = max(port->width, slave->max_port_width);
-
-        slave->pwork_count += port->width;
         if (port->data_bit_len % 8 || port->data_bit_len == 24) {
-            slave->iwork_count += port->width;
             port->bitop = 1;
         }
     }
@@ -1435,6 +1459,59 @@ slave_mem_op(struct ecat_slave *slave, void (*func)(void*))
     (*func)(slave);
 }
 
+int_T
+set_io_port_width(SimStruct *S, struct ecat_slave *slave, 
+    struct io_port *port_base, uint_T port_idx, uint_T width)
+{
+    const char_T * const direction = 
+        port_base == slave->input_port ? "INPUT" : "OUTPUT";
+    struct io_port *port = &port_base[port_idx];
+
+    if (width > port->width) {
+        snprintf(errmsg, sizeof(errmsg),
+                "Maximum port width for %s port %u is %u.\n"
+                "Tried to set it to %i.",
+                direction,
+                port_idx+1, port->width, width);
+        ssSetErrorStatus(S, errmsg);
+        return -1;
+    }
+
+    if (width > 1 && slave->max_port_width != width) {
+        slave->mixed_port_widths = 1;
+    }
+
+    slave->max_port_width = max(width, slave->max_port_width);
+
+    slave->pwork_count += width;
+    if (port->bitop) {
+        slave->iwork_count += width;
+    }
+
+    if (port->gain_count) {
+        if (port->gain_name)
+            slave->runtime_param_count += width;
+        else
+            slave->rwork_count += width;
+    }
+
+    if (port->offset_count) {
+        if (port->offset_name)
+            slave->runtime_param_count += width;
+        else
+            slave->rwork_count += width;
+    }
+
+    if (port->filter_count) {
+        if (port->filter_name)
+            slave->runtime_param_count += width;
+        else
+            slave->rwork_count += width;
+    }
+
+    return 0;
+}
+
 /*====================*
  * S-function methods *
  *====================*/
@@ -1480,7 +1557,7 @@ static void mdlInitializeSizes(SimStruct *S)
     for (port_idx = 0, port = slave->input_port; 
             port_idx < slave->input_port_count; port_idx++, port++) {
 
-        ssSetInputPortWidth(S, port_idx, port->width);
+        ssSetInputPortWidth(S, port_idx, DYNAMICALLY_SIZED);
 
         if (!port->pdo_full_scale) {
             ssSetInputPortDataType(S, port_idx, port->data_type);
@@ -1500,18 +1577,14 @@ static void mdlInitializeSizes(SimStruct *S)
             port_idx < slave->output_port_count; port_idx++, port++) {
 
         ssSetOutputPortWidth(S, port_idx, port->width);
+        if (set_io_port_width(S, slave,
+                    slave->output_port, port_idx, port->width))
+            return;
 
         ssSetOutputPortDataType(S, port_idx, port->data_type);
     }
 
     ssSetNumSampleTimes(S, 1);
-    ssSetNumPWork(S, slave->pwork_count);
-    ssSetNumIWork(S, slave->iwork_count);
-    if (TSAMPLE) {
-        ssSetNumDiscStates(S, slave->filter_count);
-    } else {
-        ssSetNumContStates(S, slave->filter_count);
-    }
 
     /* Make the memory peristent, otherwise it is lost just before
      * mdlRTW is called. To ensure that the memory is released again,
@@ -1546,34 +1619,14 @@ static void mdlSetOutputPortWidth(SimStruct *S, int_T port, int_T width)
     ssSetErrorStatus(S, errmsg);
     return;
 }
-
 #define MDL_SET_INPUT_PORT_WIDTH
 static void mdlSetInputPortWidth(SimStruct *S, int_T port, int_T width)
 {
-#if 0
     struct ecat_slave *slave = ssGetUserData(S);
-    struct io_port *input_spec = &slave->input_spec[port];
-
-    if (width > input_spec->port_width) {
-        snprintf(errmsg, sizeof(errmsg),
-                "Maximum port width for input port %u is %u.\n"
-                "Tried to set it to %i.",
-                port+1, input_spec->port_width, width);
-        ssSetErrorStatus(S, errmsg);
-        return;
-    }
 
     ssSetInputPortWidth(S, port, width);
 
-    if (slave->port_width > 1) {
-        if (width > 1 && slave->port_width != width) {
-            slave->unequal_port_widths = 1;
-        }
-    }
-    else {
-        slave->port_width = width;
-    }
-#endif
+    set_io_port_width(S, slave, slave->input_port, port, width);
 }
 
 /* This function is called when some ports are still DYNAMICALLY_SIZED
@@ -1583,52 +1636,63 @@ static void mdlSetInputPortWidth(SimStruct *S, int_T port, int_T width)
 #define MDL_SET_DEFAULT_PORT_DIMENSION_INFO
 static void mdlSetDefaultPortDimensionInfo(SimStruct *S)
 {
-#if 0
     struct ecat_slave *slave = ssGetUserData(S);
-    struct io_port *input_spec;
-    int_T port;
+    struct io_port *port;
+    int_T port_idx;
 
-    for (input_spec = slave->input_spec, port = 0;
-            input_spec != &slave->input_spec[slave->num_inputs];
-            input_spec++, port++) {
-        if (ssGetInputPortWidth(S, port) == DYNAMICALLY_SIZED) {
-            ssSetInputPortWidth(S, port, input_spec->port_width);
+    for (port_idx = 0, port = slave->input_port;
+            port_idx < slave->input_port_count; port_idx++, port++) {
+        if (ssGetInputPortWidth(S, port_idx) == DYNAMICALLY_SIZED) {
+            ssSetInputPortWidth(S, port_idx, port->width);
         }
     }
-#endif
+
+    for (port_idx = 0, port = slave->output_port;
+            port_idx < slave->output_port_count; port_idx++, port++) {
+        if (ssGetOutputPortWidth(S, port_idx) == DYNAMICALLY_SIZED) {
+            ssSetOutputPortWidth(S, port_idx, port->width);
+        }
+    }
 }
 
 #define MDL_SET_WORK_WIDTHS
 static void mdlSetWorkWidths(SimStruct *S)
 {
-#if 0
     struct ecat_slave *slave = ssGetUserData(S);
-    struct io_port *output_spec;
-    struct io_port *input_spec;
+    struct io_port *port;
     uint_T param_idx = 0;
 
-    if (slave->unequal_port_widths) {
-        int_T port;
-        for (input_spec = slave->input_spec, port = 0;
-                input_spec != &slave->input_spec[slave->num_inputs];
-                input_spec++, port++) {
-            ssSetInputPortRequiredContiguous(S, port, 1);
+    ssSetNumPWork(S, slave->pwork_count);
+    ssSetNumIWork(S, slave->iwork_count);
+    ssSetNumRWork(S, slave->rwork_count);
+    if (TSAMPLE) {
+        ssSetNumDiscStates(S, slave->filter_count);
+    } else {
+        ssSetNumContStates(S, slave->filter_count);
+    }
+
+    if (slave->mixed_port_widths) {
+        int_T port_idx;
+        for (port = slave->input_port, port_idx = 0;
+                port != &slave->input_port[slave->input_port_count];
+                port++, port_idx++) {
+            ssSetInputPortRequiredContiguous(S, port_idx, 1);
         }
     }
 
     ssSetNumRunTimeParams(S, slave->runtime_param_count);
 
-    for (input_spec = slave->input_spec;
-            input_spec != &slave->input_spec[slave->num_inputs];
-            input_spec++) {
-        if (input_spec->gain_count && input_spec->gain_name) {
+    for (port = slave->input_port;
+            port != &slave->input_port[slave->input_port_count];
+            port++) {
+        if (port->gain_count && port->gain_name) {
             ssParamRec p = {
-                .name = input_spec->gain_name,
+                .name = port->gain_name,
                 .nDimensions = 1,
-                .dimensions = &input_spec->gain_count,
+                .dimensions = &port->gain_count,
                 .dataTypeId = SS_DOUBLE,
                 .complexSignal = 0,
-                .data = input_spec->gain_values,
+                .data = port->gain_values,
                 .dataAttributes = NULL,
                 .nDlgParamIndices = 0,
                 .dlgParamIndices = NULL,
@@ -1639,17 +1703,17 @@ static void mdlSetWorkWidths(SimStruct *S)
         }
     }
 
-    for (output_spec = slave->output_spec;
-            output_spec != &slave->output_spec[slave->num_outputs];
-            output_spec++) {
-        if (output_spec->gain_count && output_spec->gain_name) {
+    for (port = slave->output_port;
+            port != &slave->output_port[slave->output_port_count];
+            port++) {
+        if (port->gain_count && port->gain_name) {
             ssParamRec p = {
-                .name = output_spec->gain_name,
+                .name = port->gain_name,
                 .nDimensions = 1,
-                .dimensions = &output_spec->gain_count,
+                .dimensions = &port->gain_count,
                 .dataTypeId = SS_DOUBLE,
                 .complexSignal = 0,
-                .data = output_spec->gain_values,
+                .data = port->gain_values,
                 .dataAttributes = NULL,
                 .nDlgParamIndices = 0,
                 .dlgParamIndices = NULL,
@@ -1658,14 +1722,14 @@ static void mdlSetWorkWidths(SimStruct *S)
             };
             ssSetRunTimeParamInfo(S, param_idx++, &p);
         }
-        if (output_spec->offset_count && output_spec->offset_name) {
+        if (port->offset_count && port->offset_name) {
             ssParamRec p = {
-                .name = output_spec->offset_name,
+                .name = port->offset_name,
                 .nDimensions = 1,
-                .dimensions = &output_spec->offset_count,
+                .dimensions = &port->offset_count,
                 .dataTypeId = SS_DOUBLE,
                 .complexSignal = 0,
-                .data = output_spec->offset_values,
+                .data = port->offset_values,
                 .dataAttributes = NULL,
                 .nDlgParamIndices = 0,
                 .dlgParamIndices = NULL,
@@ -1674,14 +1738,14 @@ static void mdlSetWorkWidths(SimStruct *S)
             };
             ssSetRunTimeParamInfo(S, param_idx++, &p);
         }
-        if (output_spec->filter_count && output_spec->filter_name) {
+        if (port->filter_count && port->filter_name) {
             ssParamRec p = {
-                .name = output_spec->filter_name,
+                .name = port->filter_name,
                 .nDimensions = 1,
-                .dimensions = &output_spec->filter_count,
+                .dimensions = &port->filter_count,
                 .dataTypeId = SS_DOUBLE,
                 .complexSignal = 0,
-                .data = output_spec->filter_values,
+                .data = port->filter_values,
                 .dataAttributes = NULL,
                 .nDlgParamIndices = 0,
                 .dlgParamIndices = NULL,
@@ -1693,7 +1757,6 @@ static void mdlSetWorkWidths(SimStruct *S)
     }
 
     return;
-#endif
 }
 
 /* Function: mdlOutputs =====================================================
@@ -1758,8 +1821,8 @@ char_T *createStrVect(const char_T *strings[])
 #define MDL_RTW
 static void mdlRTW(SimStruct *S)
 {
-#if 0
     struct ecat_slave *slave = ssGetUserData(S);
+#if 0
     uint_T master = ECMASTER;
     uint_T domain = ECDOMAIN;
     uint_T alias = ECALIAS;
@@ -1873,68 +1936,97 @@ static void mdlRTW(SimStruct *S)
     output_gain_str = createStrVect(output_gain_name_ptr);
     output_offset_str = createStrVect(output_offset_name_ptr);
     output_filter_str = createStrVect(output_filter_name_ptr);
+#endif
 
-    if (!ssWriteRTWScalarParam(S, "MasterId", &master, SS_UINT32))
-        return;
-    if (!ssWriteRTWScalarParam(S, "DomainId", &domain, SS_UINT32))
-        return;
-    if (!ssWriteRTWScalarParam(S, "SlaveAlias", &alias, SS_UINT32))
-        return;
-    if (!ssWriteRTWScalarParam(S, "SlavePosition", &position, SS_UINT32))
-        return;
+    if (!ssWriteRTWScalarParam(S, 
+                "MasterId", &slave->master, SS_UINT32))              return;
+    if (!ssWriteRTWScalarParam(S, 
+                "DomainId", &slave->domain, SS_UINT32))              return;
+    if (!ssWriteRTWScalarParam(S, 
+                "SlaveAlias", &slave->alias, SS_UINT32))             return;
+    if (!ssWriteRTWScalarParam(S, 
+                "SlavePosition", &slave->position, SS_UINT32))       return;
+    if (!ssWriteRTWStrParam(S, 
+                "ProductName", slave->type))                         return;
+    if (!ssWriteRTWScalarParam(S, 
+                "VendorId", &slave->vendor_id, SS_UINT32))           return;
+    if (!ssWriteRTWScalarParam(S, 
+                "ProductCode", &slave->product_code, SS_UINT32))     return;
+    if (!ssWriteRTWScalarParam(S, 
+                "LayoutVersion", &slave->layout_version, SS_UINT32)) return;
 
-    if (!ssWriteRTWStrParam(S, "ProductName", slave->product_name))
-        return;
-    if (!ssWriteRTWScalarParam(S, "VendorId", &vendor, SS_UINT32))
-        return;
-    if (!ssWriteRTWScalarParam(S, "ProductCode", &product, SS_UINT32))
-        return;
-    if (!ssWriteRTWScalarParam(S, "ConfigLayout", &layout, SS_UINT32))
-        return;
+    if (slave->sdo_config_count) { /* Transpose slave->sdo_config */
+        uint32_T sdo_config[4][slave->sdo_config_count];
+        uint_T i;
 
-    if (slave->sdo_config_len) { /* Transpose slave->sdo_config */
-        uint32_T sdo_config[4][slave->sdo_config_len];
-        uint_T i, j;
-
-        for (i = 0; i < slave->sdo_config_len; i++) {
-            for (j = 0; j < 4; j++) {
-                sdo_config[j][i] = slave->sdo_config[i][j];
-            }
+        for (i = 0; i < slave->sdo_config_count; i++) {
+            sdo_config[0][i] = slave->sdo_config[i].index;
+            sdo_config[1][i] = slave->sdo_config[i].subindex;
+            sdo_config[2][i] = slave->sdo_config[i].datatype;
+            sdo_config[3][i] = slave->sdo_config[i].value;
         }
 
         if (!ssWriteRTW2dMatParam(S, "SdoConfig", sdo_config,
-                    SS_UINT32, slave->sdo_config_len, 4))
+                    SS_UINT32, slave->sdo_config_count, 4))
             return;
     }
-    if (slave->pdo_entry_info_len) { /* Transpose slave->pdo_entry_info */
-        uint32_T pdo_entry_info[3][slave->pdo_entry_info_len];
-        uint_T i;
 
-        for (i = 0; i < slave->pdo_entry_info_len; i++) {
-            pdo_entry_info[0][i] = slave->pdo_entry_info[i].index;
-            pdo_entry_info[1][i] = slave->pdo_entry_info[i].subindex;
-            pdo_entry_info[2][i] = slave->pdo_entry_info[i].bitlen;
-        }
+    if (slave->sync_manager_count) {
+        uint32_T   sync_manager[3][slave->sync_manager_count];
+        uint32_T       pdo_info[2][slave->pdo_count];
+        uint32_T pdo_entry_info[3][slave->pdo_entry_count];
 
-        if (!ssWriteRTW2dMatParam(S, "PdoEntryInfo", pdo_entry_info,
-                    SS_UINT32, slave->pdo_entry_info_len, 3))
-            return;
-    }
-    if (slave->pdo_info_len) { /* Transpose slave->pdo_info */
-        uint32_T pdo_info[4][slave->pdo_info_len];
-        uint_T i, j;
+        uint_T sm_idx = 0, pdo_idx = 0, pdo_entry_idx = 0;
 
-        for (i = 0; i < slave->pdo_info_len; i++) {
-            for (j = 0; j < 4; j++) {
-                pdo_info[j][i] = slave->pdo_info[i][j];
+        struct sync_manager *sm;
+
+        for (sm = slave->sync_manager;
+                sm != &slave->sync_manager[slave->sync_manager_count];
+                sm++, sm_idx++) {
+            struct pdo *pdo;
+
+            sync_manager[0][sm_idx] = sm->index;
+            sync_manager[1][sm_idx] = sm->direction == EC_DIR_INPUT;
+            sync_manager[2][sm_idx] = sm->pdo_count;
+
+            for (pdo = sm->pdo;
+                    pdo != &sm->pdo[sm->pdo_count];
+                    pdo++, pdo_idx++) {
+                struct pdo_entry *pdo_entry;
+
+                pdo_info[0][pdo_idx] = pdo->index;
+                pdo_info[1][pdo_idx] = pdo->entry_count;
+
+                for (pdo_entry = pdo->entry; 
+                        pdo_entry != &pdo->entry[pdo->entry_count];
+                        pdo_entry++, pdo_entry_idx++) {
+
+                    pdo_entry_info[0][pdo_entry_idx] = pdo_entry->index;
+                    pdo_entry_info[1][pdo_entry_idx] = pdo_entry->subindex;
+                    pdo_entry_info[2][pdo_entry_idx] = pdo_entry->bitlen;
+                }
             }
         }
 
-        if (!ssWriteRTW2dMatParam(S, "PdoInfo", pdo_info,
-                    SS_UINT32, slave->pdo_info_len, 4))
+        if (slave->pdo_entry_count) {
+            if (!ssWriteRTW2dMatParam(S, "PdoEntryInfo", pdo_entry_info,
+                        SS_UINT32, slave->pdo_entry_count, 3))
+                return;
+        }
+        if (slave->pdo_count) {
+            if (!ssWriteRTW2dMatParam(S, "PdoInfo", pdo_info,
+                        SS_UINT32, slave->pdo_count, 2))
+                return;
+        }
+
+        /* Don't need to check for slave->sync_manager_count here,
+         * was checked already */
+        if (!ssWriteRTW2dMatParam(S, "SyncManager", sync_manager,
+                    SS_UINT32, slave->sync_manager_count, 3))
             return;
     }
 
+#if 0
     if (slave->num_inputs) {
         if (!ssWriteRTW2dMatParam(S, "InputMap", input_map,
                     SS_UINT32, slave->input_map_count, 2))
