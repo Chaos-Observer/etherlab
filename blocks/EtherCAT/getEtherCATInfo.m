@@ -244,6 +244,11 @@ function sm = getSmPdos(slave, parent, dir, PdoList)
         pdoIndexList(size(pdoIndexList,2)+1) = index;
         pdo.Index = index;
         Sm = str2double(p.getAttribute('Sm'));
+        if isnan(Sm) || Sm < 0
+            error('getEtherCATInfo:getPDO:attributeMissing',...
+                'XML element <%s> does not required attribute "Sm"', ...
+                parent);
+        end
         
         % Save the PDO name
         name = p.getElementsByTagName('Name').item(0);

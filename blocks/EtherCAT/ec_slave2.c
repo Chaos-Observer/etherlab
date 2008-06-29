@@ -290,14 +290,15 @@
 
 #include <stdint.h>
 
-#define ADDRESS                                            0
-#define ETHERCAT_INFO                                      1
-#define LAYOUT_VERSION        mxGetScalar(ssGetSFcnParam(S,2))
-#define SDO_CONFIG                                         3
-#define INPUT                                              4
-#define OUTPUT                                             5
-#define TSAMPLE               mxGetScalar(ssGetSFcnParam(S,6))
-#define PARAM_COUNT                                        7
+enum {
+    ADDRESS = 0,
+    ETHERCAT_INFO,
+    LAYOUT_VERSION,
+    SDO_CONFIG,
+    PORT_SPEC,
+    TSAMPLE,
+    PARAM_COUNT
+};
 
 char errmsg[256];
 
@@ -337,7 +338,7 @@ struct ecat_slave {
 
     struct sync_manager {
         uint16_t index;
-        enum {EC_DIR_INPUT, EC_DIR_OUTPUT} direction;
+        enum {EC_DIR_OUTPUT, EC_DIR_INPUT} direction;
         struct pdo {
             uint16_t index;
             struct pdo_entry {
@@ -360,15 +361,13 @@ struct ecat_slave {
     uint_T max_port_width;
 
     /* Set if the Simulink block has mixed port widths */
-    boolean_T mixed_port_widths;
+    boolean_T have_mixed_port_widths;
 
     struct io_port {
+        uint_T direction;
 
-        struct mapped_pdo {
-            struct pdo *pdo;
-            struct pdo_entry *pdo_entry;
-        } *mapped_pdo;
-        uint_T mapped_pdo_count;
+        struct pdo_entry **pdo_entry;
+        uint_T pdo_entry_count;
 
         /* The length of the significant bits in the pdo entry */
         uint32_T data_bit_len;
@@ -420,12 +419,18 @@ struct ecat_slave {
         int_T  filter_count;
         char_T *filter_name;
         real_T *filter_values;
-
-    } *output_port, *input_port;
+    } *io_port;
+    uint_T io_port_count;
 
     /* Number of input and output ports */
     uint_T input_port_count;
-    uint_T output_port_count;
+
+    uint_T input_pdo_entry_count;
+    uint_T output_pdo_entry_count;
+
+    /* Save the index into slave->io_port[idx] for the inputs and outputs */
+    struct io_port **input_port_ptr;
+    struct io_port **output_port_ptr;
 
     /* IWork is needed to store the bit offsets when and IO requires
      * bit operations */
@@ -519,279 +524,6 @@ out:
     return -1;
 }
 
-#if 0
-
-const char_T*
-get_parameter_values(SimStruct* S, const mxArray* output, uint_T port,
-        const char_T* field, int_T *count, uint_T port_width,
-        real_T **values )
-{
-    real_T *value;
-    uint_T i;
-    const mxArray* src = mxGetField(output, port, field);
-
-    if (!src)
-        return NULL;
-
-    *count = mxGetNumberOfElements(src);
-    if (!*count)
-        return field;
-
-    if (!mxIsDouble(src))
-        return field;
-    value = mxGetPr(src);
-    if (!value)
-        return field;
-    if (*count != 1 && *count != port_width)
-        return field;
-    *values = mxCalloc(*count, sizeof(real_T));
-    if (!*values)
-        return ssGetErrorStatus(S);
-    for (i = 0; i < *count; i++)
-        (*values)[i] = value[i];
-
-    return NULL;
-}
-
-const char_T*
-get_parameter_name(SimStruct* S, const mxArray* output, uint_T port,
-        const char_T* field, char_T **name)
-{
-    uint_T len;
-    const mxArray* plhs;
-
-    plhs = mxGetField(output, port, field);
-    if (!plhs)
-        return NULL;
-
-    len = mxGetN(plhs) + 1;
-    *name = mxMalloc(len);
-    if (!*name)
-        return ssGetErrorStatus(S);
-
-    if (mxGetString(plhs, *name, len))
-        return field;
-
-    return NULL;
-}
-
-const char_T*
-get_ioport_config(SimStruct *S, const mxArray* src, struct io_spec *io_spec,
-        uint_T *total_map_count, uint_T *iwork_count,
-        const struct ecat_slave *slave, uint_T port, uint_T port_dir)
-{
-    const mxArray* pdo_map = mxGetField(src, port, "pdo_map");
-    const mxArray* pdo_full_scale = mxGetField(src, port, "pdo_full_scale");
-    const char_T* errfield = NULL;
-    const char_T* err;
-    const char_T* dir_str = port_dir ? "input" : "output";
-    real_T *pdo_info_idx;
-    real_T *pdo_entry_offset;
-    uint_T sig_idx;
-    uint_T pdo_entry_idx;
-    uint_T port_bit_len;
-
-    /* Check that the required fields for port are specified */
-    if (!pdo_map) {
-        snprintf(errmsg, sizeof(errmsg),
-                "Required field %s(%u).pdo_map not specified.",
-                dir_str, port+1);
-        return errmsg;
-    }
-
-    /* Make sure matrices have the right dimensions */
-    io_spec->map_count = mxGetM(pdo_map);
-    if (mxGetN(pdo_map) != 2 || !mxIsDouble(pdo_map) 
-            || !io_spec->map_count) {
-        /* PDO map must have 2 columns */
-        snprintf(errmsg, sizeof(errmsg),
-                "Matrix specified for %s(%u).%s must be a numeric array "
-                "with 2 columns.",
-                dir_str, port+1, "pdo_map");
-        return errmsg;
-    }
-
-    /* The first guess of port width is the number of mapped pdo's. This
-     * might change later on */
-    io_spec->port_width = io_spec->map_count;
-
-    pdo_info_idx = mxGetPr(pdo_map);
-    pdo_entry_offset = pdo_info_idx + io_spec->map_count;
-
-    io_spec->map = mxCalloc(io_spec->map_count, sizeof(*io_spec->map));
-    if (!io_spec->map)
-        return ssGetErrorStatus(S);
-    *total_map_count += io_spec->map_count;
-
-    /* Check the ranges of pdo_info_idx and pdo_entry_offset, and return
-     * the real pdo_entry_idx */
-    err = get_pdo_entry_idx(&pdo_entry_idx, slave,
-            pdo_info_idx[0], pdo_entry_offset[0]);
-    if (err) {
-        snprintf(errmsg, sizeof(errmsg),
-                "error occurred while determinig pdo entry index "
-                "of pdo[0] for %s(%u): %s", dir_str, port+1, err);
-        return errmsg;
-    }
-
-    /* Find out the pdo bit length for this port. It is specified by
-     * the first element of pdo_entry_idx for this port */
-    port_bit_len = slave->pdo_entry_info[pdo_entry_idx].bitlen;
-
-    /* Find out the pdo bit length for this port. It is specified by
-     * the first element of pdo_entry_idx for this port */
-    io_spec->pdo_data_type = slave->pdo_entry_info[pdo_entry_idx].datatype;
-
-    io_spec->raw = pdo_full_scale ? 0 : 1;
-
-    if (slave->pdo_entry_info[pdo_entry_idx].bitmask) {
-        if (!io_spec->raw) {
-            snprintf(errmsg, sizeof(errmsg),
-                    "Boolean signals cannot be scaled for %s(%u).",
-                    dir_str, port+1);
-            return errmsg;
-        }
-
-        *iwork_count += io_spec->map_count;
-        io_spec->bitmask = slave->pdo_entry_info[pdo_entry_idx].bitmask;
-    }
-
-    if (slave->pdo_entry_info[pdo_entry_idx].count > 1) {
-        if (io_spec->map_count > 1) {
-            snprintf(errmsg, sizeof(errmsg),
-                    "PDO Entry %u on %s port %u is a vector.\n"
-                    "When PDO Entry is a vector, only allowed to map "
-                    "1 PDO per port.",
-                    io_spec->map_count,
-                    dir_str, port+1);
-            return errmsg;
-        }
-        io_spec->port_width = slave->pdo_entry_info[pdo_entry_idx].count;
-    }
-
-    for (sig_idx = 0; sig_idx < io_spec->map_count; sig_idx++) {
-        /* Check the ranges of pdo_info_idx and pdo_entry_offset, and return
-         * the real pdo_entry_idx */
-        err = get_pdo_entry_idx(&pdo_entry_idx, slave,
-                pdo_info_idx[sig_idx], pdo_entry_offset[sig_idx]);
-        if (err) {
-            snprintf(errmsg, sizeof(errmsg),
-                    "error occurred while determinig pdo entry index "
-                    "of pdo[%u] for %s(%u): %s", 
-                    sig_idx, dir_str, port+1, err);
-            return errmsg;
-        }
-
-        /* Check that the pdo_bit_len of the mapped pdo's is the same
-         * as that for the first one */
-        if (slave->pdo_entry_info[pdo_entry_idx].bitlen != port_bit_len) {
-            snprintf(errmsg, sizeof(errmsg),
-                    "Cannot mix different PDO data types for "
-                    "%s(%u).", dir_str, port+1);
-            return errmsg;
-        }
-
-        /* Make sure that the port direction is correct */
-        if (slave->pdo_info[(uint_T)pdo_info_idx[sig_idx]][0] != port_dir) {
-            snprintf(errmsg, sizeof(errmsg),
-                    "PDO direction has wrong direction for %s(%u)",
-                    dir_str, port+1);
-            return errmsg;
-        }
-
-        io_spec->map[sig_idx].pdo_info_idx = pdo_info_idx[sig_idx];
-        io_spec->map[sig_idx].pdo_entry_idx = pdo_entry_offset[sig_idx];
-    }
-
-    if (io_spec->raw) {
-        return NULL;
-    }
-
-    /* Output is double. This means that the source value must be scaled
-     * so that the source value range is mapped to [0..1] */
-    io_spec->pdo_full_scale = mxGetScalar(pdo_full_scale);
-    if (!mxIsDouble(pdo_full_scale) || io_spec->pdo_full_scale <= 0.0) {
-        snprintf(errmsg, sizeof(errmsg),
-                "Specified field %s(%u).pdo_full_scale "
-                "must be a positive numeric scalar.",
-                dir_str, port+1);
-        return errmsg;
-    }
-
-    /* Check that the vector length is either 1 or port_width
-     * for the fields 'gain', 'offset' and 'filter' if they are specified */
-    do {
-        errfield = get_parameter_values(S, src, port, "gain",
-            &io_spec->gain_count, io_spec->port_width,
-            &io_spec->gain_values);
-        if (errfield) break;
-
-        /* Block inputs do not have offset and filter features */
-        if (port_dir == 1) break;
-
-        errfield = get_parameter_values(S, src, port, "offset",
-            &io_spec->offset_count, io_spec->port_width,
-            &io_spec->offset_values);
-        if (errfield) break;
-
-        errfield = get_parameter_values(S, src, port, "filter",
-            &io_spec->filter_count, io_spec->port_width,
-            &io_spec->filter_values);
-        if (errfield) break;
-
-    } while(0);
-    if (errfield) {
-        snprintf(errmsg, sizeof(errmsg),
-                "Vector for %s(%u).%s is not a valid numeric array "
-                "with 1 or %u elements.",
-                dir_str, port+1, errfield, io_spec->port_width);
-        return errmsg;
-    }
-
-    /* Get the names for the parameters */
-    do {
-        if (io_spec->gain_count) {
-            errfield = get_parameter_name(S, src, port, "gain_name",
-                    &io_spec->gain_name);
-            /* FIXME: Remove the restriction that a gain_name must be
-             * provided when a gain is specified */
-            if (!io_spec->gain_name)
-                errfield = "gain_name";
-            if (errfield) break;
-        }
-
-        if (io_spec->offset_count) {
-            errfield = get_parameter_name(S, src, port, "offset_name",
-                    &io_spec->offset_name);
-            /* FIXME: Remove the restriction that a offset_name must be
-             * provided when a offset is specified */
-            if (!io_spec->offset_name)
-                errfield = "offset_name";
-            if (errfield) break;
-        }
-
-        if (io_spec->filter_count) {
-            errfield = get_parameter_name(S, src, port, "filter_name",
-                    &io_spec->filter_name);
-            /* FIXME: Remove the restriction that a filter_name must be
-             * provided when a filter is specified */
-            if (!io_spec->filter_name)
-                errfield = "filter_name";
-            if (errfield) break;
-        }
-    } while(0);
-    if (errfield) {
-        snprintf(errmsg, sizeof(errmsg),
-                "No valid string for %s(%u).%s supplied.",
-                dir_str, port+1, errfield);
-        return errmsg;
-    }
-
-
-    return NULL;
-}
-#endif
-
 int_T
 err_no_zero_field(SimStruct *S, const char_T *variable, const char_T *field)
 {
@@ -881,7 +613,17 @@ get_numeric_field(SimStruct *S, const char_T *variable,
 int_T
 get_string_field(SimStruct *S, const char_T *variable,
         const mxArray *src, uint_T idx, 
-        const char_T *field_name, const char_T *dflt, char_T **dest)
+        const char_T *field_name, 
+        const char_T *dflt, /* << Default string if the Matlab string
+                                  is not supplied or '' (empty). Return
+                                  value is 0 in this case.
+                                  Setting default to NULL or "" will cause
+                                  the function to return -1 if the Matlab
+                                  string is not available or ''.
+                                  Setting default to (char_T*)1 will make
+                                  this function return 0 with *dest = NULL
+                                  */
+        char_T **dest)
 {
     const mxArray *field = mxGetField(src, idx, field_name);
     uint_T len = 0;
@@ -899,13 +641,15 @@ get_string_field(SimStruct *S, const char_T *variable,
 
     CHECK_CALLOC(S,len,1,*dest);
 
-    if (!mxGetString(field, *dest, len)) {
+    if (mxGetString(field, *dest, len)) {
         return err_no_str_field(S, variable, field_name);
     }
 
     return 0;
 
 not_available:
+    if (dflt == (char_T*)1)
+        return 0;
     if (!dflt || !(len = strlen(dflt))) {
         *dest = NULL;
         if (!len) {
@@ -924,7 +668,7 @@ not_available:
 #define RETURN_ON_ERROR(val)    \
     do {                        \
         int_T err = val;        \
-        if (err)                \
+        if (err < 0)            \
             return err;         \
     } while(0)
 
@@ -975,13 +719,11 @@ get_ethercat_info(SimStruct *S, struct ecat_slave *slave)
     sm_field = mxGetField(ec_info, 0, "SyncManager");
     if (!sm_field)
         return 0;
-    printf("%u %u\n", mxGetM(sm_field), mxGetN(sm_field));
     
     /* Count the number of fields */
     slave->sync_manager_count = mxGetNumberOfElements(sm_field);
     CHECK_CALLOC(S,slave->sync_manager_count, sizeof(struct sync_manager),
             slave->sync_manager);
-    printf("Found SyncManager Count %u\n",slave->sync_manager_count);
 
     for (sm = slave->sync_manager; 
             sm != &slave->sync_manager[slave->sync_manager_count]; 
@@ -997,7 +739,6 @@ get_ethercat_info(SimStruct *S, struct ecat_slave *slave)
 
         snprintf(variable, sizeof(variable), 
                 "%s.SyncManager(%u)", param, i+1);
-        printf("%s\n", variable);
 
         if (!smX) {
             snprintf(errmsg, sizeof(errmsg),
@@ -1021,7 +762,6 @@ get_ethercat_info(SimStruct *S, struct ecat_slave *slave)
                 break;
         } while(sm++);
         sm->index = sm_index;
-        printf("found sm %u\n", sm_index);
 
         RETURN_ON_ERROR(get_numeric_field(S, variable, smX, 0, 0,
                     "SmDir", &val));
@@ -1041,7 +781,6 @@ get_ethercat_info(SimStruct *S, struct ecat_slave *slave)
 
             snprintf(variable, sizeof(variable), 
                     "%s.SyncManager(%u).Pdo(%u)", param, i+1, pdo_idx+1);
-            printf("%s\n", variable);
 
             RETURN_ON_ERROR(get_numeric_field(S, variable,  pdoX, 
                         pdo_idx, 1, "Index", &val));
@@ -1060,7 +799,6 @@ get_ethercat_info(SimStruct *S, struct ecat_slave *slave)
                 snprintf(variable, sizeof(variable), 
                         "%s.SyncManager(%u).Pdo(%u).Entry(%u)", 
                         param, i+1, pdo_idx+1, entry_idx+1);
-                printf("%s\n", variable);
 
                 RETURN_ON_ERROR(get_numeric_field(S, variable,
                             pdo_entry, entry_idx, 1, "BitLen", &val));
@@ -1069,8 +807,6 @@ get_ethercat_info(SimStruct *S, struct ecat_slave *slave)
                 RETURN_ON_ERROR(get_numeric_field(S, variable,
                             pdo_entry, entry_idx, 0, "Index", &val));
                 entry->index = val;
-                printf("\t\tPdo Entry Index #x%04x\n", entry->index);
-                printf("\t\t\tBitlen %u\n", entry->bitlen);
 
                 if (!entry->index)
                     continue;
@@ -1078,7 +814,6 @@ get_ethercat_info(SimStruct *S, struct ecat_slave *slave)
                 RETURN_ON_ERROR(get_numeric_field(S, variable,
                             pdo_entry, entry_idx, 1, "SubIndex", &val));
                 entry->subindex = val;
-                printf("\t\t\tSubIndex %u\n", entry->subindex);
 
                 switch(get_numeric_field(S, variable,
                             pdo_entry, entry_idx, 0, "DataType", &val)) {
@@ -1092,15 +827,11 @@ get_ethercat_info(SimStruct *S, struct ecat_slave *slave)
                 }
                 RETURN_ON_ERROR(get_data_type(S, variable, "DataType",
                             entry->datatype, &dummy_datatype, 0, 0));
-                printf("\t\t\tDataType %u %i\n", 
-                        dummy_datatype, entry->datatype);
             }
             slave->pdo_entry_count += pdo->entry_count;
         }
         slave->pdo_count += sm->pdo_count;
     }
-    printf("sync_manager_count %u, pdo_count %u, pdo_entry_count %u\n",
-            slave->sync_manager_count, slave->pdo_count, slave->pdo_entry_count);
 
     return 0;
 }
@@ -1144,92 +875,166 @@ get_sdo_config(SimStruct *S, struct ecat_slave *slave)
 }
 
 int_T
-find_pdo_entry(const struct ecat_slave *slave, uint16_T pdo_index,
+find_pdo_entry(const struct ecat_slave *slave,
         uint16_T pdo_entry_index, uint8_T pdo_entry_subindex, 
-        uint_T *sm_direction, struct pdo **pdo, 
+        uint_T port_direction, uint_T *port_direction_ptr,
         struct pdo_entry **pdo_entry) 
 {
-    const struct sync_manager *sm;
+    const struct sync_manager *sm; 
 
     for (sm = slave->sync_manager; 
             sm != &slave->sync_manager[slave->sync_manager_count];
             sm++) {
-        *sm_direction = sm->direction == EC_DIR_INPUT ? 1 : 0;
-        for (*pdo = sm->pdo; *pdo != &sm->pdo[sm->pdo_count]; (*pdo)++) {
-            if ((*pdo)->index != pdo_index)
-                continue;
-            for (*pdo_entry = (*pdo)->entry; 
-                    *pdo_entry != &(*pdo)->entry[(*pdo)->entry_count]; 
+        struct pdo *pdo; 
+
+        /* If port_direction_ptr is not set, make sure that port direction
+         * and sync-manager direction are not the same
+         * Take care, sync-manager direction 1 means input for the master,
+         * corresponding to a TxPdo, connected to s Simulink output port. */
+        if (!port_direction_ptr && 
+                (port_direction && sm->direction == EC_DIR_INPUT))
+            continue;
+
+
+        for (pdo = sm->pdo; pdo != &sm->pdo[sm->pdo_count]; pdo++) {
+            for (*pdo_entry = pdo->entry; 
+                    *pdo_entry != &pdo->entry[pdo->entry_count]; 
                     (*pdo_entry)++) {
                 if ((*pdo_entry)->index == pdo_entry_index
-                        && (*pdo_entry)->subindex == pdo_entry_subindex)
+                        && (*pdo_entry)->subindex == pdo_entry_subindex) {
+                    if (port_direction_ptr)
+                        *port_direction_ptr = 
+                            sm->direction == EC_DIR_INPUT ? 0 : 1;
                     return 0;
+                }
             }
         }
     }
+
+    *pdo_entry = NULL;
     return -1;
 }
 
 int_T
-get_ioport_config(SimStruct *S, struct ecat_slave *slave, 
-        struct io_port **port_ptr, uint_T *port_count)
+get_parameter_values(SimStruct* S, const char_T *parent_variable,
+        const mxArray* port_spec, uint_T port,
+        const char_T* field, uint_T port_width, real_T **dest,
+        char_T **name)
 {
-    const char_T * const param = 
-        port_ptr == &slave->input_port ? "INPUT" : "OUTPUT";
-    const mxArray * const io_port_spec =
-        ssGetSFcnParam(S,port_ptr == &slave->input_port ? INPUT : OUTPUT);
-    const uint_T port_direction = 
-        port_ptr == &slave->input_port ? EC_DIR_INPUT : EC_DIR_OUTPUT;
+    const mxArray* src = mxGetField(port_spec, port, field);
+    char_T variable_context[100];
+    char_T name_field[sizeof(field) + 10];
+    uint_T count;
+    real_T *values;
+
+    snprintf(variable_context, sizeof(variable_context), 
+            "%s.%s", parent_variable, field);
+
+    printf("%s\n", variable_context);
+    if (!src || !(count = mxGetNumberOfElements(src)))
+        return 0;
+
+    printf("\tcount = %u\n", count);
+    if (!mxIsNumeric(src)) {
+        snprintf(errmsg, sizeof(errmsg),
+                "SFunction parameter %s not a numeric vector.",
+                variable_context);
+        ssSetErrorStatus(S, errmsg);
+        return -1;
+    }
+    printf("\tis numeric OK\n");
+
+    if (count != 1 && count != port_width) {
+        snprintf(errmsg, sizeof(errmsg),
+                "SFunction parameter %s does not match the port size.\n"
+                "It can either be a scalar or a vector with %u elements.",
+                variable_context, port_width);
+        ssSetErrorStatus(S, errmsg);
+        return -1;
+    }
+
+    *dest = mxCalloc(count, sizeof(real_T));
+    if (!*dest) {
+        snprintf(errmsg, sizeof(errmsg),
+                "Ran out of memory while processing "
+                "SFunction parameter %s.\n",
+                variable_context);
+        ssSetErrorStatus(S, errmsg);
+        return -1;
+    }
+
+    values = mxGetPr(src);
+    if (!values) {
+        snprintf(errmsg, sizeof(errmsg),
+                "An internal error occurred while processing "
+                "SFunction parameter %s.\n"
+                "Expecting a numeric scalar or vector with %u elements.",
+                variable_context, port_width);
+        ssSetErrorStatus(S, errmsg);
+        return -1;
+    }
+
+    memcpy(*dest, values, sizeof(real_T)*count);
+
+    snprintf(name_field, sizeof(name_field), "%sName", field);
+
+    RETURN_ON_ERROR(get_string_field(S, parent_variable, 
+                port_spec, port, name_field, (char_T*)1, name));
+
+    printf("name for port %u field %s is %s\n", port,name_field,*name);
+
+    return count;
+}
+
+int_T
+get_ioport_config(SimStruct *S, struct ecat_slave *slave)
+{
+
+    const mxArray * const port_spec = ssGetSFcnParam(S, PORT_SPEC);
+    const char_T *param = "IO_SPEC";
 
     struct io_port *port;
     char_T variable[100];
     real_T val;
     uint_T port_idx = 0;
 
-    if (port_ptr != &slave->output_port 
-            && port_ptr != &slave->input_port) {
-        ssSetErrorStatus(S,
-                "Internal error: Invalid function argument supplied for io."
-                );
-        return -1;
-    }
-
-    if (!io_port_spec || !(*port_count = mxGetNumberOfElements(io_port_spec)))
+    if (!port_spec || 
+            !(slave->io_port_count = mxGetNumberOfElements(port_spec)))
         return 0;
-    CHECK_CALLOC(S, *port_count, sizeof(struct io_port), *port_ptr);
-    printf("%s %u\n", param, *port_count);
+    CHECK_CALLOC(S, slave->io_port_count, sizeof(struct io_port), 
+            slave->io_port);
 
-    for (port = *port_ptr; port != &(*port_ptr)[*port_count]; 
+    for (port = slave->io_port; 
+            port != &slave->io_port[slave->io_port_count];
             port++, port_idx++) {
-        const mxArray *mapped_pdo_spec = 
-            mxGetField(io_port_spec, port_idx, "MappedPdo");
-        struct mapped_pdo *mapped_pdo;
-        uint_T map_idx;
+        const mxArray *pdo_entry_spec = 
+            mxGetField(port_spec, port_idx, "PdoEntry");
+        struct pdo_entry **pdo_entry_ptr;
+        uint_T pdo_entry_idx;
         boolean_T struct_access;
-        real_T *pdo_index_field;
         real_T *pdo_entry_index_field;
         real_T *pdo_entry_subindex_field;
         uint_T pdo_data_type;
 
         snprintf(variable, sizeof(variable), 
-                "%s(%u).MappedPdo", param, port_idx+1);
+                "%s(%u).PdoEntry", param, port_idx+1);
 
-        if (!mapped_pdo_spec) {
+        if (!pdo_entry_spec) {
             snprintf(errmsg, sizeof(errmsg),
                     "SFunction parameter %s does not exist.", variable);
             ssSetErrorStatus(S,errmsg);
             return -1;
         }
 
-        /* The field 'MappedPdo' is allowed to be a struct or a matrix.
+        /* The field 'PdoEntry' is allowed to be a struct or a matrix.
          * Check what was specified */
-        if (mxIsStruct(mapped_pdo_spec)) {
+        if (mxIsStruct(pdo_entry_spec)) {
             /* Mapped pdos is defined using a structure array with
              * the fields 'Index', 'EntryIndex' and 'EntrySubIndex' */
             struct_access = 1;
 
-            port->mapped_pdo_count = mxGetNumberOfElements(mapped_pdo_spec);
-            if (!port->mapped_pdo_count) {
+            port->pdo_entry_count = mxGetNumberOfElements(pdo_entry_spec);
+            if (!port->pdo_entry_count) {
                 snprintf(errmsg, sizeof(errmsg),
                         "SFunction parameter %s is empty.", variable);
                 ssSetErrorStatus(S,errmsg);
@@ -1237,8 +1042,7 @@ get_ioport_config(SimStruct *S, struct ecat_slave *slave,
             }
 
             /* Stop the compiler from complaining */
-            pdo_index_field = pdo_entry_index_field = 
-                pdo_entry_subindex_field = NULL;
+            pdo_entry_index_field = pdo_entry_subindex_field = NULL;
         }
         else {
             /* Mapped pdos is defined using a M-by-3 array, where
@@ -1246,94 +1050,96 @@ get_ioport_config(SimStruct *S, struct ecat_slave *slave,
              * 'EntrySubIndex' */
             struct_access = 0;
 
-            port->mapped_pdo_count = mxGetM(mapped_pdo_spec);
+            port->pdo_entry_count = mxGetM(pdo_entry_spec);
 
-            pdo_index_field = mxGetPr(mapped_pdo_spec);
-            pdo_entry_index_field = 
-                pdo_index_field + port->mapped_pdo_count;
+            pdo_entry_index_field = mxGetPr(pdo_entry_spec);
             pdo_entry_subindex_field = 
-                pdo_entry_index_field + port->mapped_pdo_count;
+                pdo_entry_index_field + port->pdo_entry_count;
 
-            if ( !mxIsNumeric(mapped_pdo_spec) 
-                    || !port->mapped_pdo_count
-                    || mxGetN(mapped_pdo_spec) != 3 
-                    || !pdo_index_field) {
+            if ( !mxIsNumeric(pdo_entry_spec) 
+                    || !port->pdo_entry_count
+                    || mxGetN(pdo_entry_spec) != 2 
+                    || !pdo_entry_index_field) {
                 snprintf(errmsg, sizeof(errmsg),
-                        "SFunction parameter %s is not a M-by-3 "
+                        "SFunction parameter %s is not a M-by-2 "
                         "numeric array.", variable);
                 ssSetErrorStatus(S,errmsg);
                 return -1;
             }
         }
-        CHECK_CALLOC(S, port->mapped_pdo_count, sizeof(struct mapped_pdo),
-                port->mapped_pdo);
+        CHECK_CALLOC(S, port->pdo_entry_count, sizeof(struct pdo_entry*),
+                port->pdo_entry);
 
         snprintf(variable, sizeof(variable), "%s(%u)", param, port_idx+1);
 
         /* Get the list of pdo entries that are mapped to this port */
-        for (map_idx = 0, mapped_pdo = port->mapped_pdo; 
-                map_idx < port->mapped_pdo_count; map_idx++, mapped_pdo++) {
-            uint16_T pdo_index, pdo_entry_index;
+        for (pdo_entry_idx = 0, pdo_entry_ptr = port->pdo_entry; 
+                pdo_entry_idx < port->pdo_entry_count; 
+                pdo_entry_idx++, pdo_entry_ptr++) {
+            uint16_T pdo_entry_index;
             uint8_T pdo_entry_subindex;
-            uint_T sm_direction;
             char_T pdo_variable[100];
 
             snprintf(pdo_variable, sizeof(pdo_variable), 
-                    "%s(%u).MappedPdo(%u)", param, port_idx+1, map_idx+1);
+                    "%s(%u).PdoEntry(%u)", 
+                    param, port_idx+1, pdo_entry_idx+1);
 
             if (struct_access) {
                 RETURN_ON_ERROR(get_numeric_field(S, pdo_variable, 
-                            mapped_pdo_spec, map_idx, 1, "PdoIndex", &val));
-                pdo_index = val;
-
-                RETURN_ON_ERROR(get_numeric_field(S, pdo_variable, 
-                            mapped_pdo_spec, map_idx, 1, "PdoEntryIndex", 
-                            &val));
+                            pdo_entry_spec, pdo_entry_idx, 1, 
+                            "PdoEntryIndex", &val));
                 pdo_entry_index = val;
 
                 RETURN_ON_ERROR(get_numeric_field(S, pdo_variable, 
-                            mapped_pdo_spec, map_idx, 1, "PdoEntrySubIndex", 
-                            &val));
+                            pdo_entry_spec, pdo_entry_idx, 1, 
+                            "PdoEntrySubIndex", &val));
                 pdo_entry_subindex = val;
             }
             else {
-                pdo_index          = *pdo_index_field++;
                 pdo_entry_index    = *pdo_entry_index_field++;
                 pdo_entry_subindex = *pdo_entry_subindex_field++;
             }
 
             /* Get the pdo and pdo entry pointers for the specified 
              * indices */
-            if (find_pdo_entry(slave, 
-                        pdo_index, pdo_entry_index, pdo_entry_subindex, 
-                        &sm_direction, &mapped_pdo->pdo, 
-                        &mapped_pdo->pdo_entry)) {
-                snprintf(errmsg, sizeof(errmsg),
-                        "SFunction parameter %s cannot be found.\n"
-                        "Pdo Index = 0x%04X, Pdo Entry Index = 0x%04X, "
-                        "Pdo Entry SubIndex = %u.",
-                        pdo_variable,
-                        pdo_index, pdo_entry_index, pdo_entry_subindex);
+            if (find_pdo_entry(slave, pdo_entry_index, pdo_entry_subindex, 
+                        port->direction,
+                        pdo_entry_index ? &port->direction : NULL,
+                        pdo_entry_ptr)) {
+                if (pdo_entry_index) {
+                    snprintf(errmsg, sizeof(errmsg),
+                            "Cannot find Pdo Entry specified by "
+                            "SFunction parameter %s.\n"
+                            "Looking for Pdo direction = %s, "
+                            "Pdo Entry Index = 0x%04X, "
+                            "Pdo Entry SubIndex = %u.",
+                            pdo_variable,
+                            port->direction ? "TxPdo" : "RxPdo",
+                            pdo_entry_index, pdo_entry_subindex);
+                }
+                else {
+                    snprintf(errmsg, sizeof(errmsg),
+                            "Cannot find Pdo Entry specified by "
+                            "SFunction parameter %s.\n"
+                            "Looking for Pdo direction = %s, "
+                            "Pdo Entry Index = 0x%04X, "
+                            "Pdo Entry SubIndex = %u.",
+                            pdo_variable,
+                            port->direction ? "TxPdo" : "RxPdo",
+                            pdo_entry_index, pdo_entry_subindex);
+                }
                 ssSetErrorStatus(S,errmsg);
                 return -1;
             }
 
-            /* Check that the direction as specified in the sync manager
-             * matches that of the port */
-            if (port_direction != sm_direction) {
-                snprintf(errmsg, sizeof(errmsg),
-                        "The PDO specified by SFunction parameter %s "
-                        "is an %s.\n"
-                        "Cannot map this to an %s port.",
-                        pdo_variable,
-                        sm_direction == EC_DIR_INPUT ? "input" : "output",
-                        param);
-                ssSetErrorStatus(S,errmsg);
-                return -1;
+            if (!pdo_entry_index) {
+                if (port->direction) {
+                    slave->input_port_count++;
+                }
             }
 
-            if (port->mapped_pdo[0].pdo_entry->datatype !=
-                    mapped_pdo->pdo_entry->datatype) {
+            if (port->pdo_entry[0]->datatype !=
+                    (*pdo_entry_ptr)->datatype) {
                 ssSetErrorStatus(S,"Datatypes mixed FIXME");
                 return -1;
             }
@@ -1341,27 +1147,31 @@ get_ioport_config(SimStruct *S, struct ecat_slave *slave,
             if (!port->data_bit_len) {
                 /* data_bit_len was not specified in the port definition.
                  * Set this to the data type specified in the Pdo Entry */
-                port->data_bit_len = abs(mapped_pdo->pdo_entry->datatype);
+                port->data_bit_len = abs((*pdo_entry_ptr)->datatype);
             }
 
-            if (mapped_pdo->pdo_entry->bitlen % port->data_bit_len) {
+            if ((*pdo_entry_ptr)->bitlen % port->data_bit_len) {
                 ssSetErrorStatus(S,"Remainder FIXME");
                 return -1;
             }
 
-            port->width += 
-                mapped_pdo->pdo_entry->bitlen / port->data_bit_len;
+            port->width += (*pdo_entry_ptr)->bitlen / port->data_bit_len;
         }
+
+        if (port->direction)
+            slave->input_pdo_entry_count  += port->pdo_entry_count;
+        else
+            slave->output_pdo_entry_count += port->pdo_entry_count;
 
         /* Make sure that the PDO has a supported data type */
         RETURN_ON_ERROR(get_data_type(S, variable, "MappedPdo(1)",
-                    port->mapped_pdo[0].pdo_entry->datatype,
+                    port->pdo_entry[0]->datatype,
                     &pdo_data_type, 0, 0));
 
         /* If PdoDataType is specified, use it, otherwise it is guessed
          * by the DataBitLen spec below */
-        switch((map_idx = get_numeric_field(S, variable, mapped_pdo_spec,
-                    0, 0, "PdoDataType", &val))) {
+        switch((pdo_entry_idx = get_numeric_field(S, variable, port_spec,
+                    port_idx, 0, "PdoDataType", &val))) {
             case 0:
                 if (port->data_bit_len > (uint_T)val) {
                     ssSetErrorStatus(S, 
@@ -1382,15 +1192,19 @@ get_ioport_config(SimStruct *S, struct ecat_slave *slave,
             default:
                 return -1;
         }
+        if (port->pdo_data_type) {
+            port->pdo_data_type = SS_UINT8;
+        }
 
         /* If PdoFullScale is specified, the port data type is double.
          * If port->pdo_full_scale == 0.0, it means that the port data
          * type is specified by PortBitLen */
-        switch(get_numeric_field(S, variable, mapped_pdo_spec,
-                    0, 1, "PdoFullScale", &val)) {
+        switch(get_numeric_field(S, variable, port_spec,
+                    port_idx, 1, "PdoFullScale", &val)) {
             case 0:
                 port->pdo_full_scale = val;
                 port->data_type = SS_DOUBLE;
+                printf("Found fullscale %f\n", val);
                 break;
             case 1:
                 /* Field was not available - not an error */
@@ -1407,6 +1221,22 @@ get_ioport_config(SimStruct *S, struct ecat_slave *slave,
         if (port->data_bit_len % 8 || port->data_bit_len == 24) {
             port->bitop = 1;
         }
+
+        if (port->pdo_full_scale) {
+            RETURN_ON_ERROR(port->gain_count = get_parameter_values(S, 
+                        variable, port_spec, port_idx, "Gain", 
+                        port->width, &port->gain_values, 
+                        &port->gain_name));
+            RETURN_ON_ERROR(port->offset_count = get_parameter_values(S, 
+                        variable, port_spec, port_idx, "Offset", 
+                        port->width, &port->offset_values, 
+                        &port->offset_name));
+            RETURN_ON_ERROR(port->filter_count = get_parameter_values(S, 
+                        variable, port_spec, port_idx, "Filter", 
+                        port->width, &port->filter_values, 
+                        &port->filter_name));
+            slave->filter_count += port->filter_count ? port->width : 0;
+        }
     }
     return 0;
 }
@@ -1420,8 +1250,17 @@ slave_mem_op(struct ecat_slave *slave, void (*func)(void*))
     struct io_port *port;
     struct sync_manager *sm;
 
-    (*func)(slave->type);
-    (*func)(slave->sdo_config);
+    for (port = slave->io_port;
+            port != &slave->io_port[slave->io_port_count];
+            port++) {
+        (*func)(port->pdo_entry);
+        (*func)(port->gain_values);
+        (*func)(port->gain_name);
+        (*func)(port->offset_values);
+        (*func)(port->offset_name);
+        (*func)(port->filter_values);
+        (*func)(port->filter_name);
+    }
 
     for (sm = slave->sync_manager;
             sm != &slave->sync_manager[slave->sync_manager_count]; 
@@ -1432,40 +1271,23 @@ slave_mem_op(struct ecat_slave *slave, void (*func)(void*))
             (*func)(pdo->entry);
         (*func)(sm->pdo);
     }
+
+    (*func)(slave->input_port_ptr);
+    (*func)(slave->output_port_ptr);
+    (*func)(slave->io_port);
+    (*func)(slave->type);
+    (*func)(slave->sdo_config);
     (*func)(slave->sync_manager);
-
-    for (port = slave->output_port;
-            port != &slave->output_port[slave->output_port_count];
-            port++) {
-        (*func)(port->mapped_pdo);
-        (*func)(port->gain_values);
-        (*func)(port->gain_name);
-        (*func)(port->offset_values);
-        (*func)(port->offset_name);
-        (*func)(port->filter_values);
-        (*func)(port->filter_name);
-    }
-    for (port = slave->input_port;
-            port != &slave->input_port[slave->input_port_count];
-            port++) {
-        (*func)(port->mapped_pdo);
-        (*func)(port->gain_values);
-        (*func)(port->gain_name);
-    }
-
-    (*func)(slave->output_port);
-    (*func)(slave->input_port);
 
     (*func)(slave);
 }
 
 int_T
 set_io_port_width(SimStruct *S, struct ecat_slave *slave, 
-    struct io_port *port_base, uint_T port_idx, uint_T width)
+    uint_T port_idx, uint_T width)
 {
-    const char_T * const direction = 
-        port_base == slave->input_port ? "INPUT" : "OUTPUT";
-    struct io_port *port = &port_base[port_idx];
+    struct io_port *port = &slave->io_port[port_idx];
+    const char_T * direction = port->direction ? "INPUT" : "OUTPUT";
 
     if (width > port->width) {
         snprintf(errmsg, sizeof(errmsg),
@@ -1478,35 +1300,41 @@ set_io_port_width(SimStruct *S, struct ecat_slave *slave,
     }
 
     if (width > 1 && slave->max_port_width != width) {
-        slave->mixed_port_widths = 1;
+        slave->have_mixed_port_widths = 1;
     }
 
     slave->max_port_width = max(width, slave->max_port_width);
 
     slave->pwork_count += width;
+
     if (port->bitop) {
         slave->iwork_count += width;
     }
 
     if (port->gain_count) {
+        printf("Found gain count = %u in set_io_port_width\n",
+                port->gain_count);
         if (port->gain_name)
             slave->runtime_param_count += width;
-        else
+        else {
             slave->rwork_count += width;
+        }
     }
 
     if (port->offset_count) {
         if (port->offset_name)
             slave->runtime_param_count += width;
-        else
+        else {
             slave->rwork_count += width;
+        }
     }
 
     if (port->filter_count) {
         if (port->filter_name)
             slave->runtime_param_count += width;
-        else
+        else {
             slave->rwork_count += width;
+        }
     }
 
     return 0;
@@ -1525,8 +1353,9 @@ static void mdlInitializeSizes(SimStruct *S)
 {
     uint_T i;
     struct ecat_slave *slave;
-    struct io_port *port;
-    uint_T port_idx;
+    struct io_port *port, **input_port_ptr, **output_port_ptr;
+    uint_T input_port_idx, output_port_idx;
+    uint_T output_port_count;
 
     ssSetNumSFcnParams(S, PARAM_COUNT);  /* Number of expected parameters */
     if (ssGetNumSFcnParams(S) != ssGetSFcnParamsCount(S)) {
@@ -1545,46 +1374,67 @@ static void mdlInitializeSizes(SimStruct *S)
 
     if (get_slave_address(S, slave)) return;
     if (get_ethercat_info(S, slave)) return;
-    slave->layout_version = LAYOUT_VERSION;
+    slave->layout_version = mxGetScalar(ssGetSFcnParam(S,LAYOUT_VERSION));
     if (get_sdo_config(S, slave)) return;
 
-    /* Process input ports */
-    if (get_ioport_config(S, slave, 
-                &slave->input_port, &slave->input_port_count))
+    if (get_ioport_config(S, slave)) 
         return;
+    output_port_count = slave->io_port_count - slave->input_port_count;
+
+    /* Process input ports */
     if (!ssSetNumInputPorts(S, slave->input_port_count))
         return;
-    for (port_idx = 0, port = slave->input_port; 
-            port_idx < slave->input_port_count; port_idx++, port++) {
+    if (!ssSetNumOutputPorts(S, output_port_count))
+        return;
 
-        ssSetInputPortWidth(S, port_idx, DYNAMICALLY_SIZED);
-
-        if (!port->pdo_full_scale) {
-            ssSetInputPortDataType(S, port_idx, port->data_type);
-        }
-        else {
-            ssSetInputPortDataType(S, port_idx, DYNAMICALLY_TYPED);
-        }
+    slave->input_port_ptr =
+        mxCalloc(slave->input_port_count, sizeof(struct io_port*));
+    slave->output_port_ptr = 
+        mxCalloc(output_port_count, sizeof(struct io_port*));
+    if ((!slave->input_port_ptr && slave->input_port_count)
+            || (!slave->output_port_ptr && output_port_count)) {
+        ssSetErrorStatus(S,"Out of memory");
+        return;
     }
 
-    /* Process output ports */
-    if (get_ioport_config(S, slave, 
-                &slave->output_port, &slave->output_port_count))
-        return;
-    if (!ssSetNumOutputPorts(S, slave->output_port_count))
-        return;
-    for (port_idx = 0, port = slave->output_port; 
-            port_idx < slave->output_port_count; port_idx++, port++) {
+    input_port_ptr  = slave->input_port_ptr;
+    output_port_ptr = slave->output_port_ptr;
 
-        ssSetOutputPortWidth(S, port_idx, port->width);
-        if (set_io_port_width(S, slave,
-                    slave->output_port, port_idx, port->width))
-            return;
+    for ( port = slave->io_port, input_port_idx = 0, output_port_idx = 0;
+            port != &slave->io_port[slave->io_port_count];
+            port++) {
 
-        ssSetOutputPortDataType(S, port_idx, port->data_type);
+        if (port->direction) {
+            /* Input port */
+            ssSetInputPortWidth(S, input_port_idx, DYNAMICALLY_SIZED);
+
+            ssSetInputPortDataType(S, input_port_idx, 
+                    ( port->pdo_full_scale 
+                      ? DYNAMICALLY_TYPED : port->data_type));
+
+            *input_port_ptr++ = &slave->io_port[input_port_idx++];
+        }
+        else {
+            /* Output port */
+            ssSetOutputPortWidth(S, output_port_idx, port->width);
+            if (set_io_port_width(S, slave,
+                        port - slave->io_port, port->width))
+                return;
+
+            ssSetOutputPortDataType(S, output_port_idx, port->data_type);
+
+            *output_port_ptr++ = &slave->io_port[output_port_idx++];
+        }
     }
 
     ssSetNumSampleTimes(S, 1);
+
+    if (mxGetScalar(ssGetSFcnParam(S,TSAMPLE))) {
+        ssSetNumDiscStates(S, slave->filter_count);
+    } else {
+        ssSetNumContStates(S, slave->filter_count);
+    }
+        printf("Setting ssSetNumContStates %u\n", ssGetNumContStates(S));
 
     /* Make the memory peristent, otherwise it is lost just before
      * mdlRTW is called. To ensure that the memory is released again,
@@ -1606,7 +1456,7 @@ static void mdlInitializeSizes(SimStruct *S)
  */
 static void mdlInitializeSampleTimes(SimStruct *S)
 {
-    ssSetSampleTime(S, 0, TSAMPLE);
+    ssSetSampleTime(S, 0, mxGetScalar(ssGetSFcnParam(S,TSAMPLE)));
     ssSetOffsetTime(S, 0, 0.0);
 }
 
@@ -1626,7 +1476,8 @@ static void mdlSetInputPortWidth(SimStruct *S, int_T port, int_T width)
 
     ssSetInputPortWidth(S, port, width);
 
-    set_io_port_width(S, slave, slave->input_port, port, width);
+    set_io_port_width(S, slave, 
+            slave->input_port_ptr[port] - slave->io_port, width);
 }
 
 /* This function is called when some ports are still DYNAMICALLY_SIZED
@@ -1637,20 +1488,20 @@ static void mdlSetInputPortWidth(SimStruct *S, int_T port, int_T width)
 static void mdlSetDefaultPortDimensionInfo(SimStruct *S)
 {
     struct ecat_slave *slave = ssGetUserData(S);
-    struct io_port *port;
     int_T port_idx;
+    uint_T output_port_count = slave->io_port_count - slave->input_port_count;
 
-    for (port_idx = 0, port = slave->input_port;
-            port_idx < slave->input_port_count; port_idx++, port++) {
+    for (port_idx = 0; port_idx < slave->input_port_count; port_idx++) {
         if (ssGetInputPortWidth(S, port_idx) == DYNAMICALLY_SIZED) {
-            ssSetInputPortWidth(S, port_idx, port->width);
+            ssSetInputPortWidth(S, port_idx, 
+                    slave->input_port_ptr[port_idx]->width);
         }
     }
 
-    for (port_idx = 0, port = slave->output_port;
-            port_idx < slave->output_port_count; port_idx++, port++) {
+    for (port_idx = 0; port_idx < output_port_count; port_idx++) {
         if (ssGetOutputPortWidth(S, port_idx) == DYNAMICALLY_SIZED) {
-            ssSetOutputPortWidth(S, port_idx, port->width);
+            ssSetOutputPortWidth(S, port_idx, 
+                    slave->output_port_ptr[port_idx]->width);
         }
     }
 }
@@ -1665,27 +1516,22 @@ static void mdlSetWorkWidths(SimStruct *S)
     ssSetNumPWork(S, slave->pwork_count);
     ssSetNumIWork(S, slave->iwork_count);
     ssSetNumRWork(S, slave->rwork_count);
-    if (TSAMPLE) {
-        ssSetNumDiscStates(S, slave->filter_count);
-    } else {
-        ssSetNumContStates(S, slave->filter_count);
-    }
 
-    if (slave->mixed_port_widths) {
-        int_T port_idx;
-        for (port = slave->input_port, port_idx = 0;
-                port != &slave->input_port[slave->input_port_count];
-                port++, port_idx++) {
+    if (slave->have_mixed_port_widths) {
+        int_T port_idx = 0;
+        for (port_idx = 0; port_idx < slave->input_port_count; port_idx++) {
             ssSetInputPortRequiredContiguous(S, port_idx, 1);
         }
     }
 
     ssSetNumRunTimeParams(S, slave->runtime_param_count);
 
-    for (port = slave->input_port;
-            port != &slave->input_port[slave->input_port_count];
+    for (port = slave->io_port;
+            port != &slave->io_port[slave->io_port_count];
             port++) {
         if (port->gain_count && port->gain_name) {
+            printf("Setting tuneable parameter %s for port %u\n",
+                    port->gain_name, port-slave->io_port);
             ssParamRec p = {
                 .name = port->gain_name,
                 .nDimensions = 1,
@@ -1701,27 +1547,7 @@ static void mdlSetWorkWidths(SimStruct *S)
             };
             ssSetRunTimeParamInfo(S, param_idx++, &p);
         }
-    }
 
-    for (port = slave->output_port;
-            port != &slave->output_port[slave->output_port_count];
-            port++) {
-        if (port->gain_count && port->gain_name) {
-            ssParamRec p = {
-                .name = port->gain_name,
-                .nDimensions = 1,
-                .dimensions = &port->gain_count,
-                .dataTypeId = SS_DOUBLE,
-                .complexSignal = 0,
-                .data = port->gain_values,
-                .dataAttributes = NULL,
-                .nDlgParamIndices = 0,
-                .dlgParamIndices = NULL,
-                .transformed = RTPARAM_TRANSFORMED,
-                .outputAsMatrix = 0,
-            };
-            ssSetRunTimeParamInfo(S, param_idx++, &p);
-        }
         if (port->offset_count && port->offset_name) {
             ssParamRec p = {
                 .name = port->offset_name,
@@ -1738,6 +1564,7 @@ static void mdlSetWorkWidths(SimStruct *S)
             };
             ssSetRunTimeParamInfo(S, param_idx++, &p);
         }
+
         if (port->filter_count && port->filter_name) {
             ssParamRec p = {
                 .name = port->filter_name,
@@ -1791,25 +1618,25 @@ static void mdlTerminate(SimStruct *S)
 /* Create a string of the form ["one","two","three"]\0
  * from the strings passed as a array of pointers. Last element must be NULL.
  * */
-char_T *createStrVect(const char_T *strings[])
+char_T *createStrVect(const char_T *strings[], uint_T count)
 {
-    uint_T len = 0;
+    uint_T len = 0, i;
     const char_T **s;
     char_T *str_vect, *p;
 
-    for (s = strings; *s; s++) {
-        len += strlen(*s) + 3;
+    for (i = 0, s = strings; i < count; i++, s++) {
+        len += *s ? strlen(*s) + 3 : 3;
     }
-
     len += 3; /* For the square braces and trailing \0 */
 
-    p = str_vect = mxCalloc(1, len);
+    p = str_vect = mxCalloc(len, 1);
 
     *p++ = '[';
-    for (s = strings; *s; s++) {
+    for (i = 0, s = strings; i < count; i++, s++) {
         *p++ = '"';
-        strcpy(p, *s);
-        p += strlen(*s);
+        if (*s)
+            strcpy(p, *s);
+        p += *s ? strlen(*s) : 0;
         *p++ = '"';
         *p++ = ',';
     }
@@ -1822,121 +1649,12 @@ char_T *createStrVect(const char_T *strings[])
 static void mdlRTW(SimStruct *S)
 {
     struct ecat_slave *slave = ssGetUserData(S);
-#if 0
-    uint_T master = ECMASTER;
-    uint_T domain = ECDOMAIN;
-    uint_T alias = ECALIAS;
-    uint_T position = ECPOSITION;
-    uint_T vendor = ECVENDOR;
-    uint_T product = ECPRODUCT;
-    uint_T layout = LAYOUT;
-    uint_T port, i;
-    uint32_T map_idx;
-    struct io_spec *io_spec;
-    uint_T gain_idx;
-    uint_T offset_idx;
-    uint_T filter_idx;
-
-    uint32_T input_port_spec[4][slave->num_inputs];
-    uint32_T input_map[2][slave->input_map_count];
-    real_T   input_pdo_full_scale[slave->input_map_count];
-    const char_T *input_gain_str;
-    const char_T *input_gain_name_ptr[slave->num_inputs + 1];
-    real_T input_gain[slave->static_input_gain_count];
-
-    uint32_T output_port_spec[6][slave->num_outputs];
-    uint32_T output_map[2][slave->output_map_count];
-    real_T   output_pdo_full_scale[slave->output_map_count];
-    const char_T *output_gain_str;
-    const char_T *output_offset_str;
-    const char_T *output_filter_str;
-    const char_T *output_gain_name_ptr[slave->num_outputs + 1];
-    const char_T *output_offset_name_ptr[slave->num_outputs + 1];
-    const char_T *output_filter_name_ptr[slave->num_outputs + 1];
-    real_T output_gain[slave->static_output_gain_count];
-    real_T output_offset[slave->static_output_offset_count];
-    real_T output_filter[slave->static_output_filter_count];
-
-    gain_idx = map_idx = 0;
-    for (io_spec = slave->input_spec, port = 0;
-            io_spec != &slave->input_spec[slave->num_inputs];
-            io_spec++, port++) {
-        struct io_spec_map *map;
-
-        input_port_spec[0][port]   = io_spec->pdo_data_type;
-        input_port_spec[1][port]   = 
-            (io_spec->bitmask ? 0x2 : 0)
-            | (io_spec->raw ? 0x1 : 0);
-        input_port_spec[2][port]   = io_spec->map_count;
-        input_port_spec[3][port]   = io_spec->gain_count;
-        input_pdo_full_scale[port] = io_spec->pdo_full_scale;
-        input_gain_name_ptr[port]  = io_spec->gain_count
-            ? io_spec->gain_name : "";
-
-        for (i = 0; !io_spec->gain_name && i < io_spec->gain_count;
-                i++) {
-            input_gain[gain_idx++] = io_spec->gain_values[i];
-        }
-
-        for (map = io_spec->map;
-                map != &io_spec->map[io_spec->map_count];
-                map++, map_idx++) {
-            input_map[0][map_idx] = map->pdo_info_idx;
-            input_map[1][map_idx] = map->pdo_entry_idx;
-        }
-    }
-    input_gain_name_ptr[slave->num_inputs] = NULL;
-    input_gain_str = createStrVect(input_gain_name_ptr);
-
-    gain_idx = offset_idx = filter_idx = map_idx = 0;
-    for (io_spec = slave->output_spec, port = 0;
-            io_spec != &slave->output_spec[slave->num_outputs];
-            io_spec++, port++) {
-        struct io_spec_map *map;
-
-        output_port_spec[0][port]   = io_spec->pdo_data_type;
-        output_port_spec[1][port]   = 
-            (io_spec->bitmask ? 0x2 : 0)
-            | (io_spec->raw ? 0x1 : 0);
-        output_port_spec[2][port]   = io_spec->map_count;
-        output_port_spec[3][port]   = io_spec->gain_count;
-        output_port_spec[4][port]   = io_spec->offset_count;
-        output_port_spec[5][port]   = io_spec->filter_count;
-        output_pdo_full_scale[port] = io_spec->pdo_full_scale;
-        output_gain_name_ptr[port]  = io_spec->gain_count
-            ? io_spec->gain_name : "";
-        output_offset_name_ptr[port] = io_spec->offset_count
-            ? io_spec->offset_name : "";
-        output_filter_name_ptr[port] = io_spec->filter_count
-            ? io_spec->filter_name : "";
-
-        for (i = 0; !io_spec->gain_name && i < io_spec->gain_count;
-                i++) {
-            output_gain[gain_idx++] = io_spec->gain_values[i];
-        }
-        for (i = 0; !io_spec->offset_name && i < io_spec->offset_count;
-                i++) {
-            output_offset[offset_idx++] = io_spec->offset_values[i];
-        }
-        for (i = 0; !io_spec->filter_name && i < io_spec->filter_count;
-                i++) {
-            output_filter[filter_idx++] = io_spec->filter_values[i];
-        }
-
-        for (map = io_spec->map;
-                map != &io_spec->map[io_spec->map_count];
-                map++, map_idx++) {
-            output_map[0][map_idx] = map->pdo_info_idx;
-            output_map[1][map_idx] = map->pdo_entry_idx;
-        }
-    }
-    output_gain_name_ptr[slave->num_outputs] = NULL;
-    output_offset_name_ptr[slave->num_outputs] = NULL;
-    output_filter_name_ptr[slave->num_outputs] = NULL;
-    output_gain_str = createStrVect(output_gain_name_ptr);
-    output_offset_str = createStrVect(output_offset_name_ptr);
-    output_filter_str = createStrVect(output_filter_name_ptr);
-#endif
+    uint_T output_port_count = slave->io_port_count - slave->input_port_count;
+    uint_T pwork_index = 0;
+    uint_T iwork_index = 0;
+    uint_T rwork_index = 0;
+    uint_T filter_index = 0;
+    real_T rwork_vector[slave->rwork_count];
 
     if (!ssWriteRTWScalarParam(S, 
                 "MasterId", &slave->master, SS_UINT32))              return;
@@ -2026,62 +1744,181 @@ static void mdlRTW(SimStruct *S)
             return;
     }
 
-#if 0
-    if (slave->num_inputs) {
-        if (!ssWriteRTW2dMatParam(S, "InputMap", input_map,
-                    SS_UINT32, slave->input_map_count, 2))
+    if (output_port_count) {
+        enum {
+            PdoEntryIndex = 0, 
+            PdoEntrySubIndex, 
+            PdoEntryLength, 
+            PdoEntryDType,
+            PdoEntryPWork, 
+            PdoEntryIWork,
+            PdoEntryMax
+        };
+        enum {
+            PortSpecPWork = 0,
+            PortSpecDType,
+            PortSpecBitLen, 
+            PortSpecIWork,
+            PortSpecGainCount,
+            PortSpecGainRWorkIdx,
+            PortSpecOffsetCount,
+            PortSpecOffsetRWorkIdx,
+            PortSpecFilterCount,
+            PortSpecFilterIdx,
+            PortSpecFilterRWorkIdx,
+            PortSpecMax
+        };
+        uint32_T pdo_entry[PdoEntryMax][slave->output_pdo_entry_count];
+        int32_T output_port_spec[PortSpecMax][output_port_count];
+        real_T pdo_full_scale[output_port_count];
+        uint_T pdo_entry_idx = 0;
+        uint_T port_idx;
+        const char_T *output_gain_name_ptr[output_port_count];
+        const char_T *output_offset_name_ptr[output_port_count];
+        const char_T *output_filter_name_ptr[output_port_count];
+        const char_T *output_gain_str;
+        const char_T *output_offset_str;
+        const char_T *output_filter_str;
+
+        memset(  output_gain_name_ptr, 0, sizeof(  output_gain_name_ptr));
+        memset(output_offset_name_ptr, 0, sizeof(output_offset_name_ptr));
+        memset(output_filter_name_ptr, 0, sizeof(output_filter_name_ptr));
+
+        memset(output_port_spec, 0, sizeof(output_port_spec));
+
+        for (port_idx = 0; port_idx < output_port_count; port_idx++) {
+            struct io_port *port = slave->output_port_ptr[port_idx];
+            struct pdo_entry **pdo_entry_ptr;
+
+            output_port_spec[0][port_idx] = pwork_index;
+            output_port_spec[1][port_idx] = port->pdo_data_type;
+            output_port_spec[2][port_idx] =
+                port->bitop ? port->data_bit_len : 0;
+            output_port_spec[3][port_idx] = iwork_index;
+
+            if (port->gain_count) {
+                output_port_spec[4][port_idx] = port->gain_count;
+                if (port->gain_name) {
+                    output_port_spec[5][port_idx] = -1;
+                    output_gain_name_ptr[port_idx] = port->gain_name;
+                }
+                else {
+                    memcpy(rwork_vector + rwork_index, port->gain_values,
+                            sizeof(*rwork_vector) * port->gain_count);
+                    output_port_spec[5][port_idx] = rwork_index;
+                    rwork_index += port->gain_count;
+                    output_gain_name_ptr[port_idx] = port->gain_count == 1
+                        ? NULL : "<rwork>/NonTuneableParam";
+                }
+            }
+
+            if (port->offset_count) {
+                output_port_spec[6][port_idx] = port->offset_count;
+                if (port->offset_name) {
+                    output_port_spec[7][port_idx] = -1;
+                    output_offset_name_ptr[port_idx] = port->offset_name;
+                }
+                else {
+                    memcpy(rwork_vector + rwork_index, port->offset_values,
+                            sizeof(*rwork_vector) * port->offset_count);
+                    output_port_spec[7][port_idx] = rwork_index;
+                    rwork_index += port->offset_count;
+                    output_offset_name_ptr[port_idx] = port->offset_count == 1
+                        ? NULL : "<rwork>/NonTuneableParam";
+                }
+            }
+
+            if (port->filter_count) {
+                output_port_spec[8][port_idx] = port->filter_count;
+                output_port_spec[9][port_idx] = filter_index;
+                filter_index += port->filter_count;
+                if (port->filter_name) {
+                    output_port_spec[10][port_idx] = -1;
+                    output_filter_name_ptr[port_idx] = port->filter_name;
+                }
+                else {
+                    memcpy(rwork_vector + rwork_index, port->filter_values,
+                            sizeof(*rwork_vector) * port->filter_count);
+                    output_port_spec[10][port_idx] = rwork_index;
+                    rwork_index += port->filter_count;
+                    output_filter_name_ptr[port_idx] = port->filter_count == 1
+                        ? NULL : "<rwork>/NonTuneableParam";
+                }
+            }
+
+            pdo_full_scale[port_idx] = port->pdo_full_scale;
+
+            for (pdo_entry_ptr = port->pdo_entry;
+                    pdo_entry_ptr != &port->pdo_entry[port->pdo_entry_count];
+                    pdo_entry_ptr++) {
+                uint_T vector_length =
+                    (*pdo_entry_ptr)->bitlen / port->data_bit_len;
+
+                pdo_entry[PdoEntryIndex][pdo_entry_idx] =
+                    (*pdo_entry_ptr)->index;
+                pdo_entry[PdoEntrySubIndex][pdo_entry_idx] =
+                    (*pdo_entry_ptr)->subindex;
+                pdo_entry[PdoEntryLength][pdo_entry_idx] = vector_length;
+                pdo_entry[PdoEntryDType][pdo_entry_idx] = 
+                    port->pdo_data_type;
+                pdo_entry[PdoEntryPWork][pdo_entry_idx] = pwork_index;
+                pdo_entry[PdoEntryIWork][pdo_entry_idx] = 
+                    port->bitop ? iwork_index : -1;
+
+                pwork_index += vector_length;
+                if (port->bitop)
+                    iwork_index += vector_length;
+
+                pdo_entry_idx++;
+            }
+
+        }
+
+        output_gain_str = createStrVect(output_gain_name_ptr, 
+                output_port_count);
+        output_offset_str = createStrVect(output_offset_name_ptr,
+                output_port_count);
+        output_filter_str = createStrVect(output_filter_name_ptr,
+                output_port_count);
+
+
+        if (!ssWriteRTW2dMatParam(S, "OutputPdoEntry", pdo_entry,
+                    SS_UINT32, slave->output_pdo_entry_count, PdoEntryMax))
             return;
-        if (!ssWriteRTW2dMatParam(S, "InputPortSpec", input_port_spec,
-                    SS_UINT32, slave->num_inputs, 4))
+
+        if (!ssWriteRTW2dMatParam(S, "OutputPort", output_port_spec,
+                    SS_INT32, output_port_count, PortSpecMax))
             return;
-        if (!ssWriteRTWVectParam(S, "InputPDOFullScale",
-                    input_pdo_full_scale, SS_DOUBLE, slave->num_inputs))
+        if (!ssWriteRTWVectParam(S, "OutputPDOFullScale",
+                    pdo_full_scale, SS_DOUBLE, output_port_count))
             return;
-        if (!ssWriteRTWStrVectParam(S, "InputGainName", input_gain_str,
-                    slave->num_inputs))
+        if (!ssWriteRTWStrVectParam(S, "OutputGainName", output_gain_str,
+                    output_port_count))
             return;
-        if (!ssWriteRTWVectParam(S, "InputGain", input_gain,
-                    SS_DOUBLE, slave->static_input_gain_count))
+        printf("OutputGainName %s\n", output_gain_str);
+        if (!ssWriteRTWStrVectParam(S, "OutputOffsetName", output_offset_str,
+                    output_port_count))
+            return;
+        if (!ssWriteRTWStrVectParam(S, "OutputFilterName", output_filter_str,
+                    output_port_count))
             return;
     }
 
-    if (slave->num_outputs) {
-        if (!ssWriteRTW2dMatParam(S, "OutputMap", output_map,
-                    SS_UINT32, slave->output_map_count, 2))
-            return;
-        if (!ssWriteRTW2dMatParam(S, "OutputPortSpec", output_port_spec,
-                    SS_UINT32, slave->num_outputs, 6))
-            return;
-        if (!ssWriteRTWVectParam(S, "OutputPDOFullScale",
-                    output_pdo_full_scale, SS_DOUBLE, slave->num_outputs))
-            return;
-        if (!ssWriteRTWStrVectParam(S, "OutputGainName", output_gain_str,
-                    slave->num_outputs))
-            return;
-        if (!ssWriteRTWStrVectParam(S, "OutputOffsetName", output_offset_str,
-                    slave->num_outputs))
-            return;
-        if (!ssWriteRTWStrVectParam(S, "OutputFilterName", output_filter_str,
-                    slave->num_outputs))
-            return;
-        if (!ssWriteRTWVectParam(S, "OutputGain", output_gain,
-                    SS_DOUBLE, slave->static_output_gain_count))
-            return;
-        if (!ssWriteRTWVectParam(S, "OutputOffset", output_offset,
-                    SS_DOUBLE, slave->static_output_offset_count))
-            return;
-        if (!ssWriteRTWVectParam(S, "OutputFilter", output_filter,
-                    SS_DOUBLE, slave->static_output_filter_count))
-            return;
-    }
+    if (!ssWriteRTWScalarParam(S, 
+                "FilterCount", &slave->filter_count, SS_UINT32))
+        return;
+
+    if (!ssWriteRTWVectParam(S, "RWorkValues",
+                rwork_vector, SS_DOUBLE, slave->rwork_count))
+        return;
 
     if (!ssWriteRTWWorkVect(S, "IWork", 1, "BitOffset", slave->iwork_count))
         return;
-
-    if (!ssWriteRTWWorkVect(S, "PWork", 1, "DataPtr",
-                slave->output_map_count + slave->input_map_count))
+    if (!ssWriteRTWWorkVect(S, "PWork", 1, "DataPtr", slave->pwork_count))
         return;
-#endif
+    if (!ssWriteRTWWorkVect(S, "RWork", 1, "NonTuneableParam", 
+                slave->rwork_count))
+        return;
 }
 
 
