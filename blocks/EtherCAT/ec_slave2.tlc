@@ -50,6 +50,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   %% Cache the C variable name that is assigned to this block defining
   %% the PDO Map
+  %assign SdoConfiguration = GetSdoConfig()
+  %assign PdoMap = GetPdoMap()
 
   /* %<Type> Block: %<Name> 
    * Registering EtherCAT block %<ProductName> with Driver
@@ -61,11 +63,11 @@
            /* VendorId, ProductCode */
            %<VendorId>, %<ProductCode>,
            /* SdoConfigCount, SdoVar */
-           %<GetSdoConfigId()>,
+           %<SdoConfiguration.count>, %<SdoConfiguration.id>,
            /* SyncManager Configuration */
            %<GetSyncManagerConfigId(block)>,
            /* Input/Output Configuration */
-           %<GetPdoMapId(block)>))) {
+           %<PdoMap.count>, %<PdoMap.id>))) {
         snprintf(%<ETL.ErrMsg>, sizeof(%<ETL.ErrMsg>), 
            "EtherCAT slave %<LibGetFormattedBlockPath(block)> register "
            "failed: %s", %<ETL.ErrStr>);
@@ -93,7 +95,7 @@
       %assign rollRegions = ...
         RollRegions == [] ? [0:%<PortWidth-1>] : RollRegions
     %endif
-    %assign RollVars =  GetRollVars(port, 0)
+    %assign RollVars =  GetRollVars(port,0,0)
     %%
     %roll sigIdx = rollRegions, lcv = RollThreshold, block, ...
         "Roller", RollVars
@@ -107,42 +109,51 @@
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%function GetRollVars(port, FilterEnvironment)
+%function GetRollVars(port, FilterEnvironment, direction)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   %createrecord RollVars {}
 
-  %if FilterEnvironment
+  %if direction
+    %assign IOPort = InputPort
+
+    %addtorecord RollVars port "u%<port>"
     %addtorecord RollVars DataPtr "<pwork>/DataPtr"
-    %addtorecord RollVars state BlockSampleTime ? "Xd" : "Xc"
-    %if !BlockSampleTime
-      %addtorecord RollVars dot "xdot"
-    %endif
   %else
-    %addtorecord RollVars port "y%<port>"
-    %if OutputPort[port][8]
-      %addtorecord RollVars state BlockSampleTime ? "Xd" : "Xc"
-    %else
+    %assign IOPort = OutputPort
+
+    %if FilterEnvironment
       %addtorecord RollVars DataPtr "<pwork>/DataPtr"
+      %addtorecord RollVars state BlockSampleTime ? "Xd" : "Xc"
+      %if !BlockSampleTime
+        %addtorecord RollVars dot "xdot"
+      %endif
+    %else
+      %addtorecord RollVars port "y%<port>"
+      %if OutputPort[port][8]
+        %addtorecord RollVars state BlockSampleTime ? "Xd" : "Xc"
+      %else
+        %addtorecord RollVars DataPtr "<pwork>/DataPtr"
+      %endif
     %endif
   %endif
 
-  %if OutputPort[port][2]
+  %if IOPort[port][2]
     %addtorecord RollVars BitOp "<iwork>/BitOp"
   %endif
 
   %if OutputPDOFullScale[port] && FilterEnvironment
-    %if OutputPort[port][4]
-      %if OutputPort[port][5] == -1
+    %if IOPort[port][4]
+      %if IOPort[port][5] == -1
         %addtorecord RollVars Gain "<param>/%<OutputGainName[port]>"
-      %elseif OutputPort[port][4] > 1
+      %elseif IOPort[port][4] > 1
         %addtorecord RollVars Gain "<rwork>/NonTuneableParam"
       %endif
     %endif
 
-    %if OutputPort[port][6]
-      %if OutputPort[port][7] == -1
+    %if IOPort[port][6]
+      %if IOPort[port][7] == -1
         %addtorecord RollVars Offset "<param>/%<OutputOffset[port]>"
-      %elseif OutputPort[port][6] > 1
+      %elseif IOPort[port][6] > 1
         %addtorecord RollVars Offset "<rwork>/NonTuneableParam"
       %endif
     %endif
@@ -175,7 +186,6 @@
   %if !NumInputs
     %return
   %endif
-%return
   %%
   %%
   %foreach port = NumInputs
@@ -185,101 +195,66 @@
     %endif
     /* Input port %<port+1> */
     %%
-    %assign Raw  = GetIOPortSpec(InputPortSpec, "Raw",   port)
-    %assign PDODataTypeId = ...
-                GetIOPortSpec(InputPortSpec, "PDODataTypeId",  port)
     %assign PortWidth = LibBlockInputSignalWidth(port)
-    %assign MapCount = GetIOPortSpec(InputPortSpec, "MapCount", port)
-    %assign VectorInput = PortWidth != MapCount
     %%
-    %if Raw
+    %assign RollVars = GetRollVars(port,0,1)
+    %if PortWidth == 1
+      %assign rollRegions = [0:0]
+    %else
+      %assign rollRegions = RollRegions == [] ...
+              ? [0:%<PortWidth-1>] : RollRegions
+    %endif
+    %%
+    %%
+    %if InputPDOFullScale[port]
+      %assign max = InputPDOFullScale[port] - 1.0
+      %assign min = GetDTypeSigned(InputPort[port][1]) ...
+                ? -InputPDOFullScale[port] : 0.0
       %%
-      %if PortWidth == 1
-        %assign rollRegions = [0:0]
-      %else
-        %assign rollRegions = RollRegions == [] ...
-                ? [0:%<PortWidth-1>] : RollRegions
-      %endif
-      %if Raw & 2
-        %assign RollVars = ...
-                ["u%<port>", "<iwork>/BitOffset", "<pwork>/DataPtr"]
-      %else
-        %assign RollVars = VectorInput ...
-                ? ["u%<port>"] : ["u%<port>", "<pwork>/DataPtr"]
-      %endif
+      { real_T value = 0.0;
+      %%
       %roll sigIdx = rollRegions, lcv = RollThreshold, block, ...
               "Roller", RollVars
         %%
-        %assign PWorkIdx = VectorInput ...
-                ? ECatInput[port].MapIdx ...
-                : ECatInput[port].MapIdx + sigIdx
-        %assign PWorkLcv = ...
-                (lcv != "" && PWorkIdx) ? "%<lcv>+%<PWorkIdx>" : lcv
+        %assign dst = GetDst(port,lcv,sigIdx)
+        %assign PdoDType = LibGetDataTypeNameFromId(InputPort[port][1])
         %%
-        %assign src = LibBlockInputSignal(port,"",lcv,sigIdx)
-        %assign dst = GetDst(port, PortWidth != MapCount, ...
-                PWorkLcv, PWorkIdx, lcv, sigIdx)
-        %%
-        %if Raw & 2
-          %assign ShiftIdx = sigIdx + ECatInput[port].BitIdx
-          %assign ShiftLcv = ...
-                  (lcv != "" && ShiftIdx) ? "%<lcv>+%<ShiftIdx>" : lcv
-          %%
-          %assign Shift = LibBlockIWork(BitOffset,"",ShiftLcv,ShiftIdx)
-          %assign Mask = GetMask(InputMap[ECatInput[port].MapIdx])
-          %%
-          %<dst> = (%<dst> & ~(%<Mask><<%<Shift>)) 
-                  | (%<src> & %<Mask>)<<%<Shift>; 
-        %else
-          %<dst> = %<src>;
-        %endif
-      %endroll
-      %%
-    %else
-      %assign MaxValue = InputPDOFullScale[port] - 1.0
-      %assign MinValue = ...
-                GetIOPortSpec(InputPortSpec, "PDODataTypeSigned", port) ...
-                ? -InputPDOFullScale[port] : 0.0
-      { real_T value;
 
-        %if PortWidth == 1
-          %assign rollRegions = [0:0]
-        %else
-          %assign rollRegions = RollRegions == [] ...
-                  ? [0:%<PortWidth-1>] : RollRegions
-        %endif
-        %assign RollVars = VectorInput ...
-                ? ["u%<port>", "<param>/%<InputGainName[port]>"] ...
-                : ["u%<port>", "<pwork>/DataPtr", ...
-                   "<param>/%<InputGainName[port]>"]
-        %roll sigIdx = rollRegions, lcv = RollThreshold, block, ...
-                "Roller", RollVars
-          %assign src = LibBlockInputSignal(port,"",lcv,sigIdx)
-          %assign PWorkIdx = VectorInput ...
-                ? ECatInput[port].MapIdx ...
-                : ECatInput[port].MapIdx + sigIdx
-          %assign PWorkLcv = ...
-                  (lcv != "" && PWorkIdx) ? "%<lcv>+%<PWorkIdx>" : lcv
-          %if InputGainName[port] == ""
-            value = %<src> * %<InputPDOFullScale[port]>;
-          %else
-            %assign scale = ...
-                LibBlockParameter(%<InputGainName[port]>,"",lcv,sigIdx)
-            value = %<src> * %<InputPDOFullScale[port]> / %<scale>;
-          %endif
-          %assign dst = GetDst(port, PortWidth != MapCount, ...
-                PWorkLcv, PWorkIdx, lcv, sigIdx)
-          if (value > %<MaxValue>) {
-            %<dst> = %<MaxValue>;
-          } else if (value < %<MinValue>) {
-            %<dst> = %<MinValue>;
-          } else {
-            %<dst> = value;
-          }
-        %endroll
+        value = %<GetInputValue(port,lcv,sigIdx)>;
+        value = value > %<max> ? %<max> : (value < %<min> ? %<min> : value);
+        %<dst> = %<GetRHS(port,"(%<PdoDType>)value",dst,lcv,sigIdx)>;
+      %endroll
       }
+    %else
+      %roll sigIdx = rollRegions, lcv = RollThreshold, block, ...
+              "Roller", RollVars
+        %%
+        %assign dst = GetDst(port,lcv,sigIdx)
+        %assign src = LibBlockInputSignal(port,"",lcv,sigIdx)
+        %<dst> = %<GetRHS(port,src,dst,lcv,sigIdx)>;
+      %endroll
     %endif
   %endforeach
+%endfunction
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function GetDTypeSigned( dtype ) void
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  %switch dtype
+    %case tSS_BOOLEAN
+    %case tSS_UINT8
+    %case tSS_UINT16
+    %case tSS_UINT32
+      %return 0
+
+    %case tSS_INT8
+    %case tSS_INT16
+    %case tSS_INT32
+      %return 1
+
+    %default
+      %error Unknown PDODataType: %<dtype>
+  %endswitch
 %endfunction
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -313,7 +288,7 @@
     %assign rollRegions = RollRegions == [] ...
             ? [0:%<PortWidth-1>] : RollRegions
   %endif
-  %assign RollVars = GetRollVars(port,1)
+  %assign RollVars = GetRollVars(port,1,0)
   %%
   %roll sigIdx = rollRegions, lcv = RollThreshold, block, ...
             "Roller", RollVars
@@ -354,23 +329,70 @@
 %endfunction
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%function GetDst(port, VectorInput, PWorkLcv, PWorkIdx, lcv, sigIdx)
+%function GetDst(port,lcv,sigIdx)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-  %if VectorInput
-    %assign dst = SPRINTF("((%s*)%s)", ...
-        ECatInput[port].RTWDType, ...
-        LibBlockPWork(DataPtr, "", "", PWorkIdx))
-    %assign sigIdx = lcv == "" ? sigIdx : lcv
-    %assign dst = "%<dst>[%<sigIdx>]"
-  %else
-    %assign dst = SPRINTF("*(%s*)(%s)", ...
-        ECatInput[port].RTWDType, ...
-        LibBlockPWork(DataPtr, "", PWorkLcv, PWorkIdx))
-        )
-  %endif
+  %assign PWorkIdx = sigIdx + InputPort[port][0]
+  %assign PWorkLcv = ...
+        (lcv != "" && PWorkIdx) ? "%<lcv>+%<PWorkIdx>" : lcv
+
+  %assign PdoDType = LibGetDataTypeNameFromId(InputPort[port][1])
+  %assign dst = SPRINTF("*(%s*)%s", ...
+        PdoDType, LibBlockPWork(DataPtr,"",PWorkLcv,PWorkIdx))
 
   %return dst
+
+%endfunction
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function GetRHS(port,src,dst,lcv,sigIdx)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+  %if InputPort[port][2]
+    %assign IWorkIdx = sigIdx + InputPort[port][3]
+    %assign IWorkLcv = ...
+          (lcv != "" && IWorkIdx) ? "%<lcv>+%<IWorkIdx>" : lcv
+    %assign shift = LibBlockIWork(BitOffset,"","",IWorkIdx)
+    %assign mask = (1U << InputPort[port][2]) - 1
+    %return "(%<dst> & (~%<mask><<%<shift>)) \
+        | (%<src> & %<mask>)<<%<shift>"
+  %else
+    %return src
+  %endif
+
+  %return rhs
+
+%endfunction
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function GetInputValue(port,lcv,sigIdx)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  %assign src = LibBlockInputSignal(port,"",lcv,sigIdx)
+
+  %if InputPort[port][4]
+    %if InputPort[port][5] == -1
+      %assign gain = LibBlockParameter(...
+                %<InputGainName[port]>,"",lcv,sigIdx)
+    %else
+      %if InputPort[port][4] == 1
+        %assign gain = RWorkValues[InputPort[port][5]]
+      %else
+        %assign RWorkIdx = sigIdx + InputPort[port][5]
+        %assign RWorkLcv = ...
+              (lcv != "" && RWorkIdx) ? "%<lcv>+%<RWorkIdx>" : lcv
+        %assign gain = LibBlockRWork(NonTuneableParam,"",RWorkLcv,RWorkIdx)
+      %endif
+    %endif
+    %assign src = "%<gain> * %<src>"
+  %endif
+
+  %if InputPDOFullScale[port]
+    %assign src = "%<InputPDOFullScale[port]> * %<src>"
+  %endif
+
+  %return src
 
 %endfunction
 
@@ -453,29 +475,23 @@
 %endfunction
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%function GetMask(PortMap)
-  %assign PdoInfoIdx = PortMap[0]
-  %assign PdoEntryInfoIdx = PdoInfo[PdoInfoIdx][2] + PortMap[1]
-  %assign bitlen = PdoEntryInfo[PdoEntryInfoIdx][2]
-  %return SPRINTF("0x%x", (1U << bitlen) - 1)
-%endfunction
-
+%function GetSdoConfig()
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%function GetSdoConfigId()
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  %createrecord sdo_config { count 0 id "NULL" }
   %if !EXISTS(SdoConfig)
-    %return "NULL"
+    %return sdo_config
   %endif
 
-  %assign SdoVar = "sdo_config_%<EtherCATSlaveId>"
+  %assign sdo_config.count = SIZE(SdoConfig,0)
+  %assign sdo_config.id = "sdo_config_%<EtherCATSlaveId>"
 
   %openfile buf
 
   /* SDO Configuration for Block: %<Name> */
-  struct sdo_config %<SdoVar>[] = {
-    %foreach i = SIZE(SdoConfig,0)
+  struct sdo_config %<sdo_config.id>[] = {
+    %foreach i = sdo_config.count
       { \
-      %<GetDTypeName(SdoConfig[i][2])>, \
+      %<GetEtlDTypeName(SdoConfig[i][2])>, \
       %<SdoConfig[i][0]>, %<SdoConfig[i][1]>, %<SdoConfig[i][3]> \
       },
     %endforeach
@@ -484,52 +500,54 @@
   %<LibSetSourceFileSection(CompiledModel.EtherCAT.model_c, \
         "Definitions", buf)>
 
-  %return SdoVar
+  %return sdo_config
 
 %endfunction
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%function GetPdoMapId(block)
+%function GetPdoMap()
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+  %createrecord pdo_map {count 0 id "NULL"}
+
   %if !EXISTS(InputPdoEntry) && !EXISTS(OutputPdoEntry)
-    %return "NULL"
+    %return pdo_map
   %endif
 
-  %assign varname = "pdo_map_%<EtherCATSlaveId>"
+  %assign pdo_map.id = "pdo_map_%<EtherCATSlaveId>"
 
   %openfile buf
 
-  struct pdo_map %<varname>[] = {
+  struct pdo_map %<pdo_map.id>[] = {
     %if EXISTS(InputPdoEntry)
-      %<WritePdoEntries(InputPdoEntry)>
+      %assign pdo_map.count = pdo_map.count + WritePdoEntries(InputPdoEntry)
     %endif
     %if EXISTS(OutputPdoEntry)
-      %<WritePdoEntries(OutputPdoEntry)>
+      %assign pdo_map.count = pdo_map.count + WritePdoEntries(OutputPdoEntry)
     %endif
   };
   %closefile buf
   %<LibSetSourceFileSection(CompiledModel.EtherCAT.model_c, \
         "Definitions", buf)>
-  %return varname
+  %return pdo_map
 %endfunction
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %function WritePdoEntries(PdoEntry) Output
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  %foreach i = SIZE(PdoEntry,0)
+  %assign count = SIZE(PdoEntry,0)
+  %foreach i = count
     %<SPRINTF("{ 0x%04X, %u, %u, %s, &%s, %s}, ", ...
             PdoEntry[i][0], ...
             PdoEntry[i][1], ...
             PdoEntry[i][2], ...
-            GetDTypeName(PdoEntry[i][3]), ...
+            GetEtlDTypeName(PdoEntry[i][3]), ...
             LibBlockPWork(DataPtr,"","",PdoEntry[i][4]), ...
             (PdoEntry[i][5] == -1 ...
-                    ? "NULL" ...
-                    : "&%<LibBlockIWork(BitOffset,"","", ...
-                                        PdoEntry[i][4])>")...
-            )>
+                 ? "NULL" ...
+                 : "&%<LibBlockIWork(BitOffset,"","",PdoEntry[i][5])>"))>
   %endforeach
+  %return count
 %endfunction
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -678,54 +696,7 @@
 %endfunction
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%function GetIOPortSpec( Spec, Entry, Port ) void
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-  %switch Entry
-    %case "PDODataTypeId"
-      %return Spec[Port][0] == tSS_BOOLEAN ? tSS_UINT8 : Spec[Port][0]
-    %case "PDODataTypeName"
-      %return GetDTypeName(Spec[Port][0])
-    %case "PDODataTypeSigned"
-      %return GetDTypeSigned(Spec[Port][0])
-    %case "Raw"
-      %return Spec[Port][1]
-    %case "MapCount"
-      %return Spec[Port][2]
-    %case "Gain"
-      %return Spec[Port][3]
-    %case "Offset"
-      %return Spec[Port][4]
-    %case "Filter"
-      %return Spec[Port][5]
-    %default
-      %error Unknown request %<Entry> for GetIOPortSpec()
-  %endswitch
-
-%endfunction
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%function GetDTypeSigned( dtype ) void
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  %switch dtype
-    %case tSS_BOOLEAN
-    %case tSS_UINT8
-    %case tSS_UINT16
-    %case tSS_UINT32
-      %return 0
-
-    %case tSS_INT8
-    %case tSS_INT16
-    %case tSS_INT32
-      %return 1
-
-    %default
-      %error Unknown PDODataType: %<dtype>
-  %endswitch
-%endfunction
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%function GetDTypeName( dtype ) void
+%function GetEtlDTypeName( dtype ) void
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   %switch dtype
     %case tSS_BOOLEAN
