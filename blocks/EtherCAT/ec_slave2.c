@@ -1529,6 +1529,7 @@ static void mdlSetWorkWidths(SimStruct *S)
     struct ecat_slave *slave = ssGetUserData(S);
     struct io_port *port;
     uint_T param_idx = 0;
+    uint_T input_port_idx = 0;
 
     ssSetNumPWork(S, slave->pwork_count);
     ssSetNumIWork(S, slave->iwork_count);
@@ -1546,6 +1547,12 @@ static void mdlSetWorkWidths(SimStruct *S)
     for (port = slave->io_port;
             port != &slave->io_port[slave->io_port_count];
             port++) {
+
+        /* Skip not connected input ports */
+        if (port->direction  
+                && !ssGetInputPortConnected(S, input_port_idx++))
+            continue;
+
         if (port->gain_count && port->gain_name) {
             ssParamRec p = {
                 .name = port->gain_name,
