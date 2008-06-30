@@ -147,7 +147,36 @@ function EtherCATInfo =  ...
     EtherCATInfo.RevisionNo = r;
     EtherCATInfo.ProductCode = ProductCode;
     EtherCATInfo.Type = Type;
-
+    
+    sm = slaveElem.getElementsByTagName('Sm');
+    SyncManager = struct('Read',[],'Write',[]);
+    read_idx = 1;
+    write_idx = 1;
+    for i = 0:sm.getLength-1
+        smX = sm.item(i);
+        if ~smX.hasAttribute('ControlByte')
+            error('getEtherCATInfo:getEtherCATInfo:missingAttribute', ...
+                'SyncManager element does not have attribute "ControlByte"');
+        end
+        ControlByte = uint8(fromHexString(smX.getAttribute('ControlByte')));
+        if bitand(ControlByte,3)
+            % Only looking for elements where (Bit1,Bit0) = (0,0)
+            continue
+        end
+        direction = bitshift(bitand(ControlByte,12),-2);
+        switch direction
+            case 0
+                SyncManager.Read(read_idx) = i;
+                read_idx = read_idx + 1;
+            case 1
+                SyncManager.Write(write_idx) = i;
+                write_idx = write_idx + 1;
+            otherwise
+                error('getEtherCATInfo:getEtherCATInfo:unknownSmDirection', ...
+                    'Unknown SyncManager direction %u', direction);
+        end
+    end
+    
     % Get the list of slaves assigned to the SyncManagers
     TxSm = getSmPdos(slaveElem, parent, 'TxPdo', PdoList);
     RxSm = getSmPdos(slaveElem, parent, 'RxPdo', PdoList);

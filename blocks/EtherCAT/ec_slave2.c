@@ -704,12 +704,24 @@ get_ethercat_info(SimStruct *S, struct ecat_slave *slave)
     real_T val;
     uint_T i;
 
+    if (!mxIsStruct(ec_info))
+        return 0;
+
     RETURN_ON_ERROR(get_numeric_field(S, param, ec_info, 0, 1,
                 "VendorId", &val));
     slave->vendor_id = val;
-    RETURN_ON_ERROR(get_numeric_field(S, param, ec_info, 0, 0,
-                "RevisionNo", &val));
-    slave->revision_no = val;
+    switch(get_numeric_field(S, param, ec_info, 0, 0,
+                "RevisionNo", &val)) {
+        case 0:
+            slave->revision_no = val;
+            break;
+        case 1:
+            ssSetErrorStatus(S,NULL);
+            slave->revision_no = 0;
+            break;
+        default:
+            break;
+    }
     RETURN_ON_ERROR(get_numeric_field(S, param, ec_info, 0, 1,
                 "ProductCode", &val));
     slave->product_code = val;
@@ -882,6 +894,10 @@ find_pdo_entry(const struct ecat_slave *slave,
 {
     const struct sync_manager *sm; 
 
+    /*
+    printf("Looking for %04x %u, dir %u\n", 
+            pdo_entry_index, pdo_entry_subindex, port_direction);
+    */
     for (sm = slave->sync_manager; 
             sm != &slave->sync_manager[slave->sync_manager_count];
             sm++) {
@@ -900,6 +916,11 @@ find_pdo_entry(const struct ecat_slave *slave,
             for (*pdo_entry = pdo->entry; 
                     *pdo_entry != &pdo->entry[pdo->entry_count]; 
                     (*pdo_entry)++) {
+    /*
+                printf("Found   for %04x %u, dir %u\n", 
+                        (*pdo_entry)->index, (*pdo_entry)->subindex, 
+                        sm->direction);
+    */
                 if ((*pdo_entry)->index == pdo_entry_index
                         && (*pdo_entry)->subindex == pdo_entry_subindex) {
                     if (port_direction_ptr)
@@ -1187,9 +1208,6 @@ get_ioport_config(SimStruct *S, struct ecat_slave *slave)
             default:
                 return -1;
         }
-        if (port->pdo_data_type) {
-            port->pdo_data_type = SS_UINT8;
-        }
 
         /* If PdoFullScale is specified, the port data type is double.
          * If port->pdo_full_scale == 0.0, it means that the port data
@@ -1207,6 +1225,7 @@ get_ioport_config(SimStruct *S, struct ecat_slave *slave)
                 /* Derive the data type from the data_bit_len */
                 RETURN_ON_ERROR(get_data_type(S, variable, "PdoDataType",
                             port->data_bit_len, &port->data_type, 0, 0));
+                port->data_type = port->pdo_data_type;
                 break;
             default:
                 return -1;
@@ -1811,7 +1830,12 @@ static void mdlRTW(SimStruct *S)
             struct pdo_entry **pdo_entry_ptr;
 
             input_port_spec[0][port_idx] = pwork_index;
-            input_port_spec[1][port_idx] = port->pdo_data_type;
+
+            /* Remap the pdo_data_type to uint8_T if it is boolean_T */
+            input_port_spec[1][port_idx] =
+                port->pdo_data_type == SS_BOOLEAN 
+                ? SS_UINT8 : port->pdo_data_type;
+
             input_port_spec[2][port_idx] =
                 port->bitop ? port->data_bit_len : 0;
             input_port_spec[3][port_idx] = iwork_index;
@@ -1947,7 +1971,9 @@ static void mdlRTW(SimStruct *S)
             struct pdo_entry **pdo_entry_ptr;
 
             output_port_spec[0][port_idx] = pwork_index;
-            output_port_spec[1][port_idx] = port->pdo_data_type;
+            output_port_spec[1][port_idx] = 
+                port->pdo_data_type == SS_BOOLEAN 
+                ? SS_UINT8 : port->pdo_data_type;
             output_port_spec[2][port_idx] =
                 port->bitop ? port->data_bit_len : 0;
             output_port_spec[3][port_idx] = iwork_index;

@@ -95,7 +95,7 @@
       %assign rollRegions = ...
         RollRegions == [] ? [0:%<PortWidth-1>] : RollRegions
     %endif
-    %assign RollVars =  GetRollVars(port,0,0)
+    %assign RollVars =  GetRollVars(port,0,0,OutputPDOFullScale)
     %%
     %roll sigIdx = rollRegions, lcv = RollThreshold, block, ...
         "Roller", RollVars
@@ -109,7 +109,7 @@
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%function GetRollVars(port, FilterEnvironment, direction)
+%function GetRollVars(port, FilterEnvironment, direction, PDOFullScale)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   %createrecord RollVars {}
 
@@ -141,18 +141,19 @@
     %addtorecord RollVars BitOp "<iwork>/BitOp"
   %endif
 
-  %if OutputPDOFullScale[port] && FilterEnvironment
+  %if PDOFullScale[port] && FilterEnvironment
     %if IOPort[port][4]
       %if IOPort[port][5] == -1
-        %addtorecord RollVars Gain "<param>/%<OutputGainName[port]>"
+        %addtorecord RollVars Gain ...
+          "<param>/%<direction ? InputGainName[port] : OutputGainName[port]>"
       %elseif IOPort[port][4] > 1
         %addtorecord RollVars Gain "<rwork>/NonTuneableParam"
       %endif
     %endif
 
-    %if IOPort[port][6]
+    %if !direction && IOPort[port][6]
       %if IOPort[port][7] == -1
-        %addtorecord RollVars Offset "<param>/%<OutputOffset[port]>"
+        %addtorecord RollVars Offset "<param>/%<OutputOffsetName[port]>"
       %elseif IOPort[port][6] > 1
         %addtorecord RollVars Offset "<rwork>/NonTuneableParam"
       %endif
@@ -197,7 +198,7 @@
     %%
     %assign PortWidth = LibBlockInputSignalWidth(port)
     %%
-    %assign RollVars = GetRollVars(port,0,1)
+    %assign RollVars = GetRollVars(port,0,1,InputPDOFullScale)
     %if PortWidth == 1
       %assign rollRegions = [0:0]
     %else
@@ -288,7 +289,7 @@
     %assign rollRegions = RollRegions == [] ...
             ? [0:%<PortWidth-1>] : RollRegions
   %endif
-  %assign RollVars = GetRollVars(port,1,0)
+  %assign RollVars = GetRollVars(port,1,0,OutputPDOFullScale)
   %%
   %roll sigIdx = rollRegions, lcv = RollThreshold, block, ...
             "Roller", RollVars
