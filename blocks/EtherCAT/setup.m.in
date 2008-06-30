@@ -4,6 +4,7 @@ disp(['Precompiling functions in ' pwd]);
 mex master_state.c
 mex domain_state.c
 mex ec_slave.c
+mex ec_slave2.c
 if @EXPERIMENTAL@
 end
 return
