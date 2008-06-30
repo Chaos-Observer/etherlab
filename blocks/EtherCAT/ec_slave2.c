@@ -1704,7 +1704,7 @@ static void mdlRTW(SimStruct *S)
     if (!ssWriteRTWScalarParam(S, 
                 "SlavePosition", &slave->position, SS_UINT32))       return;
     if (!ssWriteRTWStrParam(S, 
-                "ProductName", slave->type))                         return;
+                "ProductName", slave->type ? slave->type : ""))      return;
     if (!ssWriteRTWScalarParam(S, 
                 "VendorId", &slave->vendor_id, SS_UINT32))           return;
     if (!ssWriteRTWScalarParam(S, 

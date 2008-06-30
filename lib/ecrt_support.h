@@ -8,9 +8,11 @@
 #include <include/ecrt.h>
 #include <include/etl_data_info.h>
 
-struct pdo {
-    unsigned int pdo_info_index;
-    unsigned int pdo_entry_info_index;
+struct pdo_map {
+    uint16_t pdo_entry_index;
+    uint8_t pdo_entry_subindex;
+    unsigned int vector_len;
+    ec_direction_t dir;
 
     enum si_datatype_t pdo_datatype;
     void **address;
@@ -52,11 +54,11 @@ __init ecs_reg_slave(
                                           objects passed in \a sdo_config */
         const struct sdo_config *sdo_config, /**< Slave configuration objects */
 
-        const ec_pdo_info_t *pdo_info, /**< PDO Configuration objects */
+        const ec_sync_info_t *pdo_info, /**< PDO Configuration objects */
 
         unsigned int pdo_count, /**< Number of PDO mapping objects 
                                              passed in \a pdo */
-        const struct pdo *pdo /**< PDO mapping objects */
+        const struct pdo_map *pdo /**< PDO mapping objects */
         );
 
 ec_master_t *ecs_get_master_ptr(

@@ -521,10 +521,12 @@
 
   struct pdo_map %<pdo_map.id>[] = {
     %if EXISTS(InputPdoEntry)
-      %assign pdo_map.count = pdo_map.count + WritePdoEntries(InputPdoEntry)
+      %assign pdo_map.count = pdo_map.count + ...
+                WritePdoEntries(InputPdoEntry, "EC_DIR_OUTPUT")
     %endif
     %if EXISTS(OutputPdoEntry)
-      %assign pdo_map.count = pdo_map.count + WritePdoEntries(OutputPdoEntry)
+      %assign pdo_map.count = pdo_map.count + ...
+                WritePdoEntries(OutputPdoEntry, "EC_DIR_INPUT")
     %endif
   };
   %closefile buf
@@ -534,14 +536,15 @@
 %endfunction
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%function WritePdoEntries(PdoEntry) Output
+%function WritePdoEntries(PdoEntry,dir) Output
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   %assign count = SIZE(PdoEntry,0)
   %foreach i = count
-    %<SPRINTF("{ 0x%04X, %u, %u, %s, &%s, %s}, ", ...
+    %<SPRINTF("{ 0x%04X, %u, %u, %s, %s, &%s, %s}, ", ...
             PdoEntry[i][0], ...
             PdoEntry[i][1], ...
             PdoEntry[i][2], ...
+            dir, ...
             GetEtlDTypeName(PdoEntry[i][3]), ...
             LibBlockPWork(DataPtr,"","",PdoEntry[i][4]), ...
             (PdoEntry[i][5] == -1 ...
@@ -686,6 +689,7 @@
           %assign PdoInfoIdx = PdoInfoIdx + SyncManager[i][2]
         %endif
       },
+      { (uint8_T)EC_END, },
     %endforeach
     };
     %closefile buf
