@@ -18,52 +18,56 @@
 %% by EtherCAT when registering the slaves during mdlStart()
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-  %if !EXISTS(CompiledModel.EtherCAT)
-    %<InitETL()>
+  %if EXISTS(CompiledModel.EtherCAT)
+    %return
+  %endif
 
-    %trace "Initializing EtherCAT Interface"
-    %if LibNumDiscreteSampleTimes() > 1
-      %assign Tid01Eq = %<ISEQUAL(LibGetClockTickStepSize(0), \
-                          LibGetClockTickStepSize(1))>
-    %else
-      %assign Tid01Eq = 0
-    %endif
-    %addtorecord CompiledModel EtherCAT { ...
-                NumTasks 0 ...
-                Pdo "pdo" ...
-                Slave "slave" ...
-                SlaveOwner "" ...
-                Tid01Eq %<Tid01Eq> ...
-                PDOMap {} ...
-                SlaveCount 0 ...
-                model_c LibGetModelDotCFile() ...
-                }
+  %trace "Initializing EtherCAT Interface"
 
-    %with CompiledModel
-      %% EtherCAT header
-      %<LibAddToCommonIncludes("include/ecrt_support.h")>
-      %<LibAddToCommonIncludes("include/etl_data_info.h")>
+  %<InitETL()>
+
+  %if LibNumDiscreteSampleTimes() > 1
+    %assign Tid01Eq = %<ISEQUAL(LibGetClockTickStepSize(0), \
+                        LibGetClockTickStepSize(1))>
+  %else
+    %assign Tid01Eq = 0
+  %endif
+  %addtorecord CompiledModel EtherCAT { ...
+              NumTasks 0 ...
+              Pdo "pdo" ...
+              Slave "slave" ...
+              SlaveOwner "" ...
+              Tid01Eq %<Tid01Eq> ...
+              PDOMap {} ...
+              SlaveCount 0 ...
+              model_c LibGetModelDotCFile() ...
+              }
+
+  %with CompiledModel
+    %% EtherCAT header
+    %<LibAddToCommonIncludes("include/ecrt_support.h")>
+    %<LibAddToCommonIncludes("include/etl_data_info.h")>
   
-      %openfile buf
-      /* Sample times for EtherCAT */
-      unsigned int ec_st[] = {
-      %foreach tid = LibNumDiscreteSampleTimes()
-          %<CAST("Unsigned",LibGetClockTickStepSize(tid)*1000000)>,
-      %endforeach
-          0U };
-      %closefile buf
-      %<LibMdlStartCustomCode(buf, "header")>
+    %openfile buf
+    /* Sample times for EtherCAT */
+    unsigned int ec_st[] = {
+    %foreach tid = LibNumDiscreteSampleTimes()
+        %<CAST("Unsigned",LibGetClockTickStepSize(tid)*1000000)>,
+    %endforeach
+        0U };
+    %closefile buf
+    %<LibMdlStartCustomCode(buf, "header")>
 
-      %openfile buf
+    %openfile buf
   
-      /* Initialising EtherCAT Support system */
-      if ((%<ETL.ErrStr> = ecs_init( ec_st))) {
-          snprintf(%<ETL.ErrMsg>, sizeof(%<ETL.ErrMsg>),
-                   "Could not initialise EtherCAT Support layer: %s",
-                   %<ETL.ErrStr>);
-          %<LibSetRTModelErrorStatus("%<ETL.ErrMsg>")>;
-          return;
-      }
+    /* Initialising EtherCAT Support system */
+    if ((%<ETL.ErrStr> = ecs_init( ec_st))) {
+        snprintf(%<ETL.ErrMsg>, sizeof(%<ETL.ErrMsg>),
+                 "Could not initialise EtherCAT Support layer: %s",
+                 %<ETL.ErrStr>);
+        %<LibSetRTModelErrorStatus("%<ETL.ErrMsg>")>;
+        return;
+    }
   %%/*
   %%        LibIsSingleRateModel %<LibIsSingleRateModel()>
   %%        LibNumAsynchronousSampleTimes %<LibNumAsynchronousSampleTimes()>
@@ -81,30 +85,30 @@
   %%        LibGetClockTickDataTypeId %<LibGetClockTickDataTypeId(tid)>
   %%%endforeach 
   %%*/
-      %closefile buf
-      %<LibMdlStartCustomCode(buf, "execution")>
+    %closefile buf
+    %<LibMdlStartCustomCode(buf, "execution")>
   
-      %openfile buf
+    %openfile buf
   
-      /* Starting EtherCAT subsystem */
-      if ((%<ETL.ErrStr> = ecs_start())) {
-            snprintf(%<ETL.ErrMsg>, sizeof(%<ETL.ErrMsg>), 
-               "Starting EtherCAT subsystem failed: %s", %<ETL.ErrStr>);
-            %<LibSetRTModelErrorStatus("%<ETL.ErrMsg>")>;
-            return;
-      }
-      %closefile buf
-      %<LibMdlStartCustomCode(buf, "trailer")>
+    /* Starting EtherCAT subsystem */
+    if ((%<ETL.ErrStr> = ecs_start())) {
+          snprintf(%<ETL.ErrMsg>, sizeof(%<ETL.ErrMsg>), 
+             "Starting EtherCAT subsystem failed: %s", %<ETL.ErrStr>);
+          %<LibSetRTModelErrorStatus("%<ETL.ErrMsg>")>;
+          return;
+    }
+    %closefile buf
+    %<LibMdlStartCustomCode(buf, "trailer")>
   
-      %openfile buf
+    %openfile buf
   
-      /* Shutting down EtherCAT subsystem */
-      ecs_end();
-      %closefile buf
-      %<LibMdlTerminateCustomCode(buf, "execution")>
+    /* Shutting down EtherCAT subsystem */
+    ecs_end();
+    %closefile buf
+    %<LibMdlTerminateCustomCode(buf, "execution")>
   
   %endwith
-  %endif
+
 %endfunction
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
