@@ -26,6 +26,27 @@
 %% by EtherCAT when registering the slaves during mdlStart()
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   %<InitEtherCAT()>
+
+  %assign ::PortSpecPWork = 0
+  %assign ::PortSpecDType = 1
+  %assign ::PortSpecBitLen = 2
+  %assign ::PortSpecIWork = 3
+  %assign ::PortSpecGainCount = 4
+  %assign ::PortSpecGainRWorkIdx = 5
+  %assign ::PortSpecOffsetCount = 6
+  %assign ::PortSpecOffsetRWorkIdx = 7
+  %assign ::PortSpecFilterCount = 8
+  %assign ::PortSpecFilterIdx = 9
+  %assign ::PortSpecFilterRWorkIdx = 10
+
+  %assign ::PdoEntryIndex = 0
+  %assign ::PdoEntrySubIndex = 1
+  %assign ::PdoEntryLength = 2
+  %assign ::PdoEntryDir = 3
+  %assign ::PdoEntryDType = 4
+  %assign ::PdoEntryBitLen = 5
+  %assign ::PdoEntryPWork = 6
+  %assign ::PdoEntryIWork = 7
 %endfunction
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -51,7 +72,7 @@
   %% Cache the C variable name that is assigned to this block defining
   %% the PDO Map
   %assign SdoConfiguration = GetSdoConfig()
-  %assign PdoMap = GetPdoMap()
+  %assign PdoMap = GetPdoMap(block)
 
   /* %<Type> Block: %<Name> 
    * Registering EtherCAT block %<ProductName> with Driver
@@ -506,53 +527,48 @@
 %endfunction
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%function GetPdoMap()
+%function GetPdoMap(block)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   %createrecord pdo_map {count 0 id "NULL"}
 
-  %if !EXISTS(InputPdoEntry) && !EXISTS(OutputPdoEntry)
+  %if !EXISTS(MappedPdoEntry)
     %return pdo_map
   %endif
 
   %assign pdo_map.id = "pdo_map_%<EtherCATSlaveId>"
 
+  %assign pdo_map.count = SIZE(MappedPdoEntry,0)
+
   %openfile buf
 
+  /* %<Type> Block: %<Name> 
+   * Mapped Pdos for block %<ProductName>
+   */
   struct pdo_map %<pdo_map.id>[] = {
-    %if EXISTS(InputPdoEntry)
-      %assign pdo_map.count = pdo_map.count + ...
-                WritePdoEntries(InputPdoEntry, "EC_DIR_OUTPUT")
-    %endif
-    %if EXISTS(OutputPdoEntry)
-      %assign pdo_map.count = pdo_map.count + ...
-                WritePdoEntries(OutputPdoEntry, "EC_DIR_INPUT")
-    %endif
+    %foreach i = pdo_map.count
+      %assign IWorkAddr = MappedPdoEntry[i][7] == -1 ...
+                ? "NULL" ...
+                : "&%<LibBlockIWork(BitOffset,"","",MappedPdoEntry[i][7])>"
+      %%
+      %% Note: Block inputs are OUTPUTS as seen by the EtherCAT Master
+      %assign dir = MappedPdoEntry[i][3] ? "EC_DIR_OUTPUT" : "EC_DIR_INPUT"
+      %%
+      %<SPRINTF("{ 0x%04X, %u, %u, %s, %s, %u, &%s, %s}, ", ...
+              MappedPdoEntry[i][0], ...
+              MappedPdoEntry[i][1], ...
+              MappedPdoEntry[i][2], ...
+              dir, ...
+              GetEtlDTypeName(MappedPdoEntry[i][4]), ...
+              MappedPdoEntry[i][5], ...
+              LibBlockPWork(DataPtr,"","",MappedPdoEntry[i][6]), ...
+              IWorkAddr)>
+    %endforeach
   };
   %closefile buf
   %<LibSetSourceFileSection(CompiledModel.EtherCAT.model_c, \
         "Definitions", buf)>
   %return pdo_map
-%endfunction
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%function WritePdoEntries(PdoEntry,dir) Output
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  %assign count = SIZE(PdoEntry,0)
-  %foreach i = count
-    %<SPRINTF("{ 0x%04X, %u, %u, %s, %s, %u, &%s, %s}, ", ...
-            PdoEntry[i][0], ...
-            PdoEntry[i][1], ...
-            PdoEntry[i][2], ...
-            dir, ...
-            GetEtlDTypeName(PdoEntry[i][3]), ...
-            PdoEntry[i][4], ...
-            LibBlockPWork(DataPtr,"","",PdoEntry[i][5]), ...
-            (PdoEntry[i][6] == -1 ...
-                 ? "NULL" ...
-                 : "&%<LibBlockIWork(BitOffset,"","",PdoEntry[i][6])>"))>
-  %endforeach
-  %return count
 %endfunction
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -610,6 +626,7 @@
     %assign PdoEntryInfoId = "pdo_entry_info_%<suffix>"
 
     %openfile buf
+
     /* SyncManager configuration for %<ProductName>
      * with configuration layout %<LayoutVersion>
      */

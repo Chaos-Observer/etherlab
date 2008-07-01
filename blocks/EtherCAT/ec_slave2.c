@@ -1678,32 +1678,33 @@ static void mdlRTW(SimStruct *S)
     uint_T filter_index = 0;
     real_T rwork_vector[slave->rwork_count];
     enum {
-        PdoEntryIndex = 0, 
-        PdoEntrySubIndex, 
-        PdoEntryLength, 
-        PdoEntryDType,
-        PdoEntryBitLen,
-        PdoEntryPWork, 
-        PdoEntryIWork,
-        PdoEntryMax
+        PortSpecPWork = 0,		/* 0 */
+        PortSpecDType,                  /* 1 */
+        PortSpecBitLen, 		/* 2 */
+        PortSpecIWork,                  /* 3 */
+        PortSpecGainCount,              /* 4 */
+        PortSpecGainRWorkIdx,           /* 5 */
+        PortSpecOffsetCount,            /* 6 */
+        PortSpecOffsetRWorkIdx,         /* 7 */
+        PortSpecFilterCount,            /* 8 */
+        PortSpecFilterIdx,              /* 9 */
+        PortSpecFilterRWorkIdx,         /* 10 */
+        PortSpecMax                     /* 11 */
     };
     enum {
-        PortSpecPWork = 0,
-        PortSpecDType,
-        PortSpecBitLen, 
-        PortSpecIWork,
-        PortSpecGainCount,
-        PortSpecGainRWorkIdx,
-        PortSpecOffsetCount,
-        PortSpecOffsetRWorkIdx,
-        PortSpecFilterCount,
-        PortSpecFilterIdx,
-        PortSpecFilterRWorkIdx,
-        PortSpecMax
+        PdoEntryIndex = 0, 		/* 0 */
+        PdoEntrySubIndex, 		/* 1 */
+        PdoEntryLength, 		/* 2 */
+        PdoEntryDir,                    /* 3 */
+        PdoEntryDType,                  /* 4 */
+        PdoEntryBitLen,                 /* 5 */
+        PdoEntryPWork,                  /* 6 */
+        PdoEntryIWork,                  /* 7 */
+        PdoEntryMax                     /* 8 */
     };
     uint_T pdo_entry_count = slave->input_pdo_entry_count 
         + slave->output_pdo_entry_count;
-    int32_T pdo_entry[PdoEntryMax][pdo_entry_count];
+    int32_T mapped_pdo_entry[PdoEntryMax][pdo_entry_count];
     uint_T pdo_entry_idx = 0;
 
     if (!ssWriteRTWScalarParam(S, 
@@ -1907,17 +1908,19 @@ static void mdlRTW(SimStruct *S)
                 uint_T vector_length =
                     (*pdo_entry_ptr)->bitlen / port->data_bit_len;
 
-                pdo_entry[PdoEntryIndex][pdo_entry_idx] =
+                mapped_pdo_entry[PdoEntryIndex][pdo_entry_idx] =
                     (*pdo_entry_ptr)->index;
-                pdo_entry[PdoEntrySubIndex][pdo_entry_idx] =
+                mapped_pdo_entry[PdoEntrySubIndex][pdo_entry_idx] =
                     (*pdo_entry_ptr)->subindex;
-                pdo_entry[PdoEntryLength][pdo_entry_idx] = vector_length;
-                pdo_entry[PdoEntryDType][pdo_entry_idx] = 
+                mapped_pdo_entry[PdoEntryDir][pdo_entry_idx] = 1;
+                mapped_pdo_entry[PdoEntryLength][pdo_entry_idx] = 
+                    vector_length;
+                mapped_pdo_entry[PdoEntryDType][pdo_entry_idx] = 
                     port->pdo_data_type;
-                pdo_entry[PdoEntryBitLen][pdo_entry_idx] = 
+                mapped_pdo_entry[PdoEntryBitLen][pdo_entry_idx] = 
                     port->data_bit_len;
-                pdo_entry[PdoEntryPWork][pdo_entry_idx] = pwork_index;
-                pdo_entry[PdoEntryIWork][pdo_entry_idx] = 
+                mapped_pdo_entry[PdoEntryPWork][pdo_entry_idx] = pwork_index;
+                mapped_pdo_entry[PdoEntryIWork][pdo_entry_idx] = 
                     port->bitop ? iwork_index : -1;
 
                 pwork_index += vector_length;
@@ -1935,7 +1938,6 @@ static void mdlRTW(SimStruct *S)
                 input_port_count);
         input_filter_str = createStrVect(input_filter_name_ptr,
                 input_port_count);
-
 
         if (!ssWriteRTW2dMatParam(S, "InputPort", input_port_spec,
                     SS_INT32, input_port_count, PortSpecMax))
@@ -1955,7 +1957,6 @@ static void mdlRTW(SimStruct *S)
     }
 
     if (output_port_count) {
-        int32_T pdo_entry[PdoEntryMax][slave->output_pdo_entry_count];
         int32_T output_port_spec[PortSpecMax][output_port_count];
         real_T pdo_full_scale[output_port_count];
         uint_T port_idx;
@@ -2042,17 +2043,18 @@ static void mdlRTW(SimStruct *S)
                 uint_T vector_length =
                     (*pdo_entry_ptr)->bitlen / port->data_bit_len;
 
-                pdo_entry[PdoEntryIndex][pdo_entry_idx] =
+                mapped_pdo_entry[PdoEntryIndex][pdo_entry_idx] =
                     (*pdo_entry_ptr)->index;
-                pdo_entry[PdoEntrySubIndex][pdo_entry_idx] =
+                mapped_pdo_entry[PdoEntrySubIndex][pdo_entry_idx] =
                     (*pdo_entry_ptr)->subindex;
-                pdo_entry[PdoEntryLength][pdo_entry_idx] = vector_length;
-                pdo_entry[PdoEntryDType][pdo_entry_idx] = 
+                mapped_pdo_entry[PdoEntryDir][pdo_entry_idx] = 0;
+                mapped_pdo_entry[PdoEntryLength][pdo_entry_idx] = vector_length;
+                mapped_pdo_entry[PdoEntryDType][pdo_entry_idx] = 
                     port->pdo_data_type;
-                pdo_entry[PdoEntryBitLen][pdo_entry_idx] = 
+                mapped_pdo_entry[PdoEntryBitLen][pdo_entry_idx] = 
                     port->data_bit_len;
-                pdo_entry[PdoEntryPWork][pdo_entry_idx] = pwork_index;
-                pdo_entry[PdoEntryIWork][pdo_entry_idx] = 
+                mapped_pdo_entry[PdoEntryPWork][pdo_entry_idx] = pwork_index;
+                mapped_pdo_entry[PdoEntryIWork][pdo_entry_idx] = 
                     port->bitop ? iwork_index : -1;
 
                 pwork_index += vector_length;
@@ -2089,10 +2091,11 @@ static void mdlRTW(SimStruct *S)
             return;
     }
 
-    if (!ssWriteRTW2dMatParam(S, "PdoEntry", pdo_entry,
-                SS_INT32, pdo_entry_count, PdoEntryMax))
-        return;
-
+    if (pdo_entry_count) {
+        if (!ssWriteRTW2dMatParam(S, "MappedPdoEntry", mapped_pdo_entry,
+                    SS_INT32, pdo_entry_count, PdoEntryMax))
+            return;
+    }
 
     if (!ssWriteRTWScalarParam(S, 
                 "FilterCount", &slave->filter_count, SS_UINT32))
