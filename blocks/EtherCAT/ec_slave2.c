@@ -1208,6 +1208,8 @@ get_ioport_config(SimStruct *S, struct ecat_slave *slave)
             default:
                 return -1;
         }
+        if (port->pdo_data_type == SS_BOOLEAN)
+            port->pdo_data_type = SS_UINT8;
 
         /* If PdoFullScale is specified, the port data type is double.
          * If port->pdo_full_scale == 0.0, it means that the port data
@@ -1221,11 +1223,7 @@ get_ioport_config(SimStruct *S, struct ecat_slave *slave)
             case 1:
                 /* Field was not available - not an error */
                 ssSetErrorStatus(S,NULL);
-
-                /* Derive the data type from the data_bit_len */
-                RETURN_ON_ERROR(get_data_type(S, variable, "PdoDataType",
-                            port->data_bit_len, &port->data_type, 0, 0));
-                port->data_type = port->pdo_data_type;
+                port->data_type = pdo_data_type;
                 break;
             default:
                 return -1;
@@ -1667,6 +1665,7 @@ char_T *createStrVect(const char_T *strings[], uint_T count)
     return str_vect;
 }
 
+
 #define MDL_RTW
 static void mdlRTW(SimStruct *S)
 {
@@ -1683,6 +1682,7 @@ static void mdlRTW(SimStruct *S)
         PdoEntrySubIndex, 
         PdoEntryLength, 
         PdoEntryDType,
+        PdoEntryBitLen,
         PdoEntryPWork, 
         PdoEntryIWork,
         PdoEntryMax
@@ -1701,6 +1701,10 @@ static void mdlRTW(SimStruct *S)
         PortSpecFilterRWorkIdx,
         PortSpecMax
     };
+    uint_T pdo_entry_count = slave->input_pdo_entry_count 
+        + slave->output_pdo_entry_count;
+    int32_T pdo_entry[PdoEntryMax][pdo_entry_count];
+    uint_T pdo_entry_idx = 0;
 
     if (!ssWriteRTWScalarParam(S, 
                 "MasterId", &slave->master, SS_UINT32))              return;
@@ -1814,10 +1818,8 @@ static void mdlRTW(SimStruct *S)
     }
 
     if (input_port_count) {
-        int32_T pdo_entry[PdoEntryMax][slave->input_pdo_entry_count];
         int32_T input_port_spec[PortSpecMax][input_port_count];
         real_T pdo_full_scale[input_port_count];
-        uint_T pdo_entry_idx = 0;
         uint_T port_idx;
         const char_T *input_gain_name_ptr[input_port_count];
         const char_T *input_offset_name_ptr[input_port_count];
@@ -1912,6 +1914,8 @@ static void mdlRTW(SimStruct *S)
                 pdo_entry[PdoEntryLength][pdo_entry_idx] = vector_length;
                 pdo_entry[PdoEntryDType][pdo_entry_idx] = 
                     port->pdo_data_type;
+                pdo_entry[PdoEntryBitLen][pdo_entry_idx] = 
+                    port->data_bit_len;
                 pdo_entry[PdoEntryPWork][pdo_entry_idx] = pwork_index;
                 pdo_entry[PdoEntryIWork][pdo_entry_idx] = 
                     port->bitop ? iwork_index : -1;
@@ -1932,10 +1936,6 @@ static void mdlRTW(SimStruct *S)
         input_filter_str = createStrVect(input_filter_name_ptr,
                 input_port_count);
 
-
-        if (!ssWriteRTW2dMatParam(S, "InputPdoEntry", pdo_entry,
-                    SS_INT32, slave->input_pdo_entry_count, PdoEntryMax))
-            return;
 
         if (!ssWriteRTW2dMatParam(S, "InputPort", input_port_spec,
                     SS_INT32, input_port_count, PortSpecMax))
@@ -1958,7 +1958,6 @@ static void mdlRTW(SimStruct *S)
         int32_T pdo_entry[PdoEntryMax][slave->output_pdo_entry_count];
         int32_T output_port_spec[PortSpecMax][output_port_count];
         real_T pdo_full_scale[output_port_count];
-        uint_T pdo_entry_idx = 0;
         uint_T port_idx;
         const char_T *output_gain_name_ptr[output_port_count];
         const char_T *output_offset_name_ptr[output_port_count];
@@ -2050,6 +2049,8 @@ static void mdlRTW(SimStruct *S)
                 pdo_entry[PdoEntryLength][pdo_entry_idx] = vector_length;
                 pdo_entry[PdoEntryDType][pdo_entry_idx] = 
                     port->pdo_data_type;
+                pdo_entry[PdoEntryBitLen][pdo_entry_idx] = 
+                    port->data_bit_len;
                 pdo_entry[PdoEntryPWork][pdo_entry_idx] = pwork_index;
                 pdo_entry[PdoEntryIWork][pdo_entry_idx] = 
                     port->bitop ? iwork_index : -1;
@@ -2071,10 +2072,6 @@ static void mdlRTW(SimStruct *S)
                 output_port_count);
 
 
-        if (!ssWriteRTW2dMatParam(S, "OutputPdoEntry", pdo_entry,
-                    SS_INT32, slave->output_pdo_entry_count, PdoEntryMax))
-            return;
-
         if (!ssWriteRTW2dMatParam(S, "OutputPort", output_port_spec,
                     SS_INT32, output_port_count, PortSpecMax))
             return;
@@ -2091,6 +2088,11 @@ static void mdlRTW(SimStruct *S)
                     output_port_count))
             return;
     }
+
+    if (!ssWriteRTW2dMatParam(S, "PdoEntry", pdo_entry,
+                SS_INT32, pdo_entry_count, PdoEntryMax))
+        return;
+
 
     if (!ssWriteRTWScalarParam(S, 
                 "FilterCount", &slave->filter_count, SS_UINT32))
