@@ -1,17 +1,16 @@
 function EtherCATInfo =  ...
-        getEtherCATInfo(xmlfile, ProductCode, RevisionNo, PdoList)
+        getEtherCATInfo(xmlfile, ProductCode, RevisionNo)
     % EtherCATInfo =  ...
     %   getEtherCATInfo(xmlfile, ProductCode, RevisionNo, PdoList)
     %
     % Arguments:
     %   xmlfile (required): string pointing to EtherCATInfo xml file
-    %   ProductCode (required): Product code to find
+    %   ProductCode (optional): Product code to find; Use first
+    %       product if unspecified or empty
     %   RevisionNo (optional): if specified, only the slave device
     %       with the specified revision is considered. If empty,
     %       the last slave device that is not hidden by other slaves
     %       is returned.
-    %   PdoList (optional): If specified, only PDO's contained in
-    %       the list are considered.
     % 
     % Returns:
     % structure containing:
@@ -19,20 +18,34 @@ function EtherCATInfo =  ...
     %   .RevisionNo                 : number
     %   .ProductCode                : number
     %   .Type                       : string
+    %   .Sm.Read                    : Syncmanagers available for data input
+    %      .Write                   : Syncmanagers available for data output
     %   .RxPdo().                   : see TxPdo
     %   .TxPdo().Index              : number
     %           .Name               : string
+    %           .Exclude            : List of Pdo Indice's to exclude
+    %           .Sm                 : Default Syncmanager (empty if not
+    %                                 specified)
+    %           .Mandatory          : must be included
     %           .Entry().Index      : number
     %                   .SubIndex   : number
     %                   .BitLen     : number of bits in Pdo Entry
     %                   .Name       : string
     %                   .DataType   : one of 1, -8, 8, -16, 16, -32, 32
 
+    if nargin < 2
+        ProductCode = [];
+    end
+    if nargin < 3 || isempty(ProductCode)
+        RevisionNo = [];
+    end
+
     EtherCATInfo = struct(...
         'VendorId',0,'RevisionNo',0,'ProductCode',0,'Type','',...
-        'SyncManager', {[]});
+        'SyncManager', struct([]),...
+        'TxPdo',[],'RxPdo',[]);
 
-    if isempty(xmlfile)
+    if nargin < 1 || isempty(xmlfile)
         return
     end
     
@@ -79,7 +92,7 @@ function EtherCATInfo =  ...
             'XML element <%s> does not have child <%s>.', p,c);
     end
 
-    parent = [parent '/Descriptions/Devices/Device'];
+    DevicePath = '/Descriptions/Devices/Device';
     
     % Walk through the devices and find the slave with specified 
     % ProductCode and RevisionNo. If RevisionNo is empty, the select the
@@ -87,24 +100,29 @@ function EtherCATInfo =  ...
     % values in HideType
     hide = [];
     slaveElem = [];
-    Type = '';
-    for i = 0:device.getLength-1
+    rev = 0;
+    for slaveidx = 1:device.getLength
         try
+            parent = [DevicePath '(' num2str(slaveidx) ')'];
+
             % ProductCode is an attribute of element <Type>
-            s = device.item(i);
-            type = s.getElementsByTagName('Type').item(0);
+            slaveElem = device.item(slaveidx-1);
+            type = slaveElem.getElementsByTagName('Type').item(0);
             pc = fromHexString(type.getAttribute('ProductCode'));
-            if ProductCode ~=  pc
+            rev = fromHexString(type.getAttribute('RevisionNo'));
+            
+            if isempty(ProductCode)
+                ProductCode = pc;
+            elseif ProductCode ~=  pc
                 continue
             end
             
-            r = fromHexString(type.getAttribute('RevisionNo'));
             if isempty(RevisionNo)
                 % No RevisionNo was specified, so look for the latest
                 
                 % Save all RevisionNo from the <HideType> elements
                 % in a list
-                hideElem = s.getElementsByTagName('HideType');
+                hideElem = slaveElem.getElementsByTagName('HideType');
                 for j = 0:hideElem.getLength-1
                     str = hideElem.item(j).getAttribute('RevisionNo');
                     if length(str)
@@ -117,17 +135,10 @@ function EtherCATInfo =  ...
                     % This revision is overwritten
                     continue
                 end
-                
-                % This is the latest device at the moment
-                Type = char(type.getTextContent.trim);
-                slaveElem = s;
-                
             else
                 % RevisionNo is specified, so check it and end the loop
                 % if the device matches
-                if r == RevisionNo
-                    Type = char(type.getTextContent.trim);
-                    slaveElem = s;
+                if rev == RevisionNo
                     break
                 end
             end
@@ -136,20 +147,20 @@ function EtherCATInfo =  ...
         end
     end
 
-    if isempty(slaveElem)
+    if (~isempty(ProductCode) && ProductCode ~= pc) || ...
+            (~isempty(RevisionNo) && RevisionNo ~= rev)
         error('getEtherCATInfo:getEtherCATInfo:noDevice', ...
             ['XML Document does not have device #x' dec2hex(ProductCode) ...
             ' Revision #x' dec2hex(RevisionNo)]);
     end
     
     EtherCATInfo.VendorId = VendorId;
-    EtherCATInfo.RevisionNo = RevisionNo;
-    EtherCATInfo.RevisionNo = r;
-    EtherCATInfo.ProductCode = ProductCode;
-    EtherCATInfo.Type = Type;
+    EtherCATInfo.RevisionNo = rev;
+    EtherCATInfo.ProductCode = pc;
+    EtherCATInfo.Type = char(type.getTextContent.trim);
     
     sm = slaveElem.getElementsByTagName('Sm');
-    SyncManager = struct('Read',[],'Write',[]);
+    EtherCATInfo.SyncManager = struct('Read',[],'Write',[]);
     read_idx = 1;
     write_idx = 1;
     for i = 0:sm.getLength-1
@@ -163,13 +174,13 @@ function EtherCATInfo =  ...
             % Only looking for elements where (Bit1,Bit0) = (0,0)
             continue
         end
-        direction = bitshift(bitand(ControlByte,12),-2);
+        direction = bitand(bitshift(ControlByte,-2),3);
         switch direction
             case 0
-                SyncManager.Read(read_idx) = i;
+                EtherCATInfo.SyncManager.Read(read_idx) = i;
                 read_idx = read_idx + 1;
             case 1
-                SyncManager.Write(write_idx) = i;
+                EtherCATInfo.SyncManager.Write(write_idx) = i;
                 write_idx = write_idx + 1;
             otherwise
                 error('getEtherCATInfo:getEtherCATInfo:unknownSmDirection', ...
@@ -178,33 +189,35 @@ function EtherCATInfo =  ...
     end
     
     % Get the list of slaves assigned to the SyncManagers
-    TxSm = getSmPdos(slaveElem, parent, 'TxPdo', PdoList);
-    RxSm = getSmPdos(slaveElem, parent, 'RxPdo', PdoList);
+    EtherCATInfo.TxPdo = getPdos(slaveElem, parent, 'TxPdo');
+    EtherCATInfo.RxPdo = getPdos(slaveElem, parent, 'RxPdo');
+    
+    return
 
-    EtherCATInfo.SyncManager = {};
-    sm_idx = 1;
-    for i = 1:16
-        Sm = {};
-        dir = 0;
-        if ~isempty(TxSm{i})
-            dir = 1;
-            Sm = TxSm{i};
-        end
-        if ~isempty(RxSm{i})
-            if ~isempty(Sm)
-                error('getEtherCATInfo:getEtherCATInfo:configError',...
-                    'SyncManager %u can only have one direction.',i-1);
-            end
-            dir = 0;
-            Sm = RxSm{i};
-        end
-        if isempty(Sm)
-            continue
-        end
-        EtherCATInfo.SyncManager{sm_idx} = ...
-            struct('SmIndex', i-1, 'SmDir', dir, 'Pdo', Sm);
-        sm_idx = sm_idx + 1;
-    end
+%     EtherCATInfo.SyncManager = {};
+%     sm_idx = 1;
+%     for i = 1:16
+%         Sm = {};
+%         dir = 0;
+%         if ~isempty(TxSm{i})
+%             dir = 1;
+%             Sm = TxSm{i};
+%         end
+%         if ~isempty(RxSm{i})
+%             if ~isempty(Sm)
+%                 error('getEtherCATInfo:getEtherCATInfo:configError',...
+%                     'SyncManager %u can only have one direction.',i-1);
+%             end
+%             dir = 0;
+%             Sm = RxSm{i};
+%         end
+%         if isempty(Sm)
+%             continue
+%         end
+%         EtherCATInfo.SyncManager{sm_idx} = ...
+%             struct('SmIndex', i-1, 'SmDir', dir, 'Pdo', Sm);
+%         sm_idx = sm_idx + 1;
+%     end
 end
 
 
@@ -214,89 +227,71 @@ end
 % subindex
 % bitlen
 % signed
-function sm = getSmPdos(slave, parent, dir, PdoList)
+function Pdo = getPdos(slave, parent, dir, PdoList)
     
-    % Preassign pdo
-    sm = cell(16,1);
-
-    pdos = slave.getElementsByTagName(dir);
-    if ~pdos.getLength
+    PdoElements = slave.getElementsByTagName(dir);
+    if ~PdoElements.getLength
         return
     end
 
     parent = [parent '/' dir];
     
-    pdoIndexList = [];
     true = java.lang.String('1');
     
-    for i = 0:pdos.getLength-1
-        pdo = struct();
+    Pdo = repmat(...
+        struct(...
+            'Index',0,...
+            'Sm',-1,...
+            'Mandatory',0,...
+            'Name','',...
+            'Exclude',[],...
+            'Entry',struct([])),...
+        1,PdoElements.getLength);
+    
+    for idx = 1:PdoElements.getLength
         
-        p = pdos.item(i);
+        p = PdoElements.item(idx-1);
         index = p.getElementsByTagName('Index').item(0);
         if ~size(index)
             error('getEtherCATInfo:getPDO:elementNotFound',...
                 'XML element <%s> does not have child <Index>.', parent);
         end
-        index = fromHexString(index.getTextContent.trim);
-        mandatory = p.getAttribute('Mandatory').equals(true);
-
-        % Skip this PDO if it does not appear in the supplied PdoList
-        if ~isempty(PdoList) && isempty(intersect(PdoList,index))
-            if mandatory
-                error(['PDO #x' dec2hex(index) ' is mandatory']);
-            end
-            continue
-        end
+        
+        Pdo(idx).Index = fromHexString(index.getTextContent.trim);
+        Pdo(idx).Mandatory = p.getAttribute('Mandatory').equals(true);
 
         % Make sure that PDO's that are already mapped are do clash with 
         % this one
-        exclude = p.getElementsByTagName('Exclude');
-        skip = 0;
-        x = 0;
-        for j = 0:exclude.getLength-1
-            x = fromHexString(exclude.item(j).getTextContent.trim);
-            if intersect(pdoIndexList, x)
-                skip = 1;
-                break;
-            end
-        end
-        if skip
-            % upps, a PDO that is already mapped is excluded by this one
-            if mandatory
-                error(['PDO #x' dec2hex(index) ' is mandatory, '...
-                    'but is excluded by #x' dec2hex(x)]);
-            end
-            continue
+        ExcludeElements = p.getElementsByTagName('Exclude');
+        Pdo(idx).Exclude = zeros(1,ExcludeElements.getLength);
+        for i = 1:ExcludeElements.getLength
+            pdoX.Exclude(i) = fromHexString(ExcludeElements.item(i-1).getTextContent.trim);
         end
         
-        pdoIndexList(size(pdoIndexList,2)+1) = index;
-        pdo.Index = index;
-        Sm = str2double(p.getAttribute('Sm'));
-        if isnan(Sm) || Sm < 0
-            error('getEtherCATInfo:getPDO:attributeMissing',...
-                'XML element <%s> does not required attribute "Sm"', ...
-                parent);
+        if p.hasAttribute('Sm')
+            Pdo(idx).Sm = str2double(p.getAttribute('Sm'));
+            if isnan(Pdo(idx).Sm)
+                error('getEtherCATInfo:getPDO:NaN',...
+                    'Attribut "Sm" of XML element <%s> is not a number.',...
+                    parent);
+            end
         end
         
         % Save the PDO name
         name = p.getElementsByTagName('Name').item(0);
         if name.getLength
-            pdo.Name = char(name.getTextContent.trim);
-        else
-            pdo.Name = '';
+            Pdo(idx).Name = char(name.getTextContent.trim);
         end
         
         % Read all of the PDO Entries into field 'entry'
         entries = p.getElementsByTagName('Entry');
-        pdo.Entry = repmat( ...
+        Pdo(idx).Entry = repmat( ...
             struct('Index',0,'SubIndex',0,'BitLen',0,'DataType',0,'Name',''), ...
             1, entries.getLength);
         for j = 1:entries.getLength
-            pdo.Entry(j) = ...
-                getPdoEntry(pdo.Entry(j), entries.item(j-1), parent);
+            Pdo(idx).Entry(j) = ...
+                getPdoEntry(Pdo(idx).Entry(j), entries.item(j-1), parent);
         end
-        sm{Sm+1}(size(sm{Sm+1},2)+1) = pdo;
     end
 end
 
