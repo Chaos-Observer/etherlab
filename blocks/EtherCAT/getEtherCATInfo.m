@@ -1,27 +1,29 @@
-function EtherCATInfo =  ...
-        getEtherCATInfo(varargin)
-    % EtherCATInfo =  ...
-    %   getEtherCATInfo(xmlfile, ProductCode, RevisionNo, PdoList)
+function EtherCATInfo = getEtherCATInfo(varargin)
+    % Parse an EtherCATInfo XML file and return its contents
+    %
+    % SYNOPSIS:
+    %   EtherCATInfo =  ...
+    %       getEtherCATInfo(xmlfile, 'parameter', value, ...)
     %
     % Arguments:
-    %   xmlfile (required): string pointing to EtherCATInfo xml file
-    %   ProductCode (optional): Product code to find; Use first
-    %       product if unspecified or empty
-    %   RevisionNo (optional): if specified, only the slave device
-    %       with the specified revision is considered. If empty,
-    %       the last slave device that is not hidden by other slaves
-    %       is returned.
+    %   xmlfile: string pointing to EtherCATInfo xml file
+    %   optional parameters: 
+    %       'ProductCode': only select matching devices
+    %       'RevisionNo': select device (ProductCode,RevisionNo)
+    %       'Debug': set to 0,1,2
     % 
     % Returns:
     % structure containing:
     %   .VendorId                   : number
-    %   .RevisionNo                 : number
-    %   .ProductCode                : number
-    %   .Type                       : string
-    %   .Sm.Read                    : Syncmanagers available for data input
-    %      .Write                   : Syncmanagers available for data output
-    %   .RxPdo().                   : see TxPdo
-    %   .TxPdo().Index              : number
+    %   .Device()
+    %       .RevisionNo                 : number
+    %       .ProductCode                : number
+    %       .Type                       : string
+    %       .InputSm                    : Syncmanagers available for data input
+    %       .OutputSm                   : Syncmanagers available for data output
+    %       .RxPdo().                   : see TxPdo
+    %       .TxPdo()
+    %           .Index              : number
     %           .Name               : string
     %           .Exclude            : List of Pdo Indice's to exclude
     %           .Sm                 : Default Syncmanager (empty if not
