@@ -1,5 +1,5 @@
 function EtherCATInfo =  ...
-        getEtherCATInfo(xmlfile, ProductCode, RevisionNo)
+        getEtherCATInfo(varargin)
     % EtherCATInfo =  ...
     %   getEtherCATInfo(xmlfile, ProductCode, RevisionNo, PdoList)
     %
@@ -33,24 +33,40 @@ function EtherCATInfo =  ...
     %                   .Name       : string
     %                   .DataType   : one of 1, -8, 8, -16, 16, -32, 32
 
-    if nargin < 2
-        ProductCode = [];
-    end
-    if nargin < 3 || isempty(ProductCode)
-        RevisionNo = [];
-    end
-
-    EtherCATInfo = struct(...
-        'VendorId',0,'RevisionNo',0,'ProductCode',0,'Type','',...
-        'SyncManager', struct([]),...
-        'TxPdo',[],'RxPdo',[]);
-
-    if nargin < 1 || isempty(xmlfile)
+    EtherCATInfo = struct('VendorId',[],'Device',[]);
+    
+    argc = length(varargin);
+    
+    if ~argc
         return
     end
     
-    tree = xmlread(xmlfile);
+    xmlfile = varargin{1};
 
+    if ~ischar(xmlfile)
+        error('First argument must be a string file name');
+    end
+    
+    global debug
+    debug = 0;
+    args = struct('ProductCode',[],'RevisionNo',[]);
+    
+    for i = 1:argc/2
+        field = varargin{i*2};
+        switch lower(field)
+            case 'productcode'
+                args.ProductCode = varargin{i*2+1};
+            case 'revisionno'
+                args.RevisionNo = varargin{i*2+1};
+            case 'debug'
+                debug = varargin{i*2+1}(1);
+                if ~isnumeric(debug)
+                    error('Value of debug argument must be numeric.');
+                end
+        end
+    end
+
+    tree = xmlread(xmlfile);
     info = tree.getDocumentElement;
 
     if ~strcmp(info.getNodeName, 'EtherCATInfo')
@@ -60,166 +76,296 @@ function EtherCATInfo =  ...
 
     parent = '/EtherCATInfo';
     
+    VendorElem = [];
+    VendorIdTxt = [];
     try
-        Vendor = info.getElementsByTagName('Vendor').item(0);
-        VendorIdTxt = Vendor.getElementsByTagName('Id').item(0);
-        VendorId = fromHexString(VendorIdTxt.getTextContent.trim);
-        descriptions = info.getElementsByTagName('Descriptions');
-        devices = descriptions.item(0).getElementsByTagName('Devices');
-        device = devices.item(0).getElementsByTagName('Device');
-        if ~device.getLength
-            %Generate empty error, is caught below
-            error(' '); 
-        end
+        VendorElem = info.getElementsByTagName('Vendor').item(0);
+        VendorIdTxt = VendorElem.getElementsByTagName('Id').item(0);
+        EtherCATInfo.VendorId = fromHexString(VendorIdTxt.getTextContent.trim);
     catch
-        p = '';
-        c = '';
-        try
-            if ~descriptions.getLength
-                p = parent;
-                c = 'Descriptions';
-            elseif ~devices.getLength
-                p = [parent '/Descriptions'];
-                c = 'Devices';
-            elseif ~device.getLength
-                p = [parent '/Descriptions/Devices'];
-                c = 'Device';
-            end
-        catch
+        if isempty(VendorElem)
+            elem = 'Vendor';
+        elseif isempty(VendorIdTxt)
+            elem = 'Vendor/Id';
         end
-
         error('getEtherCATInfo:getEtherCATInfo:elementNotFound',...
-            'XML element <%s> does not have child <%s>.', p,c);
+            'XML Element %s/%s does not exist.', parent, elem);
+    end
+    
+    if isempty(EtherCATInfo.VendorId)
+        fprintf('XML Element content %s/Vendor/Id is not a valid number.',...
+            parent);
+        return
     end
 
-    DevicePath = '/Descriptions/Devices/Device';
+    if debug >= 2
+        fprintf('Found VendorId = %u\n', EtherCATInfo.VendorId);
+    end
+    
+    descriptionsElem = [];
+    devicesElem = [];
+    deviceElem = [];
+    try
+        descriptionsElem = info.getElementsByTagName('Descriptions').item(0);
+        devicesElem = descriptionsElem.getElementsByTagName('Devices').item(0);
+        deviceElem = devicesElem.getElementsByTagName('Device');
+    catch
+        if isempty(descriptionsElem)
+            elem = 'Descriptions';
+        elseif isempty(devicesElem)
+            elem = 'Descriptions/Devices';
+        else
+            elem = 'Descriptions/Devices/Device';
+        end
+        error('getEtherCATInfo:getEtherCATInfo:elementNotFound',...
+            'XML Element %s/%s does not exist.', parent, elem);
+    end
+
+    parent = [parent '/Descriptions/Devices'];
+    
+    if ~deviceElem.getLength
+        if debug
+            fprintf('XML Document path %s does not have any <Device> child elements.',...
+                parent);
+        end
+        return
+    end
+
+    parent = [parent '/Device('];
     
     % Walk through the devices and find the slave with specified 
     % ProductCode and RevisionNo. If RevisionNo is empty, the select the
     % last device that is not overwritten by others using the 
     % values in HideType
-    hide = [];
-    slaveElem = [];
-    rev = 0;
-    for slaveidx = 1:device.getLength
-        try
-            parent = [DevicePath '(' num2str(slaveidx) ')'];
+    slaveIdx = 1;
+    for slaveElemIdx = 0:deviceElem.getLength-1
+        DevicePath = [parent num2str(slaveElemIdx) ')'];
 
+        device = struct(...
+            'Type','',...
+            'ProductCode',[],...
+            'RevisionNo',[],...
+            'Name','',...
+            'HideType',[],...
+            'Sm',[],...
+            'TxPdo',[],...
+            'RxPdo',[]);
+        
+        slaveElem = deviceElem.item(slaveElemIdx);
+        try
             % ProductCode is an attribute of element <Type>
-            slaveElem = device.item(slaveidx-1);
             type = slaveElem.getElementsByTagName('Type').item(0);
-            pc = fromHexString(type.getAttribute('ProductCode'));
-            rev = fromHexString(type.getAttribute('RevisionNo'));
-            
-            if isempty(ProductCode)
-                ProductCode = pc;
-            elseif ProductCode ~=  pc
+            device.Type = char(type.getTextContent.trim);
+            device.ProductCode = fromHexString(type.getAttribute('ProductCode'));
+            device.RevisionNo = fromHexString(type.getAttribute('RevisionNo'));
+        catch
+            if isempty(type) || isempty(device.Type)
+                reject_no_text_element(DevicePath,'Type');
                 continue
             end
-            
-            if isempty(RevisionNo)
-                % No RevisionNo was specified, so look for the latest
-                
-                % Save all RevisionNo from the <HideType> elements
-                % in a list
-                hideElem = slaveElem.getElementsByTagName('HideType');
-                for j = 0:hideElem.getLength-1
-                    str = hideElem.item(j).getAttribute('RevisionNo');
-                    if length(str)
-                        hide(length(hide)+1) = fromHexString(str);
-                    end
-                end
-                
-                % Next device if this one is in the hide list
-                if intersect(hide,r)
-                    % This revision is overwritten
-                    continue
-                end
-            else
-                % RevisionNo is specified, so check it and end the loop
-                % if the device matches
-                if rev == RevisionNo
-                    break
-                end
-            end
-        catch
-            % nothing
         end
-    end
 
-    if (~isempty(ProductCode) && ProductCode ~= pc) || ...
-            (~isempty(RevisionNo) && RevisionNo ~= rev)
-        error('getEtherCATInfo:getEtherCATInfo:noDevice', ...
-            ['XML Document does not have device #x' dec2hex(ProductCode) ...
-            ' Revision #x' dec2hex(RevisionNo)]);
-    end
-    
-    EtherCATInfo.VendorId = VendorId;
-    EtherCATInfo.RevisionNo = rev;
-    EtherCATInfo.ProductCode = pc;
-    EtherCATInfo.Type = char(type.getTextContent.trim);
-    
-    sm = slaveElem.getElementsByTagName('Sm');
-    EtherCATInfo.SyncManager = struct('Read',[],'Write',[]);
-    read_idx = 1;
-    write_idx = 1;
-    for i = 0:sm.getLength-1
-        smX = sm.item(i);
-        if ~smX.hasAttribute('ControlByte')
-            error('getEtherCATInfo:getEtherCATInfo:missingAttribute', ...
-                'SyncManager element does not have attribute "ControlByte"');
+        attr = [];
+        if isempty(device.ProductCode)
+            attr = 'ProductCode';
+        elseif isempty(device.RevisionNo);
+            attr = 'RevisionNo';
         end
-        ControlByte = uint8(fromHexString(smX.getAttribute('ControlByte')));
-        if bitand(ControlByte,3)
-            % Only looking for elements where (Bit1,Bit0) = (0,0)
+        if ~isempty(attr)
+            reject_no_attribute(DevicePath,attr);
             continue
         end
-        direction = bitand(bitshift(ControlByte,-2),3);
-        switch direction
-            case 0
-                EtherCATInfo.SyncManager.Read(read_idx) = i;
-                read_idx = read_idx + 1;
-            case 1
-                EtherCATInfo.SyncManager.Write(write_idx) = i;
-                write_idx = write_idx + 1;
-            otherwise
-                error('getEtherCATInfo:getEtherCATInfo:unknownSmDirection', ...
-                    'Unknown SyncManager direction %u', direction);
+        
+        if isempty(device.Type)
+            device.Type = ['#x' dec2hex(device.ProductCode)];
+            if debug > 1
+                fprintf('Device %s/Type has no text content. Presetting to %s\n',...
+                    DevicePath, device.Type);
+            end
         end
-    end
-    
-    % Get the list of slaves assigned to the SyncManagers
-    EtherCATInfo.TxPdo = getPdos(slaveElem, parent, 'TxPdo');
-    EtherCATInfo.RxPdo = getPdos(slaveElem, parent, 'RxPdo');
-    
-    return
+        
+        if debug
+            fprintf('Found Device(%u): Type %s, ProductCode #x%08x, Revision #x%08x...',...
+                slaveElemIdx, device.Type, device.ProductCode, device.RevisionNo);
+        end
 
-%     EtherCATInfo.SyncManager = {};
-%     sm_idx = 1;
-%     for i = 1:16
-%         Sm = {};
-%         dir = 0;
-%         if ~isempty(TxSm{i})
-%             dir = 1;
-%             Sm = TxSm{i};
-%         end
-%         if ~isempty(RxSm{i})
-%             if ~isempty(Sm)
-%                 error('getEtherCATInfo:getEtherCATInfo:configError',...
-%                     'SyncManager %u can only have one direction.',i-1);
-%             end
-%             dir = 0;
-%             Sm = RxSm{i};
-%         end
-%         if isempty(Sm)
-%             continue
-%         end
-%         EtherCATInfo.SyncManager{sm_idx} = ...
-%             struct('SmIndex', i-1, 'SmDir', dir, 'Pdo', Sm);
-%         sm_idx = sm_idx + 1;
-%     end
+        if ~ismatch(args, device.ProductCode, device.RevisionNo)
+            if debug 
+                fprintf(' not selected\n');
+            end
+            continue
+        end
+        if debug
+            fprintf(' adding to list\n');
+        end
+
+        if isstruct(EtherCATInfo.Device)
+            EtherCATInfo.Device(slaveIdx) = GetDevice(device,slaveElem,DevicePath);
+        else
+            EtherCATInfo.Device = GetDevice(device,slaveElem,DevicePath);
+        end
+        slaveIdx = slaveIdx + 1;
+    end
 end
 
+function  reject_no_element(DevicePath,type)
+    global debug
+    if debug
+        fprintf('XML element %s/Type does not exist; Rejecting...\n', ...
+            DevicePath,type);
+    end
+end
+
+function  reject_no_text_element(DevicePath,element)
+    global debug
+    if debug
+        fprintf(['XML path %s does not have a text child element <%s>. '...
+            'Rejecting...\n'], DevicePath, element);
+    end
+end
+
+function  reject_no_numeric_element(Path,element)
+    global debug
+    if debug
+        fprintf(['XML path %s does not have a valid numeric child element <%s>. '...
+            'Rejecting...\n'], Path, element);
+    end
+end
+
+function reject_no_attribute(DevicePath,attr)
+    global debug
+    if debug
+        fprintf(['XML element %s/Type '...
+            'does not have numeric attribute %s; Rejecting... \n'], ...
+            DevicePath,attr);
+    end
+end
+
+function x = ismatch(args,ProductCode,RevisionNo)
+    %% Returns true when:
+    %%    - args.ProductCode is missing
+    %%    - or ProductCode matches and args.RevisionNo is missing
+    %%    - or RevisionNo matches
+    %% otherwise false
+    %%
+    %% The idea is that if a property is not set, it matches
+    %% 
+    if isempty(args.ProductCode) ...
+            || isequal(args.ProductCode,ProductCode) && isempty(args.RevisionNo) ...
+            || isequal(args.RevisionNo,RevisionNo)
+        x = true;
+    else
+        x = false;
+    end
+end
+
+function device = GetDevice(device,slaveElem,DevicePath)
+    global debug
+    
+    if debug > 1
+        fprintf('Parsing Device at %s...\n', DevicePath);
+    end
+    
+    % Save all RevisionNo from the <HideType> elements
+    % in a list
+    element = slaveElem.getElementsByTagName('HideType');
+    if ~element.getLength && debug > 1
+        fprintf('Slave does not have any children <HideType>\n');
+    end
+    for i = 0:element.getLength-1
+        h = fromHexString(element.item(i).getAttribute('RevisionNo'));
+        device.HideType = [device.HideType h];
+        if isempty(h)
+            hidepath = [DevicePath '/HideType(' num2str(i) ')'];
+            reject_no_attribute(hidepath,'RevisionNo');
+        end
+    end
+    if debug
+        fprintf('Hiding RevisionNo');
+        for i = 1:length(device.HideType)
+            fprintf(' #x%08x', device.HideType(i));
+        end
+        fprintf('\n');
+    end
+    
+    device.Sm = struct('Input',[],'Output',[]);
+    element = slaveElem.getElementsByTagName('Sm');
+    for SmIdx = 0:element.getLength-1
+        str = element.item(SmIdx).getAttribute('ControlByte');
+        ControlByte = uint8(fromHexString(str));
+        if isempty(ControlByte)
+            hidepath = [DevicePath '/Sm(' num2str(SmIdx) ')'];
+            reject_no_attribute(hidepath,'ControlByte');
+            continue
+        end
+        
+        if debug > 1
+            fprintf('Sm(%u) has ControlByte #x%x... ', SmIdx, ControlByte);
+        end
+        
+        % (Bit1,Bit0) of ControlByte must equal (0,0)
+        if bitand(ControlByte,3)
+            if debug > 1
+                fprintf('no IO SyncManager; continue\n');
+            end
+            continue
+        end
+        if debug > 1
+            fprintf('\n');
+        end
+        
+        % (Bit3,Bit2) is the direction:
+        %   (0,0)
+        %   (0,1)
+        switch bitand(bitshift(ControlByte,-2),3)
+            case 0
+                device.Sm.Input = [device.Sm.Input SmIdx];
+            case 1
+                device.Sm.Output = [device.Sm.Output SmIdx];
+            otherwise
+                if debug
+                    fprintf(['Unknown direction bits in ControlByte '...
+                        'of XML element %s/Sm(%u).'], DevicePath, SmIdx);
+                end
+        end
+    end
+    if debug
+        fprintf('Available SyncManagers: ');
+        if length(device.Sm.Input)
+            fprintf('Input = %u', device.Sm.Input(1))
+            for i = 2:length(device.Sm.Input)
+                fprintf(', %u', device.Sm.Input(i))
+            end
+            fprintf('; ')
+        end
+        if length(device.Sm.Output)
+            fprintf('Output = %u', device.Sm.Output(1))
+            for i = 2:length(device.Sm.Output)
+                fprintf(', %u', device.Sm.Output(i))
+            end
+        end
+        fprintf('\n')
+    end
+    
+    
+    % Get the list of slaves assigned to the SyncManagers
+    skelPdo = struct(...
+        'Index',[],...
+        'Sm',[],...
+        'Mandatory',[],...
+        'Name','',...
+        'Exclude',[],...
+        'Entry',[]);
+    
+    TxPdoElem = slaveElem.getElementsByTagName('TxPdo');
+    device.TxPdo = repmat(skelPdo, 1, TxPdoElem.getLength);
+    for i = 1:TxPdoElem.getLength
+        device.TxPdo(i) = getPdo(device.TxPdo(i), TxPdoElem.item(i-1),...
+            [DevicePath '/TxPdo(' num2str(i-1) ')']);
+    end
+%     device.RxPdo = getPdos(slaveElem, parent, 'RxPdo');
+    
+end
 
 % Parses slave xml element for the pdo and returns a structure
 % vector containing:
@@ -227,135 +373,124 @@ end
 % subindex
 % bitlen
 % signed
-function Pdo = getPdos(slave, parent, dir, PdoList)
+function pdo = getPdo(pdo, pdoElement, PdoPath)
+    global debug
     
-    PdoElements = slave.getElementsByTagName(dir);
-    if ~PdoElements.getLength
+    if debug > 1
+        fprintf('Parsing pdos in %s\n', PdoPath);
+    end
+
+    try
+        indexElem = pdoElement.getElementsByTagName('Index').item(0);
+        pdo.Index = fromHexString(indexElem.getTextContent.trim);
+        pdo.Mandatory = fromHexString(indexElem.getAttribute('Mandatory'));
+        pdo.Sm = fromHexString(indexElem.getAttribute('Sm'));
+    catch
+    end
+    
+    if isempty(pdo.Index)
+        reject_no_numeric_element(PdoPath, 'Index');
         return
     end
+    
+    if isempty(pdo.Mandatory)
+        pdo.Mandatory = 0;
+    end
+    if isempty(pdo.Sm)
+        pdo.Sm = -1;
+    end
+    
+    if debug
+        fprintf('Found Pdo Index #x%04x, Mandatory %u, SyncManager %i\n',...
+            pdo.Index, pdo.Mandatory, pdo.Sm);
+    end
 
-    parent = [parent '/' dir];
-    
-    true = java.lang.String('1');
-    
-    Pdo = repmat(...
-        struct(...
-            'Index',0,...
-            'Sm',-1,...
-            'Mandatory',0,...
-            'Name','',...
-            'Exclude',[],...
-            'Entry',struct([])),...
-        1,PdoElements.getLength);
-    
-    for idx = 1:PdoElements.getLength
-        
-        p = PdoElements.item(idx-1);
-        index = p.getElementsByTagName('Index').item(0);
-        if ~size(index)
-            error('getEtherCATInfo:getPDO:elementNotFound',...
-                'XML element <%s> does not have child <Index>.', parent);
-        end
-        
-        Pdo(idx).Index = fromHexString(index.getTextContent.trim);
-        Pdo(idx).Mandatory = p.getAttribute('Mandatory').equals(true);
-
-        % Make sure that PDO's that are already mapped are do clash with 
-        % this one
-        ExcludeElements = p.getElementsByTagName('Exclude');
-        Pdo(idx).Exclude = zeros(1,ExcludeElements.getLength);
-        for i = 1:ExcludeElements.getLength
-            pdoX.Exclude(i) = fromHexString(ExcludeElements.item(i-1).getTextContent.trim);
-        end
-        
-        if p.hasAttribute('Sm')
-            Pdo(idx).Sm = str2double(p.getAttribute('Sm'));
-            if isnan(Pdo(idx).Sm)
-                error('getEtherCATInfo:getPDO:NaN',...
-                    'Attribut "Sm" of XML element <%s> is not a number.',...
-                    parent);
-            end
-        end
-        
-        % Save the PDO name
-        name = p.getElementsByTagName('Name').item(0);
-        if name.getLength
-            Pdo(idx).Name = char(name.getTextContent.trim);
-        end
-        
-        % Read all of the PDO Entries into field 'entry'
-        entries = p.getElementsByTagName('Entry');
-        Pdo(idx).Entry = repmat( ...
-            struct('Index',0,'SubIndex',0,'BitLen',0,'DataType',0,'Name',''), ...
-            1, entries.getLength);
-        for j = 1:entries.getLength
-            Pdo(idx).Entry(j) = ...
-                getPdoEntry(Pdo(idx).Entry(j), entries.item(j-1), parent);
+    ExcludeElements = pdoElement.getElementsByTagName('Exclude');
+    pdo.Exclude = zeros(1,ExcludeElements.getLength);
+    for i = 1:ExcludeElements.getLength
+        try
+            x = ExcludeElements.item(i-1).getTextContent.trim;
+            pdo.Exclude(i) = fromHexString(x);
+        catch
+            reject_no_numeric_element(PdoPath,['Exclude(' num2str(i) ')']);
         end
     end
-end
+    if debug
+        fprintf('Exclude Pdo:');
+        for i = 1:length(pdo.Exclude)
+            fprintf(' #x%04x', pdo.Exclude(i));
+        end
+        fprintf('\n');
+    end
+    
+    
+    pdoEntryElem = pdoElement.getElementsByTagName('Entry');
+    pdo.Entry = repmat(struct(...
+            'Index',[],...
+            'SubIndex',[],...
+            'BitLen',[],...
+            'DataType',[]), 1, pdoEntryElem.getLength);
 
-function PdoEntry = getPdoEntry(PdoEntry, entry, parent)
-    index = [];
-    subindex = [];
-    bitlen = [];
-    datatype = [];
+    for i = 1:pdoEntryElem.getLength
+        pdo.Entry(i) = getPdoEntry(pdo.Entry(i),pdoEntryElem.item(i-1),...
+            [PdoPath '/Entry(' num2str(i-1) ')']);
+    end
+end
+        
+function PdoEntry = getPdoEntry(PdoEntry, PdoEntryElem, EntryPath)
+    global debug
+    
+    copy = PdoEntry;
+    
+    if debug > 1
+        fprintf('Parsing Pdo Entry %s.\n', EntryPath);
+    end
+
     try
-        index    = entry.getElementsByTagName('Index').item(0);
-        bitlen   = entry.getElementsByTagName('BitLen').item(0);
-        subindex = entry.getElementsByTagName('SubIndex').item(0);
-        datatype = entry.getElementsByTagName('DataType').item(0);
-        name     = entry.getElementsByTagName('Name').item(0);
+        index    = PdoEntryElem.getElementsByTagName('Index').item(0).getTextContent.trim;
+        copy.Index = fromHexString(index);
+        bitlen   = PdoEntryElem.getElementsByTagName('BitLen').item(0).getTextContent.trim;
+        copy.BitLen = fromHexString(bitlen);
+        subindex = PdoEntryElem.getElementsByTagName('SubIndex').item(0).getTextContent.trim;
+        copy.SubIndex = fromHexString(subindex);
+        datatype = PdoEntryElem.getElementsByTagName('DataType').item(0).getTextContent.trim;
+        copy.DataType = getDataType(datatype,copy.BitLen);
+        copy.DataType = getDataType(datatype,copy.BitLen);
     catch
+%        error('stop')
     end
 
     % Index Element is required
-    if ~size(index)
-        error('getEtherCATInfo:getPDO:elementNotFound',...
-            'XML element <%s/Entry> does not have child <Index>.', ...
-            parent);
-    elseif ~size(bitlen)
-        error('getEtherCATInfo:getPDO:elementNotFound',...
-            'XML element <%s/Entry> does not have child <BitLen>.', ...
-            parent);
+    if isempty(copy.Index)
+        reject_no_numeric_element(EntryPath, 'Index');
+        return
+    elseif isempty(copy.BitLen)
+        reject_no_numeric_element(EntryPath, 'BitLen');
+        return
     end
-
-    PdoEntry.Index  = fromHexString(index.getTextContent.trim);
-    PdoEntry.BitLen = fromHexString(bitlen.getTextContent.trim);
-
-    if ~PdoEntry.BitLen
-        error('getEtherCATInfo:getPDO:zeroLen',...
-            'BitLen cannot be zero');
-    end
-
-    if ~PdoEntry.Index
+    
+    if ~copy.Index
         return
     end
 
     % Index is specified, Subindex is mandatory
-    if ~size(subindex)
-        error('getEtherCATInfo:getPDO:elementNotFound',...
-            'XML element <%s/Entry> does not have child <SubIndex>.', ...
-            parent);
-    end
-    PdoEntry.SubIndex = fromHexString(subindex.getTextContent.trim);
-
-    if ~size(datatype)
-        error('getEtherCATInfo:getPDO:elementNotFound',...
-            'XML element <%s/Entry> does not have child <DataType>.', ...
-            parent);
+    if isempty(copy.SubIndex)
+        reject_no_numeric_element(EntryPath, 'SubIndex');
+        return
     end
 
-    PdoEntry.DataType = getDataType(datatype.getTextContent.trim,PdoEntry.BitLen);
+    if isempty(copy.DataType)
+        reject_no_text_element(EntryPath,'DataType');
+        return
+    end
     
-    % Save the PDO name
-    if name.getLength
-        PdoEntry.Name = char(name.getTextContent.trim);
-    end
+    PdoEntry = copy;
 end        
 
 % Returns whether a data type is signed
 function w = getDataType(dt,bitlen)
+    global debug
+
     if dt.startsWith('BOOL')
         w = 1;
     elseif dt.startsWith('USINT') || dt.startsWith('UINT8') ...
@@ -376,27 +511,28 @@ function w = getDataType(dt,bitlen)
     elseif dt.startsWith('LINT') || dt.startsWith('INT64')
         w = -64;
     elseif dt.startsWith('BIT')
-        if bitlen == 1
-            w = 1;
-        else
-            w = 8;
-        end
+        w = bitlen;
     else
-        error('getEtherCATInfo:getDataType:unknown',...
-            ['Unknown data type ' char(dt)]);
+        if debug
+            fprintf('Unknown DataType: %s\n', char(dt));
+        end
+        w = [];
     end
 end
     
 % This function converts hexadecimal values of the form
 % '#x1234' to decimal values
 function x = fromHexString(v)
-    if v.startsWith('#x')
-        x = hex2dec(char(v.substring(2,v.length)));
-    else
-        x = str2double(v);
+    try
+        if v.startsWith('#x')
+            x = hex2dec(char(v.substring(2,v.length)));
+        else
+            x = str2double(v);
+        end
+    catch
+        x = [];
     end
     if isnan(x)
-        error('getEtherCATInfo:getPDO:NaN', ...
-            ['Value "' char(v) '" does not represent a number']);
+        x = [];
     end
 end
