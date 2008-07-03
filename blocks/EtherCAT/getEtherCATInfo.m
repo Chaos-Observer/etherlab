@@ -51,7 +51,7 @@ function EtherCATInfo =  ...
     debug = 0;
     args = struct('ProductCode',[],'RevisionNo',[]);
     
-    for i = 1:argc/2
+    for i = 1:(argc-1)/2
         field = varargin{i*2};
         switch lower(field)
             case 'productcode'
@@ -98,7 +98,7 @@ function EtherCATInfo =  ...
         return
     end
 
-    if debug >= 2
+    if debug > 1
         fprintf('Found VendorId = %u\n', EtherCATInfo.VendorId);
     end
     
@@ -147,7 +147,8 @@ function EtherCATInfo =  ...
             'RevisionNo',[],...
             'Name','',...
             'HideType',[],...
-            'Sm',[],...
+            'InputSm',[],...
+            'OutputSm',[],...
             'TxPdo',[],...
             'RxPdo',[]);
         
@@ -190,7 +191,7 @@ function EtherCATInfo =  ...
         end
 
         if ~ismatch(args, device.ProductCode, device.RevisionNo)
-            if debug 
+            if debug
                 fprintf(' not selected\n');
             end
             continue
@@ -244,15 +245,15 @@ end
 function x = ismatch(args,ProductCode,RevisionNo)
     %% Returns true when:
     %%    - args.ProductCode is missing
-    %%    - or ProductCode matches and args.RevisionNo is missing
-    %%    - or RevisionNo matches
+    %%       \ or ProductCode matches and (args.RevisionNo is missing
+    %%                                      \ or RevisionNo matches)
     %% otherwise false
     %%
     %% The idea is that if a property is not set, it matches
     %% 
     if isempty(args.ProductCode) ...
-            || isequal(args.ProductCode,ProductCode) && isempty(args.RevisionNo) ...
-            || isequal(args.RevisionNo,RevisionNo)
+            || isequal(args.ProductCode,ProductCode) ...
+                && (isempty(args.RevisionNo) || isequal(args.RevisionNo,RevisionNo))
         x = true;
     else
         x = false;
@@ -280,7 +281,7 @@ function device = GetDevice(device,slaveElem,DevicePath)
             reject_no_attribute(hidepath,'RevisionNo');
         end
     end
-    if debug
+    if debug > 1 && length(device.HideType)
         fprintf('Hiding RevisionNo');
         for i = 1:length(device.HideType)
             fprintf(' #x%08x', device.HideType(i));
@@ -288,7 +289,6 @@ function device = GetDevice(device,slaveElem,DevicePath)
         fprintf('\n');
     end
     
-    device.Sm = struct('Input',[],'Output',[]);
     element = slaveElem.getElementsByTagName('Sm');
     for SmIdx = 0:element.getLength-1
         str = element.item(SmIdx).getAttribute('ControlByte');
@@ -319,9 +319,9 @@ function device = GetDevice(device,slaveElem,DevicePath)
         %   (0,1)
         switch bitand(bitshift(ControlByte,-2),3)
             case 0
-                device.Sm.Input = [device.Sm.Input SmIdx];
+                device.InputSm = [device.InputSm SmIdx];
             case 1
-                device.Sm.Output = [device.Sm.Output SmIdx];
+                device.OutputSm = [device.OutputSm SmIdx];
             otherwise
                 if debug
                     fprintf(['Unknown direction bits in ControlByte '...
@@ -329,19 +329,19 @@ function device = GetDevice(device,slaveElem,DevicePath)
                 end
         end
     end
-    if debug
+    if debug > 1
         fprintf('Available SyncManagers: ');
-        if length(device.Sm.Input)
-            fprintf('Input = %u', device.Sm.Input(1))
-            for i = 2:length(device.Sm.Input)
-                fprintf(', %u', device.Sm.Input(i))
+        if length(device.InputSm)
+            fprintf('Input = %u', device.InputSm(1))
+            for i = 2:length(device.InputSm)
+                fprintf(', %u', device.InputSm(i))
             end
             fprintf('; ')
         end
-        if length(device.Sm.Output)
-            fprintf('Output = %u', device.Sm.Output(1))
-            for i = 2:length(device.Sm.Output)
-                fprintf(', %u', device.Sm.Output(i))
+        if length(device.OutputSm)
+            fprintf('Output = %u', device.OutputSm(1))
+            for i = 2:length(device.OutputSm)
+                fprintf(', %u', device.OutputSm(i))
             end
         end
         fprintf('\n')
@@ -358,13 +358,22 @@ function device = GetDevice(device,slaveElem,DevicePath)
         'Entry',[]);
     
     TxPdoElem = slaveElem.getElementsByTagName('TxPdo');
-    device.TxPdo = repmat(skelPdo, 1, TxPdoElem.getLength);
-    for i = 1:TxPdoElem.getLength
-        device.TxPdo(i) = getPdo(device.TxPdo(i), TxPdoElem.item(i-1),...
-            [DevicePath '/TxPdo(' num2str(i-1) ')']);
+    if TxPdoElem.getLength
+        device.TxPdo = repmat(skelPdo, 1, TxPdoElem.getLength);
+        for i = 1:TxPdoElem.getLength
+            device.TxPdo(i) = getPdo(device.TxPdo(i), TxPdoElem.item(i-1),...
+                [DevicePath '/TxPdo(' num2str(i-1) ')']);
+        end
     end
-%     device.RxPdo = getPdos(slaveElem, parent, 'RxPdo');
     
+    RxPdoElem = slaveElem.getElementsByTagName('RxPdo');
+    if RxPdoElem.getLength
+        device.RxPdo = repmat(skelPdo, 1, RxPdoElem.getLength);
+        for i = 1:RxPdoElem.getLength
+            device.RxPdo(i) = getPdo(device.RxPdo(i), RxPdoElem.item(i-1),...
+                [DevicePath '/RxPdo(' num2str(i-1) ')']);
+        end
+    end
 end
 
 % Parses slave xml element for the pdo and returns a structure
@@ -400,7 +409,7 @@ function pdo = getPdo(pdo, pdoElement, PdoPath)
         pdo.Sm = -1;
     end
     
-    if debug
+    if debug > 1
         fprintf('Found Pdo Index #x%04x, Mandatory %u, SyncManager %i\n',...
             pdo.Index, pdo.Mandatory, pdo.Sm);
     end
@@ -415,7 +424,7 @@ function pdo = getPdo(pdo, pdoElement, PdoPath)
             reject_no_numeric_element(PdoPath,['Exclude(' num2str(i) ')']);
         end
     end
-    if debug
+    if debug > 1
         fprintf('Exclude Pdo:');
         for i = 1:length(pdo.Exclude)
             fprintf(' #x%04x', pdo.Exclude(i));
@@ -455,9 +464,7 @@ function PdoEntry = getPdoEntry(PdoEntry, PdoEntryElem, EntryPath)
         copy.SubIndex = fromHexString(subindex);
         datatype = PdoEntryElem.getElementsByTagName('DataType').item(0).getTextContent.trim;
         copy.DataType = getDataType(datatype,copy.BitLen);
-        copy.DataType = getDataType(datatype,copy.BitLen);
     catch
-%        error('stop')
     end
 
     % Index Element is required
@@ -469,7 +476,15 @@ function PdoEntry = getPdoEntry(PdoEntry, PdoEntryElem, EntryPath)
         return
     end
     
+    if debug > 1
+        fprintf('Found Pdo Entry Index #x%04x, BitLen %u', ...
+            copy.Index, copy.BitLen);
+    end
     if ~copy.Index
+        if debug > 1
+            fprintf('\n');
+        end
+        PdoEntry = copy;
         return
     end
 
@@ -483,7 +498,13 @@ function PdoEntry = getPdoEntry(PdoEntry, PdoEntryElem, EntryPath)
         reject_no_text_element(EntryPath,'DataType');
         return
     end
-    
+
+    if debug > 1
+        fprintf(', SubIndex %u, DataType %i (%s)\n',...
+            copy.SubIndex, copy.DataType, char(datatype));
+    end
+    if debug > 1
+    end
     PdoEntry = copy;
 end        
 
