@@ -1382,7 +1382,6 @@ static void mdlInitializeSizes(SimStruct *S)
     if (!(slave = mxCalloc(1,sizeof(*slave)))) {
         return;
     }
-    ssSetUserData(S,slave);
 
     if (get_slave_address(S, slave)) return;
     if (get_ethercat_info(S, slave)) return;
@@ -1456,6 +1455,7 @@ static void mdlInitializeSizes(SimStruct *S)
      * even in case of failures, the option SS_OPTION_CALL_TERMINATE_ON_EXIT
      * has to be set */
     slave_mem_op(slave, mexMakeMemoryPersistent);
+    ssSetUserData(S,slave);
 
     ssSetOptions(S,
             SS_OPTION_WORKS_WITH_CODE_REUSE
@@ -1488,6 +1488,8 @@ static void mdlSetOutputPortWidth(SimStruct *S, int_T port, int_T width)
 static void mdlSetInputPortWidth(SimStruct *S, int_T port, int_T width)
 {
     struct ecat_slave *slave = ssGetUserData(S);
+    if (!slave)
+        return;
 
     ssSetInputPortWidth(S, port, width);
 
@@ -1504,7 +1506,12 @@ static void mdlSetDefaultPortDimensionInfo(SimStruct *S)
 {
     struct ecat_slave *slave = ssGetUserData(S);
     int_T port_idx;
-    uint_T output_port_count = slave->io_port_count - slave->input_port_count;
+    uint_T output_port_count;
+
+    if (!slave)
+        return;
+
+    output_port_count = slave->io_port_count - slave->input_port_count;
 
     for (port_idx = 0; port_idx < slave->input_port_count; port_idx++) {
         if (ssGetInputPortWidth(S, port_idx) == DYNAMICALLY_SIZED) {
@@ -1528,6 +1535,9 @@ static void mdlSetWorkWidths(SimStruct *S)
     struct io_port *port;
     uint_T param_idx = 0;
     uint_T input_port_idx = 0;
+
+    if (!slave)
+        return;
 
     ssSetNumPWork(S, slave->pwork_count);
     ssSetNumIWork(S, slave->iwork_count);
@@ -1631,6 +1641,9 @@ static void mdlDerivatives(SimStruct *S)
 static void mdlTerminate(SimStruct *S)
 {
     struct ecat_slave *slave = ssGetUserData(S);
+
+    if (!slave)
+        return;
 
     slave_mem_op(slave, mxFree);
 }
