@@ -211,14 +211,6 @@ function EtherCATInfo = getEtherCATInfo(varargin)
     end
 end
 
-function  reject_no_element(DevicePath,type)
-    global debug
-    if debug
-        fprintf('XML element %s/Type does not exist; Rejecting...\n', ...
-            DevicePath,type);
-    end
-end
-
 function  reject_no_text_element(DevicePath,element)
     global debug
     if debug
