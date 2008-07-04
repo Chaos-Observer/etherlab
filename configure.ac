@@ -230,6 +230,7 @@ AC_PROG_LIBTOOL
 AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PATH_PROG(RM, rm)
+AC_PATH_PROG(UNZIP, unzip)
 AC_PATH_PROG(SED, sed)
 AC_PATH_PROG(ED, ed)
 AC_PATH_PROG(GREP, grep)
@@ -285,6 +286,8 @@ AC_CONFIG_FILES([
         blocks/AddiData/setup.m 
         blocks/EtherCAT/Makefile
         blocks/EtherCAT/setup.m 
+        blocks/EtherCAT/xml/Makefile
+        blocks/EtherCAT/xml/setup.m 
         blocks/Hilscher/Makefile 
         blocks/Hilscher/setup.m 
         blocks/Makefile 

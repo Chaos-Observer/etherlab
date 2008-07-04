@@ -58,6 +58,9 @@ function EtherCATInfo = getEtherCATInfo(varargin)
         switch lower(field)
             case 'productcode'
                 args.ProductCode = varargin{i*2+1};
+                if args.ProductCode == 0
+                    args.ProductCode = [];
+                end
             case 'revisionno'
                 args.RevisionNo = varargin{i*2+1};
             case 'debug'

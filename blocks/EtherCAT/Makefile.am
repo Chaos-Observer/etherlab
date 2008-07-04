@@ -1,3 +1,6 @@
+
+SUBDIRS = xml
+
 ethercatdir = $(prefix)/$(subdir)
 
 dist_ethercat_DATA = \
@@ -11,7 +14,15 @@ dist_ethercat_DATA = \
         getEtherCATInfo.m \
         generateIOs.m \
         ec_slave.c ec_slave.tlc \
-        ec_slave2.c ec_slave2.tlc
+        ec_slave2.c ec_slave2.tlc \
+        EtherCATInfo_ekxxxx.mat \
+        EtherCATInfo_el1xxx.mat \
+        EtherCATInfo_el2xxx.mat \
+        EtherCATInfo_el3xxx.mat \
+        EtherCATInfo_el4xxx.mat \
+        EtherCATInfo_el5xxx.mat \
+        EtherCATInfo_el6xxx.mat \
+        EtherCATInfo_el9xxx.mat
 
 if EXPERIMENTAL
 dist_ethercat_DATA += 

@@ -15,6 +15,7 @@ struct pdo_map {
     ec_direction_t dir;
 
     enum si_datatype_t pdo_datatype;
+    unsigned int bitlen;
     void **address;
     unsigned int *bitoffset;
 };

@@ -1,4 +1,4 @@
-function [PdoEntryMap EtherCATInfo SmConfig] = generateIOs(varargin)
+function [PdoEntryMap EtherCATInfo_slave] = generateIOs(varargin)
     % Select:
     %   - Empty:
     %       selects all PDO Entries where there are no conflicts
@@ -17,23 +17,58 @@ function [PdoEntryMap EtherCATInfo SmConfig] = generateIOs(varargin)
     %
 
     PdoEntryMap = [];
-    SmConfig = [];
-    EtherCATInfo = [];
+    EtherCATInfo_slave = [];
 
+    % See the documentation for the interpretation of every
+    % field.
+    arg_list = struct(...
+        'SelectPdo', {[]...
+            {'Vector' ...
+            ['\tIf specified, all Pdo Entries of PDO Indices contained\n'...
+             '\tin this list are selected']}
+             }, ...
+        'SelectPdoEntry',{ [] ...
+            {'M-by-2 array' 
+            '\n'} ...
+            },...
+        'ProductCode',{ [], ...
+            {'Scalar' 
+            '\n'} ...
+            },...
+        'RevisionNo',{[], ...
+            {'Scalar'
+            '\n'} ...
+            },...
+        'GroupType',{[], ...
+            {'String: ''None'' ''Pdo'' ''All'''
+            '\n'} ...
+            },...
+        'SmAssignment', { zeros(0,2), ...
+            {'M-my-2 Array'
+            '\n'} ...
+            },...
+        'Debug',{ 0, ...
+            {'Scalar' 
+            '\n'} ...
+            });
+        
+    global arg
+    arg = arg_list(1);
+    
     argc = length(varargin);
     
     if ~argc
         help generateIOs
+        fprintf('Available options: \n');
+        fn = fieldnames(arg);
+        for i = 1:length(fn)
+            fprintf('    %s:\t%s\n', fn{i}, arg_list(2).(fn{i}){1});
+            fprintf(arg_list(2).(fn{i}){2});
+        end
         return
     end
     
     EtherCATInfo = varargin{1};
-    
-    % See the documentation for the interpretation of every
-    % field.
-    global arg
-    arg = struct('SelectPdo',[],'SelectPdoEntry',[],'ProductCode',[],...
-        'RevisionNo',[],'GroupType',[],'SyncManagerMap',[],'Debug',0);
     
     % Generate a map where the lowercase field names of arg
     % contain the real field names,i.e.
@@ -143,31 +178,79 @@ function [PdoEntryMap EtherCATInfo SmConfig] = generateIOs(varargin)
             end
         end
     end
-            
-    Device = EtherCATInfo.Device(1);
+           
+    % Make sure that the SyncManager Indices are unique
+    overlapping = intersect(EtherCATInfo.Device(1).OutputSm, ...
+        EtherCATInfo.Device(1).InputSm);
+    if ~isempty(overlapping)
+        error('generateIOs:generateIOs:EtherCATInfoError',...
+            ['SyncManager Index %s exist in both input and output '...
+            'SyncManagers; Exiting...\n'], mat2str(overlapping));
+        return
+    end
 
-    TxPdoEntryMap = getPdoEntryGroups(Device.TxPdo, arg.GroupType);
-    RxPdoEntryMap = getPdoEntryGroups(Device.RxPdo, arg.GroupType);
+    if size(arg.SmAssignment,2) ~= 2 || ~isnumeric(arg.SmAssignment)
+        error('generateIOs:generateIOs:ParameterError',...
+            ['Value for argument ''SmAssignment'' must be an M-by-2 ', ...
+            'numeric matrix\n'])
+    elseif length(unique(arg.SmAssignment(:,1))) ~= size(arg.SmAssignment,1)
+        error('generateIOs:generateIOs:EtherCATInfoError',...
+            ['Some Pdo Indices in parameter ''SmAssignment'' are ' ...
+            'specified multiply.']);
+        return
+    end
+
+    EtherCATInfo_slave = struct(...
+        'VendorId', EtherCATInfo.VendorId,...
+        'Type', EtherCATInfo.Device(1).Type,...
+        'ProductCode', EtherCATInfo.Device(1).ProductCode,...
+        'RevisionNo', EtherCATInfo.Device(1).RevisionNo,...
+        'Name', EtherCATInfo.Device(1).Name);
+
+    [TxPdoEntryMap TxSm] = getPdoEntryGroups(...
+        EtherCATInfo.Device(1).TxPdo, ...
+        EtherCATInfo.Device(1).InputSm, 1, ...
+        arg.GroupType);
+    
+    [RxPdoEntryMap RxSm] = getPdoEntryGroups(...
+        EtherCATInfo.Device(1).RxPdo, ...
+        EtherCATInfo.Device(1).OutputSm, 0, ...
+        arg.GroupType);
+    
+    EtherCATInfo_slave.SyncManager = {TxSm{2}{:} RxSm{2}{:}};
     
     PdoEntryMap = {TxPdoEntryMap{:} RxPdoEntryMap{:}};
 end
 
-function groups = getPdoEntryGroups(PdoList, GroupType)
+function [groups SmPdo] = getPdoEntryGroups(PdoList, SmList, SmDir, GroupType)
     % Returns a cell vector of M-by-4 arrays of all pdo entries 
     % listed in the Pdo structure array passed as an argument
     % i.e {  M1-by-4, M2-by-4, ... }
     % where the first cell is a list of all Pdo Entries grouped 
     % according to arg.
 
+    SmPdo = {SmList {}};
+    for i = 1:length(SmList)
+        SmPdo{2}{i} = struct('SmIndex', SmList(i), 'SmDir', SmDir, ...
+            'Pdo', repmat(PdoList,1,0));
+    end
+    
+    % Not all Pdos are allowed to be mapped. A mapped Pdo can exclude
+    % other pdos. The exclude variable below contains the excludes of all
+    % selected pdo's
+    exclude = [];
+
     entries = [];
     for i = 1:length(PdoList)
-        entries = [entries; getPdoEntries(PdoList(i))];
+        [newentries SmPdo exclude] = ...
+            getPdoEntries(PdoList(i), SmPdo, exclude);
+        entries = [entries; newentries];
     end
     
     groups = groupEntries(entries, GroupType);
 end
 
-function entries = getPdoEntries(Pdo)
+function [entries SmPdo exclude] = getPdoEntries(Pdo, SmPdo, exclude)
     % Returns a M-by-4 array of all Pdo Entries contained in a Pdo
     % [ PdoIndex PdoEntryIndex PdoEntrySubIndex PdoEntryDataType; ...]
     
@@ -181,10 +264,6 @@ function entries = getPdoEntries(Pdo)
     % 4: Pdo Entry DataType
     entries = repmat(zeros(4,1),1,0);
     
-    % Not all Pdos are allowed to be mapped. A mapped Pdo can exclude
-    % other pdos. The exclude variable below contains the excludes of all
-    % selected pdo's
-    exclude = [];
 
     for i = 1:length(Pdo)
         % Generate an 3-by-N array of all pdo entries existing in this Pdo.
@@ -195,26 +274,63 @@ function entries = getPdoEntries(Pdo)
         %
         % el = element list
         newentries = repmat(zeros(4,1),1,max(length(Pdo.Entry),1));
-        idx = 1;
+        PdoEntryCount = 1;
         for j = 1:length(Pdo.Entry)
             PdoEntry = Pdo(i).Entry(j);
             
             % Ignore spacer Pdo Entries where Index == 0
-            if ~PdoEntry.Index
-                continue
+            if PdoEntry.Index
+                newentries(:,PdoEntryCount) = ...
+                    [Pdo(i).Index PdoEntry.Index PdoEntry.SubIndex PdoEntry.DataType]';
+                PdoEntryCount = PdoEntryCount + 1;
             end
-            
-            newentries(:,idx) = ...
-                [Pdo(i).Index PdoEntry.Index PdoEntry.SubIndex PdoEntry.DataType]';
-            idx = idx + 1;
         end
+        
+        if Pdo.Sm < 0
+            candidate = arg.SmAssignment(arg.SmAssignment(:,1) == Pdo.Index, 2);
+            if length(candidate)
+                if isempty(intersect(SmPdo{1}, candidate(1))) 
+                    error('generateIOs:getPdoEnties:nonExistent',...
+                        ['The SyncManager specified for Pdo Index #x%04X '...
+                        'using the ''SmAssignment'' argument does not exist ' ...
+                        'Available are: %s'], Pdo.Index, mat2str(SmPdo{1}));
+                end
+                Pdo.Sm = candidate(1);
+            else
+                if length(SmPdo{1}) == 1
+                    Pdo.Sm = SmPdo{1}(1);
+                else
+                    if arg.Debug
+                        fprintf(['Warning: Pdo #x%04x does not have a default '...
+                            'SyncManager and there are more than 1 to choose '...
+                            'from. Set the SyncManager using the ''SmAssignment'' ' ...
+                            'option. Skipping...\n'], Pdo.Index)
+                    end
+                    continue
+                end
+            end
+        end
+
+
+        idx = find(SmPdo{1} == Pdo.Sm);
+        if isempty(idx)
+            if arg.Debug
+                fprintf(['Could not find SyncManager Index %u; '...
+                    'available are %s; skipping ...\n'], Pdo.Sm, ...
+                mat2str(SmPdo{1}));
+            end
+            continue
+        end
+        
+        j = length(SmPdo{2}{idx}.Pdo) + 1;
+        SmPdo{2}{idx}.Pdo(j) = Pdo;
 
         % Delete remaining columns that were skipped due to spacer pdo
         % entries
-        newentries(:, idx:length(Pdo.Entry)) = [];
+        newentries(:, PdoEntryCount:length(Pdo.Entry)) = [];
         
         if arg.SelectAll || Pdo.Mandatory
-            cols = 1:idx-1;
+            cols = 1:PdoEntryCount-1;
         else
 %             fprintf('Checking Pdo Idx %s %s\n', ...
 %                 mat2str(newentries(  1,:)), mat2str(arg.SelectPdoIdx));
@@ -226,18 +342,25 @@ function entries = getPdoEntries(Pdo)
                          ismember(newentries(  2,:),  arg.SelectPdoEntryIdx)), ...
                          ismember(newentries(2:3,:)', arg.SelectExact, 'rows')');
         end
-        
-        if intersect(exclude, Pdo(i).Index)
-            if arg.debug
-                fprintf('Pdo Index #x%04X was excluded', Pdo(i).Index);
-            end
-        else
-            entries = [entries newentries(:,cols)];
-            if isfield(Pdo(i),'Exclude')
-                exclude = [exclude Pdo(i).Exclude];
-            end
-        end
 
+        if ~isempty(intersect(exclude, Pdo(i).Index))
+            if arg.Debug
+                fprintf(['Pdo Index #x%04X was found in exclusion list '...
+                    'of Pdos that are selected already; skipping...\n'], ...
+                    Pdo(i).Index);
+            end
+            continue
+        end
+        
+        entries = [entries newentries(:,cols)];
+        if isfield(Pdo(i),'Exclude')
+            if arg.Debug
+                fprintf('Putting %s in exclusion list\n', ...
+                    cell2mat(cellfun(@(x) sprintf(' #x%04X',x), ...
+                    {Pdo(i).Exclude}, 'uniformoutput',0)));
+            end
+            exclude = [exclude Pdo(i).Exclude];
+        end
     end
     
     % Now flip the array into the M-by-4 version

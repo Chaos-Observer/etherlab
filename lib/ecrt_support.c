@@ -87,6 +87,7 @@ struct ecat_domain {
         *endian_convert_list; /* List for data copy instructions. List is
                                   * terminated with list->from = NULL */
 
+    size_t io_data_len;         /* Lendth of io_data image */
     void *io_data;              /* IO data is located here */
 };
 
@@ -192,6 +193,7 @@ ecs_receive(int tid)
     struct ecat_domain * const domain_end = 
         domain + ecat_data->st[tid].input_domain_count;
     struct endian_convert_t *conversion_list;
+//    static unsigned int count = 0;
         
     for ( ; master != master_end; master++) {
         rt_sem_wait(&master->lock);
@@ -223,6 +225,8 @@ ecs_receive(int tid)
                     break;
             }
         }
+//        if (!(count++ % 1000))
+//            pr_debug("ecs_receive %u\n", *(char*)domain->io_data);
     }
 }
 
@@ -241,6 +245,7 @@ ecs_send(int tid)
     struct ecat_domain * const domain_end = 
         domain + ecat_data->st[tid].output_domain_count;
     struct endian_convert_t *conversion_list;
+//    static unsigned int count = 0;
 
     for ( ; domain != domain_end; domain++) {
         for (conversion_list = domain->endian_convert_list; 
@@ -264,6 +269,8 @@ ecs_send(int tid)
         ecrt_domain_state(domain->handle, domain->state);
         ecrt_domain_queue(domain->handle);
         rt_sem_signal(&domain->master->lock);
+//        if (!(count++ % 1000))
+//            pr_debug("ecs_send %u\n", *(char*)domain->io_data);
     }
 
     for ( ; master != master_end; master++) {
@@ -303,6 +310,24 @@ ecs_release_cb(void *p)
 #undef MASTER
 }
 
+unsigned int
+get_addr_incr(enum si_datatype_t dtype)
+{
+    switch (dtype) {
+        case si_uint32_T:
+        case si_sint32_T:
+            return 4;
+        case si_uint16_T:
+        case si_sint16_T:
+            return 2;
+        case si_uint8_T:
+        case si_sint8_T:
+            return 1;
+        default:
+            return 0;
+    }
+}
+
 /* Initialise all slaves listed in master->slave_list. */
 static const char* __init
 init_slaves( struct ecat_master *master)
@@ -327,7 +352,7 @@ init_slaves( struct ecat_master *master)
         }
 
         /* Inform EtherCAT of how the slave configuration is expected */
-        if (ecrt_slave_config_sync_managers(slave_config, 
+        if (ecrt_slave_config_pdos(slave_config, 
                     EC_END, slave->sync_info)) {
             failed_method = "ecrt_slave_config_pdos";
             goto out_slave_failed;
@@ -385,6 +410,10 @@ init_slaves( struct ecat_master *master)
                 goto out_slave_failed;
             }
             mapped_pdo->base_offset = offset;
+            if (mapping->bitoffset) 
+                pr_debug("Bit Offset %p %u: %u\n", 
+                        mapping->bitoffset, slave->position, 
+                        *mapping->bitoffset);
         }
     }
 
@@ -646,6 +675,7 @@ ecs_reg_slave(
      * domain depending on whether it is an input or output */
     slave->pdo_map_count = pdo_count;
     for (i = 0; i < pdo_count; i++) {
+        pr_debug("Doing pdo_mapping %i\n", i);
         slave->mapped_pdo[i].mapping = &pdo_map[i];
         switch (pdo_map[i].dir) {
             /* PDO Input as seen by the slave, i.e. block inputs. The
@@ -660,7 +690,9 @@ ecs_reg_slave(
                     }
                 }
                 slave->mapped_pdo[i].domain = input_domain;
-                input_domain->io_count++;
+                input_domain->io_count +=
+                    get_addr_incr(pdo_map[i].pdo_datatype) > 1
+                    ? pdo_map[i].vector_len : 0;
                 break;
 
             /* PDO Output as seen by the slave, i.e. block outputs. The
@@ -675,7 +707,9 @@ ecs_reg_slave(
                     }
                 }
                 slave->mapped_pdo[i].domain = output_domain;
-                output_domain->io_count++;
+                output_domain->io_count +=
+                    get_addr_incr(pdo_map[i].pdo_datatype) > 1
+                    ? pdo_map[i].vector_len : 0;
                 break;
 
             default:
@@ -760,6 +794,132 @@ cleanup_mem(void)
     INIT_LIST_HEAD(&ecat_data->master_list);
 }
 
+const char * __init
+init_domains(struct ecat_master *master, struct ecat_master *new_master) 
+{
+    unsigned int i;
+    struct ecat_domain *domain;
+
+    /* Loop through all of the masters sample time domains domains */
+    for (i = 0; i < ecat_data->nst; i++) {
+        unsigned int tid, domain_idx;
+
+        /* Initialise all slaves in the input domain */
+        list_for_each_entry(domain,
+                &master->st_domain[i].input_domain_list, list) {
+            /* The list has to be zero terminated */
+            domain->endian_convert_list = 
+                my_kcalloc(domain->io_count + 1,
+                        sizeof(*domain->endian_convert_list),
+                        "input copy list");
+            if (!domain->endian_convert_list)
+                return no_mem_msg;
+
+            /* Allocate local IO memory */
+            domain->io_data_len = ecrt_domain_size(domain->handle);
+            domain->io_data = 
+                my_kcalloc(1, domain->io_data_len, "input io data");
+            if (!domain->io_data)
+                return no_mem_msg;
+            ecrt_domain_external_memory(domain->handle, domain->io_data);
+
+            /* Move the domain to the sample time array */
+            tid = domain->tid;
+            domain_idx = ecat_data->st[tid].input_domain_count++;
+            domain->master = new_master;
+            ecat_data->st[tid].input_domain[domain_idx] = *domain;
+        }
+
+        /* Initialise all slaves in the output domain */
+        list_for_each_entry(domain,
+                &master->st_domain[i].output_domain_list, list) {
+
+            /* The list has to be zero terminated */
+            domain->endian_convert_list = 
+                my_kcalloc( domain->io_count + 1,
+                        sizeof(*domain->endian_convert_list),
+                        "output copy list");
+            if (!domain->endian_convert_list)
+                return no_mem_msg;
+
+            /* Allocate local IO memory */
+            domain->io_data_len = ecrt_domain_size(domain->handle);
+            domain->io_data = 
+                my_kcalloc(1, domain->io_data_len, "output io data");
+            if (!domain->io_data)
+                return no_mem_msg;
+            ecrt_domain_external_memory(domain->handle, domain->io_data);
+
+            /* Move the domain to the sample time array */
+            tid = domain->tid;
+            domain_idx = ecat_data->st[tid].output_domain_count++;
+            domain->master = new_master;
+            ecat_data->st[tid].output_domain[domain_idx] = *domain;
+        }
+    }
+
+    return NULL;
+}
+
+const char * __init
+init_slave_iodata(struct ecat_slave *slave)
+{
+    struct mapped_pdo *mapped_pdo;
+    unsigned int i;
+
+    for (mapped_pdo = slave->mapped_pdo;
+            mapped_pdo != &slave->mapped_pdo[slave->pdo_map_count];
+            mapped_pdo++) {
+        const struct pdo_map *pdo = mapped_pdo->mapping;
+        char *data_ptr = 
+            mapped_pdo->domain->io_data + mapped_pdo->base_offset;
+        unsigned int bitposition = pdo->bitoffset ? *pdo->bitoffset : 0;
+        struct endian_convert_t *endian_convert_list;
+        unsigned int data_width = get_addr_incr(pdo->pdo_datatype);
+
+        if (!data_width) {
+            snprintf(errbuf, sizeof(errbuf),
+                    "Error: do not know how to do endian "
+                    "processing on datatype %u for "
+                    "(slave #%u.%u)",
+                    pdo->pdo_datatype,
+                    slave->alias, slave->position);
+            return  errbuf;
+        }
+
+        for (i = 0; i < pdo->vector_len; i++) {
+            pdo->address[i] = data_ptr;
+            pr_debug("Assigning io Address %u %p\n", i, pdo->address[i]);
+
+            if (pdo->bitoffset) {
+                pdo->bitoffset[i] = bitposition;
+
+                bitposition += pdo->bitlen;
+                data_ptr += bitposition / 8;
+                bitposition %= 8;
+            }
+            else {
+                data_ptr += data_width;
+            }
+
+            if (data_width > 1) {
+                /* Note: mapped_pdo->domain is still a pointer to 
+                 * the old domain structure (the one in the linked
+                 * list), not the one in the sample time structure 
+                 * (ecat_data->st[].input_domain). Since this will be 
+                 * thrown away soon, we can misuse its 
+                 * endian_convert_list pointer as a counter. */
+                endian_convert_list = 
+                    mapped_pdo->domain->endian_convert_list++;
+
+                endian_convert_list->data_ptr = data_ptr;
+                endian_convert_list->pdo_datatype = pdo->pdo_datatype;
+            }
+        }
+    } 
+    return NULL;
+}
+
 /*
  * Start EtherCAT driver.
  *
@@ -771,9 +931,6 @@ const char * __init
 ecs_start(void)
 {
     struct ecat_master *master;
-    struct ecat_domain *domain;
-    struct ecat_slave  *slave;
-    unsigned int i;
     unsigned int master_tid = 0;
     struct st_data *st;
 
@@ -809,6 +966,8 @@ ecs_start(void)
     list_for_each_entry(master, &ecat_data->master_list, list) {
         unsigned int master_idx;
         struct ecat_master *new_master;
+        struct ecat_slave *slave;
+        const char *err;
 
         /* Find out to which tid this master will be allocated. The fastest
          * tid will get it */
@@ -816,117 +975,18 @@ ecs_start(void)
         master_idx = ecat_data->st[master_tid].master_count++;
         new_master = &ecat_data->st[master_tid].master[master_idx];
 
-        if (init_slaves(master)) {
-            return errbuf;
-        }
+        if ((err = init_slaves(master)))
+            return err;
 
-        /* Loop through all of the masters domains */
-        for (i = 0; i < ecat_data->nst; i++) {
-            unsigned int tid, domain_idx;
-
-            /* Initialise all slaves in the input domain */
-            list_for_each_entry(domain,
-                    &master->st_domain[i].input_domain_list, list) {
-
-                /* If the domain does not exchange any data, then there
-                 * is no slave registered. This happens when only the
-                 * domain state is requested in which there are no slaves */
-                if (!domain->io_count) {
-                    snprintf(errbuf, sizeof(errbuf),
-                            "Domain %u, tid %u on master %u does not "
-                            "exchange any data. Probably wrong domain state "
-                            "is being requested.", 
-                            domain->id, domain->tid, master->id);
-                    return errbuf;
-                }
-
-                /* The list has to be zero terminated */
-                domain->endian_convert_list = 
-                    my_kcalloc(domain->io_count + 1,
-                            sizeof(*domain->endian_convert_list),
-                            "input copy list");
-                if (!domain->endian_convert_list)
-                    return no_mem_msg;
-
-                /* Allocate local IO memory */
-                domain->io_data = my_kcalloc(1, 
-                        ecrt_domain_size(domain->handle),
-                        "input io data");
-                if (!domain->io_data)
-                    return no_mem_msg;
-                ecrt_domain_external_memory(domain->handle, domain->io_data);
-
-                /* Move the domain to the sample time list */
-                tid = domain->tid;
-                domain_idx = ecat_data->st[tid].input_domain_count++;
-                domain->master = new_master;
-                ecat_data->st[tid].input_domain[domain_idx] = *domain;
-            }
-
-            /* Initialise all slaves in the output domain */
-            list_for_each_entry(domain,
-                    &master->st_domain[i].output_domain_list, list) {
-
-                /* The list has to be zero terminated */
-                domain->endian_convert_list = 
-                    my_kcalloc( domain->io_count + 1,
-                        sizeof(*domain->endian_convert_list),
-                        "output copy list");
-                if (!domain->endian_convert_list)
-                    return no_mem_msg;
-
-                /* Allocate local IO memory */
-                domain->io_data = 
-                    my_kcalloc(1, ecrt_domain_size(domain->handle),
-                            "output io data");
-                if (!domain->io_data)
-                    return no_mem_msg;
-                ecrt_domain_external_memory(domain->handle, domain->io_data);
-
-                /* Move the domain to the sample time list */
-                tid = domain->tid;
-                domain_idx = ecat_data->st[tid].output_domain_count++;
-                domain->master = new_master;
-                ecat_data->st[tid].output_domain[domain_idx] = *domain;
-            }
-        }
+        if ((err = init_domains(master, new_master)))
+            return err;
 
         /* Now that the masters are activated, we can go through the
          * slave list again and setup the endian_convert_list in the domains
          * that the slave is registered in */
         list_for_each_entry(slave, &master->slave_list, list) {
-            struct endian_convert_t *endian_convert_list;
-            struct mapped_pdo *mapped_pdo;
-            for (mapped_pdo = slave->mapped_pdo;
-                    mapped_pdo != &slave->mapped_pdo[slave->pdo_map_count];
-                    mapped_pdo++) {
-
-                /* Note: mapped_pdo->domain is still a pointer to the old
-                 * domain structure (the one in the linked list), not the
-                 * one in the sample time structure 
-                 * (ecat_data->st[].input_domain). Since this will be 
-                 * thrown away soon, we can misuse its endian_convert_list
-                 * pointer as a counter. */
-                endian_convert_list = mapped_pdo->domain->endian_convert_list++;
-
-                /* data_ptr in endian_convert_list must be set even though
-                 * this data type might not need processing. Not setting an 
-                 * address marks the end of endian processing and this could
-                 * be premature */
-                endian_convert_list->data_ptr = 
-                    mapped_pdo->domain->io_data + mapped_pdo->base_offset;
-
-                /* Set the RTW data pointer */
-                *mapped_pdo->mapping->address = endian_convert_list->data_ptr;
-
-                /* Set the data type. This is used when doing endian conversion.
-                 * Use the io_data space to indicate that the location will be
-                 * converted so that a multiple conversion is avoided */
-                if (!(*(uint8_t*)endian_convert_list->data_ptr)++) {
-                    endian_convert_list->pdo_datatype = 
-                        mapped_pdo->mapping->pdo_datatype;
-                }
-            }
+            if ((err = init_slave_iodata(slave)))
+                return err;
         }
 
         /* Pass the responsibility from the master in the list structure
@@ -945,21 +1005,6 @@ ecs_start(void)
             snprintf(errbuf, sizeof(errbuf),
                     "Master %i activate failed", master->id);
             return errbuf;
-        }
-    }
-
-    /* During the coarse of this function, the data area was used.
-     * Reset it to zero here again */
-    for (st = ecat_data->st; st != &ecat_data->st[ecat_data->nst]; st++) {
-        for (domain = st->input_domain; 
-                domain != &st->input_domain[st->input_domain_count]; 
-                domain ++) {
-            memset(domain->io_data, ecrt_domain_size(domain->handle), 0);
-        }
-        for (domain = st->output_domain; 
-                domain != &st->output_domain[st->output_domain_count]; 
-                domain ++) {
-            memset(domain->io_data, ecrt_domain_size(domain->handle), 0);
         }
     }
 
@@ -1010,7 +1055,9 @@ ecs_end(void)
             my_kfree(domain->state, "domain state");
             my_kfree(domain->io_data, "input io data");
         }
+        pr_debug("Freeing memory %p\n", st->output_domain);
         my_kfree(st->input_domain, "input domain array");
+        pr_debug("finished Freeing memory %p\n", st->output_domain);
 
         /* Free output domains */
         for (domain = st->output_domain;

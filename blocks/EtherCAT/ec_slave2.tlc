@@ -83,6 +83,34 @@
 
   %addtorecord block BlockSampleTime LibBlockSampleTime(block)
 
+  %assign rv1 = GetRollVars1(5)
+%assign rv2 = GetRollVars2(5)
+
+%trace XXXXXXXXXXXXX %<rv1> %<rv2>
+
+%endfunction
+
+%function GetRollVars1(count)
+  %assign rollVars = []
+  %foreach i = count
+    %openfile tmpBuf
+    "y%<i+1>"\
+    %closefile tmpBuf
+    %assign rollVars = rollVars + tmpBuf
+  %endforeach
+  %return rollVars
+%endfunction
+
+
+%function GetRollVars2(count)
+  %assign comma = ""
+  %openfile tmpBuf
+  %foreach i = count
+    %<comma>"y%<i+1>"\
+    %assign comma = ","
+  %endforeach
+  %closefile tmpBuf
+  %return "["+tmpBuf+"]"
 %endfunction
 
 
@@ -129,6 +157,7 @@
   /* %<Type> Block: %<Name> */
   %%
   %foreach port = NumOutputs
+    /* Output Port %<port+1> */
     %assign PortWidth = LibBlockOutputSignalWidth(port)
     %if PortWidth == 1
       %assign rollRegions = [0:0]
@@ -233,6 +262,7 @@
   %foreach port = NumInputs
     %%
     %if !LibBlockInputSignalConnected(port)
+      /* Input port %<port+1> is not connected */
       %continue
     %endif
     /* Input port %<port+1> */
@@ -528,6 +558,7 @@
   %assign sdo_config.count = SIZE(SdoConfig,0)
   %assign sdo_config.id = "sdo_config_%<EtherCATSlaveId>"
 
+%trace %<SdoConfig>
   %openfile buf
 
   /* SDO Configuration for Block: %<Name> */
@@ -639,8 +670,8 @@
 %% 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-  %assign suffix = ...
-        SPRINTF("%x_0x%08x_%u", VendorId, ProductCode, LayoutVersion)
+  %assign suffix = SPRINTF("%x_%08x_%08x_%u", ...
+                VendorId, ProductCode, RevisionNo, LayoutVersion)
   %assign varName = "sync_manager_%<suffix>"
   %if ISFIELD(CompiledModel.EtherCAT.PDOMap,varName)
     %return GETFIELD(CompiledModel.EtherCAT.PDOMap, varName)
