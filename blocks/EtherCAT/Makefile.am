@@ -1,5 +1,5 @@
 
-SUBDIRS = xml
+SUBDIRS = xml @EtherCATDevice @EtherCATInfo
 
 ethercatdir = $(prefix)/$(subdir)
 
