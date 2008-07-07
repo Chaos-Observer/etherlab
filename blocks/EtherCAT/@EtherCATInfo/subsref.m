@@ -22,15 +22,19 @@ for i = 1:length(index)
         %case '{}'
         case '()'
             if i == 1 && length(index.subs)
-                rev = [];
-                pc = [];
-                if length(index.subs) >= 2
-                    rev = index.subs{2};
+                if index.subs{1} == ':'
+                    val = ei.Descriptions.Devices.Device;
+                else
+                    rev = [];
+                    pc = [];
+                    if length(index.subs) >= 2
+                        rev = index.subs{2};
+                    end
+                    if length(index.subs) >= 1
+                        pc = index.subs{1};
+                    end
+                    val = getDevice(ei,pc,rev);
                 end
-                if length(index.subs) >= 1
-                    pc = index.subs{1};
-                end
-                val = getDevice(ei,pc,rev);
             elseif index(i).subs{1} == ':'
             elseif index(i).subs{1} <= length(val)
                 val = val(index(i).subs{1});
