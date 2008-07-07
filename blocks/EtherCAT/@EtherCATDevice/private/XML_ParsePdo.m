@@ -9,7 +9,7 @@ if ~nargin
 end
 
 %% Get the attributes
-pdo.Mandatory = strcmp(xml.getAttribute('Mandatory'),'1');
+pdo.Mandatory = double(strcmp(xml.getAttribute('Mandatory'),'1'));
 pdo.Sm = fromHexString(xml.getAttribute('Sm'));
 
 %% Try to get the Index

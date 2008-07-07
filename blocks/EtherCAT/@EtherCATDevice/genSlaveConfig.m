@@ -1,4 +1,4 @@
-function sc = SlaveConfig(dev)
+function sc = genSlaveConfig(dev)
 % SlaveConfig: Return the slave as a structure
 %
 % Synopsis: sc = SlaveConfig(device)

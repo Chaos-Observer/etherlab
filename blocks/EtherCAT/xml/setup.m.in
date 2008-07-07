@@ -15,16 +15,20 @@ file = {...
  'Beckhoff EKxxxx.xml', 'EtherCATInfo_ekxxxx'};
 
 for i = 1:size(file,1)
-  str = [file{i,2} ' = EtherCATInfo(''' file{i,1} ''')']
+  fprintf('Precompiling ''%s'' ... ', file{i,1});
+  str = [file{i,2} ' = EtherCATInfo(''' file{i,1} ''');'];
   eval(str);
   save( ['../' file{i,2}], file{i,2} )
+  fprintf('done\n');
 end
     
 % Old version of EL4132 is missing. Add it manually
-EtherCATInfo_el4xxx_beckhoff = EtherCATInfo('Beckhoff EL4xxx.xml')
-EtherCATInfo_el4132 = EtherCATInfo('EL4132-mod.xml')
-EtherCATInfo_el4xxx = appendDevice(EtherCATInfo_el4xxx_beckhoff,EtherCATInfo_el4132)
-save('../EtherCATInfo_el4xxx', 'EtherCATInfo_el4xxx')
+fprintf('Precompiling ''%s'' ... ', 'Beckhoff EL4xxx.xml');
+EtherCATInfo_el4xxx_beckhoff = EtherCATInfo('Beckhoff EL4xxx.xml');
+EtherCATInfo_el4132 = EtherCATInfo('EL4132-mod.xml');
+EtherCATInfo_el4xxx = appendDevice(EtherCATInfo_el4xxx_beckhoff,EtherCATInfo_el4132);
+save('../EtherCATInfo_el4xxx', 'EtherCATInfo_el4xxx');
+fprintf('done\n');
 
 if @EXPERIMENTAL@
 end
