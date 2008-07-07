@@ -15,15 +15,15 @@ file = {...
  'Beckhoff EKxxxx.xml', 'EtherCATInfo_ekxxxx'};
 
 for i = 1:size(file,1)
-  eval([file{i,2} ' = getEtherCATInfo(''' file{i,1} ''')'])
+  str = [file{i,2} ' = EtherCATInfo(''' file{i,1} ''')']
+  eval(str);
   save( ['../' file{i,2}], file{i,2} )
 end
     
 % Old version of EL4132 is missing. Add it manually
-EtherCATInfo_el4xxx = getEtherCATInfo('Beckhoff EL4xxx.xml')
-EtherCATInfo_el4132 = getEtherCATInfo('EL4132-mod.xml')
-idx = length(EtherCATInfo_el4xxx.Device) + 1;
-EtherCATInfo_el4xxx.Device(idx) = EtherCATInfo_el4132.Device(1);
+EtherCATInfo_el4xxx_beckhoff = EtherCATInfo('Beckhoff EL4xxx.xml')
+EtherCATInfo_el4132 = EtherCATInfo('EL4132-mod.xml')
+EtherCATInfo_el4xxx = appendDevice(EtherCATInfo_el4xxx_beckhoff,EtherCATInfo_el4132)
 save('../EtherCATInfo_el4xxx', 'EtherCATInfo_el4xxx')
 
 if @EXPERIMENTAL@

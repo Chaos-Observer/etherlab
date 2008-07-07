@@ -60,8 +60,29 @@ elseif dt.startsWith('DINT') || dt.startsWith('INT32')
     w = -32;
 elseif dt.startsWith('LINT') || dt.startsWith('INT64')
     w = -64;
+elseif dt.startsWith('UINT')
+    w = str2double(dt.substring(4));
+    if bitlen ~= w
+        warning('EtherCATDevice:XML_ParsePdoEntry:checkBitlen', ...
+            ['Check the data types - <DataType> said %s, ', ...
+            '<BitLength> said %u'], char(dt), bitlen);
+        if isnan(w)
+            w = bitlen;
+        end
+    end
 elseif dt.startsWith('BIT')
-    w = bitlen;
+    w = str2double(dt.substring(3));
+    if isnan(w)
+        w = bitlen;
+    end
+    if bitlen ~= w
+        warning('EtherCATDevice:XML_ParsePdoEntry:checkBitlen', ...
+            ['Check the data types - <DataType> said %s, ', ...
+            '<BitLength> said %u'], char(dt), bitlen);
+        if isnan(w)
+            w = bitlen;
+        end
+    end
 else
     error('Unknown data type %s', char(dt))
 end

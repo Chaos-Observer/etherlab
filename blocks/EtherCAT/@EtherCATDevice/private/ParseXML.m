@@ -29,6 +29,9 @@ end
 
 hide = xml.getElementsByTagName('HideType');
 for i = 1:hide.getLength
+    if ~hide.item(i-1).hasAttribute('RevisionNo')
+        continue
+    end
     dev.HideType(i) = fromHexString(hide.item(i-1).getAttribute('RevisionNo'));
 end
 
