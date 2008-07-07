@@ -1,11 +1,37 @@
 function val = subsref(ei,index)
-% SUBSREF Define field name indexing for EtherCATInfo objects
+% SUBSREF Return properties from EtherCATInfo object
+% 
+% Two methods are available as subscription options:
+% '.' (dot) notation:
+%       Attempts to return a field as represented in the
+%       EtherCATInfo XML file, e.g.
+%       ei = EtherCATInfo('vendor.xml')
+%       ei.Descriptions.Devices.Device
+% () subscription notation
+%       Attempts to locate a device with the arguments
+%       e.g.
+%       ei = EtherCATInfo('vendor.xml')
+%       ei({'EL1004' 'EL1008'},0) tries to locate the devices with
+%           Type == {'EL1004' 'EL1008'} and RevisionNo == 0
+%       ei(hex2dec('03EC3052')) returns all devices where
+%           ProduceCode == #x03EC3052
 val = ei;
 for i = 1:length(index)
-%    idx = index(i)
+    %idx = index(i)
     switch index(i).type
-        case {'()' '{}'}
-            if index(i).subs{1} == ':'
+        %case '{}'
+        case '()'
+            if i == 1 && length(index.subs)
+                rev = [];
+                pc = [];
+                if length(index.subs) >= 2
+                    rev = index.subs{2};
+                end
+                if length(index.subs) >= 1
+                    pc = index.subs{1};
+                end
+                val = getDevice(ei,pc,rev);
+            elseif index(i).subs{1} == ':'
             elseif index(i).subs{1} <= length(val)
                 val = val(index(i).subs{1});
             else
@@ -15,7 +41,7 @@ for i = 1:length(index)
             if isfield(val,index(i).subs)
                 val = val.(index(i).subs);
             else
-                error('Structure does not have field %s', index(i).subs)
+                error('Reference to nonStructure does not have field %s', index(i).subs)
             end
         otherwise
             error('Method %s is not implemented by %s', index(i).type, class(val));

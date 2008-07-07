@@ -1,8 +1,8 @@
 function dev = ParseXML(xml)
 
-dev.ProductCode = [];
+dev.ProductCode = 0;
 dev.Type = '';
-dev.RevisionNo = [];
+dev.RevisionNo = 0;
 dev.HideType = [];
 dev.Sm = struct('Input',[],'Output',[],'Virtual',[]);
 dev.TxPdo = repmat(XML_ParsePdo,1,0);
@@ -15,16 +15,14 @@ end
 %% Get the ProductCode, RevisionNo and Type 
 try
     typeElem = xml.getElementsByTagName('Type').item(0);
-    dev.ProductCode = ...
-        fromHexString(typeElem.getAttribute('ProductCode'));
+    dev.ProductCode = fromHexString(typeElem.getAttribute('ProductCode'));
     dev.Type = char(typeElem.getTextContent.trim);
-    dev.RevisionNo = ...
-        fromHexString(typeElem.getAttribute('RevisionNo'));
+    dev.RevisionNo = fromHexString(typeElem.getAttribute('RevisionNo'));
 catch
 end
 
 if isempty(dev.ProductCode) || isempty(dev.RevisionNo)
-    invalidDocument
+    return
 end
 
 %% Parse HideType

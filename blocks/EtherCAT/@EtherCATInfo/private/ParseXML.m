@@ -43,9 +43,13 @@ catch
     invalidDocument();
 end
 
-ei.Descriptions.Devices.Device = repmat(EtherCATDevice,1,0);
+idx = 1;
 for i = 1:DeviceElem.getLength
-    ei.Descriptions.Devices.Device(i) = EtherCATDevice(DeviceElem.item(i-1));
+    dev = EtherCATDevice(DeviceElem.item(i-1));
+    if ~isempty(dev.ProductCode) && ~isempty(dev.RevisionNo)
+        ei.Descriptions.Devices.Device(idx) = dev;
+        idx = idx + 1;
+    end
 end
 
 %%
