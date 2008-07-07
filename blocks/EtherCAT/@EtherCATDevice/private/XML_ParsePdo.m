@@ -2,6 +2,7 @@ function pdo = XML_ParsePdo(xml)
  
 pdo.Sm = [];
 pdo.Index = [];
+pdo.Exclude = [];
 pdo.Mandatory = 0;
 pdo.Entry = repmat(XML_ParsePdoEntry,1,0);
 if ~nargin
@@ -21,6 +22,12 @@ end
 
 if isempty(pdo.Index)
     invalidDocument();
+end
+
+%% Exclusion list
+exclude = xml.getElementsByTagName('Exclude');
+for i = 1:exclude.getLength
+    pdo.Exclude(i) = fromHexString(exclude.item(i-1).getTextContent.trim);
 end
 
 %% Get the Entries

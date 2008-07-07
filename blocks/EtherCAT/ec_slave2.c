@@ -324,6 +324,19 @@ struct ecat_slave {
      * for every unique key exists. */
     uint32_T layout_version;
 
+    /* Most slaves have a simple PDO layout with no mutual exclusions.
+     * These instances may all share the same configuration layout and
+     * thus save memory.
+     * Complex slaves have a myriad of PDO and PDO Entry assignments
+     * so that it is impossible to share the configuration with other
+     * slaves. These slaves will set their unique_config flag so that 
+     * a separate configuration is generated for every slave.
+     *
+     * Note that this does not affect SDO configuration. This is 
+     * unique for every slave by nature
+     */
+    boolean_T unique_config;
+
     struct sdo_config {
         uint16_T index;
         uint8_T subindex;
@@ -336,40 +349,48 @@ struct ecat_slave {
     } *sdo_config, *sdo_config_end;
 
     struct pdo {
-        /* Pdo must be written to SlaveConfig */
-        boolean_T exclude_from_config;
-        unsigned int configured;
-
         uint16_t index;
 
         struct sync_manager *sm;
-
         boolean_T mandatory;
-        uint_T *exclude, *exclude_end;
+
+        /* A list of PDO Indices to exclude if this PDO is selected */
+        uint_T *exclude_index, *exclude_index_end;
+
         struct pdo_entry {
             uint16_t index;
             uint8_t subindex;
             uint_T bitlen;
             int_T datatype;
         } *entry, *entry_end;
-        unsigned int entry_count;
-    };
 
+        /* Pdo must be written to SlaveConfig */
+        boolean_T exclude_from_config;
+
+        uint_T use_count;
+    } *pdo, *pdo_end;
+
+    /* This value is needed right at the end when the values have
+     * to be written by mdlRTW */
     uint_T pdo_entry_count;
+    uint_T pdo_count;
 
     struct sync_manager {
         uint16_t index;
 
         /* A list of pointers to pdo */
         struct pdo **pdo_ptr, **pdo_ptr_end;
-    };
+    } *sync_manager, *sync_manager_end;
 
-    struct pdo *tx_pdo, *tx_pdo_end;
-    struct pdo *rx_pdo, *rx_pdo_end;
-    struct sync_manager * input_sm, * input_sm_end;
-    struct sync_manager *output_sm, *output_sm_end;
-    /* FIXME: Move above entries into */
-    struct {
+    /* Useful pointers to get to the input and output SyncManagers
+     * and PDO's easily. Note that the direction is as viewed by
+     * the slave, i.e. 
+     *   - (slave) input RxPdo and this originates from  a simulink
+     *                  block input.
+     *   - (slave) output sends TxPdo and this ends in a simulink
+     *                  block output.
+     */
+    struct slave_config {
         struct pdo *pdo, *pdo_end;
         struct sync_manager *sm, *sm_end;
     } input, output;
@@ -593,16 +614,19 @@ err_no_str_field(SimStruct *S, const char_T *variable,
 int_T
 get_numeric_field(SimStruct *S, const char_T *variable,
         const mxArray *src, uint_T idx, boolean_T zero_allowed,
+        boolean_T missing_allowed,
         const char_T *field_name, real_T *dest)
 {
     const mxArray *field = mxGetField(src, idx, field_name);
 
     *dest = 0.0;
 
-    if (!field) {
-        err_no_num_field(S, variable, field_name);
+    if (!field || !mxGetNumberOfElements(field)) {
+        if (!missing_allowed)
+            err_no_num_field(S, variable, field_name);
         return 1;
     }
+
     if (!mxIsNumeric(field)) {
         printf("Expecting class double fot field %s.%s, but it has "
                 "type %s\n", variable, field_name, mxGetClassName(field));
@@ -612,7 +636,7 @@ get_numeric_field(SimStruct *S, const char_T *variable,
 
     *dest = mxGetScalar(field);
 
-    if (!zero_allowed && !*dest) {
+    if (!*dest && !zero_allowed) {
         err_no_zero_field(S, variable, field_name);
         return 3;
     }
@@ -626,6 +650,7 @@ get_numeric_field(SimStruct *S, const char_T *variable,
                 dest = NULL;                                            \
                 break;                                                  \
         }                                                               \
+        printf("Allocating %u bytes on line %u\n", (n)*(m), __LINE__);  \
         dest = mxCalloc((n),(m));                                       \
         if (!(dest)) {                                                  \
             ssSetErrorStatus((S), "calloc() failure; no memory left."); \
@@ -701,16 +726,16 @@ get_slave_address(SimStruct *S, struct ecat_slave *slave)
     const mxArray *address       = ssGetSFcnParam(S,ADDRESS);
     real_T val;
 
-    RETURN_ON_ERROR(get_numeric_field(S, ADDRESS, address, 0, 1,
+    RETURN_ON_ERROR(get_numeric_field(S, ADDRESS, address, 0, 1, 0,
                 "Master", &val));
     slave->master = val;
-    RETURN_ON_ERROR(get_numeric_field(S, ADDRESS, address, 0, 1,
+    RETURN_ON_ERROR(get_numeric_field(S, ADDRESS, address, 0, 1, 0,
                 "Domain", &val));
     slave->domain = val;
-    RETURN_ON_ERROR(get_numeric_field(S, ADDRESS, address, 0, 1,
+    RETURN_ON_ERROR(get_numeric_field(S, ADDRESS, address, 0, 1, 0,
                 "Alias", &val));
     slave->alias = val;
-    RETURN_ON_ERROR(get_numeric_field(S, ADDRESS, address, 0, 1,
+    RETURN_ON_ERROR(get_numeric_field(S, ADDRESS, address, 0, 1, 0,
                 "Position", &val));
     slave->position = val;
     return 0;
@@ -718,77 +743,100 @@ get_slave_address(SimStruct *S, struct ecat_slave *slave)
 
 int_T
 get_sync_manager(SimStruct *S, const char_T *context, const mxArray *ec_info,
-        const char_T *sm_dir_spec,
-        struct sync_manager **sm_ptr,
-        struct sync_manager **sm_end_ptr )
+        struct ecat_slave *slave)
 {
-    const mxArray *sm_info, *dir_sm_info;
-    uint_T sm_count = 0, i;
+    const mxArray *sm_info;
+    const mxArray *input_sm_info, *output_sm_info;
+    uint_T input_sm_count, output_sm_count, i;
     real_T *val = NULL;
 
     sm_info = mxGetField(ec_info, 0, "Sm");
     if (!sm_info)
         return 0;
 
-    dir_sm_info = mxGetField(sm_info, 0, sm_dir_spec);
-    if (!dir_sm_info) {
-        printf("Warning: field Sm.%s is missing.\n", sm_dir_spec);
-        return 0;
-    }
+    input_sm_info = mxGetField(sm_info, 0, "Input");
+    output_sm_info = mxGetField(sm_info, 0, "Output");
 
-    sm_count = mxGetNumberOfElements(dir_sm_info);
-    if (!sm_count)
-        return 0;
+    input_sm_count = 
+        input_sm_info ? mxGetNumberOfElements(input_sm_info) : 0;
+    output_sm_count = 
+        output_sm_info ? mxGetNumberOfElements(output_sm_info) : 0;
 
-    val = mxGetPr(dir_sm_info);
-    if (!mxIsNumeric(dir_sm_info) || !val) {
+    if (!(input_sm_count + output_sm_count)) {
         snprintf(errmsg, sizeof(errmsg),
-                "SFunction Parameter %s.%s is not a valid numeric vector.",
-                context, sm_dir_spec);
-        ssSetErrorStatus(S, errmsg);
+                "No SyncManagers specified in %s.Sm.",
+                context);
         return -1;
     }
 
-    /* Count the number of fields */
-    CHECK_CALLOC(S,sm_count, sizeof(struct sync_manager), *sm_ptr);
-    *sm_end_ptr = *sm_ptr;
+    CHECK_CALLOC(S, input_sm_count + output_sm_count, 
+        sizeof(struct sync_manager), slave->sync_manager);
+    slave->sync_manager_end = 
+        slave->sync_manager + input_sm_count + output_sm_count;
 
-    for (i = 0; i < sm_count; i++, (*sm_end_ptr)++) {
-        (*sm_end_ptr)->index = *val++;
+    /* Careful: do not get confused here. SyncManager direction is defined
+     * as the direction from the master's point of view, whereas 
+     * slave->input and slave->output is the view of the slave. That is 
+     * why input SyncManagers are placed in slave->output and vice versa */
+    if (output_sm_count) {
+        slave->input.sm = slave->input.sm_end = slave->sync_manager;
+
+        val = mxGetPr(output_sm_info);
+        if (!mxIsNumeric(output_sm_info) || !val) {
+            snprintf(errmsg, sizeof(errmsg),
+                    "SFunction Parameter %s.Sm.Output is not a valid "
+                    "numeric vector.", context);
+            ssSetErrorStatus(S, errmsg);
+            return -1;
+        }
+
+        printf(" Output SyncManager:");
+        for (i = 0; i < output_sm_count; i++, slave->input.sm_end++) {
+            slave->input.sm_end->index = *val;
+            printf(" %u", slave->input.sm_end->index);
+        }
+        printf("\n");
+    }
+    if (input_sm_count) {
+        slave->output.sm = slave->output.sm_end = slave->input.sm_end;
+
+        val = mxGetPr(input_sm_info);
+        if (!mxIsNumeric(input_sm_info) || !val) {
+            snprintf(errmsg, sizeof(errmsg),
+                    "SFunction Parameter %s.Sm.Input is not a valid "
+                    "numeric vector.", context);
+            ssSetErrorStatus(S, errmsg);
+            return -1;
+        }
+
+        printf("  Input SyncManager:");
+        for (i = 0; i < input_sm_count; i++, slave->output.sm_end++) {
+            slave->output.sm_end->index = *val;
+            printf(" %u", slave->output.sm_end->index);
+        }
+        printf("\n");
     }
 
-    printf("%s SyncManagers:", sm_dir_spec);
-    for (i = 0; i < sm_count; i++)
-        printf(" %u", (*sm_ptr)[i]);
-    printf("\n");
-    
+
     return 0;
 }
 
 int_T
-get_slave_pdo(SimStruct *S, const char_T *param, const mxArray *ec_info, 
-        const char_T *field, 
-        struct sync_manager *sm_start, struct sync_manager *sm_end,
-        struct pdo **pdo_ptr, struct pdo **pdo_end_ptr)
+get_slave_pdo(SimStruct *S, const char_T *param, const mxArray *pdo_info, 
+        const char_T *field_name, struct slave_config *sc)
 {
-    const mxArray *pdo_info;
     struct pdo *pdo;
-    uint_T pdo_count = 0;
-    uint_T sm_count = sm_end - sm_start;
+    uint_T pdo_count = sc->pdo_end - sc->pdo;
+    uint_T sm_count = sc->sm_end - sc->sm;
     char_T context[100];
     real_T val;
     uint_T pdo_idx;
     uint_T i;
 
-    pdo_info = mxGetField(ec_info, 0, field);
-    if (!pdo_info || !(pdo_count = mxGetNumberOfElements(pdo_info)))
+    if (!pdo_count)
         return 0;
 
-    CHECK_CALLOC(S, pdo_count, sizeof(struct pdo), pdo);
-    *pdo_ptr = pdo;
-    *pdo_end_ptr = pdo + pdo_count;
-
-    for (pdo_idx = 0, pdo = *pdo_ptr; 
+    for (pdo_idx = 0, pdo = sc->pdo; 
             pdo_idx < pdo_count; pdo_idx++, pdo++) {
         struct sync_manager *sm;
         const mxArray *exclude_info;
@@ -796,10 +844,10 @@ get_slave_pdo(SimStruct *S, const char_T *param, const mxArray *ec_info,
         const mxArray *pdo_entry_info;
         uint_T entry_info_count;
 
-        snprintf(context, sizeof(context), "%s(%u)", field, pdo_idx+1);
+        snprintf(context, sizeof(context), "%s(%u)", field_name, pdo_idx+1);
 
-        RETURN_ON_ERROR(get_numeric_field(S, context, pdo_info, pdo_idx, 1,
-                    "Index", &val));
+        RETURN_ON_ERROR(get_numeric_field(S, context, pdo_info, pdo_idx, 
+                    1, 0, "Index", &val));
         pdo->index = val;
 
         exclude_info = mxGetField(pdo_info, pdo_idx, "Exclude");
@@ -817,11 +865,11 @@ get_slave_pdo(SimStruct *S, const char_T *param, const mxArray *ec_info,
             }
 
             CHECK_CALLOC(S, exclude_count, sizeof(uint_T),
-                    pdo->exclude);
-            pdo->exclude_end = pdo->exclude + exclude_count;
+                    pdo->exclude_index);
+            pdo->exclude_index_end = pdo->exclude_index + exclude_count;
 
             for (i = 0; i < exclude_count; i++) {
-                pdo->exclude[i] = val[i];
+                pdo->exclude_index[i] = val[i];
             }
         }
 
@@ -829,7 +877,7 @@ get_slave_pdo(SimStruct *S, const char_T *param, const mxArray *ec_info,
          * Not specifying the SyncManager is not a good idea, 
          * Although it is possible to assume the right SyncManager if
          * there is only one to choose from. */
-        switch (get_numeric_field(S, context, pdo_info, pdo_idx, 1,
+        switch (get_numeric_field(S, context, pdo_info, pdo_idx, 1, 1,
                     "Sm", &val)) {
             case 0:
                 if (val < 0.0) {
@@ -838,7 +886,7 @@ get_slave_pdo(SimStruct *S, const char_T *param, const mxArray *ec_info,
                         printf( "Since there is only 1 SyncManager to "
                                 "choose from, it will be used.\n",
                                 context, val);
-                        pdo->sm = sm_start;
+                        pdo->sm = sc->sm;
                     }
                     else {
                         printf("Skipping SyncManager assignment\n");
@@ -847,7 +895,7 @@ get_slave_pdo(SimStruct *S, const char_T *param, const mxArray *ec_info,
                     }
                 }
 
-                for (sm = sm_start; sm != sm_end; sm++) {
+                for (sm = sc->sm; sm != sc->sm_end; sm++) {
                     if (sm->index == (uint16_t)val) {
                         pdo->sm = sm;
                         break;
@@ -863,14 +911,13 @@ get_slave_pdo(SimStruct *S, const char_T *param, const mxArray *ec_info,
                 break;
             case 1:
                 /* Field was not found */
-                if (sm_count != 1) {
-                    return -1;
+                if (sm_count == 1) {
+                    printf( "Warning: %s.Sm was not specified. "
+                            "Since there is only 1 SyncManager to choose "
+                            "from, it is used.\n",
+                            context);
+                    pdo->sm = sc->sm;
                 }
-                printf("Warning: %s.Sm was not specified. Since there is "
-                        "only 1 SyncManager to choose from, it is used.\n",
-                        context);
-                ssSetErrorStatus(S, NULL);
-                pdo->sm = sm_start;
                 break;
             default:
                 return -1;
@@ -879,14 +926,13 @@ get_slave_pdo(SimStruct *S, const char_T *param, const mxArray *ec_info,
         if (pdo->sm)
             pdo->sm->pdo_ptr_end++;
 
-        switch (get_numeric_field(S, context, pdo_info, pdo_idx, 1,
+        switch (get_numeric_field(S, context, pdo_info, pdo_idx, 1, 1,
                     "Mandatory", &val)) {
             case 0:
                 pdo->mandatory = val;
                 break;
             case 1:
                 pdo->mandatory = 0;
-                ssSetErrorStatus(S,NULL);
                 break;
             default:
                 return -1;
@@ -900,7 +946,7 @@ get_slave_pdo(SimStruct *S, const char_T *param, const mxArray *ec_info,
             uint_T entry_idx;
 
             snprintf(context, sizeof(context),
-                    "%s(%u).Entry", field, pdo_idx+1); 
+                    "%s(%u).Entry", field_name, pdo_idx+1); 
 
             if (!mxIsStruct(pdo_entry_info)) {
                 snprintf(errmsg, sizeof(errmsg),
@@ -919,53 +965,42 @@ get_slave_pdo(SimStruct *S, const char_T *param, const mxArray *ec_info,
                 int_T dummy_datatype;
 
                 snprintf(context, sizeof(context), "%s(%u).Entry(%u)", 
-                        field, pdo_idx+1, entry_idx+1); 
+                        field_name, pdo_idx+1, entry_idx+1); 
 
                 RETURN_ON_ERROR(get_numeric_field(S, context, 
-                            pdo_entry_info, entry_idx, 1, "Index", &val));
+                            pdo_entry_info, entry_idx, 1, 0, "Index", &val));
                 pdo_entry->index = val;
                 RETURN_ON_ERROR(get_numeric_field(S, context, 
-                            pdo_entry_info, entry_idx, 1, "BitLen", &val));
+                            pdo_entry_info, entry_idx, 1, 0, "BitLen", &val));
                 pdo_entry->bitlen = val;
 
                 if (!pdo_entry->index)
                     continue;
 
                 RETURN_ON_ERROR(get_numeric_field(S, context, 
-                            pdo_entry_info, entry_idx, 0, "SubIndex", &val));
+                            pdo_entry_info, entry_idx, 0, 0, "SubIndex", &val));
                 pdo_entry->subindex = val;
 
                 RETURN_ON_ERROR(get_numeric_field(S, context, 
-                            pdo_entry_info, entry_idx, 0, "DataType", &val));
+                            pdo_entry_info, entry_idx, 0, 0, "DataType", &val));
                 pdo_entry->datatype = val;
                 RETURN_ON_ERROR(get_data_type(S, context, "DataType",
                             pdo_entry->datatype, &dummy_datatype, 0, 0));
-                /*
-                switch(get_numeric_field(S, variable,
-                            pdo_entry, entry_idx, 1, "DataType", &val)) {
-                    case 0:
-                        entry->datatype = val;
-                        break;
-                    case 1:
-                        entry->datatype = entry->bitlen;
-                    default:
-                        return -1;
-                }
-                */
             }
         }
     }
 
-    for (pdo = *pdo_ptr; pdo != *pdo_end_ptr; pdo++) {
+    for (pdo = sc->pdo; pdo != sc->pdo_end; pdo++) {
         struct pdo_entry *pdo_entry;
 
         printf("%s Index #x%04X Sm %u Mandatory %u: \n",
-                field, pdo->index, pdo->sm->index, pdo->mandatory);
-        if (pdo->exclude) {
+                field_name, pdo->index, pdo->sm->index, pdo->mandatory);
+        if (pdo->exclude_index) {
             uint_T *excl;
 
             printf("\t Exclude: ");
-            for (excl = pdo->exclude; excl != pdo->exclude_end; excl++) {
+            for (excl = pdo->exclude_index; 
+                    excl != pdo->exclude_index_end; excl++) {
                 printf(" #x%04X", *excl);
             }
             printf("\n");
@@ -991,6 +1026,8 @@ int_T
 get_ethercat_info(SimStruct *S, struct ecat_slave *slave)
 {
     const mxArray *ec_info = ssGetSFcnParam(S,ETHERCAT_INFO);
+    const mxArray *rx_pdo, *tx_pdo;
+    uint_T rx_pdo_count, tx_pdo_count;
     struct sync_manager *sm;
     struct pdo *pdo;
     const char_T *param = "ETHERCAT_INFO";
@@ -1002,185 +1039,63 @@ get_ethercat_info(SimStruct *S, struct ecat_slave *slave)
     /***********************
      * Get Slave address
      ***********************/
-    RETURN_ON_ERROR(get_numeric_field(S, param, ec_info, 0, 0,
+    RETURN_ON_ERROR(get_numeric_field(S, param, ec_info, 0, 0, 0,
                 "VendorId", &val));
     slave->vendor_id = val;
-    RETURN_ON_ERROR(get_numeric_field(S, param, ec_info, 0, 1,
+    RETURN_ON_ERROR(get_numeric_field(S, param, ec_info, 0, 1, 0,
                 "RevisionNo", &val));
     slave->revision_no = val;
-    RETURN_ON_ERROR(get_numeric_field(S, param, ec_info, 0, 0,
+    RETURN_ON_ERROR(get_numeric_field(S, param, ec_info, 0, 0, 0,
                 "ProductCode", &val));
     slave->product_code = val;
     RETURN_ON_ERROR(get_string_field(S, param, ec_info, 0,
                 "Type", "Unspecified", &slave->type));
-
     /***********************
      * Get SyncManager setup
      ***********************/
-    RETURN_ON_ERROR(get_sync_manager(S, param, ec_info, "Input",
-                &slave->input_sm, &slave->input_sm_end));
-    RETURN_ON_ERROR(get_sync_manager(S, param, ec_info, "Output",
-                &slave->output_sm, &slave->output_sm_end));
+    RETURN_ON_ERROR(get_sync_manager(S, param, ec_info, slave));
 
     /***********************
      * Pdo Setup
      ***********************/
-    RETURN_ON_ERROR(get_slave_pdo(S, param, ec_info, "TxPdo",
-                slave->input_sm, slave->input_sm_end,
-                &slave->tx_pdo, &slave->tx_pdo_end));
-    RETURN_ON_ERROR(get_slave_pdo(S, param, ec_info, "RxPdo",
-                slave->output_sm, slave->output_sm_end,
-                &slave->rx_pdo, &slave->rx_pdo_end));
+    tx_pdo = mxGetField(ec_info, 0, "TxPdo");
+    rx_pdo = mxGetField(ec_info, 0, "RxPdo");
+
+    tx_pdo_count = tx_pdo ? mxGetNumberOfElements(tx_pdo) : 0;
+    rx_pdo_count = rx_pdo ? mxGetNumberOfElements(rx_pdo) : 0;
+
+    CHECK_CALLOC(S, tx_pdo_count + rx_pdo_count,
+            sizeof(struct pdo), slave->pdo);
+    slave->pdo_end = slave->pdo + tx_pdo_count + rx_pdo_count;
+
+    slave->input.pdo = slave->pdo;
+    slave->input.pdo_end = slave->input.pdo + rx_pdo_count;
+    RETURN_ON_ERROR(get_slave_pdo(S, param, rx_pdo, "RxPdo",
+                &slave->input));
+
+    slave->output.pdo = slave->input.pdo_end;
+    slave->output.pdo_end = slave->output.pdo + tx_pdo_count;
+    RETURN_ON_ERROR(get_slave_pdo(S, param, tx_pdo, "TxPdo",
+                &slave->output));
 
     /* While reading in all the PDO's, the pdo_ptr_end of the corresponding
      * SyncManager was incremented as well. Now that it is known how
      * many PDO's a SyncManager has, memory for a set of PDO pointers
      * can be allocated. */
-    for (sm = slave->input_sm; sm != slave->input_sm_end; sm++) {
-        uint_T pdo_count = sm->pdo_ptr_end - sm->pdo_ptr;
-
-        CHECK_CALLOC(S, pdo_count, sizeof(struct pdo*), sm->pdo_ptr);
-        sm->pdo_ptr_end = sm->pdo_ptr;
-    }
-    for (sm = slave->output_sm; sm != slave->output_sm_end; sm++) {
+    for (sm = slave->sync_manager; sm != slave->sync_manager_end; sm++) {
         uint_T pdo_count = sm->pdo_ptr_end - sm->pdo_ptr;
 
         CHECK_CALLOC(S, pdo_count, sizeof(struct pdo*), sm->pdo_ptr);
         sm->pdo_ptr_end = sm->pdo_ptr;
     }
 
-    /* Now go through the tx_pdo and rx_pdo list again and setup the 
+    /* Now go through the pdo list again and setup the 
      * SyncManager's pdo pointers */
-    for (pdo = slave->tx_pdo; pdo != slave->tx_pdo_end; pdo++) {
+    for (pdo = slave->pdo; pdo != slave->pdo_end; pdo++) {
         if (pdo->sm) {
             *pdo->sm->pdo_ptr_end++ = pdo;
         }
     }
-    for (pdo = slave->rx_pdo; pdo != slave->rx_pdo_end; pdo++) {
-        if (pdo->sm) {
-            *pdo->sm->pdo_ptr_end++ = pdo;
-        }
-    }
-
-    return 0;
-
-#if 0
-    for (i = 0; i < slave->sync_manager_count; i++) {
-        const mxArray *smX = mxGetFieldByNumber(sm_field, 0, i);
-        const mxArray *pdoX;
-        struct pdo *pdo;
-        uint_T sm_index;
-        uint_T pdo_idx;
-
-        snprintf(variable, sizeof(variable), 
-                "%s.SyncManager(%u)", param, i+1);
-
-        if (!smX) {
-            snprintf(errmsg, sizeof(errmsg),
-                    "Matlab internal error: SFunction parameter %s "
-                    "does not exist.", variable);
-            ssSetErrorStatus(S,errmsg);
-            return -1;
-        }
-
-        RETURN_ON_ERROR(get_numeric_field(S, variable, smX, 0, 1,
-                    "SmIndex", &val));
-        sm_index = val;
-
-        sm = slave->sync_manager; 
-        do {
-            if (sm == &slave->sync_manager[slave->sync_manager_count]) {
-                snprintf(errmsg, sizeof(errmsg),
-                        "Internal error: index overrun while looking for "
-                        "a free SyncManager index %u as specified in "
-                        "%s.SmIndex.", sm_index, variable);
-                ssSetErrorStatus(S,errmsg);
-                return -1;
-            }
-            else if (sm->index == sm_index) {
-                snprintf(errmsg, sizeof(errmsg),
-                        "Error while processing %s.SmIndex (= %u): "
-                        "Cannot multiply specify SyncManager Indices",
-                        variable, sm_index);
-                ssSetErrorStatus(S,errmsg);
-                return -1;
-            }
-            else if (sm->index == (uint16_T)~0U) {
-                break;
-            }
-        } while(sm++);
-        sm->index = sm_index;
-
-        RETURN_ON_ERROR(get_numeric_field(S, variable, smX, 0, 1,
-                    "SmDir", &val));
-        sm->direction = val ? EC_DIR_INPUT : EC_DIR_OUTPUT;
-
-        pdoX = mxGetField(smX, 0, "Pdo");
-
-        if (!pdoX || !(sm->pdo_count = mxGetNumberOfElements(pdoX)))
-            continue;
-        CHECK_CALLOC(S, sm->pdo_count, sizeof(struct pdo), sm->pdo);
-
-        for (pdo_idx = 0, pdo = sm->pdo; 
-                pdo_idx < sm->pdo_count; pdo_idx++, pdo++) {
-            const mxArray *pdo_entry = mxGetField(pdoX, pdo_idx, "Entry");
-            uint_T entry_idx;
-            struct pdo_entry *entry;
-
-            snprintf(variable, sizeof(variable), 
-                    "%s.SyncManager(%u).Pdo(%u)", param, i+1, pdo_idx+1);
-
-            RETURN_ON_ERROR(get_numeric_field(S, variable,  pdoX, 
-                        pdo_idx, 0, "Index", &val));
-            pdo->index = val;
-
-            if (!pdo_entry || 
-                    !(pdo->entry_count = mxGetNumberOfElements(pdo_entry)))
-                continue;
-            CHECK_CALLOC(S, pdo->entry_count, sizeof(struct pdo_entry),
-                    pdo->entry);
-
-            for (entry_idx = 0, entry = pdo->entry; 
-                    entry_idx < pdo->entry_count; entry_idx++, entry++) {
-                uint_T dummy_datatype;
-
-                snprintf(variable, sizeof(variable), 
-                        "%s.SyncManager(%u).Pdo(%u).Entry(%u)", 
-                        param, i+1, pdo_idx+1, entry_idx+1);
-
-                RETURN_ON_ERROR(get_numeric_field(S, variable,
-                            pdo_entry, entry_idx, 0, "BitLen", &val));
-                entry->bitlen = val;
-
-                RETURN_ON_ERROR(get_numeric_field(S, variable,
-                            pdo_entry, entry_idx, 1, "Index", &val));
-                entry->index = val;
-
-                if (!entry->index)
-                    continue;
-
-                RETURN_ON_ERROR(get_numeric_field(S, variable,
-                            pdo_entry, entry_idx, 0, "SubIndex", &val));
-                entry->subindex = val;
-
-                switch(get_numeric_field(S, variable,
-                            pdo_entry, entry_idx, 1, "DataType", &val)) {
-                    case 0:
-                        entry->datatype = val;
-                        break;
-                    case 1:
-                        entry->datatype = entry->bitlen;
-                    default:
-                        return -1;
-                }
-                RETURN_ON_ERROR(get_data_type(S, variable, "DataType",
-                            entry->datatype, &dummy_datatype, 0, 0));
-            }
-            slave->pdo_entry_count += pdo->entry_count;
-        }
-        slave->pdo_count += sm->pdo_count;
-    }
-#endif
 
     return 0;
 }
@@ -1208,20 +1123,20 @@ get_sdo_config(SimStruct *S, struct ecat_slave *slave)
                 "%s(%u)", param, i+1);
 
         RETURN_ON_ERROR(get_numeric_field(S, context,
-                    sdo_config, i, 0, "Index", &val));
+                    sdo_config, i, 0, 0, "Index", &val));
         sdo_config_ptr->index = val;
 
         RETURN_ON_ERROR(get_numeric_field(S, context,
-                    sdo_config, i, 1, "SubIndex", &val));
+                    sdo_config, i, 1, 0, "SubIndex", &val));
         sdo_config_ptr->subindex = val;
 
         RETURN_ON_ERROR(get_numeric_field(S, context,
-                    sdo_config, i, 0, "BitLen", &val));
+                    sdo_config, i, 0, 0, "BitLen", &val));
         RETURN_ON_ERROR(get_data_type(S, context, "BitLen",
                     val, &sdo_config_ptr->datatype, 1, 1));
 
         RETURN_ON_ERROR(get_numeric_field(S, context,
-                    sdo_config, i, 1, "Value", &val));
+                    sdo_config, i, 1, 0, "Value", &val));
         sdo_config_ptr->value = val;
     }
 
@@ -1229,89 +1144,53 @@ get_sdo_config(SimStruct *S, struct ecat_slave *slave)
 }
 
 int_T
-find_pdo_entry(const struct ecat_slave *slave,
+find_pdo_entry(SimStruct *S, const char_T *context,
+        const struct ecat_slave *slave,
         uint16_T pdo_index,
         uint16_T pdo_entry_index, uint8_T pdo_entry_subindex, 
         struct pdo **pdo_ptr, struct pdo *pdo_end, 
         struct pdo_entry **pdo_entry_ptr)
 {
-    for (; *pdo_ptr != pdo_end; (*pdo_ptr)++) {
-        if (pdo_index && (*pdo_ptr)->index != pdo_index)
-            continue;
-
-        if ((*pdo_ptr)->exclude_from_config) {
-            if (pdo_index) {
-                printf("Looking for a PdoEntry in PDO Index #x%04X that "
-                        "was explicitly excluded\n");
-            }
-            continue;
-        }
-
-        for (*pdo_entry_ptr = (*pdo_ptr)->entry;
-                *pdo_entry_ptr != (*pdo_ptr)->entry_end; 
-                (*pdo_entry_ptr)++) {
-            if ((*pdo_entry_ptr)->index == pdo_entry_index 
-                    && (*pdo_entry_ptr)->subindex == pdo_entry_subindex) {
-                return 0;
-            }
-        }
-    }
+    struct pdo *pdo = *pdo_ptr;
+    struct pdo_entry *pdo_entry;
     *pdo_ptr = NULL;
     *pdo_entry_ptr = NULL;
-    return -1;
-#if 0
-    const struct sync_manager *sm; 
 
-    /*
-    printf("Looking for %04x %u, dir %u\n", 
-            pdo_entry_index, pdo_entry_subindex, port_direction);
-    */
-    for (sm = slave->sync_manager; 
-            sm != &slave->sync_manager[slave->sync_manager_count];
-            sm++) {
-        struct pdo *pdo; 
-
-        /* If port_direction_ptr is not set, make sure that port direction
-         * and sync-manager direction are not the same
-         * Take care, sync-manager direction 1 means input for the master,
-         * corresponding to a TxPdo, connected to s Simulink 
-         * output port (port_direction = 0). */
-        if (!port_direction_ptr && 
-                (port_direction && sm->direction == EC_DIR_INPUT)) {
-    /*
-            printf("Wrong direction\n");
-    */
+    for (; pdo != pdo_end; pdo++) {
+        if (pdo_index && pdo->index != pdo_index)
             continue;
-        }
 
-
-        for (pdo = sm->pdo; pdo != &sm->pdo[sm->pdo_count]; pdo++) {
-            for (*pdo_entry = pdo->entry; 
-                    *pdo_entry != &pdo->entry[pdo->entry_count]; 
-                    (*pdo_entry)++) {
-    /*
-                printf("Found   for %04x %u, dir %u\n", 
-                        (*pdo_entry)->index, (*pdo_entry)->subindex, 
-                        sm->direction);
-    */
-                if ((*pdo_entry)->index == pdo_entry_index
-                        && (*pdo_entry)->subindex == pdo_entry_subindex) {
-                    if (port_direction_ptr)
-                        *port_direction_ptr = 
-                            sm->direction == EC_DIR_INPUT ? 0 : 1;
+        for (pdo_entry = pdo->entry;
+                pdo_entry != pdo->entry_end; pdo_entry++) {
+            if (pdo_entry->index == pdo_entry_index 
+                    && pdo_entry->subindex == pdo_entry_subindex) {
+                *pdo_ptr = pdo;
+                *pdo_entry_ptr = pdo_entry;
+                if (!pdo->exclude_from_config)
                     return 0;
-                }
             }
         }
     }
 
-    /*
-    printf("Not found.........\n");
-    */
+    if (*pdo_ptr) {
+        snprintf(errmsg, sizeof(errmsg),
+                "PDO Index #x%04X, PDO Entry Index #x%04X, "
+                "PDO Entry Subindex %u as specified in %s was found, "
+                "but is explicitly excluded from the configuration.",
+                pdo_index, pdo_entry_index, pdo_entry_subindex,
+                context);
+        ssSetErrorStatus(S, errmsg);
+    }
+    else {
+        snprintf(errmsg, sizeof(errmsg),
+                "PDO Index #x%04X, PDO Entry Index #x%04X, "
+                "PDO Entry Subindex %u as specified in %s was not found.",
+                pdo_index, pdo_entry_index, pdo_entry_subindex,
+                context);
+        ssSetErrorStatus(S, errmsg);
+    }
 
-    *pdo_entry = NULL;
     return -1;
-#endif
 }
 
 int_T
@@ -1467,13 +1346,13 @@ get_ioport_config(SimStruct *S, struct ecat_slave *slave)
         }
 
         if (port->direction) {
-            pdo_ptr = &slave->rx_pdo;
-            pdo_end = slave->rx_pdo_end;
+            pdo_ptr = &slave->input.pdo;
+            pdo_end = slave->input.pdo_end;
             pdo_direction_string = "TxPdo";
         }
         else {
-            pdo_ptr = &slave->tx_pdo;
-            pdo_end = slave->tx_pdo_end;
+            pdo_ptr = &slave->output.pdo;
+            pdo_end = slave->output.pdo_end;
             pdo_direction_string = "RxPdo";
         }
 
@@ -1497,12 +1376,12 @@ get_ioport_config(SimStruct *S, struct ecat_slave *slave)
 
             if (struct_access) {
                 RETURN_ON_ERROR(get_numeric_field(S, pdo_variable, 
-                            pdo_entry_spec, pdo_entry_idx, 0, 
+                            pdo_entry_spec, pdo_entry_idx, 0, 0,
                             "PdoEntryIndex", &val));
                 pdo_entry_index = val;
 
                 RETURN_ON_ERROR(get_numeric_field(S, pdo_variable, 
-                            pdo_entry_spec, pdo_entry_idx, 0, 
+                            pdo_entry_spec, pdo_entry_idx, 0, 0,
                             "PdoEntrySubIndex", &val));
                 pdo_entry_subindex = val;
             }
@@ -1513,39 +1392,10 @@ get_ioport_config(SimStruct *S, struct ecat_slave *slave)
 
             /* Get the pdo and pdo entry pointers for the specified 
              * indices */
-    /*
-            printf("%s pdo_entry_index %x direction %u\n", 
-                    slave->type,
-                    pdo_entry_index, port->direction);
-    */
-
-            if (find_pdo_entry(slave, pdo_index, 
+            RETURN_ON_ERROR(find_pdo_entry(S, pdo_variable, slave, pdo_index, 
                         pdo_entry_index, pdo_entry_subindex, 
-                        pdo_ptr, pdo_end, pdo_entry_ptr)) {
-                if (pdo_entry_index) {
-                    snprintf(errmsg, sizeof(errmsg),
-                            "Cannot find Pdo Entry specified by "
-                            "SFunction parameter %s.\n"
-                            "Looking for Pdo direction = %s, "
-                            "Pdo Entry Index = 0x%04X, "
-                            "Pdo Entry SubIndex = %u.",
-                            pdo_variable, pdo_direction_string,
-                            pdo_entry_index, pdo_entry_subindex);
-                }
-                else {
-                    snprintf(errmsg, sizeof(errmsg),
-                            "Cannot find Pdo Entry specified by "
-                            "SFunction parameter %s.\n"
-                            "Looking for Pdo direction = %s, "
-                            "Pdo Entry Index = 0x%04X, "
-                            "Pdo Entry SubIndex = %u.",
-                            pdo_variable, pdo_direction_string,
-                            pdo_entry_index, pdo_entry_subindex);
-                }
-                ssSetErrorStatus(S,errmsg);
-                return -1;
-            }
-            (*pdo_ptr)->configured++;
+                        pdo_ptr, pdo_end, pdo_entry_ptr));
+            (*pdo_ptr)->use_count++;
 
             if (!pdo_entry_idx) {
                 if (port->direction) {
@@ -1586,7 +1436,7 @@ get_ioport_config(SimStruct *S, struct ecat_slave *slave)
         /* If PdoDataType is specified, use it, otherwise it is guessed
          * by the DataBitLen spec below */
         switch((pdo_entry_idx = get_numeric_field(S, variable, port_spec,
-                    io_spec_idx, 1, "PdoDataType", &val))) {
+                    io_spec_idx, 0, 1, "PdoDataType", &val))) {
             case 0:
                 if (port->data_bit_len > (uint_T)val) {
                     ssSetErrorStatus(S, 
@@ -1613,15 +1463,15 @@ get_ioport_config(SimStruct *S, struct ecat_slave *slave)
         /* If PdoFullScale is specified, the port data type is double.
          * If port->pdo_full_scale == 0.0, it means that the port data
          * type is specified by PortBitLen */
+        /* XXXXXXXXXXXX */
         switch(get_numeric_field(S, variable, port_spec,
-                    io_spec_idx, 0, "PdoFullScale", &val)) {
+                    io_spec_idx, 0, 1, "PdoFullScale", &val)) {
             case 0:
                 port->pdo_full_scale = val;
                 port->data_type = SS_DOUBLE;
                 break;
             case 1:
                 /* Field was not available - not an error */
-                ssSetErrorStatus(S,NULL);
                 port->data_type = pdo_data_type;
                 break;
             default:
@@ -1681,25 +1531,18 @@ slave_mem_op(struct ecat_slave *slave, void (*func)(void*))
     }
 
 
-    for (pdo = slave->tx_pdo; pdo != slave->tx_pdo_end; pdo++)
-        (*func)(pdo->entry);
-    for (pdo = slave->rx_pdo; pdo != slave->rx_pdo_end; pdo++)
+    for (pdo = slave->pdo; pdo != slave->pdo_end; pdo++)
         (*func)(pdo->entry);
 
-    for (sm = slave->input_sm; sm != slave->input_sm_end; sm++) {
-        (*func)(sm->pdo_ptr);
-    }
-    for (sm = slave->output_sm; sm != slave->output_sm_end; sm++) {
+    for (sm = slave->sync_manager; sm != slave->sync_manager_end; sm++) {
         (*func)(sm->pdo_ptr);
     }
 
-    (*func)(slave->tx_pdo);
-    (*func)(slave->input_sm);
-    (*func)(slave->input_port_ptr);
+    (*func)(slave->pdo);
+    (*func)(slave->sync_manager);
 
-    (*func)(slave->rx_pdo);
-    (*func)(slave->output_sm);
     (*func)(slave->output_port_ptr);
+    (*func)(slave->input_port_ptr);
 
     (*func)(slave->io_port);
     (*func)(slave->type);
@@ -1764,6 +1607,77 @@ set_io_port_width(SimStruct *S, struct ecat_slave *slave,
 
     return 0;
 }
+int_T
+check_pdo_configuration(SimStruct *S, struct ecat_slave *slave)
+{
+    struct pdo *pdo, *pdoX;
+
+    for (pdo = slave->pdo; pdo != slave->pdo_end; pdo++) {
+
+        if (pdo->exclude_from_config && pdo->use_count) {
+            snprintf(errmsg, sizeof(errmsg),
+                    "Problem with PDO #x%04X: Pdo was explicitly excluded "
+                    "from configuration, however somehow it was assigned "
+                    "to a port. This cannot be.", pdo->index);
+            ssSetErrorStatus(S, errmsg);
+            return -1;
+        }
+
+        for (pdoX = slave->pdo; 
+                !pdo->exclude_from_config && pdoX != slave->pdo_end; 
+                pdoX++) {
+            uint_T *exclude_pdo;
+
+            if (pdoX->exclude_from_config)
+                continue;
+
+            for (exclude_pdo = pdoX->exclude_index; 
+                    exclude_pdo != pdoX->exclude_index_end; exclude_pdo++) {
+                if (pdo->index == *exclude_pdo) {
+                    char_T msg[100];
+
+                    snprintf(msg, sizeof(msg),
+                            "PDO #x%04X and #x%04X mutually "
+                            "exclude each other.", pdo->index, pdoX->index);
+
+                    if (pdoX->use_count && pdo->use_count) {
+                        snprintf(errmsg, sizeof(errmsg),
+                                "Problem %s: Both are in use. Check the "
+                                "slave's configuration.", msg);
+                        ssSetErrorStatus(S, errmsg);
+                        return -1;
+
+                    }
+                    else {
+                        if (pdoX->use_count)
+                            pdo->exclude_from_config = 1;
+                        else
+                            pdoX->exclude_from_config = 1;
+
+                        printf("Warning: %s; Because PDO #x%04X is not "
+                                "being used, it is being deselected "
+                                "automatically. This may cause problems.\n",
+                                msg,
+                                pdoX->use_count ? pdo->index : pdoX->index);
+
+                        /* Setting the unique flag so that this automatic
+                         * deselection does not affect other slave 
+                         * configurations */
+                        slave->unique_config = 1;
+                    }
+                }
+            }
+        }
+
+        if (!pdo->exclude_from_config) {
+            slave->pdo_count++;
+            slave->pdo_entry_count += pdo->entry_end - pdo->entry;
+        }
+    }
+
+    return 0;
+}
+
 
 /*====================*
  * S-function methods *
@@ -1780,7 +1694,6 @@ static void mdlInitializeSizes(SimStruct *S)
     struct ecat_slave *slave;
     struct io_port *port, **input_port_ptr, **output_port_ptr;
     uint_T output_port_count;
-    struct pdo *pdo;
 
     ssSetNumSFcnParams(S, PARAM_COUNT);  /* Number of expected parameters */
     if (ssGetNumSFcnParams(S) != ssGetSFcnParamsCount(S)) {
@@ -1804,12 +1717,8 @@ static void mdlInitializeSizes(SimStruct *S)
     if (get_ioport_config(S, slave)) 
         return;
     output_port_count = slave->io_port_count - slave->input_port_count;
-    for (pdo = slave->rx_pdo; pdo != slave->rx_pdo_end; pdo++) 
-        slave->pdo_entry_count += 
-            pdo->configured ? (pdo->entry_end - pdo->entry) : 0;
-    for (pdo = slave->tx_pdo; pdo != slave->tx_pdo_end; pdo++) 
-        slave->pdo_entry_count += 
-            pdo->configured ? (pdo->entry_end - pdo->entry) : 0;
+    if (check_pdo_configuration(S, slave))
+        return;
 
     /* Process input ports */
     if (!ssSetNumInputPorts(S, slave->input_port_count))
@@ -2099,7 +2008,6 @@ char_T *createStrVect(const char_T *strings[], uint_T count)
     return str_vect;
 }
 
-
 #define MDL_RTW
 static void mdlRTW(SimStruct *S)
 {
@@ -2111,12 +2019,7 @@ static void mdlRTW(SimStruct *S)
     uint_T rwork_index = 0;
     uint_T filter_index = 0;
     real_T rwork_vector[slave->rwork_count];
-    uint_T sync_manager_count = 0
-        + slave->input_sm_end - slave->input_sm
-        + slave->output_sm_end - slave->output_sm;
-    uint_T pdo_count = 0
-        + slave->tx_pdo_end - slave->tx_pdo
-        + slave->rx_pdo_end - slave->rx_pdo;
+    uint_T sm_count = slave->sync_manager_end - slave->sync_manager;
 
     /* General assignments of array indices that form the basis for
      * the S-Function <-> TLC communication
@@ -2176,7 +2079,6 @@ static void mdlRTW(SimStruct *S)
         + slave->output_pdo_entry_count;
     int32_T mapped_pdo_entry[PdoEntryMax][pdo_entry_count];
     uint_T pdo_entry_idx = 0;
-
     if (!ssWriteRTWScalarParam(S, 
                 "MasterId", &slave->master, SS_UINT32))              return;
     if (!ssWriteRTWScalarParam(S, 
@@ -2216,27 +2118,28 @@ static void mdlRTW(SimStruct *S)
             return;
     }
 
-    if (sync_manager_count) {
-        uint32_T   sync_manager[SM_Max][sync_manager_count];
-        uint32_T       pdo_info[PdoInfo_Max][pdo_count];
+    if (sm_count) {
+        uint32_T   sync_manager[SM_Max][sm_count];
+        uint32_T       pdo_info[PdoInfo_Max][slave->pdo_count];
         uint32_T pdo_entry_info[PdoEI_Max][slave->pdo_entry_count];
 
         uint_T sm_idx = 0, pdo_idx = 0, pdo_entry_idx = 0;
 
         struct sync_manager *sm;
 
-        for (sm = slave->output_sm; 
-                sm != slave->output_sm_end; sm++, sm_idx++) {
+        for (sm = slave->sync_manager; sm != slave->sync_manager_end; 
+                sm++, sm_idx++) {
             struct pdo **pdo_ptr;
 
             sync_manager[SM_Index][sm_idx] = sm->index;
-            sync_manager[SM_Direction][sm_idx] = 1;
+            sync_manager[SM_Direction][sm_idx] = 
+                sm >= slave->output.sm && sm < slave->output.sm_end;
 
             for (pdo_ptr = sm->pdo_ptr; pdo_ptr != sm->pdo_ptr_end;
-                    pdo_ptr++, pdo_idx++) {
+                    pdo_ptr++) {
                 struct pdo_entry *pdo_entry;
 
-                if (!(*pdo_ptr)->configured)
+                if ((*pdo_ptr)->exclude_from_config)
                     continue;
 
                 sync_manager[SM_PdoCount][sm_idx]++;
@@ -2244,7 +2147,7 @@ static void mdlRTW(SimStruct *S)
                 pdo_info[PdoInfo_PdoIndex][pdo_idx] = 
                     (*pdo_ptr)->index;
                 pdo_info[PdoInfo_PdoEntryCount][pdo_idx] = 
-                    (*pdo_ptr)->entry_count;
+                    (*pdo_ptr)->entry_end - (*pdo_ptr)->entry;
 
                 for (pdo_entry = (*pdo_ptr)->entry; 
                         pdo_entry != (*pdo_ptr)->entry_end;
@@ -2257,58 +2160,25 @@ static void mdlRTW(SimStruct *S)
                     pdo_entry_info[PdoEI_BitLen][pdo_entry_idx] =
                         pdo_entry->bitlen;
                 }
-            }
-        }
-        for (sm = slave->input_sm; 
-                sm != slave->input_sm_end; sm++, sm_idx++) {
-            struct pdo **pdo_ptr;
-
-            sync_manager[SM_Index][sm_idx] = sm->index;
-            sync_manager[SM_Direction][sm_idx] = 1;
-
-            for (pdo_ptr = sm->pdo_ptr; pdo_ptr != sm->pdo_ptr_end;
-                    pdo_ptr++, pdo_idx++) {
-                struct pdo_entry *pdo_entry;
-
-                if (!(*pdo_ptr)->configured)
-                    continue;
-
-                sync_manager[SM_PdoCount][sm_idx]++;
-
-                pdo_info[PdoInfo_PdoIndex][pdo_idx] = 
-                    (*pdo_ptr)->index;
-                pdo_info[PdoInfo_PdoEntryCount][pdo_idx] = 
-                    (*pdo_ptr)->entry_count;
-
-                for (pdo_entry = (*pdo_ptr)->entry; 
-                        pdo_entry != (*pdo_ptr)->entry_end;
-                        pdo_entry++, pdo_entry_idx++) {
-
-                    pdo_entry_info[PdoEI_Index][pdo_entry_idx] = 
-                        pdo_entry->index;
-                    pdo_entry_info[PdoEI_SubIndex][pdo_entry_idx] =
-                        pdo_entry->subindex;
-                    pdo_entry_info[PdoEI_BitLen][pdo_entry_idx] =
-                        pdo_entry->bitlen;
-                }
+                pdo_idx++;
             }
         }
 
         if (slave->pdo_entry_count) {
             if (!ssWriteRTW2dMatParam(S, "PdoEntryInfo", pdo_entry_info,
-                        SS_UINT32, slave->pdo_entry_count, PdoEntryMax))
+                        SS_UINT32, slave->pdo_entry_count, PdoEI_Max))
                 return;
         }
-        if (pdo_count) {
+        if (slave->pdo_count) {
             if (!ssWriteRTW2dMatParam(S, "PdoInfo", pdo_info,
-                        SS_UINT32, pdo_count, PdoInfo_Max))
+                        SS_UINT32, slave->pdo_count, PdoInfo_Max))
                 return;
         }
 
         /* Don't need to check for slave->sync_manager_count here,
          * was checked already */
         if (!ssWriteRTW2dMatParam(S, "SyncManager", sync_manager,
-                    SS_UINT32, sync_manager_count, SM_Max))
+                    SS_UINT32, sm_count, SM_Max))
             return;
     }
 
