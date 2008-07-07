@@ -16,13 +16,19 @@ function val = subsref(ei,index)
 %       ei(hex2dec('03EC3052')) returns all devices where
 %           ProduceCode == #x03EC3052
 % {} subscription notation
-%       Returns the slaves at the requested index
+%       Returns the slaves at the requested index. Allowed is a
+%       single number or ':',e.g
+%       ei{':'} or ei{3}
 val = ei;
 for i = 1:length(index)
     %idx = index(i)
     switch index(i).type
         case '{}'
-            val = ei.Descriptions.Devices.Device(index(i).subs{1});
+            if index(i).subs{1} == ':'
+                val = ei.Descriptions.Devices.Device;
+            else
+                val = ei.Descriptions.Devices.Device(index(i).subs{1});
+            end
         case '()'
             if i == 1 && length(index.subs)
                 if index.subs{1} == ':'
