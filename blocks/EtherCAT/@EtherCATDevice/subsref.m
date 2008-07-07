@@ -9,10 +9,18 @@ for i = 1:length(index)
             end
             val = val(index(i).subs{1});
         case '.'
-            if ~isfield(val,index(i).subs)
+            if strcmpi(index(i).subs,'slaveconfig')
+                %% Return a copy of this 
+                val = ParseXML;
+                fn = fieldnames(dev);
+                for i = 1:length(fn)
+                    val.(fn{i}) = dev.(fn{i});
+                end
+            elseif isfield(val,index(i).subs)
+                val = val.(index(i).subs);
+            else
                 error('Structure does not have field %s', index(i).subs)
             end
-            val = val.(index(i).subs);
         otherwise
             error('Method %s is not implemented by %s', index(i).type, class(val));
     end

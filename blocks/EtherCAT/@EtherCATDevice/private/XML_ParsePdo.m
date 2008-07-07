@@ -2,12 +2,14 @@ function pdo = XML_ParsePdo(xml)
  
 pdo.Sm = [];
 pdo.Index = [];
+pdo.Mandatory = 0;
 pdo.Entry = repmat(XML_ParsePdoEntry,1,0);
 if ~nargin
     return
 end
 
 %% Get the attributes
+pdo.Mandatory = strcmp(xml.getAttribute('Mandatory'),'1');
 pdo.Sm = fromHexString(xml.getAttribute('Sm'));
 
 %% Try to get the Index
