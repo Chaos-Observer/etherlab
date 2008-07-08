@@ -10,6 +10,7 @@ if KERNEL
 SUBDIRS += \
         tools \
         src \
+        doc \
         lib
 endif
 

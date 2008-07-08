@@ -34,8 +34,8 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "rich"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Tue Jul  8 02:00:59 2008"
-  ModelVersionFormat	  "1.%<AutoIncrement:634>"
+  LastModifiedDate	  "Tue Jul  8 09:26:36 2008"
+  ModelVersionFormat	  "1.%<AutoIncrement:636>"
   ConfigurationManager	  "rcs"
   LinearizationMsg	  "none"
   Profile		  off
@@ -156,7 +156,7 @@ Library {
   }
   System {
     Name		    "etherlab_lib_exp"
-    Location		    [791, 601, 1386, 994]
+    Location		    [758, 602, 1353, 995]
     Open		    on
     ModelBrowserVisibility  off
     ModelBrowserWidth	    200
@@ -947,7 +947,7 @@ Library {
 "d not load EtherCATInfo MAT file '...\n        'EtherCATInfo_el5xxx']);\n    "
 "% Regenerate with: \n    %  EtherCATInfo_el5xxx = getEtherCATInfo('Beckhoff E"
 "L5xxx.xml')\n    %  save EtherCATInfo_el5xxx 'EtherCATInfo_el5xxx'\nend\nSlav"
-"eConfig = genSlaveConfig(EtherCATInfo_el5xxx, product_code, revision_no)\n\n"
+"eConfig = genSlaveConfig(EtherCATInfo_el5xxx, product_code, revision_no);\n\n"
 "\n% PDO Entry is a definition of all PDO's that exist in the slave\n% List he"
 "re a matrix, where every row has 3 elements:\n% 1: PDO index\n% 2: PDO subind"
 "ex\n% 3: Bit size (8,16,32); Negative values mean signed values\npdo_entry = "
@@ -1163,9 +1163,9 @@ Library {
 " in pdo'\n            type = 'PDO';\n        case 'group data types'\n       "
 "     type = 'ALL';\n        otherwise\n            type = 'None';\n    end\n "
 "   \n    ei = EtherCATInfo(fname)\n    SlaveConfig = genSlaveConfig(ei{1},ei."
-"VendorId);\n    PdoEntries = generateIO(ei{1});\n    IOSpec = struct('PdoEntr"
-"y', PdoEntries);\n\n    [p f e] = fileparts(fname);\n    display_name = [f e]"
-";\nend"
+"VendorId);\n    PdoEntries = generateIO(ei{1},'GroupType',type);\n    IOSpec "
+"= struct('PdoEntry', PdoEntries);\n\n    [p f e] = fileparts(fname);\n    dis"
+"play_name = [f e];\nend"
 	  MaskDisplay		  "fprintf('BK1120\\nK-Bus Coupler\\n%s\\nM:%s"
 " Idx:%s',...\n    display_name,masterStr,positionStr);\n"
 	  MaskIconFrame		  on
