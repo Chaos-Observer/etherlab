@@ -13,6 +13,7 @@ dist_ethercat_DATA = \
         getEtherCATLocation.m getSlaveDescription.m \
         getEtherCATInfo.m \
         fromHexString.m \
+        getEtherCATAddress.m \
         ec_slave.c ec_slave.tlc \
         ec_slave2.c ec_slave2.tlc \
         EtherCATInfo_ekxxxx.mat \

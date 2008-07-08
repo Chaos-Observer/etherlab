@@ -763,13 +763,6 @@ get_sync_manager(SimStruct *S, const char_T *context, const mxArray *ec_info,
     output_sm_count = 
         output_sm_info ? mxGetNumberOfElements(output_sm_info) : 0;
 
-    if (!(input_sm_count + output_sm_count)) {
-        snprintf(errmsg, sizeof(errmsg),
-                "No SyncManagers specified in %s.Sm.",
-                context);
-        return -1;
-    }
-
     CHECK_CALLOC(S, input_sm_count + output_sm_count, 
         sizeof(struct sync_manager), memptr);
     slave->sync_manager = memptr;
@@ -1504,7 +1497,7 @@ get_ioport_config(SimStruct *S, struct ecat_slave *slave)
  * operator. This function is used to fix or release allocated memory.
  */
 void
-slave_mem_op(struct ecat_slave *slave, void (*func)(void*))
+slave_mem_op(struct ecat_slave *slave, void (*method)(void*))
 {
     struct io_port *port;
     struct sync_manager *sm;
@@ -1513,34 +1506,34 @@ slave_mem_op(struct ecat_slave *slave, void (*func)(void*))
     for (port = slave->io_port;
             port != &slave->io_port[slave->io_port_count];
             port++) {
-        (*func)(port->pdo_entry);
-        (*func)(port->gain_values);
-        (*func)(port->gain_name);
-        (*func)(port->offset_values);
-        (*func)(port->offset_name);
-        (*func)(port->filter_values);
-        (*func)(port->filter_name);
+        (*method)(port->pdo_entry);
+        (*method)(port->gain_values);
+        (*method)(port->gain_name);
+        (*method)(port->offset_values);
+        (*method)(port->offset_name);
+        (*method)(port->filter_values);
+        (*method)(port->filter_name);
     }
 
 
     for (pdo = slave->pdo; pdo != slave->pdo_end; pdo++)
-        (*func)(pdo->entry);
+        (*method)(pdo->entry);
 
     for (sm = slave->sync_manager; sm != slave->sync_manager_end; sm++) {
-        (*func)(sm->pdo_ptr);
+        (*method)(sm->pdo_ptr);
     }
 
-    (*func)(slave->pdo);
-    (*func)(slave->sync_manager);
+    (*method)(slave->pdo);
+    (*method)(slave->sync_manager);
 
-    (*func)(slave->output_port_ptr);
-    (*func)(slave->input_port_ptr);
+    (*method)(slave->output_port_ptr);
+    (*method)(slave->input_port_ptr);
 
-    (*func)(slave->io_port);
-    (*func)(slave->type);
-    (*func)(slave->sdo_config);
+    (*method)(slave->io_port);
+    (*method)(slave->type);
+    (*method)(slave->sdo_config);
 
-    (*func)(slave);
+    (*method)(slave);
 }
 
 int_T
