@@ -4,5 +4,4 @@ function sc = genSlaveConfig(dev, ProductCode, RevisionNo)
 % Synopsis: sc = SlaveConfig(device)
 slave = getDevice(dev,ProductCode, RevisionNo);
 
-sc = genSlaveConfig(slave);
-sc.VendorId = dev.VendorId;
+sc = genSlaveConfig(slave,dev.VendorId);

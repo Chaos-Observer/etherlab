@@ -650,7 +650,7 @@ get_numeric_field(SimStruct *S, const char_T *variable,
                 dest = NULL;                                            \
                 break;                                                  \
         }                                                               \
-        printf("Allocating %u bytes on line %u\n", (n)*(m), __LINE__);  \
+      /*printf("Allocating %u bytes on line %u\n", (n)*(m), __LINE__);*/\
         dest = mxCalloc((n),(m));                                       \
         if (!(dest)) {                                                  \
             ssSetErrorStatus((S), "calloc() failure; no memory left."); \
@@ -748,6 +748,7 @@ get_sync_manager(SimStruct *S, const char_T *context, const mxArray *ec_info,
     const mxArray *sm_info;
     const mxArray *input_sm_info, *output_sm_info;
     uint_T input_sm_count, output_sm_count, i;
+    void *memptr;
     real_T *val = NULL;
 
     sm_info = mxGetField(ec_info, 0, "Sm");
@@ -770,7 +771,8 @@ get_sync_manager(SimStruct *S, const char_T *context, const mxArray *ec_info,
     }
 
     CHECK_CALLOC(S, input_sm_count + output_sm_count, 
-        sizeof(struct sync_manager), slave->sync_manager);
+        sizeof(struct sync_manager), memptr);
+    slave->sync_manager = memptr;
     slave->sync_manager_end = 
         slave->sync_manager + input_sm_count + output_sm_count;
 
@@ -779,7 +781,7 @@ get_sync_manager(SimStruct *S, const char_T *context, const mxArray *ec_info,
      * slave->input and slave->output is the view of the slave. That is 
      * why input SyncManagers are placed in slave->output and vice versa */
     if (output_sm_count) {
-        slave->input.sm = slave->input.sm_end = slave->sync_manager;
+        slave->input.sm = slave->input.sm_end = memptr;
 
         val = mxGetPr(output_sm_info);
         if (!mxIsNumeric(output_sm_info) || !val) {
@@ -790,15 +792,14 @@ get_sync_manager(SimStruct *S, const char_T *context, const mxArray *ec_info,
             return -1;
         }
 
-        printf(" Output SyncManager:");
         for (i = 0; i < output_sm_count; i++, slave->input.sm_end++) {
             slave->input.sm_end->index = *val;
-            printf(" %u", slave->input.sm_end->index);
         }
-        printf("\n");
+
+        memptr = slave->input.sm_end;
     }
     if (input_sm_count) {
-        slave->output.sm = slave->output.sm_end = slave->input.sm_end;
+        slave->output.sm = slave->output.sm_end = memptr;
 
         val = mxGetPr(input_sm_info);
         if (!mxIsNumeric(input_sm_info) || !val) {
@@ -809,12 +810,11 @@ get_sync_manager(SimStruct *S, const char_T *context, const mxArray *ec_info,
             return -1;
         }
 
-        printf("  Input SyncManager:");
         for (i = 0; i < input_sm_count; i++, slave->output.sm_end++) {
             slave->output.sm_end->index = *val;
-            printf(" %u", slave->output.sm_end->index);
         }
-        printf("\n");
+
+        memptr = slave->output.sm_end;
     }
 
 
@@ -990,6 +990,7 @@ get_slave_pdo(SimStruct *S, const char_T *param, const mxArray *pdo_info,
         }
     }
 
+    /*
     for (pdo = sc->pdo; pdo != sc->pdo_end; pdo++) {
         struct pdo_entry *pdo_entry;
 
@@ -1017,6 +1018,7 @@ get_slave_pdo(SimStruct *S, const char_T *param, const mxArray *pdo_info,
             printf("\t has no Entries\n");
         }
     }
+    */
 
 
     return 0;
@@ -1282,13 +1284,12 @@ get_ioport_config(SimStruct *S, struct ecat_slave *slave)
         const mxArray *pdo_entry_spec = 
             mxGetField(port_spec, io_spec_idx, "PdoEntry");
         struct pdo_entry **pdo_entry_ptr;
-        struct pdo **pdo_ptr, *pdo_end;
+        struct pdo *pdo;
         uint_T pdo_entry_idx;
         boolean_T struct_access;
         real_T *pdo_entry_index_field;
         real_T *pdo_entry_subindex_field;
         uint_T pdo_data_type;
-        const char_T *pdo_direction_string;
 
         snprintf(variable, sizeof(variable), 
                 "%s(%u).PdoEntry", param, io_spec_idx+1);
@@ -1345,17 +1346,6 @@ get_ioport_config(SimStruct *S, struct ecat_slave *slave)
             continue;
         }
 
-        if (port->direction) {
-            pdo_ptr = &slave->input.pdo;
-            pdo_end = slave->input.pdo_end;
-            pdo_direction_string = "TxPdo";
-        }
-        else {
-            pdo_ptr = &slave->output.pdo;
-            pdo_end = slave->output.pdo_end;
-            pdo_direction_string = "RxPdo";
-        }
-
         CHECK_CALLOC(S, port->pdo_entry_count, sizeof(struct pdo_entry*),
                 port->pdo_entry);
 
@@ -1392,10 +1382,13 @@ get_ioport_config(SimStruct *S, struct ecat_slave *slave)
 
             /* Get the pdo and pdo entry pointers for the specified 
              * indices */
+            pdo = slave->pdo;
             RETURN_ON_ERROR(find_pdo_entry(S, pdo_variable, slave, pdo_index, 
                         pdo_entry_index, pdo_entry_subindex, 
-                        pdo_ptr, pdo_end, pdo_entry_ptr));
-            (*pdo_ptr)->use_count++;
+                        &pdo, slave->pdo_end, pdo_entry_ptr));
+            port->direction = (pdo->sm >= slave->input.sm) 
+                && (pdo->sm < slave->input.sm_end);
+            pdo->use_count++;
 
             if (!pdo_entry_idx) {
                 if (port->direction) {
@@ -1463,7 +1456,6 @@ get_ioport_config(SimStruct *S, struct ecat_slave *slave)
         /* If PdoFullScale is specified, the port data type is double.
          * If port->pdo_full_scale == 0.0, it means that the port data
          * type is specified by PortBitLen */
-        /* XXXXXXXXXXXX */
         switch(get_numeric_field(S, variable, port_spec,
                     io_spec_idx, 0, 1, "PdoFullScale", &val)) {
             case 0:
@@ -2134,6 +2126,7 @@ static void mdlRTW(SimStruct *S)
             sync_manager[SM_Index][sm_idx] = sm->index;
             sync_manager[SM_Direction][sm_idx] = 
                 sm >= slave->output.sm && sm < slave->output.sm_end;
+            sync_manager[SM_PdoCount][sm_idx] = 0;
 
             for (pdo_ptr = sm->pdo_ptr; pdo_ptr != sm->pdo_ptr_end;
                     pdo_ptr++) {
