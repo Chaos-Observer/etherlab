@@ -12,7 +12,7 @@ dist_ethercat_DATA = \
         el5101_check.m \
         getEtherCATLocation.m getSlaveDescription.m \
         getEtherCATInfo.m \
-        generateIOs.m \
+        fromHexString.m \
         ec_slave.c ec_slave.tlc \
         ec_slave2.c ec_slave2.tlc \
         EtherCATInfo_ekxxxx.mat \
