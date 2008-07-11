@@ -1,7 +1,9 @@
-function sc = genSlaveConfig(dev, ProductCode, RevisionNo)
+function sc = genSlaveConfig(ei, ProductCode, RevisionNo)
 % SlaveConfig: Return the slave as a structure
 %
 % Synopsis: sc = SlaveConfig(device)
-slave = getDevice(dev,ProductCode, RevisionNo);
 
-sc = genSlaveConfig(slave,dev.VendorId);
+ei = getDevice(ei,ProductCode, RevisionNo);
+
+sc.Vendor = ei.Vendor;
+sc.Descriptions = ei.Descriptions;

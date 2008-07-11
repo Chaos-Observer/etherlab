@@ -4,6 +4,7 @@ val = dev;
 for i = 1:length(index)
     switch index(i).type
         case '()'
+            [length(val) index(i).subs{1}]
             if length(val) < index(i).subs{1}
                 error('Index exceeds matrix dimensions.');
             end

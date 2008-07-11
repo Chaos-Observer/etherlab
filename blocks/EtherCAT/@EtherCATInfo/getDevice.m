@@ -1,4 +1,4 @@
-function device = getDevice(varargin)
+function ei = getDevice(varargin)
 % GETDEVICE: finds devices in the object
 % Synopsis: device = getDevice(EtherCATInfo, Product, Revision)
 % Arguments:
@@ -12,7 +12,7 @@ function device = getDevice(varargin)
 %             'latest'  - selects all devices not hidden by others
 ei = varargin{1};
 
-device = repmat(EtherCATDevice(),1,0);
+device = repmat(XML_ParseSlave,1,0);
 
 %% Setup the selection options
 
@@ -69,9 +69,9 @@ exclude = [];
 for i = 1:length(ei.Descriptions.Devices.Device)
     dev = ei.Descriptions.Devices.Device(i);
     
-    rev = dev.RevisionNo;
-    type = dev.Type;
-    pc = dev.ProductCode;
+    rev = dev.Type.RevisionNo;
+    type = dev.Type.TextContent;
+    pc = dev.Type.ProductCode;
     
     % If ProductString is specified, add it if it appears on the list
     %    or if ProductCode is specified, add it if on the list
@@ -110,6 +110,8 @@ if strcmp(RevisionNo, 'latest')
         end
     end
 end
+
+ei.Descriptions.Devices.Device = device;
 
 %% Matching functions
 

@@ -684,7 +684,7 @@
 
     %openfile buf
 
-    /* SyncManager configuration for %<ProductName>
+    /* PDO configuration for %<ProductName>
      * with configuration layout %<LayoutVersion>
      */
     ec_pdo_entry_info_t %<PdoEntryInfoId>[] = {

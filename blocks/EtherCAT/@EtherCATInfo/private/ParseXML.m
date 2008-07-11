@@ -1,7 +1,7 @@
 function ei = ParseXML(xmlfile)
 
-ei.VendorId = 0;
-ei.Descriptions.Devices.Device = repmat(EtherCATDevice,1,0);
+ei.Vendor.Id = [];
+ei.Descriptions.Devices.Device = repmat(XML_ParseSlave,1,0);
 
 if ~nargin
     return
@@ -17,15 +17,14 @@ end
 
 
 %% Try to get the VendorId - this is required
-ei.VendorId = [];
 try
     VendorElem = root.getElementsByTagName('Vendor').item(0);
     VendorIdTxt = VendorElem.getElementsByTagName('Id').item(0);
-    ei.VendorId = fromHexString(VendorIdTxt.getTextContent.trim);
+    ei.Vendor.Id = fromHexString(VendorIdTxt.getTextContent.trim);
 catch
 end
 
-if isempty(ei.VendorId)
+if isempty(ei.Vendor.Id)
     invalidDocument();
 end
 
@@ -45,8 +44,8 @@ end
 
 idx = 1;
 for i = 1:DeviceElem.getLength
-    dev = EtherCATDevice(DeviceElem.item(i-1));
-    if ~isempty(dev.ProductCode) && ~isempty(dev.RevisionNo)
+    dev = XML_ParseSlave(DeviceElem.item(i-1));
+    if ~isempty(dev.Type.ProductCode) && ~isempty(dev.Type.RevisionNo)
         ei.Descriptions.Devices.Device(idx) = dev;
         idx = idx + 1;
     end

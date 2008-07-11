@@ -25,14 +25,16 @@ for i = 1:length(index)
     switch index(i).type
         case '{}'
             if index(i).subs{1} == ':'
-                val = ei.Descriptions.Devices.Device;
+                val = ei;
             else
-                val = ei.Descriptions.Devices.Device(index(i).subs{1});
+                val = ei;
+                val.Descriptions.Devices.Device = ...
+                    ei.Descriptions.Devices.Device(index(i).subs{1});
             end
         case '()'
             if i == 1 && length(index.subs)
                 if index.subs{1} == ':'
-                    val = ei.Descriptions.Devices.Device;
+                    val = ei;
                 else
                     rev = [];
                     pc = [];
