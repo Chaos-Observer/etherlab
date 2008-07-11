@@ -3,6 +3,7 @@ xmldir = $(prefix)/$(subdir)
 
 dist_xml_DATA = \
         Beckhoff_EtherCAT_XML.zip \
+        MTS.xml \
         EL4132-mod.xml
 
 xml_DATA = setup.m

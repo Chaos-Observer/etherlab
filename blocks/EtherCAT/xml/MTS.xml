@@ -1,0 +1,160 @@
+<?xml version = '1.0'?>
+<EtherCATInfo Version="1.2" >
+<!--MTSSensor.com 12 Okt 2006 -->  <Vendor>
+    <Id>64</Id>
+    <Name>MTS Systems Corp</Name>
+    <ImageData16x14>424DE6000000000000007600000028000000100000000E000000010004000000000070000000C40E0000C40E000000000000000000000000000000008000008000000080800080000000800080008080000080808000C0C0C0000000FF0000FF000000FFFF00FF000000FF00FF00FFFF0000FFFFFF00999999999999999999999999999999999999999999999999FFFFFFFFFFFFFFFF9FFF9FFF9FFF99999FFF9FFF9FFFFFF99F9F9FFF9FFFF99999999FFF9FFF999F99F99FFF9FFF9FFF9FFF9F99999F9999FFFFFFFFFFFFFFFF999999999999999999999999999999999999999999999999</ImageData16x14>
+  </Vendor>
+  <Descriptions>
+    <Groups>
+      <Group>
+        <Type>MTSDevice</Type>
+        <Name LcId="1033" >MTS Device</Name>
+        <ImageData16x14>424DE6000000000000007600000028000000100000000E000000010004000000000070000000C40E0000C40E000000000000000000000000000000008000008000000080800080000000800080008080000080808000C0C0C0000000FF0000FF000000FFFF00FF000000FF00FF00FFFF0000FFFFFF00FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF77711111117FFFF877711111117FFFF87771111111777FF8777111111177788088899999998778878889FFFF99877FF78889FFFF998FFFFF88899999998FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF</ImageData16x14>
+      </Group>
+    </Groups>
+    <Devices>
+      <Device Physics="YY" >
+        <Type RevisionNo="#x03020101" ProductCode="#x26483052" >MTS Temposonics</Type>
+        <Name LcId="1033" ><![CDATA[MTS R-Series EtherCat (5 Magmets)]]></Name>
+        <Name LcId="1031" ><![CDATA[MTS R-Series EtherCat (5 Magnets)]]></Name>
+        <GroupType>MTSDevice</GroupType>
+        <Fmmu>Outputs</Fmmu>
+        <Fmmu>Inputs</Fmmu>
+        <Sm Enable="1" StartAddress="#x1800" ControlByte="#x26" DefaultSize="192" MinSize="32" MaxSize="256" >MBoxOut</Sm>
+        <Sm Enable="1" StartAddress="#x1C00" ControlByte="#x22" DefaultSize="192" MinSize="32" MaxSize="256" >MBoxIn</Sm>
+        <Sm Enable="0" StartAddress="#x1000" ControlByte="#x64" >Outputs</Sm>
+        <Sm Enable="1" StartAddress="#x1400" ControlByte="#x20" >Inputs</Sm>
+        <TxPdo Sm="3" Fixed="0" >
+          <Index>#x1A00</Index>
+          <Name>Inputs</Name>
+          <Entry>
+            <Index>#x3101</Index>
+            <SubIndex>1</SubIndex>
+            <BitLen>16</BitLen>
+            <Name>Status 1</Name>
+            <DataType>UINT</DataType>
+          </Entry>
+          <Entry>
+            <Index>#x3101</Index>
+            <SubIndex>2</SubIndex>
+            <BitLen>32</BitLen>
+            <Name>Position 1</Name>
+            <DataType>UDINT</DataType>
+          </Entry>
+          <Entry>
+            <Index>#x3101</Index>
+            <SubIndex>3</SubIndex>
+            <BitLen>32</BitLen>
+            <Name>Velocity 1</Name>
+            <DataType>DINT</DataType>
+          </Entry>
+          <Entry>
+            <Index>#x3101</Index>
+            <SubIndex>5</SubIndex>
+            <BitLen>16</BitLen>
+            <Name>Status 2</Name>
+            <DataType>UINT</DataType>
+          </Entry>
+          <Entry>
+            <Index>#x3101</Index>
+            <SubIndex>6</SubIndex>
+            <BitLen>32</BitLen>
+            <Name>Position 2</Name>
+            <DataType>UDINT</DataType>
+          </Entry>
+          <Entry>
+            <Index>#x3101</Index>
+            <SubIndex>7</SubIndex>
+            <BitLen>32</BitLen>
+            <Name>Velocity 2</Name>
+            <DataType>DINT</DataType>
+          </Entry>
+          <Entry>
+            <Index>#x3101</Index>
+            <SubIndex>9</SubIndex>
+            <BitLen>16</BitLen>
+            <Name>Status 3</Name>
+            <DataType>UINT</DataType>
+          </Entry>
+          <Entry>
+            <Index>#x3101</Index>
+            <SubIndex>10</SubIndex>
+            <BitLen>32</BitLen>
+            <Name>Position 3</Name>
+            <DataType>UDINT</DataType>
+          </Entry>
+          <Entry>
+            <Index>#x3101</Index>
+            <SubIndex>11</SubIndex>
+            <BitLen>32</BitLen>
+            <Name>Velocity 3</Name>
+            <DataType>DINT</DataType>
+          </Entry>
+          <Entry>
+            <Index>#x3101</Index>
+            <SubIndex>13</SubIndex>
+            <BitLen>16</BitLen>
+            <Name>Status 4</Name>
+            <DataType>UINT</DataType>
+          </Entry>
+          <Entry>
+            <Index>#x3101</Index>
+            <SubIndex>14</SubIndex>
+            <BitLen>32</BitLen>
+            <Name>Position 4</Name>
+            <DataType>UDINT</DataType>
+          </Entry>
+          <Entry>
+            <Index>#x3101</Index>
+            <SubIndex>15</SubIndex>
+            <BitLen>32</BitLen>
+            <Name>Velocity 4</Name>
+            <DataType>DINT</DataType>
+          </Entry>
+          <Entry>
+            <Index>#x3101</Index>
+            <SubIndex>17</SubIndex>
+            <BitLen>16</BitLen>
+            <Name>Status 5</Name>
+            <DataType>UINT</DataType>
+          </Entry>
+          <Entry>
+            <Index>#x3101</Index>
+            <SubIndex>18</SubIndex>
+            <BitLen>32</BitLen>
+            <Name>Position 5</Name>
+            <DataType>UDINT</DataType>
+          </Entry>
+          <Entry>
+            <Index>#x3101</Index>
+            <SubIndex>19</SubIndex>
+            <BitLen>32</BitLen>
+            <Name>Velocity 5</Name>
+            <DataType>DINT</DataType>
+          </Entry>
+        </TxPdo>
+        <Mailbox>
+          <CoE PdoAssign="1" PdoConfig="0" SdoInfo="1" />
+          <FoE/>
+        </Mailbox>
+        <Dc>
+          <OpMode>
+            <Name>Distributed Clocks</Name>
+            <Desc>Distributed Clocks</Desc>
+            <AssignActivate>#x0000</AssignActivate>
+          </OpMode>
+        </Dc>
+        <ESC>
+          <Reg0400>25000</Reg0400>
+          <Reg0420>100</Reg0420>
+        </ESC>
+        <Eeprom>
+          <ByteSize>128</ByteSize>
+          <ConfigData>05000304</ConfigData>
+          <BootStrap>0010140200181402</BootStrap>
+        </Eeprom>
+      </Device>
+    </Devices>
+  </Descriptions>
+</EtherCATInfo>
