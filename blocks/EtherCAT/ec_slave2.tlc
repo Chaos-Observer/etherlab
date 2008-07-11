@@ -319,7 +319,7 @@
               "Roller", RollVars
         %%
         %assign dst = GetDst(idx,lcv,sigIdx)
-        %assign src = LibBlockInputSignal(idx,"",lcv,sigIdx)
+        %assign src = LibBlockInputSignal(port,"",lcv,sigIdx)
         %<dst> = %<GetRHS(idx,src,dst,lcv,sigIdx)>;
       %endroll
     %endif

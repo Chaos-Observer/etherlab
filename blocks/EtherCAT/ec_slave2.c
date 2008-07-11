@@ -396,6 +396,7 @@ struct ecat_slave {
         struct pdo **pdo_ptr, **pdo_ptr_end;
     } *sync_manager, *sync_manager_end;
 
+    struct sync_manager **io_sync_manager, **io_sync_manager_end;
     uint_T output_sm_count;
     uint_T input_sm_count;
 
@@ -1930,6 +1931,8 @@ slave_mem_op(struct ecat_slave *slave, void (*method)(void*))
         (*method)(pdo->entry);
     (*method)(slave->pdo);
 
+    (*method)(slave->io_sync_manager);
+
     (*method)(slave->sdo_config);
     (*method)(slave->type);
 
@@ -2128,6 +2131,10 @@ check_pdo_configuration(SimStruct *S, struct ecat_slave *slave)
         }
     }
 
+    CHECK_CALLOC(slave->S, slave->output_sm_count + slave->input_sm_count,
+            sizeof(struct sync_manager *), slave->io_sync_manager);
+    slave->io_sync_manager_end = slave->io_sync_manager;
+
     /* While reading in all the PDO's, the pdo_ptr_end of the corresponding
      * SyncManager was incremented as well. Now that it is known how
      * many PDO's a SyncManager has, memory for a set of PDO pointers
@@ -2137,6 +2144,11 @@ check_pdo_configuration(SimStruct *S, struct ecat_slave *slave)
 
         CHECK_CALLOC(S, pdo_count, sizeof(struct pdo*), sm->pdo_ptr);
         sm->pdo_ptr_end = sm->pdo_ptr;
+
+        if (sm->direction == EC_SM_INPUT 
+                || sm->direction == EC_SM_OUTPUT) {
+            *slave->io_sync_manager_end++ = sm;
+        }
     }
 
     /* Now go through the pdo list again and setup the
@@ -2478,8 +2490,6 @@ static void mdlRTW(SimStruct *S)
     uint_T rwork_index = 0;
     uint_T filter_index = 0;
     real_T rwork_vector[slave->rwork_count];
-    uint_T sm_count = slave->sync_manager_end - slave->sync_manager;
-    uint_T io_port_count = slave->io_port_end - slave->io_port;
 
     /* General assignments of array indices that form the basis for
      * the S-Function <-> TLC communication
@@ -2586,26 +2596,28 @@ static void mdlRTW(SimStruct *S)
             return;
     }
 
-    if (sm_count) {
+    if (slave->io_sync_manager_end != slave->io_sync_manager) {
+        uint_T sm_count = slave->io_sync_manager_end - slave->io_sync_manager;
         uint32_T   sync_manager[SM_Max][sm_count];
         uint32_T       pdo_info[PdoInfo_Max][slave->pdo_count];
         uint32_T pdo_entry_info[PdoEI_Max][slave->pdo_entry_count];
+        uint_T sm_idx = 0;
 
-        uint_T sm_idx = 0, pdo_idx = 0, pdo_entry_idx = 0;
+        uint_T pdo_idx = 0, pdo_entry_idx = 0;
 
-        struct sync_manager *sm;
+        struct sync_manager **sm_ptr;
 
-        for (sm = slave->sync_manager; sm != slave->sync_manager_end;
-                sm++, sm_idx++) {
+        for (sm_ptr = slave->io_sync_manager; 
+                sm_ptr != slave->io_sync_manager_end; sm_ptr++) {
             struct pdo **pdo_ptr;
 
-            sync_manager[SM_Index][sm_idx] = sm->index;
+            sync_manager[SM_Index][sm_idx] = (*sm_ptr)->index;
             sync_manager[SM_Direction][sm_idx] =
-                sm->direction == EC_SM_INPUT;
+                (*sm_ptr)->direction == EC_SM_INPUT;
             sync_manager[SM_PdoCount][sm_idx] = 0;
 
-            for (pdo_ptr = sm->pdo_ptr; pdo_ptr != sm->pdo_ptr_end;
-                    pdo_ptr++) {
+            for (pdo_ptr = (*sm_ptr)->pdo_ptr; 
+                    pdo_ptr != (*sm_ptr)->pdo_ptr_end; pdo_ptr++) {
                 struct pdo_entry *pdo_entry;
 
                 if ((*pdo_ptr)->exclude_from_config)
@@ -2631,6 +2643,7 @@ static void mdlRTW(SimStruct *S)
                 }
                 pdo_idx++;
             }
+            sm_idx++;
         }
 
         if (slave->pdo_entry_count) {
@@ -2651,7 +2664,8 @@ static void mdlRTW(SimStruct *S)
             return;
     }
 
-    if (io_port_count) {
+    if (slave->io_port_end != slave->io_port) {
+        uint_T io_port_count = slave->io_port_end - slave->io_port;
         struct io_port *port;
         int32_T port_spec[PortSpecMax][io_port_count];
         real_T pdo_full_scale[io_port_count];
