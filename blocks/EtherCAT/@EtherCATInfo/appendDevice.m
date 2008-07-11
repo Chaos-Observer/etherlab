@@ -6,13 +6,13 @@ function ei = appendDevice(ei, val)
 % val can either be a list of Devices or an EtherCATInfo 
 % object
 
-if class(ei) == class(val)
-    if ei.VendorId ~= val.VendorId
-        error('VendorId mismatch')
-    end
-    val = val.Descriptions.Devices.Device;
+if class(ei) ~= class(val)
+    error('Only objects of type %s can be appended',...
+        class(ei));
 end
-offset = length(ei.Descriptions.Devices.Device);
-for i = 1:length(val)
-    ei.Descriptions.Devices.Device(offset+i) = val(i);
+
+if ei.Vendor.Id ~= val.Vendor.Id
+    error('VendorId mismatch')
 end
+ei.Descriptions.Devices.Device = ...
+    [ei.Descriptions.Devices.Device, val.Descriptions.Devices.Device];

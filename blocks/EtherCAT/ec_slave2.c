@@ -392,13 +392,12 @@ struct ecat_slave {
             EC_SM_INPUT, EC_SM_OUTPUT, EC_SM_MAX} direction;
         boolean_T virtual;
 
-        /* This value specifies how many syncmanagers are available for
-         * the current direction */
-        unsigned int dir_count;
-
         /* A list of pointers to pdo */
         struct pdo **pdo_ptr, **pdo_ptr_end;
     } *sync_manager, *sync_manager_end;
+
+    uint_T output_sm_count;
+    uint_T input_sm_count;
 
     /* Maximum port width of both input and output ports. This is a
      * temporary value that is used to check whether the Simulink block
@@ -828,6 +827,24 @@ get_sync_manager(SimStruct *S, const char_T *p_ctxt,
     pr_debug(slave, NULL, NULL, 0,
             "--------------- SyncManager Configuration ------------\n");
 
+    if (!ec_info)
+        return 0;
+
+    /* Check the number of devices */
+    switch (mxGetNumberOfElements(ec_info)) {
+        case 0:
+            pr_error(slave,"Device count", "", __LINE__,
+                    "EtherCATInfo structure does not have any devices");
+            return -1;
+        case 1:
+            break;
+        default:
+            pr_warn(slave,"Device count", "", __LINE__,
+                    "EtherCATInfo structure has %u devices. "
+                    "Using first device\n",
+                    mxGetNumberOfElements(ec_info));
+    }
+
     sm_info = mxGetField(ec_info, 0, "Sm");
     if (!sm_info || !(sm_idx = mxGetNumberOfElements(sm_info))) {
         pr_debug(slave, p_ctxt, "Sm", indent_level,
@@ -891,10 +908,12 @@ get_sync_manager(SimStruct *S, const char_T *p_ctxt,
             case 0:
                 pr_debug(slave, NULL, NULL, 0, "Type input\n");
                 sm->direction = EC_SM_INPUT;
+                slave->input_sm_count++;
                 break;
             case 4:
                 pr_debug(slave, NULL, NULL, 0, "Type output\n");
                 sm->direction = EC_SM_OUTPUT;
+                slave->output_sm_count++;
                 break;
             default:
                 memset(sm, 0, sizeof(*sm));
@@ -1089,7 +1108,8 @@ get_slave_pdo(struct ecat_slave *slave,
 
         pr_debug(slave, NULL, "", indent_level+1,
                 "Attributes: Sm='%i' Virtual='%u', Mandatory='%u'\n",
-                pdo->sm->index, pdo->virtual, pdo->mandatory);
+                pdo->sm ? pdo->sm->index : -1, 
+                pdo->virtual, pdo->mandatory);
 
         exclude_info = mxGetField(pdo_info, pdo_idx, "Exclude");
         if (exclude_info
@@ -1527,6 +1547,7 @@ get_pdo_config(struct ecat_slave *slave,
                     "Reassigned Pdo #x%04X to SyncManager %u\n",
                     pdo->index, sm->index);
 
+            pdo->sm = sm;
             return 0;
         }
     }
@@ -1793,7 +1814,7 @@ get_ioport_config(SimStruct *S, struct ecat_slave *slave)
                     (port->direction
                      ? slave->input_port_count
                      : slave->output_port_count) + 1,
-                    vector_len);
+                    port->width);
         }
 
         if (port->direction) {
@@ -1996,15 +2017,19 @@ check_pdo_configuration(SimStruct *S, struct ecat_slave *slave)
 
         if (!pdo->sm) {
             if (pdo->use_count) {
-                //pdo->sm_idx = find_sync_manager(slave, pdo);
+                /* Try to assign a SyncManager to the PDO */
+
                 uint_T pdo_sm_dir = 
                     pdo->direction ? EC_SM_OUTPUT : EC_SM_INPUT;
+                uint_T sm_dir_count = pdo->direction 
+                    ? slave->output_sm_count : slave->input_sm_count;
+
                 for (sm = slave->sync_manager; 
                         sm != slave->sync_manager_end; sm++ ) {
                     if (sm->virtual != pdo->virtual 
                             || sm->direction != pdo_sm_dir)
                         continue;
-                    if (sm->dir_count == 1) {
+                    if (1 == sm_dir_count) {
                         pdo->sm = sm;
                         pr_info(slave, ctxt, "", 1,
                                 "Automatically assigning SyncManager %u "
@@ -2013,12 +2038,12 @@ check_pdo_configuration(SimStruct *S, struct ecat_slave *slave)
                         break;
                     }
                     pr_error(slave, ctxt, "", __LINE__,
-                            "Pdo #x%04X did was not assigned a SyncManager "
-                            "neither in the EtherCATInfo nor using "
+                            "Pdo #x%04X was neither assigned a SyncManager "
+                            "in the EtherCATInfo nor using "
                             "the custom SmAssignment option.\n"
                             "Since the slave has %u %s SyncManagers "
                             "an automatic choice is not possible",
-                            pdo->index, sm->dir_count, 
+                            pdo->index, sm_dir_count, 
                             (sm->direction == EC_SM_INPUT 
                              ? "input" : "output"));
                     return -1;
@@ -2045,11 +2070,12 @@ check_pdo_configuration(SimStruct *S, struct ecat_slave *slave)
         for (pdoX = slave->pdo; pdoX != pdo; pdoX++) {
             uint_T *exclude_pdo;
 
-            if (pdoX->exclude_from_config);
+            if (pdoX->exclude_from_config)
                 continue;
 
             for (exclude_pdo = pdoX->exclude_index;
                     exclude_pdo != pdoX->exclude_index_end; exclude_pdo++) {
+
                 if (pdo->index == *exclude_pdo) {
                     char_T msg[100];
 
@@ -2058,10 +2084,10 @@ check_pdo_configuration(SimStruct *S, struct ecat_slave *slave)
                             "exclude each other.", pdo->index, pdoX->index);
 
                     if (pdoX->use_count && pdo->use_count) {
-                        snprintf(errmsg, sizeof(errmsg),
-                                "Problem %s: Both are in use. Check the "
+                        pr_error(slave, ctxt, "", __LINE__,
+                                "%s\n"
+                                "Both are in use. Check the "
                                 "slave's configuration.", msg);
-                        ssSetErrorStatus(S, errmsg);
                         return -1;
 
                     }
@@ -2085,12 +2111,11 @@ check_pdo_configuration(SimStruct *S, struct ecat_slave *slave)
 
                         pr_warn(slave, "PDO Configuration Check", "",
                                 __LINE__,
-                                "Pdo #x%04X and #x%04X mutually exclude "
-                                "each other.\n"
+                                "%s\n"
                                 "Because PDO #x%04X is unused "
                                 "it will be deselected automatically. "
                                 "This may cause problems.\n",
-                                pdoX->index, pdo->index,
+                                msg,
                                 pdoX->use_count ? pdo->index : pdoX->index);
 
                         /* Setting the unique flag so that this automatic
@@ -2260,7 +2285,7 @@ static void mdlSetInputPortWidth(SimStruct *S, int_T port, int_T width)
                 break;
         }
     }
-    set_io_port_width(S, slave, port-1, width);
+    set_io_port_width(S, slave, port_idx-1, width);
 }
 
 /* This function is called when some ports are still DYNAMICALLY_SIZED

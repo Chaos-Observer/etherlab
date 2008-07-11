@@ -83,9 +83,9 @@
   %addtorecord block BlockSampleTime LibBlockSampleTime(block)
 
   %assign rv1 = GetRollVars1(5)
-%assign rv2 = GetRollVars2(5)
+%%assign rv2 = GetRollVars2(5)
 
-%trace XXXXXXXXXXXXX %<rv1> %<rv2>
+%%trace XXXXXXXXXXXXX %<rv1> %<rv2>
 
 %endfunction
 
@@ -156,9 +156,11 @@
   /* %<Type> Block: %<Name> */
   %%
   %foreach idx = SIZE(IOPortSpec,0)
+    %%
     %if IOPortSpec[idx][PortSpecDir] != 0
       %continue
     %endif
+    %%
     %assign port = IOPortSpec[idx][PortSpecPortIdx]
     %%
     /* Output Port %<port+1> */
@@ -209,7 +211,7 @@
   %endif
 
   %if IOPortSpec[idx][PortSpecBitLen]
-    %addtorecord RollVars BitOp "<iwork>/BitOp"
+    %addtorecord RollVars BitOffset "<iwork>/BitOffset"
   %endif
 
   %if PDOFullScale[idx] && FilterEnvironment
@@ -250,6 +252,11 @@
   %%
   %if BlockSampleTime && FilterCount
     %foreach idx = SIZE(IOPortSpec,0)
+      %%
+      %if IOPortSpec[idx][PortSpecDir] != 0
+        %continue
+      %endif
+      %%
       %<WriteFilter(block,idx)>
     %endforeach
   %endif
@@ -260,6 +267,11 @@
   %%
   %%
   %foreach idx = SIZE(IOPortSpec,0)
+    %%
+    %if !IOPortSpec[idx][PortSpecDir]
+      %continue
+    %endif
+    %%
     %assign port = IOPortSpec[idx][PortSpecPortIdx]
     %%
     %if !LibBlockInputSignalConnected(port)
@@ -295,7 +307,10 @@
         %%
 
         value = %<GetInputValue(idx,lcv,sigIdx)>;
-        value = value > %<max> ? %<max> : (value < %<min> ? %<min> : value);
+        value = \
+        %<SPRINTF("value > %.1f ? %.1f : (value < %.1f ? %.1f : value);",...
+                max, max, min, min)>
+        %%value = value > %<max> ? %<max> : (value < %<min> ? %<min> : value);
         %<dst> = %<GetRHS(idx,"(%<PdoDType>)value",dst,lcv,sigIdx)>;
       %endroll
       }
@@ -339,6 +354,11 @@
      * Continuous low pass filter
      */
     %foreach idx = SIZE(IOPortSpec,0)
+      %%
+      %if IOPortSpec[idx][PortSpecDir] != 0
+        %continue
+      %endif
+      %%
       %<WriteFilter(block,idx)>
     %endforeach
   %endif
@@ -428,7 +448,7 @@
     %assign IWorkIdx = sigIdx + IOPortSpec[idx][PortSpecIWork]
     %assign IWorkLcv = ...
           (lcv != "" && IWorkIdx) ? "%<lcv>+%<IWorkIdx>" : lcv
-    %assign shift = LibBlockIWork(BitOffset,"","",IWorkIdx)
+    %assign shift = LibBlockIWork(BitOffset,"",IWorkLcv,IWorkIdx)
     %assign mask = (1U << IOPortSpec[idx][PortSpecBitLen]) - 1
     %return "(%<dst> & ~(%<mask><<%<shift>)) \
         | (%<src> & %<mask>)<<%<shift>"
@@ -465,7 +485,7 @@
   %endif
 
   %if PDOFullScale[idx]
-    %assign src = "%<PDOFullScale[idx]> * %<src>"
+    %assign src = SPRINTF("%.1f * %s", PDOFullScale[idx], src)
   %endif
 
   %return src
@@ -497,7 +517,7 @@
     %assign IWorkIdx = sigIdx + IOPortSpec[idx][PortSpecIWork]
     %assign IWorkLcv = ...
           (lcv != "" && IWorkIdx) ? "%<lcv>+%<IWorkIdx>" : lcv
-    %assign shift = LibBlockIWork(BitOffset,"","",IWorkIdx)
+    %assign shift = LibBlockIWork(BitOffset,"",IWorkLcv,IWorkIdx)
     %assign mask = (1U << IOPortSpec[idx][PortSpecBitLen]) - 1
     %assign src = "%<src> >> %<shift> & %<mask>"
   %endif
@@ -506,10 +526,12 @@
     %return src
   %endif
 
+  %assign fs = SPRINTF("%.1f", PDOFullScale[idx])
+
   %if IOPortSpec[idx][PortSpecBitLen]
-    %assign src = "(%<src>) / %<PDOFullScale[idx]>"
+    %assign src = "(%<src>) / %<fs>"
   %else
-    %assign src = "%<src> / %<PDOFullScale[idx]>"
+    %assign src = "%<src> / %<fs>"
   %endif
 
   %if IOPortSpec[idx][PortSpecGainCount]
@@ -561,7 +583,6 @@
   %assign sdo_config.count = SIZE(SdoConfig,0)
   %assign sdo_config.id = "sdo_config_%<EtherCATSlaveId>"
 
-%trace %<SdoConfig>
   %openfile buf
 
   /* SDO Configuration for Block: %<Name> */
@@ -673,8 +694,13 @@
 %% 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-  %assign suffix = SPRINTF("%x_%08x_%08x_%u", ...
-                VendorId, ProductCode, RevisionNo, LayoutVersion)
+  %if UniqueConfig
+    %assign suffix = EtherCATSlaveId
+  %else
+    %assign suffix = SPRINTF("%x_%08x_%08x_%u", ...
+                  VendorId, ProductCode, RevisionNo, LayoutVersion)
+  %endif
+
   %assign varName = "sync_manager_%<suffix>"
   %if ISFIELD(CompiledModel.EtherCAT.PDOMap,varName)
     %return GETFIELD(CompiledModel.EtherCAT.PDOMap, varName)
