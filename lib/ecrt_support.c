@@ -675,6 +675,7 @@ ecs_reg_slave(
      * domain depending on whether it is an input or output */
     slave->pdo_map_count = pdo_count;
     for (i = 0; i < pdo_count; i++) {
+        struct ecat_domain *domain;
         pr_debug("Doing pdo_mapping %i\n", i);
         slave->mapped_pdo[i].mapping = &pdo_map[i];
         switch (pdo_map[i].dir) {
@@ -689,10 +690,9 @@ ecs_reg_slave(
                         return errmsg;
                     }
                 }
-                slave->mapped_pdo[i].domain = input_domain;
-                input_domain->io_count +=
-                    get_addr_incr(pdo_map[i].pdo_datatype) > 1
-                    ? pdo_map[i].vector_len : 0;
+                domain = input_domain;
+                pr_debug("Selecting Input Domain for PDO Entry #x%04X\n",
+                        pdo_map[i].pdo_entry_index);
                 break;
 
             /* PDO Output as seen by the slave, i.e. block outputs. The
@@ -706,15 +706,18 @@ ecs_reg_slave(
                         return errmsg;
                     }
                 }
-                slave->mapped_pdo[i].domain = output_domain;
-                output_domain->io_count +=
-                    get_addr_incr(pdo_map[i].pdo_datatype) > 1
-                    ? pdo_map[i].vector_len : 0;
+                domain = output_domain;
+                pr_debug("Selecting Output Domain for PDO Entry #x%04X\n",
+                        pdo_map[i].pdo_entry_index);
                 break;
 
             default:
                 return "Unknown PDO Direction encountered.";
         }
+        slave->mapped_pdo[i].domain = domain;
+        domain->io_count +=
+            get_addr_incr(pdo_map[i].pdo_datatype) > 1
+            ? pdo_map[i].vector_len : 0;
     }
 
     return NULL;
