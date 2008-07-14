@@ -19,8 +19,7 @@ dist_blocks_DATA = \
         world_time.c world_time.tlc \
         etherlab_in.c etherlab_in.tlc \
         EtherLAB_IO.tlc \
-        etherlab_out.c etherlab_out.tlc \
-        ss_analog_in_funcs.c
+        etherlab_out.c etherlab_out.tlc
 
 blocks_DATA = setup.m
 if EXPERIMENTAL

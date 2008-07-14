@@ -1,5 +1,5 @@
 
-SUBDIRS = xml @EtherCATDevice @EtherCATInfo
+SUBDIRS = xml @EtherCATInfo
 
 ethercatdir = $(prefix)/$(subdir)
 
@@ -10,20 +10,9 @@ dist_ethercat_DATA = \
         el31xx_check.m \
         el5001_check.m \
         el5101_check.m \
-        getEtherCATLocation.m getSlaveDescription.m \
-        getEtherCATInfo.m \
         fromHexString.m \
         getEtherCATAddress.m \
-        ec_slave.c ec_slave.tlc \
-        ec_slave2.c ec_slave2.tlc \
-        EtherCATInfo_ekxxxx.mat \
-        EtherCATInfo_el1xxx.mat \
-        EtherCATInfo_el2xxx.mat \
-        EtherCATInfo_el3xxx.mat \
-        EtherCATInfo_el4xxx.mat \
-        EtherCATInfo_el5xxx.mat \
-        EtherCATInfo_el6xxx.mat \
-        EtherCATInfo_el9xxx.mat
+        ec_slave2.c ec_slave2.tlc
 
 if EXPERIMENTAL
 dist_ethercat_DATA += 
