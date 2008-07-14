@@ -485,10 +485,10 @@ struct ecat_slave {
      * parameters are exported in the C-API */
     uint_T runtime_param_count;
 
-    /* RWork  used to store parameters where no name was
+    /* Constants  used to store parameters where no name was
      * supplied for gain_name, offset_name and filter_name. These
      * parameters are not exported in the C-API */
-    uint_T rwork_count;
+    uint_T constant_count;
 
     uint_T filter_count;
 };
@@ -1984,25 +1984,25 @@ set_io_port_width(SimStruct *S, struct ecat_slave *slave,
 
     if (port->gain_count) {
         if (port->gain_name)
-            slave->runtime_param_count += width;
+            slave->runtime_param_count += port->gain_count;
         else {
-            slave->rwork_count += width;
+            slave->constant_count += port->gain_count;
         }
     }
 
     if (port->offset_count) {
         if (port->offset_name)
-            slave->runtime_param_count += width;
+            slave->runtime_param_count += port->offset_count;
         else {
-            slave->rwork_count += width;
+            slave->constant_count += port->offset_count;
         }
     }
 
     if (port->filter_count) {
         if (port->filter_name)
-            slave->runtime_param_count += width;
+            slave->runtime_param_count += port->filter_count;
         else {
-            slave->rwork_count += width;
+            slave->constant_count += port->filter_count;
         }
     }
 
@@ -2359,7 +2359,6 @@ static void mdlSetWorkWidths(SimStruct *S)
 
     ssSetNumPWork(S, slave->pwork_count);
     ssSetNumIWork(S, slave->iwork_count);
-    ssSetNumRWork(S, slave->rwork_count);
 
     if (slave->have_mixed_port_widths) {
         int_T port_idx = 0;
@@ -2500,9 +2499,9 @@ static void mdlRTW(SimStruct *S)
     struct ecat_slave *slave = ssGetUserData(S);
     uint_T pwork_index = 0;
     uint_T iwork_index = 0;
-    uint_T rwork_index = 0;
+    uint_T const_index = 0;
     uint_T filter_index = 0;
-    real_T rwork_vector[slave->rwork_count];
+    real_T const_vector[slave->constant_count];
 
     /* General assignments of array indices that form the basis for
      * the S-Function <-> TLC communication
@@ -2516,12 +2515,12 @@ static void mdlRTW(SimStruct *S)
         PortSpecBitLen, 		/* 4 */
         PortSpecIWork,                  /* 5 */
         PortSpecGainCount,              /* 6 */
-        PortSpecGainRWorkIdx,           /* 7 */
+        PortSpecGainConstIdx,           /* 7 */
         PortSpecOffsetCount,            /* 8 */
-        PortSpecOffsetRWorkIdx,         /* 9 */
+        PortSpecOffsetConstIdx,         /* 9 */
         PortSpecFilterCount,            /* 10 */
         PortSpecFilterIdx,              /* 11 */
-        PortSpecFilterRWorkIdx,         /* 12 */
+        PortSpecFilterConstIdx,         /* 12 */
         PortSpecMax                     /* 13 */
     };
     enum {
@@ -2716,17 +2715,15 @@ static void mdlRTW(SimStruct *S)
                 port_spec[PortSpecGainCount][port_idx] =
                     port->gain_count;
                 if (port->gain_name) {
-                    port_spec[PortSpecGainRWorkIdx][port_idx] = -1;
+                    port_spec[PortSpecGainConstIdx][port_idx] = -1;
                     gain_name_ptr[port_idx] = port->gain_name;
                 }
                 else {
-                    memcpy(rwork_vector + rwork_index, port->gain_values,
-                            sizeof(*rwork_vector) * port->gain_count);
-                    port_spec[PortSpecGainRWorkIdx][port_idx] =
-                        rwork_index;
-                    rwork_index += port->gain_count;
-                    gain_name_ptr[port_idx] = port->gain_count == 1
-                        ? NULL : "<rwork>/NonTuneableParam";
+                    memcpy(const_vector + const_index, port->gain_values,
+                            sizeof(*const_vector) * port->gain_count);
+                    port_spec[PortSpecGainConstIdx][port_idx] =
+                        const_index;
+                    const_index += port->gain_count;
                 }
             }
 
@@ -2734,17 +2731,15 @@ static void mdlRTW(SimStruct *S)
                 port_spec[PortSpecOffsetCount][port_idx] =
                     port->offset_count;
                 if (port->offset_name) {
-                    port_spec[PortSpecOffsetRWorkIdx][port_idx] = -1;
+                    port_spec[PortSpecOffsetConstIdx][port_idx] = -1;
                     offset_name_ptr[port_idx] = port->offset_name;
                 }
                 else {
-                    memcpy(rwork_vector + rwork_index, port->offset_values,
-                            sizeof(*rwork_vector) * port->offset_count);
-                    port_spec[PortSpecOffsetRWorkIdx][port_idx] =
-                        rwork_index;
-                    rwork_index += port->offset_count;
-                    offset_name_ptr[port_idx] = port->offset_count == 1
-                        ? NULL : "<rwork>/NonTuneableParam";
+                    memcpy(const_vector + const_index, port->offset_values,
+                            sizeof(*const_vector) * port->offset_count);
+                    port_spec[PortSpecOffsetConstIdx][port_idx] =
+                        const_index;
+                    const_index += port->offset_count;
                 }
             }
 
@@ -2754,17 +2749,15 @@ static void mdlRTW(SimStruct *S)
                 port_spec[PortSpecFilterIdx][port_idx] = filter_index;
                 filter_index += port->filter_count;
                 if (port->filter_name) {
-                    port_spec[PortSpecFilterRWorkIdx][port_idx] = -1;
+                    port_spec[PortSpecFilterConstIdx][port_idx] = -1;
                     filter_name_ptr[port_idx] = port->filter_name;
                 }
                 else {
-                    memcpy(rwork_vector + rwork_index, port->filter_values,
-                            sizeof(*rwork_vector) * port->filter_count);
-                    port_spec[PortSpecFilterRWorkIdx][port_idx] =
-                        rwork_index;
-                    rwork_index += port->filter_count;
-                    filter_name_ptr[port_idx] = port->filter_count == 1
-                        ? NULL : "<rwork>/NonTuneableParam";
+                    memcpy(const_vector + const_index, port->filter_values,
+                            sizeof(*const_vector) * port->filter_count);
+                    port_spec[PortSpecFilterConstIdx][port_idx] =
+                        const_index;
+                    const_index += port->filter_count;
                 }
             }
 
@@ -2833,16 +2826,13 @@ static void mdlRTW(SimStruct *S)
                 "FilterCount", &slave->filter_count, SS_UINT32))
         return;
 
-    if (!ssWriteRTWVectParam(S, "RWorkValues",
-                rwork_vector, SS_DOUBLE, slave->rwork_count))
+    if (!ssWriteRTWVectParam(S, "ConstantValues",
+                const_vector, SS_DOUBLE, slave->constant_count))
         return;
 
     if (!ssWriteRTWWorkVect(S, "IWork", 1, "BitOffset", slave->iwork_count))
         return;
     if (!ssWriteRTWWorkVect(S, "PWork", 1, "DataPtr", slave->pwork_count))
-        return;
-    if (!ssWriteRTWWorkVect(S, "RWork", 1, "NonTuneableParam",
-                slave->rwork_count))
         return;
 }
 

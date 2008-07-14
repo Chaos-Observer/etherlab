@@ -38,12 +38,12 @@
   %assign ::PortSpecBitLen              = 4
   %assign ::PortSpecIWork               = 5
   %assign ::PortSpecGainCount           = 6
-  %assign ::PortSpecGainRWorkIdx        = 7
+  %assign ::PortSpecGainConstIdx        = 7
   %assign ::PortSpecOffsetCount         = 8
-  %assign ::PortSpecOffsetRWorkIdx      = 9
+  %assign ::PortSpecOffsetConstIdx      = 9
   %assign ::PortSpecFilterCount         = 10
   %assign ::PortSpecFilterIdx           = 11
-  %assign ::PortSpecFilterRWorkIdx      = 12
+  %assign ::PortSpecFilterConstIdx      = 12
 
   %assign ::PdoEntryIndex               = 0
   %assign ::PdoEntrySubIndex            = 1
@@ -82,7 +82,12 @@
 
   %addtorecord block BlockSampleTime LibBlockSampleTime(block)
 
+  %addtorecord block ConstantIdent WriteConstants(block)
+
   %assign rv1 = GetRollVars1(5)
+
+  %return
+
 %%assign rv2 = GetRollVars2(5)
 
 %%trace XXXXXXXXXXXXX %<rv1> %<rv2>
@@ -216,18 +221,14 @@
 
   %if PDOFullScale[idx] && FilterEnvironment
     %if IOPortSpec[idx][PortSpecGainCount]
-      %if IOPortSpec[idx][PortSpecGainRWorkIdx] == -1
+      %if IOPortSpec[idx][PortSpecGainConstIdx] == -1
         %addtorecord RollVars Gain "<param>/%<GainName[idx]>"
-      %elseif IOPortSpec[idx][PortSpecGainCount] > 1
-        %addtorecord RollVars Gain "<rwork>/NonTuneableParam"
       %endif
     %endif
 
     %if !IOPortSpec[idx][PortSpecDir] && IOPortSpec[idx][PortSpecOffsetCount]
-      %if IOPortSpec[idx][PortSpecOffsetRWorkIdx] == -1
+      %if IOPortSpec[idx][PortSpecOffsetConstIdx] == -1
         %addtorecord RollVars Offset "<param>/%<OffsetName[idx]>"
-      %elseif IOPortSpec[idx][PortSpecOffsetCount] > 1
-        %addtorecord RollVars Offset "<rwork>/NonTuneableParam"
       %endif
     %endif
   %endif
@@ -394,17 +395,20 @@
     %%
     %assign u0 = GetSrc(idx,lcv,sigIdx,0)
     %%
-    %if IOPortSpec[idx][PortSpecFilterRWorkIdx] == -1
+    %if IOPortSpec[idx][PortSpecFilterConstIdx] == -1
       %assign k  = ...
             LibBlockParameter(%<FilterName[idx]>,"",lcv,sigIdx)
     %else
       %if IOPortSpec[idx][PortSpecFilterCount] == 1
-        %assign gain = RWorkValues[IOPortSpec[idx][PortSpecFilterRWorkIdx]]
+        %assign gain = ConstantValues[IOPortSpec[idx][PortSpecFilterConstIdx]]
       %else
-        %assign RWorkIdx = sigIdx + IOPortSpec[idx][PortSpecFilterRWorkIdx]
-        %assign RWorkLcv = ...
-              (lcv != "" && RWorkIdx) ? "%<lcv>+%<RWorkIdx>" : lcv
-        %assign k = LibBlockRWork(NonTuneableParam,"",RWorkLcv,RWorkIdx)
+        %assign ConstIdx = sigIdx + IOPortSpec[idx][PortSpecFilterConstIdx]
+        %if lcv == ""
+          %assign k = "%<ConstantValues[ConstIdx]>"
+        %else
+          %assign ConstIdx = ConstIdx ? "%<lcv>+<ConstIdx>" : lcv
+          %assign k = "%<ConstantIdent>[%<ConstIdx>]"
+        %endif
       %endif
     %endif
     %%
@@ -468,17 +472,20 @@
   %assign src = LibBlockInputSignal(port,"",lcv,sigIdx)
 
   %if IOPortSpec[idx][PortSpecGainCount]
-    %if IOPortSpec[idx][PortSpecGainRWorkIdx] == -1
+    %if IOPortSpec[idx][PortSpecGainConstIdx] == -1
       %assign gain = LibBlockParameter(...
                 %<GainName[idx]>,"",lcv,sigIdx)
     %else
       %if IOPortSpec[idx][PortSpecGainCount] == 1
-        %assign gain = RWorkValues[IOPortSpec[idx][PortSpecGainRWorkIdx]]
+        %assign gain = ConstantValues[IOPortSpec[idx][PortSpecGainConstIdx]]
       %else
-        %assign RWorkIdx = sigIdx + IOPortSpec[idx][PortSpecGainRWorkIdx]
-        %assign RWorkLcv = ...
-              (lcv != "" && RWorkIdx) ? "%<lcv>+%<RWorkIdx>" : lcv
-        %assign gain = LibBlockRWork(NonTuneableParam,"",RWorkLcv,RWorkIdx)
+        %assign ConstIdx = sigIdx + IOPortSpec[idx][PortSpecGainConstIdx]
+        %if lcv == ""
+          %assign gain = "%<ConstantValues[ConstIdx]>"
+        %else
+          %assign ConstIdx = ConstIdx ? "%<lcv>+<ConstIdx>" : lcv
+          %assign gain = "%<ConstantIdent>[%<ConstIdx>]"
+        %endif
       %endif
     %endif
     %assign src = "%<gain> * %<src>"
@@ -535,34 +542,40 @@
   %endif
 
   %if IOPortSpec[idx][PortSpecGainCount]
-    %if IOPortSpec[idx][PortSpecGainRWorkIdx] == -1
+    %if IOPortSpec[idx][PortSpecGainConstIdx] == -1
       %assign gain = LibBlockParameter(...
                 %<GainName[idx]>,"",lcv,sigIdx)
     %else
       %if IOPortSpec[idx][PortSpecGainCount] == 1
-        %assign gain = RWorkValues[IOPortSpec[idx][PortSpecGainRWorkIdx]]
+        %assign gain = ConstantValues[IOPortSpec[idx][PortSpecGainConstIdx]]
       %else
-        %assign RWorkIdx = sigIdx + IOPortSpec[idx][PortSpecGainRWorkIdx]
-        %assign RWorkLcv = ...
-              (lcv != "" && RWorkIdx) ? "%<lcv>+%<RWorkIdx>" : lcv
-        %assign gain = LibBlockRWork(NonTuneableParam,"",RWorkLcv,RWorkIdx)
+        %assign ConstIdx = sigIdx + IOPortSpec[idx][PortSpecGainConstIdx]
+        %if lcv == ""
+          %assign gain = "%<ConstantValues[ConstIdx]>"
+        %else
+          %assign ConstIdx = ConstIdx ? "%<lcv>+<ConstIdx>" : lcv
+          %assign gain = "%<ConstantIdent>[%<ConstIdx>]"
+        %endif
       %endif
     %endif
     %assign src = "%<gain> * %<src>"
   %endif
 
   %if IOPortSpec[idx][PortSpecOffsetCount]
-    %if IOPortSpec[idx][PortSpecOffsetRWorkIdx] == -1
+    %if IOPortSpec[idx][PortSpecOffsetConstIdx] == -1
       %assign offset = LibBlockParameter(...
                 %<OffsetName[idx]>,"",lcv,sigIdx)
     %else
       %if IOPortSpec[idx][PortSpecOffsetCount] == 1
-        %assign offset = RWorkValues[IOPortSpec[idx][PortSpecOffsetRWorkIdx]]
+        %assign offset = ConstantValues[IOPortSpec[idx][PortSpecOffsetConstIdx]]
       %else
-        %assign RWorkIdx = sigIdx + IOPortSpec[idx][PortSpecOffsetRWorkIdx]
-        %assign RWorkLcv = ...
-              (lcv != "" && RWorkIdx) ? "%<lcv>+%<RWorkIdx>" : lcv
-        %assign offset = LibBlockRWork(NonTuneableParam,"",RWorkLcv,RWorkIdx)
+        %assign ConstIdx = sigIdx + IOPortSpec[idx][PortSpecOffsetConstIdx]
+        %if lcv == ""
+          %assign offset = "%<ConstantValues[ConstIdx]>"
+        %else
+          %assign ConstIdx = ConstIdx ? "%<lcv>+<ConstIdx>" : lcv
+          %assign offset = "%<ConstantIdent>[%<ConstIdx>]"
+        %endif
       %endif
     %endif
     %assign src = "%<src> + %<offset>"
@@ -602,6 +615,33 @@
 
   %return sdo_config
 
+%endfunction
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function WriteConstants(block)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  %assign ConstantCount = SIZE(ConstantValues,1)
+
+  %if !ConstantCount
+    %return "NULL"
+  %endif
+
+  %assign ident = "constant_slave_%<EtherCATSlaveId>"
+
+  %openfile buf
+    /* Constant values for %<Type> Block: %<Name>  */
+    real_T %<ident> = { 
+      %foreach idx = ConstantCount
+        %<ConstantValues[idx]>, \
+      %endforeach
+
+    };
+  %closefile buf
+  %<LibSetSourceFileSection(CompiledModel.EtherCAT.model_c, \
+        "Definitions", buf)>
+
+  %return ident
 %endfunction
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
