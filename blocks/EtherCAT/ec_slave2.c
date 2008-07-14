@@ -764,7 +764,8 @@ not_available:
     if (!dflt || !(len = strlen(dflt))) {
         *dest = NULL;
         if (!len) {
-            pr_error(slave, p_ctxt, field_name, line_no, "Default string is empty");
+            pr_error(slave, p_ctxt, field_name, line_no,
+                    "Default string is empty");
             return -1;
         }
         else {
@@ -865,8 +866,8 @@ get_sync_manager(SimStruct *S, const char_T *p_ctxt,
         unsigned int control_byte;
         real_T val;
 
-        RETURN_ON_ERROR(rc = get_numeric_field(slave, p_ctxt, __LINE__, sm_info, sm_idx,
-                    1, 1, "Virtual", &val));
+        RETURN_ON_ERROR(rc = get_numeric_field(slave, p_ctxt, __LINE__,
+                    sm_info, sm_idx, 1, 1, "Virtual", &val));
 
         pr_debug(slave, NULL, "", indent_level+1,
                 "Sm Index %u ", sm_idx);
@@ -883,8 +884,8 @@ get_sync_manager(SimStruct *S, const char_T *p_ctxt,
             continue;
         }
 
-        RETURN_ON_ERROR(rc = get_numeric_field(slave, p_ctxt, __LINE__, sm_info, sm_idx,
-                    1, 1, "ControlByte", &val));
+        RETURN_ON_ERROR(rc = get_numeric_field(slave, p_ctxt, __LINE__,
+                    sm_info, sm_idx, 1, 1, "ControlByte", &val));
 
         if (rc && !sm->virtual) {
             /* SyncManager does not have a ControlByte and is not Virtual.
@@ -1067,9 +1068,8 @@ get_slave_pdo(struct ecat_slave *slave,
 
         snprintf(context, sizeof(context), "%s(%u)", dir_str, pdo_idx+1);
 
-        RETURN_ON_ERROR(get_numeric_field(slave, p_ctxt, __LINE__, pdo_info, pdo_idx,
-                    1, 0, "Index", &val));
-        pdo->index = val;
+        RETURN_ON_ERROR(get_numeric_field(slave, p_ctxt, __LINE__, pdo_info,
+                    pdo_idx, 1, 0, "Index", &val)); pdo->index = val;
         pdo->direction = pdo_dir;
 
         pr_debug(slave, p_ctxt, context, indent_level,
@@ -1080,8 +1080,8 @@ get_slave_pdo(struct ecat_slave *slave,
                     pdo_info, pdo_idx, 1, 1, "Virtual", &val));
         pdo->virtual = val > 0.0;
 
-        switch (get_numeric_field(slave, p_ctxt, __LINE__, pdo_info, pdo_idx, 1, 1,
-                    "Mandatory", &val)) {
+        switch (get_numeric_field(slave, p_ctxt, __LINE__, pdo_info, pdo_idx,
+                    1, 1, "Mandatory", &val)) {
             case 0:
                 pdo->mandatory = val;
                 break;
@@ -1189,11 +1189,12 @@ get_slave_pdo(struct ecat_slave *slave,
 
                 RETURN_ON_ERROR(get_numeric_field(slave, p_ctxt, __LINE__,
                             pdo_entry_info, entry_idx, 0, 0, "DataType",
-                            &val));
+                            &val)); 
                 pdo_entry->datatype = val;
-                RETURN_ON_ERROR(get_data_type(slave, p_ctxt, context, __LINE__,
-                            pdo_entry->datatype, &dummy_datatype, 0, 0));
-                pr_debug(slave, NULL, "", indent_level+1,
+                RETURN_ON_ERROR(get_data_type(slave, p_ctxt, context, 
+                            __LINE__, pdo_entry->datatype, &dummy_datatype,
+                            0, 0));
+                pr_debug(slave, NULL, "", indent_level+1, 
                         "Found PDO Entry Index #x%04X, SubIndex #x%02X, "
                         "BitLen %u, DataType %i\n",
                         pdo_entry->index, pdo_entry->subindex,
@@ -1246,8 +1247,8 @@ get_ethercat_info(struct ecat_slave *slave)
             "--------------- Parsing EtherCATInfo ------------\n");
 
     context = "EtherCATInfo.Vendor";
-    RETURN_ON_ERROR(get_numeric_field(slave, context, __LINE__, vendor, 0, 0, 0,
-                "Id", &val));
+    RETURN_ON_ERROR(get_numeric_field(slave, context, __LINE__, vendor,
+                0, 0, 0, "Id", &val));
     slave->vendor_id = val;
 
     context = "EtherCATInfo.Descriptions.Devices.Device.Type";
@@ -1285,8 +1286,10 @@ get_ethercat_info(struct ecat_slave *slave)
             sizeof(struct pdo), slave->pdo);
     slave->pdo_end = slave->pdo;
 
-    RETURN_ON_ERROR(get_slave_pdo(slave, context, 1, rx_pdo, rx_pdo_count, 1, "RxPdo"));
-    RETURN_ON_ERROR(get_slave_pdo(slave, context, 1, tx_pdo, tx_pdo_count, 0, "TxPdo"));
+    RETURN_ON_ERROR(get_slave_pdo(slave, context, 1,
+                rx_pdo, rx_pdo_count, 1, "RxPdo"));
+    RETURN_ON_ERROR(get_slave_pdo(slave, context, 1,
+                tx_pdo, tx_pdo_count, 0, "TxPdo"));
 
     return 0;
 }
@@ -1457,8 +1460,8 @@ get_pdo_config(struct ecat_slave *slave,
     snprintf(ctxt, sizeof(ctxt), "%s.Pdo", p_ctxt);
 
     val = 0.0;
-    RETURN_ON_ERROR(rc = get_numeric_field(slave, ctxt, __LINE__, pdo_spec, 0, 1, 1,
-                "Variant", &val));
+    RETURN_ON_ERROR(rc = get_numeric_field(slave, ctxt, __LINE__,
+                pdo_spec, 0, 1, 1, "Variant", &val));
     slave->pdo_configuration_variant = val;
     if (!rc) {
         pr_debug(slave, ctxt, "Variant", 1, "Configuration variant %u\n",
@@ -1466,8 +1469,8 @@ get_pdo_config(struct ecat_slave *slave,
     }
 
     val = 0.0;
-    RETURN_ON_ERROR(get_numeric_field(slave, ctxt, __LINE__, pdo_spec, 0, 1, 1,
-                "Unique", &val));
+    RETURN_ON_ERROR(get_numeric_field(slave, ctxt, __LINE__,
+                pdo_spec, 0, 1, 1, "Unique", &val));
     slave->unique_config = val != 0.0;
     if (slave->unique_config) {
         pr_debug(slave, ctxt, "Unique", 1,
@@ -1728,12 +1731,14 @@ get_ioport_config(SimStruct *S, struct ecat_slave *slave)
                 snprintf(struct_ctxt, sizeof(struct_ctxt),
                         "%s.%s", port_ctxt, pdo_entry_array_ctxt);
 
-                RETURN_ON_ERROR(get_numeric_field(slave, struct_ctxt, __LINE__,
+                RETURN_ON_ERROR(get_numeric_field(
+                            slave, struct_ctxt, __LINE__,
                             pdo_entry_spec, pdo_entry_idx, 0, 0,
                             "PdoEntryIndex", &val));
                 pdo_entry_index = val;
 
-                RETURN_ON_ERROR(get_numeric_field(slave, struct_ctxt, __LINE__,
+                RETURN_ON_ERROR(get_numeric_field(
+                            slave, struct_ctxt, __LINE__,
                             pdo_entry_spec, pdo_entry_idx, 0, 0,
                             "PdoEntrySubIndex", &val));
                 pdo_entry_subindex = val;
@@ -1887,11 +1892,13 @@ get_ioport_config(SimStruct *S, struct ecat_slave *slave)
 
             /* No offset and filter for input ports */
             if (!port->direction) {
-                RETURN_ON_ERROR(port->offset_count = get_parameter_values(slave,
+                RETURN_ON_ERROR(
+                        port->offset_count = get_parameter_values(slave,
                             pdo_entry_ctxt, port_spec, io_spec_idx, "Offset",
                             port->width, &port->offset_values,
                             &port->offset_name));
-                RETURN_ON_ERROR(port->filter_count = get_parameter_values(slave,
+                RETURN_ON_ERROR(
+                        port->filter_count = get_parameter_values(slave,
                             pdo_entry_ctxt, port_spec, io_spec_idx, "Filter",
                             port->width, &port->filter_values,
                             &port->filter_name));
