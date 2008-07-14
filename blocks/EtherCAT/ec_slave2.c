@@ -1080,6 +1080,12 @@ get_slave_pdo(struct ecat_slave *slave,
                     pdo_info, pdo_idx, 1, 1, "Virtual", &val));
         pdo->virtual = val > 0.0;
 
+        /* For the moment, it is not known how to handle virtual
+         * SyncManagers and Pdo's. Mark it as explicitly excluded for
+         * the time being */
+        if (pdo->virtual)
+            pdo->exclude_from_config = 1;
+
         switch (get_numeric_field(slave, p_ctxt, __LINE__, pdo_info, pdo_idx,
                     1, 1, "Mandatory", &val)) {
             case 0:
