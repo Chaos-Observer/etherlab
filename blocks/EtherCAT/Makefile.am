@@ -7,6 +7,7 @@ dist_ethercat_DATA = \
         EtherCAT.tlc \
         master_state.c master_state.tlc \
         domain_state.c domain_state.tlc \
+        moog_msd.c moog_msd_callback.m moog_msd.tlc moog.png \
         el31xx_check.m \
         el5001_check.m \
         el5101_check.m \
