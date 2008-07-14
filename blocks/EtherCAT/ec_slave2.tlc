@@ -590,7 +590,7 @@
     %foreach i = sdo_config.count
       { \
       %<GetEtlDTypeName(SdoConfig[i][SdoConfigDataType])>, \
-      %<SdoConfig[i][SdoConfigSubIndex]>, \
+      %<SdoConfig[i][SdoConfigIndex]>, \
       %<SdoConfig[i][SdoConfigSubIndex]>, \
       %<SdoConfig[i][SdoConfigValue]> \
       },
