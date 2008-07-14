@@ -29,34 +29,40 @@
 
 #include <cstddef>
 
+#include "IOBuffer.h"
+
 class Layer {
     public:
-        Layer(size_t preamble, Layer* below = 0);
+        Layer(Layer* below, const std::string& name, size_t headerLen);
         virtual ~Layer();
 
+        void sendName();
+
         /** Called by the layer below to say that the buffer was sent */
-        virtual void transmitted(const char* buf);
+        virtual void finished(const IOBuffer*);
+
+        virtual std::string getHeader(const char* puf, size_t len) const;
+        size_t getHeaderLength() const;
+
+        Layer* getNext() const;
+        Layer* getPrev() const;
 
         /** Called by the layer above to say that the buffer was accepted */
-        virtual void received(const char* buf);
-
-    protected:
-        virtual void pass_down(Layer* client, const char* buf, size_t len);
-        virtual void push_up(Layer* caller, const char* buf, size_t len);
-
-        /** Return how many bytes preamble is necessary for all
-         * layers below */
-        size_t getPreamble() const;
+        virtual bool send(const IOBuffer*);
+        virtual size_t receive(const char* data_ptr, size_t data_len);
 
     private:
-        const size_t preamble;
-
         Layer* const below;
+        const std::string name;
+        const size_t headerLen;
+
+        IOBuffer *nameBuf;
+
         Layer* above;
 
         /** Layers placed above must introduce themselves to the 
          * layer below */
-        void introduce(Layer* above);
+        void introduce(Layer* newLayer);
 };
 
 #endif // LAYER_H

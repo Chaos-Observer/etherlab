@@ -27,25 +27,39 @@
 #include <iostream>
 #include "SocketLayer.h"
 
-SocketLayer::SocketLayer(Task *_parent): Task(_parent), Layer(0)
+////////////////////////////////////////////////////////////////////////
+SocketLayer::SocketLayer(Task *_parent, int _fd): 
+    Task(_parent), Layer(0, "SocketLayer\n", 0), 
+    fd(_fd), bufLen(0), inBuf(this)
 {
     enableRead(fd);
+    sendName();
 }
 
+////////////////////////////////////////////////////////////////////////
 SocketLayer::~SocketLayer()
 {
 }
 
-void SocketLayer::pass_down(Layer* _client, 
-        const char* _buf, size_t _bufLen)
+////////////////////////////////////////////////////////////////////////
+// Method from class Layer
+bool SocketLayer::send(const IOBuffer* buf)
 {
-    wptr = buf = _buf;
-    bufLen = _bufLen;
-    client = _client;
+    sendq.push(buf);
 
-    enableWrite(fd);
+    std::cerr << "queuing " << *buf << std::endl;
+
+    if (!bufLen) {
+        bufLen = buf->length();
+        wptr = buf->c_str();
+        enableWrite(fd);
+    }
+
+    /* return false so that the owner stores the buffer */
+    return false;
 }
 
+////////////////////////////////////////////////////////////////////////
 // Method from class Task
 int SocketLayer::write(int fd)
 {
@@ -58,20 +72,42 @@ int SocketLayer::write(int fd)
 
     bufLen -= len;
     wptr += len;
+
     if (!bufLen) {
-        client->transmitted(buf);
-        disableWrite();
+        const IOBuffer* buf = sendq.front();
+
+        buf->getOwner()->finished(buf);
+        sendq.pop();
+
+        if (sendq.empty()) {
+            disableWrite();
+        }
+        else {
+            buf = sendq.front();
+
+            wptr = buf->c_str();
+            bufLen = buf->length();
+        }
     }
 
     return len;
 }
 
+////////////////////////////////////////////////////////////////////////
+// Method from class Task
 int SocketLayer::read(int fd)
 {
-    return 0;
-}
+    char data[4096];
 
-void SocketLayer::received(const char* buf)
-{
-    delete[] buf;
+    int len = ::read(fd, data, sizeof(data));
+
+    if (len <= 0)
+        return len;
+
+    inBuf.append(data,len);
+    size_t processed = inBuf.receive();
+
+    inBuf.erase(0, processed);
+
+    return len;
 }

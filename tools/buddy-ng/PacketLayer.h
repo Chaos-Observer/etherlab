@@ -24,36 +24,25 @@
  *
  */
 
-#ifndef SOCKETLAYER_H
-#define SOCKETLAYER_H
+#ifndef PACKETLAYER_H
+#define PACKETLAYER_H
 
-#include "Task.h"
 #include "Layer.h"
 
 #include <queue>
 
-class SocketLayer: public Task, public Layer {
+class PacketLayer: public Layer {
     public:
-        SocketLayer(Task *parent, int fd);
-        ~SocketLayer();
+        PacketLayer(Layer* below);
+        ~PacketLayer();
 
     private:
-        const int fd;
-
-        const char* wptr;
-        size_t bufLen;
-
-        typedef std::queue<const IOBuffer*> BufferQ;
-        BufferQ sendq;
-        IOBuffer inBuf;
-
-        /* Method implemented from Task */
-        int read(int fd);
-        int write(int fd);
+        uint32_t packetLen;
 
         /* Methods implemented from Layer */
-        bool send(const IOBuffer*);
+        size_t receive(const char* buf, size_t data_len);
+        std::string getHeader(const char* puf, size_t len) const;
 };
 
-#endif // SOCKETLAYER_H
+#endif // PACKETLAYER_H
 

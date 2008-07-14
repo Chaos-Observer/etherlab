@@ -24,45 +24,28 @@
  *
  */
 
-#include "RTComServer.h"
 #include "RTComProtocol.h"
-#include "ConfigFile.h"
+#include "SocketLayer.h"
+#include "PacketLayer.h"
 
-#include <iostream>
+#undef DEBUG
+//#define DEBUG 1
+
 
 using namespace std;
 
 //************************************************************************
-RTComServer::RTComServer(RTTask* _rtTask): 
-    TCPServerTask(NULL), rtTask(_rtTask)
+RTComProtocol::RTComProtocol(Task* parent, RTTask *_rtTask, int _fd, 
+        unsigned int _buflen, unsigned int _maxbuf): 
+    rtTask(_rtTask)
 //************************************************************************
 {
-    port = ConfigFile::getInt("rtcom", "port", 2500);
-    s_addr = ConfigFile::getString("rtcom", "interface", "0.0.0.0");
-
-    // Open a TCP port
-    open(s_addr.c_str(), port);
-    enableRead(fd);
+    layers.push(new SocketLayer(parent, _fd));
+    layers.push(new PacketLayer(layers.top()));
 }
 
 //************************************************************************
-RTComServer::~RTComServer()
+RTComProtocol::~RTComProtocol()
 //************************************************************************
 {
-}
-
-//************************************************************************
-int RTComServer::read(int)
-//************************************************************************
-{
-    struct sockaddr_in in_addr;
-    socklen_t size = sizeof(in_addr);
-    int new_fd;
-
-    new_fd = SocketServerTask::accept((struct sockaddr*)&in_addr, size);
-    if (new_fd >= 0)
-        new RTComProtocol(this, rtTask, new_fd);
-
-
-    return new_fd;
 }

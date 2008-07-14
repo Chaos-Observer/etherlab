@@ -3,7 +3,7 @@
  * **********************************************************************/
 
 /*
- * @note Copyright (C) 2008 Richard Hacker
+ * Copyright (C) 2008 Richard Hacker
  * <lerichi@gmx.net>
  *
  *  License: GPL
@@ -24,36 +24,26 @@
  *
  */
 
-#ifndef SOCKETLAYER_H
-#define SOCKETLAYER_H
+#ifndef RTCOMPROTOCOL_H
+#define RTCOMPROTOCOL_H
 
-#include "Task.h"
-#include "Layer.h"
+#include <stack>
 
-#include <queue>
+class Layer;
+class Task;
+class RTTask;
 
-class SocketLayer: public Task, public Layer {
+class RTComProtocol {
     public:
-        SocketLayer(Task *parent, int fd);
-        ~SocketLayer();
+        RTComProtocol(Task* parent, RTTask *rtTask, int fd,
+                unsigned int buflen = 4096, unsigned int max_buffers = 0);
+        ~RTComProtocol();
 
     private:
-        const int fd;
+        RTTask* const rtTask;
 
-        const char* wptr;
-        size_t bufLen;
-
-        typedef std::queue<const IOBuffer*> BufferQ;
-        BufferQ sendq;
-        IOBuffer inBuf;
-
-        /* Method implemented from Task */
-        int read(int fd);
-        int write(int fd);
-
-        /* Methods implemented from Layer */
-        bool send(const IOBuffer*);
+        typedef std::stack<Layer*> LayerStack;
+        LayerStack layers;
 };
 
-#endif // SOCKETLAYER_H
-
+#endif // RTCOMPROTOCOL_H

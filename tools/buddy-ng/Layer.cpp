@@ -24,54 +24,86 @@
  *
  */
 
+#include <iostream>
+
+#include "IOBuffer.h"
 #include "Layer.h"
 
-Layer::Layer(size_t _preamble, Layer* _below):
-    preamble(_preamble), below(_below)
+/*****************************************************************/
+Layer::Layer(Layer* _below, const std::string& _name, size_t _headerLen): 
+    below(_below), name(_name), headerLen(_headerLen) 
 {
     if (below)
         below->introduce(this);
 }
 
+/*****************************************************************/
 Layer::~Layer()
 {
     if (below)
         below->introduce(0);
 }
 
-/** Return how many bytes preamble is necessary for all
- * layers below */
-size_t Layer::getPreamble() const
+/*****************************************************************/
+void Layer::sendName()
 {
-    return (below ? below->getPreamble() : 0) + preamble;
+    nameBuf = new IOBuffer(this, name);
+
+    if (nameBuf->transmit()) {
+        std::cerr << "XXXXXXXXXXXXXX" << *nameBuf << std::endl;
+        finished(nameBuf);
+    }
 }
 
 /*****************************************************************/
-void Layer::pass_down(Layer* client, const char* buf, size_t len)
+std::string Layer::getHeader(const char*, size_t) const
 {
-    /* By default, tell the client that the data was sent */
-    client->transmitted(buf);
+    return std::string();
 }
 
 /*****************************************************************/
-void Layer::push_up(Layer* caller, const char* buf, size_t len)
+size_t Layer::getHeaderLength() const
 {
-    /* By default, tell the caller that the data was received */
-    caller->received(buf);
-}
-
-/*****************************************************************/
-void Layer::transmitted(const char* buf)
-{
-}
-
-/*****************************************************************/
-void Layer::received(const char* buf)
-{
+    return headerLen;
 }
 
 /*****************************************************************/
 void Layer::introduce(Layer* _above)
 {
     above = _above;
+}
+
+/*****************************************************************/
+Layer* Layer::getNext() const
+{
+    return below;
+}
+
+/*****************************************************************/
+Layer* Layer::getPrev() const
+{
+    return above;
+}
+
+/*****************************************************************/
+void Layer::finished(const IOBuffer* buf)
+{
+    if (nameBuf == buf) {
+        delete buf;
+        nameBuf = 0;
+    }
+}
+
+/*****************************************************************/
+bool Layer::send(const IOBuffer *)
+{
+    /* By default, tell the client that the data was sent */
+    return true;
+}
+
+/*****************************************************************/
+size_t Layer::receive(const char*, size_t data_len)
+{
+    /* Consume all remaining data */
+    return data_len;
 }

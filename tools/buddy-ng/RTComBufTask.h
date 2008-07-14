@@ -24,56 +24,23 @@
  *
  */
 
-#ifndef RTCOMIOTASK_H
-#define RTCOMIOTASK_H
+#ifndef RTCOMPROTOCOL_H
+#define RTCOMPROTOCOL_H
 
-#include "Task.h"
+#include <stack>
 
-#include <streambuf>
+class Layer;
 
-class RTComIOTask: public Task, public std::streambuf {
+class RTComProtocol {
     public:
-        RTComIOTask(Task* parent, int fd, 
+        RTComProtocol(Task* parent, int fd,
                 unsigned int buflen = 4096, unsigned int max_buffers = 0);
-        ~RTComIOTask();
-
-        int write(int fd);
-
-        void reset();
-
-        void hello();
-        void send(const std::string& s);
+        ~RTComProtocol();
 
     private:
-        const int fd;
 
-        const unsigned int buflen;
-        const unsigned int max_buffers;
-
-        int new_page();
-
-        // Output functions reimplemented from streambuf
-        std::streamsize xsputn(const char *s, std::streamsize n);
-        int overflow(int c);
-        int sync();
-
-        char *wptr;     // Write pointer of the output
-        char *wbuf;     // Current write buffer
-        char *ibuf;     // Current input buffer
-
-        char* lastPptr;
-        unsigned int bufSize;
-        void pbump(int);
-        void setp(char*, char*);
-//        std::streampos seekoff ( std::streamoff off, 
-//                std::ios_base::seekdir way, 
-//                std::ios_base::openmode which = 
-//                   std::ios_base::in | std::ios_base::out );
-
-        // Buffer list.
-        // Output buffer is the first buffer
-        // Input buffer is the last buffer
-        std::list<char *> buf;
+        typedef std::stack<Layer*> LayerStack;
+        LayerStack layers;
 };
 
-#endif // RTCOMIOTASK_H
+#endif // RTCOMPROTOCOL_H
