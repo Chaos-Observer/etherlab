@@ -1162,7 +1162,7 @@ get_slave_pdo(struct ecat_slave *slave,
 
             for (entry_idx = 0; entry_idx < entry_info_count;
                     entry_idx++, pdo_entry++) {
-                int_T dummy_datatype;
+                uint_T dummy_datatype;
 
                 snprintf(context, sizeof(context),
                         "%s(%u).Entry(%u)", dir_str, pdo_idx+1, entry_idx+1);
@@ -2767,7 +2767,8 @@ static void mdlRTW(SimStruct *S)
                     (*pdo_entry_ptr)->index;
                 mapped_pdo_entry[PdoEntrySubIndex][pdo_entry_idx] =
                     (*pdo_entry_ptr)->subindex;
-                mapped_pdo_entry[PdoEntryDir][pdo_entry_idx] = 0;
+                mapped_pdo_entry[PdoEntryDir][pdo_entry_idx] = 
+                    port->direction;
                 mapped_pdo_entry[PdoEntryLength][pdo_entry_idx] =
                     vector_length;
                 mapped_pdo_entry[PdoEntryDType][pdo_entry_idx] =
