@@ -20,10 +20,7 @@ if ~length(strfind(path,strrep('@prefix@','//','/')))
 else
     disp('EtherLAB search directories are already in $MATLABPATH')
 end
-run @prefix@/blocks/setup.m
-run @prefix@/blocks/EtherCAT/setup.m
-if @EXPERIMENTAL@
-  run @prefix@/blocks/AddiData/setup.m
-  run @prefix@/blocks/Hilscher/setup.m
-end
+
+run blocks/setup.m
+
 return

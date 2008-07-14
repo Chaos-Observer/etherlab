@@ -6,4 +6,10 @@ mex world_time.c
 mex -I@prefix@/include raise.c
 mex -I@prefix@/include etherlab_in.c
 mex -I@prefix@/include etherlab_out.c
+
+run EtherCAT/setup.m
+if @EXPERIMENTAL@
+  run AddiData/setup.m
+  run Hilscher/setup.m
+end
 return
