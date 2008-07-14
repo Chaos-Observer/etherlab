@@ -12,6 +12,7 @@ blocksdir = $(prefix)/blocks
 dist_blocks_DATA = \
         ETL.tlc \
         RaiseCatch.tlc \
+        get_string.h \
         raise.c raise.tlc \
         taskinfo.c taskinfo.tlc \
         test_var.m \
