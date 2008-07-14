@@ -41,14 +41,14 @@ class Dispatcher {
     public:
         Dispatcher();
         ~Dispatcher();
-        void addEvent(Task *t);
+        static void addEvent(Task *t);
 
-        int run();
-        int run_detached();
+        static int run();
+        static int run_detached();
 
-        void* setReadable(Task*, int fd);
-        void* setWriteable(Task*, int fd);
-        void remove(void*);
+        static void* setReadable(Task*, int fd);
+        static void* setWriteable(Task*, int fd);
+        static void remove(void*);
 
     private:
         void detach();

@@ -22,13 +22,13 @@
 
 #include "RT-Task.h"
 #include "RT-Model.h"
-#include "RTComTask.h"
+#include "RTComIOTask.h"
 #include "ConfigFile.h"
 #include "Exception.h"
 
 #include <iostream>
 
-RTTask::RTTask(Task* parent): Task(parent),
+RTTask::RTTask(): Task(NULL),
     device(ConfigFile::getString("", "device", "/dev/etl")), fd(device)
 {
     std::cout << "opened " << device << std::endl;
@@ -49,8 +49,8 @@ int RTTask::read(int)
 {
     struct rtcom_event event;
     int n;
-    std::list<RTComTask*>::iterator it;
-    std::string modelName;
+    std::list<RTComIOTask*>::iterator it;
+    std::string appName;
 
     n = fd.read(&event, sizeof(event));
 
@@ -70,8 +70,8 @@ int RTTask::read(int)
                 try {
                     RTModel *model =
                         new RTModel(this, event.id);
-                    modelName = model->getName();
-                    modelMap[modelName] = model;
+                    appName = model->getName();
+                    modelMap[appName] = model;
                 } catch (Exception& e) {
                     std::cerr << "Could not open model id " << event.id 
                         << ": " << e.what() << std::endl;
@@ -79,7 +79,7 @@ int RTTask::read(int)
 
                 for (it = rtComTaskList.begin(); it != rtComTaskList.end();
                         it++) {
-                    (*it)->newModel(modelName);
+                    (*it)->newApplication(appName);
                 }
 
                 break;
@@ -91,10 +91,10 @@ int RTTask::read(int)
                     if (m->second->getId() == event.id) {
                         std::cout << "delete RTModel " << event.id 
                             << std::endl;
-                        modelName = m->second->getName();
+                        appName = m->second->getName();
                         for (it = rtComTaskList.begin(); 
                                 it != rtComTaskList.end(); it++) {
-                            (*it)->delModel(modelName);
+                            (*it)->delApplication(appName);
                         }
 
                         kill(m->second, 0);
@@ -121,12 +121,12 @@ void RTTask::kill(Task* child, int rv)
     }
 }
 
-void RTTask::setComTask(RTComTask* rtComTask)
+void RTTask::setComTask(RTComIOTask* rtComTask)
 {
     rtComTaskList.push_back(rtComTask);
 }
 
-void RTTask::clrComTask(RTComTask* rtComTask)
+void RTTask::clrComTask(RTComIOTask* rtComTask)
 {
     rtComTaskList.remove(rtComTask);
 }

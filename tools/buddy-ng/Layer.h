@@ -24,28 +24,40 @@
  *
  */
 
-#ifndef RTCOMSERVERTASK_H
-#define RTCOMSERVERTASK_H
+#ifndef LAYER_H
+#define LAYER_H
 
-#include "TCPServerTask.h"
+#include <cstddef>
 
-#include <string>
-
-class RTTask;
-
-class RTComServer: public TCPServerTask {
+class Layer {
     public:
-        RTComServer(RTTask* rtTask);
-        ~RTComServer();
+        Layer(size_t preamble, Layer* below = 0);
+        virtual ~Layer();
+
+        /** Called by the layer below to say that the buffer was sent */
+        virtual void transmitted(const char* buf);
+
+        /** Called by the layer above to say that the buffer was accepted */
+        virtual void received(const char* buf);
+
     protected:
+        virtual void pass_down(Layer* client, const char* buf, size_t len);
+        virtual void push_up(Layer* caller, const char* buf, size_t len);
+
+        /** Return how many bytes preamble is necessary for all
+         * layers below */
+        size_t getPreamble() const;
+
     private:
-        RTTask* const rtTask;
+        const size_t preamble;
 
-        int port;
-        std::string s_addr;
+        Layer* const below;
+        Layer* above;
 
-        int read(int fd);
+        /** Layers placed above must introduce themselves to the 
+         * layer below */
+        void introduce(Layer* above);
 };
 
-#endif // RTCOMSERVERTASK_H
+#endif // LAYER_H
 

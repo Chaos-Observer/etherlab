@@ -2,7 +2,10 @@
  *
  * $Id$
  *
- * This defines the class used to interact with the real-time kernel
+ * This defines the class used to interact with the real-time kernel. Only
+ * one instance of this class exists. This class keeps track of all real-time
+ * applications that are running, as well as all network clients that are
+ * being served with data.
  * 
  * Copyright (C) 2008  Richard Hacker
  * 
@@ -31,13 +34,13 @@
 #include "include/fio_ioctl.h"
 
 class RTModel;
-class RTComTask;
+class RTComIOTask;
 
 class RTTask: public Task {
     public:
         typedef std::map<std::string,RTModel*> ModelMap;
 
-        RTTask(Task* task);
+        RTTask();
         ~RTTask();
 
         const ModelMap& getModelMap() const {
@@ -45,14 +48,14 @@ class RTTask: public Task {
         }
         const std::string& getDevice() const { return device; }
 
-        void setComTask(RTComTask* rtComTask);
-        void clrComTask(RTComTask* rtComTask);
+        void setComTask(RTComIOTask* rtComTask);
+        void clrComTask(RTComIOTask* rtComTask);
 
     private:
         const std::string device;
         FileDevice fd;
 
-        std::list<RTComTask*> rtComTaskList;
+        std::list<RTComIOTask*> rtComTaskList;
 
         ModelMap modelMap;
 

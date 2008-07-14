@@ -32,11 +32,7 @@
 using namespace std;
 
 //************************************************************************
-Task::Task(Task* parent): 
-    parent(parent),
-    dispatcher(parent 
-            ? parent->getDispatcher() 
-            : new Dispatcher())
+Task::Task(Task* parent): parent(parent)
 //************************************************************************
 {
     if (parent) {
@@ -73,13 +69,6 @@ Task* Task::getParent() const
 { 
     cerr << "returning " << parent << endl;
     return parent; 
-}
-
-//************************************************************************
-Dispatcher* Task::getDispatcher() const
-//************************************************************************
-{
-    return dispatcher;
 }
 
 //************************************************************************
@@ -123,7 +112,7 @@ void Task::disableRead()
 //************************************************************************
 {
     if (readRef)
-        dispatcher->remove(readRef);
+        Dispatcher::remove(readRef);
     readRef = NULL;
 }
 
@@ -132,7 +121,7 @@ void Task::disableWrite()
 //************************************************************************
 {
     if (writeRef)
-        dispatcher->remove(writeRef);
+        Dispatcher::remove(writeRef);
     writeRef = NULL;
 }
 
@@ -140,7 +129,7 @@ void Task::disableWrite()
 void Task::enableRead(int fd)
 //************************************************************************
 {
-    readRef = dispatcher->setReadable(this, fd);
+    readRef = Dispatcher::setReadable(this, fd);
 }
 
 //************************************************************************
@@ -148,5 +137,5 @@ void Task::enableWrite(int fd)
 //************************************************************************
 {
     if (!writeRef)
-        writeRef = dispatcher->setWriteable(this, fd);
+        writeRef = Dispatcher::setWriteable(this, fd);
 }

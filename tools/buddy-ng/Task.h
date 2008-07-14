@@ -45,8 +45,6 @@ class Task {
         virtual int read(int fd);
         virtual int write(int fd);
 
-        Dispatcher* getDispatcher() const;
-
         void enableRead(int fd);
         void enableWrite(int fd);
         void disableRead();
@@ -54,7 +52,6 @@ class Task {
 
     private:
         Task * const parent;
-        Dispatcher * const dispatcher;
 
         std::list<Task*> children;
         void adopt(Task* child);

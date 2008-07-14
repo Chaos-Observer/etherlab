@@ -50,7 +50,6 @@ class RTComTask: public Task {
         const int fd;
         RTTask* const rtTask;
         RTComBufTask sb;
-        RTComOStream os;
 
         void kill(Task*, int);
 

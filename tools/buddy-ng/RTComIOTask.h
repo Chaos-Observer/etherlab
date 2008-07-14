@@ -31,49 +31,69 @@
 
 #include <streambuf>
 
+class RTTask;
+
 class RTComIOTask: public Task, public std::streambuf {
     public:
-        RTComIOTask(Task* parent, int fd, 
+        RTComIOTask(Task* parent, RTTask* _rtTask, int fd, 
                 unsigned int buflen = 4096, unsigned int max_buffers = 0);
         ~RTComIOTask();
 
+        // Reimplemented from class Task
         int write(int fd);
-
-        void reset();
+        int read(int fd);
 
         void hello();
-        void send(const std::string& s);
+//        void send(const std::string& s);
+
+        // Called when a model is added or removed dynamically
+        void newApplication(const std::string& model);
+        void delApplication(const std::string& model);
 
     private:
         const int fd;
+        RTTask* const rtTask;
 
-        const unsigned int buflen;
-        const unsigned int max_buffers;
+        /* The following attributes are needed to parse incoming data
+         * from the network clients. */
+        char *inBuf;
+        char *inBufEnd;
+        char *inBufPtr;
+        unsigned int inBufLen;
+
+        enum ParserState_t {Init, Idle, LoginInit, LoginContinue, LoginFail,
+            //Unknown, Login, List, 
+            //Subscribe, Poll, Write
+        };
+
+        ParserState_t parserState;
+
+        /* The following attributes are needed to manage the output channel
+         * to the network clients. */
+
+        const unsigned int outBuflen;
+        const unsigned int maxOutBuffers;
 
         int new_page();
 
-        // Output functions reimplemented from streambuf
+        // Virtual protected members reimplemented from streambuf
         std::streamsize xsputn(const char *s, std::streamsize n);
         int overflow(int c);
         int sync();
+
+        // Protected members reimplemented from streambuf
+        void pbump(int);
+        void setp(char*, char*);
 
         char *wptr;     // Write pointer of the output
         char *wbuf;     // Current write buffer
         char *ibuf;     // Current input buffer
 
         char* lastPptr;
-        unsigned int bufSize;
-        void pbump(int);
-        void setp(char*, char*);
-//        std::streampos seekoff ( std::streamoff off, 
-//                std::ios_base::seekdir way, 
-//                std::ios_base::openmode which = 
-//                   std::ios_base::in | std::ios_base::out );
+        unsigned int outBufSize;
 
-        // Buffer list.
-        // Output buffer is the first buffer
-        // Input buffer is the last buffer
-        std::list<char *> buf;
+        // List of output buffers to send to client
+        std::list<char *> outBuf;
 };
 
 #endif // RTCOMIOTASK_H

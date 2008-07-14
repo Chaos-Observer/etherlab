@@ -24,137 +24,328 @@
  *
  */
 
-#include "RTComTask.h"
+#include "RTComIOTask.h"
 #include "SocketExcept.h"
 #include "ConfigFile.h"
 #include "RT-Task.h"
 #include "RT-Model.h"
 #include "RTVariable.h"
 
+#undef DEBUG
+#define DEBUG 1
+
 #include <iostream>
-#include <sstream>
-#include <iterator>
+#include <arpa/inet.h>
+//#include <sstream>
+//#include <iterator>
 #include <string>
-#include <cstring>
+//#include <cstring>
 #include <cerrno>
 
 using namespace std;
 
 //************************************************************************
-RTComTask::RTComTask(Task* parent, int _fd, RTTask* _rtTask): 
-    Task(parent), fd(_fd), rtTask(_rtTask),
-    sb(this,fd),
-    login("LOGIN\n$"),
-    capabilities("CAPABILITIES\n$"),
-    auth("AUTH\\s+(\\w+)\n(.*)"),
-    length("{\\d+}"),
-    empty("\\s*\n$"),
-    listModels("MODELS\n$"),
-    listSignals("LIST (.+)\n$")
+RTComIOTask::RTComIOTask(Task* parent, RTTask* _rtTask, int _fd, 
+        unsigned int _buflen, unsigned int _maxbuf): 
+    Task(parent), streambuf(), fd(_fd), rtTask(_rtTask), outBuflen(_buflen), 
+    maxOutBuffers(_maxbuf)
 //************************************************************************
 {
-    sasl_callback_t callbacks[] = {
-        {SASL_CB_GETOPT, (int (*)())sasl_getopt, this},
-        {SASL_CB_LIST_END, NULL, NULL},
-    };
-    sasl_callbacks = 
-        new sasl_callback_t[sizeof(callbacks)/sizeof(sasl_callback_t)];
-    memcpy(sasl_callbacks, callbacks, sizeof(callbacks));
-
-    enableRead(fd);
-
-    // Say hello to the client.
-    sb.hello();
+    wptr = wbuf = ibuf = 0;
+    outBufSize = 0;
+    setp(0,0);
 
     inBufLen = 4096;
     inBufPtr = inBuf = new char[inBufLen];
     inBufEnd = inBuf + inBufLen;
 
     parserState = Init;
-    loggedIn = false;
-
-    if (SASL_OK != sasl_server_new( "login",
-                NULL, /* my fully qualified domain name; 
-                         NULL says use gethostname() */
-                NULL, /* The user realm used for password
-                         lookups; NULL means default to serverFQDN
-                         Note: This does not affect Kerberos */
-                NULL, NULL, /* IP Address information strings */
-                sasl_callbacks, /* Callbacks supported only for this connection */
-                0, /* security flags (security layers are enabled
-                    * using security properties, separately)
-                    */
-                &sasl_connection)) {
-        throw SocketExcept("Could not initiate a new SASL session.");
-    }
-
-
-    if (SASL_OK != sasl_listmech(
-                sasl_connection,  // sasl_conn_t *conn,
-                NULL,             // const char *user,
-                "",              // const char *prefix,
-                " ",              // const char *sep,
-                "",              // const char *suffix,
-                &mechanisms,      // const char **result,
-                &mechanism_len,   // unsigned *plen,
-                &mechanism_count  // unsigned *pcount
-                )) {
-        throw SocketExcept("Could not get SASL mechnism list.");
-    }
-
-    cerr << "sasl_listmech " << mechanisms << " " << mechanism_len << " " << mechanism_count << endl;
+//    loggedIn = false;
 
     rtTask->setComTask(this);
 
+    enableRead(fd);
+
+    // Say hello to the client.
+    hello();
 }
 
 //************************************************************************
-RTComTask::~RTComTask()
+RTComIOTask::~RTComIOTask()
 //************************************************************************
 {
     rtTask->clrComTask(this);
-    sasl_dispose(&sasl_connection);
-    delete[] sasl_callbacks;
+    disableRead();
+    disableWrite();
     delete[] inBuf;
-    cerr << "Deleting RTComTask" << this << endl;
+    for (list<char*>::iterator it = outBuf.begin(); it != outBuf.end(); it++)
+        delete[] *it;
+    cerr << "Deleting RTComIOTask" << this << endl;
     close(fd);
 }
 
 //************************************************************************
-int RTComTask::sasl_getopt(void *context, const char *plugin_name,
-                const char *option, const char **result, unsigned *len)
+void RTComIOTask::hello()
+// The hello message is sent to the client as soon as the connection is
+// established. This is used to identify the protocol being used.
+//
+// The message is composed as follows:
+// First 6 bytes: string "RTCom\0"
+// Bytes 8-11: Major version as unsigned int
+// Bytes 12-15: Minor version as unsigned int
 //************************************************************************
 {
-    RTComTask* instance = reinterpret_cast<RTComTask*>(context);
-    string key;
+    unsigned char s[16] = "RTCom";
+    uint32_t len = htonl(16);
 
-    if (plugin_name)
-        key.append(plugin_name).append("_");
+    // Set version to 1.0
+    *(uint32_t *)&s[8] = htonl(1);
+    *(uint32_t *)&s[12] = htonl(0);
 
-    key.append(option);
+    xsputn((char*)&len, sizeof(len));
+    xsputn((char*)s, sizeof(s));
+    sync();
+}
 
-    cerr << "Requested " << " " << key << " " << result << " " << len << endl;
+//************************************************************************
+void RTComIOTask::newApplication(const std::string& name)
+// The newApplication() message informs the network client of a new running 
+// application
+//
+// Telegram is composed as:
+// Bytes
+// 0-3  Telegram Length
+// 4    'N' -> for new application
+// 5... Application name
+//************************************************************************
+{
+    uint32_t len = htonl(name.length()+1);
+    xsputn((char*)&len, sizeof(len));
+    sputc('N');
+    xsputn(name.c_str(), name.size());
+    sync();
+    std::cout << "Sendign model " << name << std::endl;
+}
 
-    instance->sasl_options.push_front(
-            ConfigFile::getString("sasl", key, ""));
-    list<string>::iterator i = instance->sasl_options.begin();
+//************************************************************************
+void RTComIOTask::delApplication(const std::string& name)
+// The newApplication() message informs the network client of a new running 
+// application
+//
+// Telegram is composed as:
+// Bytes
+// 0-3  Telegram Length
+// 4    'D' -> for deleted application
+// 5... Application name
+//************************************************************************
+{
+    uint32_t len = htonl(name.length()+1);
+    xsputn((char*)&len, sizeof(len));
+    sputc('D');
+    xsputn(name.c_str(), name.size()+1);
+    sync();
+    std::cout << "Deleting model " << name << std::endl;
+}
 
-    if (i->length()) {
-        *result = i->c_str();
-        cerr << "RTCom::Returned configuration " << *i << endl;
+//************************************************************************
+int RTComIOTask::write(int fd)
+//************************************************************************
+{
+#if DEBUG
+    cerr << "RTComIOTask::writeReady()" << endl;
+#endif
 
-        if (len)
-            *len = i->length();
-        return SASL_OK;
+    int len;
+
+    if (!wptr || pptr() == wptr)
+        return 0;
+
+    if (wbuf == ibuf) {
+        /* Writing and reading on the same buffer */
+#if DEBUG
+        cerr << "Sending " << pptr() - wptr 
+            << " Bytes from same buf" << (void*)wbuf << endl;
+#endif
+        len = ::write(fd, wptr, pptr() - wptr);
+#if DEBUG
+        cerr << "Sent " << len << " bytes from " << (void*)wptr << endl;
+        cerr << "<<<< Data: " << string(wptr, len) << endl;
+#endif
+
+        if (len > 0) {
+            wptr += len;
+#if DEBUG
+            cerr << "Checking pointers: " 
+                << "pptr() = " << (void*)pptr()
+                << " wptr = " << (void*)wptr 
+                << " bumping " << wbuf - pptr() << endl;
+#endif
+            if (pptr() == wptr) {
+                wptr = wbuf;
+                pbump(wbuf - pptr());
+#if DEBUG
+                cerr << "bumped all, new pptr() " << (void*)pptr() 
+                    << " " << (void*)wbuf << endl;
+#endif
+            }
+            else {
+                outBufSize -= len;
+#if DEBUG
+                cerr << "decreasing 1 outBufSize " << len;
+#endif
+            }
+        }
+    } else {
+        /* Writing and reading on different buffers */
+#if DEBUG
+        cerr << "Sending " << wbuf + outBuflen - wptr
+            << " Bytes from different buffers " << (void*)wbuf << endl;
+#endif
+        len = ::write(fd, wptr, wbuf + outBuflen - wptr);
+        if (len > 0) {
+            wptr += len;
+            outBufSize -= len;
+#if DEBUG
+            cerr << "decreasing 2 outBufSize " << len;
+#endif
+            if (wbuf + outBuflen == wptr) {
+                /* Finished sending wbuf */
+#if DEBUG
+                cerr << "deleting buffer " << (void*)wbuf << endl;
+#endif
+                delete wbuf;
+                outBuf.pop_front();
+                wptr = wbuf = outBuf.front();
+            }
+        }
+    }
+
+    if (!outBufSize)
+        disableWrite();
+
+    return len;
+}
+
+//************************************************************************
+int RTComIOTask::sync()
+//************************************************************************
+{
+    enableWrite(fd);
+    return 0;
+}
+
+//************************************************************************
+std::streamsize RTComIOTask::xsputn(const char *s, std::streamsize len)
+//************************************************************************
+{
+    streamsize n, count = 0;
+
+#if DEBUG
+    cerr << "RTComIOTask::xsputn(" << string(s,len) << ") len:" << len << endl;
+#endif
+
+    while (count != len) {
+        n = min(epptr() - pptr(), len - count);
+
+        if (!n) {
+            // Current buffer is full
+            if (new_page() == EOF)
+                return count;
+            continue;
+        }
+
+        memcpy(pptr(), s + count, n);
+        pbump(n);
+        count += n;
+    }
+
+    return count;
+}
+
+//************************************************************************
+int RTComIOTask::overflow(int c) 
+//************************************************************************
+{ 
+#if DEBUG
+    cerr << "RTComIOTask::overflow(" << c << ")" << endl;
+#endif
+    if (new_page() == EOF)
+        return EOF;
+
+    *pptr() = c;
+    pbump(1);
+
+    return 0;
+}
+
+//************************************************************************
+int RTComIOTask::new_page()
+//************************************************************************
+{
+#if DEBUG
+    cerr << "RTComIOTask::new_page()" << endl;
+#endif
+
+    // Move data to beginning of buffer
+    if (ibuf && wbuf == ibuf && wptr != wbuf) {
+        // Only one buffer is active and whats more, the write pointer
+        // does not point to buffer start, meaning that we can make space
+        // by moving the data forward. Try this first
+        streamsize len = pptr() - wptr;
+#if DEBUG
+        cerr << "moving " << len << " bytes to buffer start" << endl;
+#endif
+        memmove(wbuf, wptr, len);
+        pbump(wbuf - wptr);
+        wptr = wbuf;
     }
     else {
-        *result = NULL;
-        return SASL_FAIL;
+        // Have to allocate new data space
+
+        // If maxOutBuffers != 0, check for max buffers
+        if (maxOutBuffers && outBuf.size() == maxOutBuffers) {
+            // Buffer is really full
+            return EOF;
+        }
+
+        ibuf = new char[outBuflen];
+#if DEBUG
+        cerr << "got new buffer " << (void*)ibuf << endl;
+#endif
+        outBuf.push_back(ibuf);
+        setp(ibuf, ibuf + outBuflen);
+        if (!wbuf) {
+            wptr = wbuf = ibuf;
+        }
+    }
+
+    return 0;
+}
+
+//************************************************************************
+void RTComIOTask::pbump(int n)
+//************************************************************************
+{
+    streambuf::pbump(n);
+#if DEBUG
+    cerr << "pbump " << n << " " << outBufSize << " " << pptr() - lastPptr << endl;
+#endif
+    if (lastPptr != pptr()) {
+        outBufSize += pptr() - lastPptr;
+        lastPptr = pptr();
     }
 }
 
 //************************************************************************
-int RTComTask::read(int)
+void RTComIOTask::setp ( char* pbeg, char* pend )
+//************************************************************************
+{
+    lastPptr = pbeg;
+    streambuf::setp(pbeg,pend);
+}
+
+//************************************************************************
+int RTComIOTask::read(int)
 //************************************************************************
 {
     int n;
@@ -194,10 +385,7 @@ int RTComTask::read(int)
 
                     for( RTTask::ModelMap::const_iterator it = modelMap.begin();
                             it != modelMap.end(); it++) {
-                        std::string s("M");
-                        s.append(it->first).push_back(0);
-                        sb.send(s);
-                        std::cout << "Sendign model " << s << std::endl;
+                        newApplication(it->first);
                     }
 
                     parserState = Idle;
@@ -208,6 +396,9 @@ int RTComTask::read(int)
             case Idle:
                 if (in[0] == 'Q') {
                     unsigned int nameLen = 0;
+                    uint32_t len;
+                    const char* querySignature = in;
+
                     if (left < 12 ||
                             left < 12 + (nameLen = *(uint32_t*)(in + 8))) {
                         finished = true;
@@ -216,7 +407,66 @@ int RTComTask::read(int)
                     std::string modelName(in+12, nameLen);
                     in += 12 + (nameLen/4+1)*4;
 
-                    std::cout << "REply model query " << modelName << std::endl;
+                    std::cout << "REply model query " << modelName << 
+                        modelName.size() << std::endl;
+
+
+                    const RTTask::ModelMap& modelMap = rtTask->getModelMap();
+                    RTTask::ModelMap::const_iterator it = 
+                        modelMap.find(modelName);
+                    if (it == modelMap.end()) {
+                        len = 8;
+                        xsputn((char*)&len, 4);
+                        // Send back the first 8 chars which make up the query
+                        // signature
+                        xsputn(in, 8);
+                        break;
+                    }
+
+                    const std::vector<uint32_t> sampleTime = 
+                        it->second->getSampleTimes();
+                    const std::string version =
+                        it->second->getVersion();
+                    const std::vector<RTVariable*> variables =
+                        it->second->getVariableList();
+                    uint32_t x;
+
+                    // Packet Len
+                    len = 8                     // Query signature
+                        + 1                     // 'G'
+                        + 4                     // SampleTimeCount
+                        + 4*sampleTime.size()   // Individual sample times
+                        + 4                     // Variable Count
+                        + version.size() + 1;   // Version string incl \0
+                    len = htonl(len);
+                    xsputn((char*)&len, 4);
+
+                    // Send back the first 8 chars which make up the query
+                    // signature
+                    xsputn(querySignature, 8);
+
+                    // General parameters
+                    sputc('G');
+
+                    // Sample Time Count
+                    x = sampleTime.size();
+                    xsputn((char*)&x, 4);
+
+                    // Sample Times
+                    for (std::vector<uint32_t>::const_iterator it = 
+                            sampleTime.begin(); 
+                            it != sampleTime.end(); it++) {
+                        x = *it;
+                        xsputn((char*)&x, 4);
+                    }
+
+                    // Variable Count
+                    x = variables.size();
+                    xsputn((char*)&x, 4);
+
+                    // Version, including trailing \0
+                    xsputn(version.c_str(), version.size() + 1);
+                    sync();
                 }
                 else {
                     in = inBufPtr;
@@ -429,30 +679,3 @@ int RTComTask::read(int)
 //                break;
 //                */
 
-//************************************************************************
-bool RTComTask::checkPass(const string& user, const string& password)
-//************************************************************************
-{
-    return true;
-}
-
-//************************************************************************
-void RTComTask::kill(Task*, int)
-//************************************************************************
-{
-    throw SocketExcept("Internal Error: Cannot kill output stream.");
-}
-
-//************************************************************************
-void RTComTask::newModel(const std::string& name)
-//************************************************************************
-{
-//    os.eventStream(std::string("new model: ").append(name));
-}
-
-//************************************************************************
-void RTComTask::delModel(const std::string& name)
-//************************************************************************
-{
-//    os.eventStream(std::string("del model: ").append(name));
-}

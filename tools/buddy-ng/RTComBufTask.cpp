@@ -24,7 +24,7 @@
  *
  */
 
-#include "RTComBufTask.h"
+#include "RTComIOTask.h"
 
 #undef DEBUG
 #define DEBUG 1
@@ -35,7 +35,7 @@
 using namespace std;
 
 //************************************************************************
-RTComBufTask::RTComBufTask(Task* parent, int _fd, 
+RTComIOTask::RTComIOTask(Task* parent, int _fd, 
         unsigned int _buflen, unsigned int _maxbuf): 
     Task(parent), streambuf(), fd(_fd), buflen(_buflen), max_buffers(_maxbuf)
 //************************************************************************
@@ -44,13 +44,13 @@ RTComBufTask::RTComBufTask(Task* parent, int _fd,
 }
 
 //************************************************************************
-RTComBufTask::~RTComBufTask()
+RTComIOTask::~RTComIOTask()
 //************************************************************************
 {
 }
 
 //************************************************************************
-void RTComBufTask::reset()
+void RTComIOTask::reset()
 //************************************************************************
 {
     for (list<char*>::iterator it = buf.begin(); it != buf.end(); it++)
@@ -63,7 +63,7 @@ void RTComBufTask::reset()
 }
 
 //************************************************************************
-void RTComBufTask::hello()
+void RTComIOTask::hello()
 // The hello message is sent to the client as soon as the connection is
 // established. This is used to identify the protocol being used.
 //
@@ -85,7 +85,7 @@ void RTComBufTask::hello()
     sync();
 }
 
-void RTComBufTask::send(const std::string& s)
+void RTComIOTask::send(const std::string& s)
 {
     char padchars[4];
     streamsize pad = 4 - s.length() % 4;
@@ -97,11 +97,11 @@ void RTComBufTask::send(const std::string& s)
 }
 
 //************************************************************************
-int RTComBufTask::write(int fd)
+int RTComIOTask::write(int fd)
 //************************************************************************
 {
 #if DEBUG
-    cerr << "RTComBufTask::writeReady()" << endl;
+    cerr << "RTComIOTask::writeReady()" << endl;
 #endif
 
     int len;
@@ -176,7 +176,7 @@ int RTComBufTask::write(int fd)
 }
 
 //************************************************************************
-int RTComBufTask::sync()
+int RTComIOTask::sync()
 //************************************************************************
 {
     enableWrite(fd);
@@ -184,13 +184,13 @@ int RTComBufTask::sync()
 }
 
 //************************************************************************
-std::streamsize RTComBufTask::xsputn(const char *s, std::streamsize len)
+std::streamsize RTComIOTask::xsputn(const char *s, std::streamsize len)
 //************************************************************************
 {
     streamsize n, count = 0;
 
 #if DEBUG
-    cerr << "RTComBufTask::xsputn(" << string(s,len) << ") len:" << len << endl;
+    cerr << "RTComIOTask::xsputn(" << string(s,len) << ") len:" << len << endl;
 #endif
 
     while (count != len) {
@@ -212,11 +212,11 @@ std::streamsize RTComBufTask::xsputn(const char *s, std::streamsize len)
 }
 
 //************************************************************************
-int RTComBufTask::overflow(int c) 
+int RTComIOTask::overflow(int c) 
 //************************************************************************
 { 
 #if DEBUG
-    cerr << "RTComBufTask::overflow(" << c << ")" << endl;
+    cerr << "RTComIOTask::overflow(" << c << ")" << endl;
 #endif
     if (new_page() == EOF)
         return EOF;
@@ -228,11 +228,11 @@ int RTComBufTask::overflow(int c)
 }
 
 //************************************************************************
-int RTComBufTask::new_page()
+int RTComIOTask::new_page()
 //************************************************************************
 {
 #if DEBUG
-    cerr << "RTComBufTask::new_page()" << endl;
+    cerr << "RTComIOTask::new_page()" << endl;
 #endif
 
     // Move data to beginning of buffer
@@ -272,7 +272,7 @@ int RTComBufTask::new_page()
 }
 
 //************************************************************************
-void RTComBufTask::pbump(int n)
+void RTComIOTask::pbump(int n)
 //************************************************************************
 {
     streambuf::pbump(n);
@@ -286,7 +286,7 @@ void RTComBufTask::pbump(int n)
 }
 
 //************************************************************************
-void RTComBufTask::setp ( char* pbeg, char* pend )
+void RTComIOTask::setp ( char* pbeg, char* pend )
 //************************************************************************
 {
     lastPptr = pbeg;

@@ -46,9 +46,11 @@ class RTModel: public Task {
         const std::vector<RTVariable*>& getVariableList() const { 
             return variableList; 
         }
+        const std::vector<uint32_t>& getSampleTimes() const {
+            return sampleTime;
+        }
 
     private:
-        const Task* parent;
         const unsigned int id;
         std::string name;
         std::string version;

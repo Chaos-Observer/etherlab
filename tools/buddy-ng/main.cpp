@@ -63,19 +63,14 @@ The central dispatcher then calls the function that was registered when
 
 #include <iostream>
 
-struct MainTask: public Task {
-    MainTask(): Task(NULL) {
-        RTTask* rtTask = new RTTask(this);
-        new RTComServer(this, rtTask);
-        getDispatcher()->run();
-    }
-};
-
 int main(int argc, const char *argv[])
 {
     ConfigFile::ConfigFile("buddy.conf");
 
-    MainTask mainTask;
+    RTTask rtTask;
+    RTComServer rtcomServer(&rtTask);
+
+    Dispatcher::run();
 
     std::cerr << "finishing" << std::endl;
 

@@ -24,28 +24,54 @@
  *
  */
 
-#ifndef RTCOMSERVERTASK_H
-#define RTCOMSERVERTASK_H
+#include <iostream>
+#include "SocketLayer.h"
 
-#include "TCPServerTask.h"
+SocketLayer::SocketLayer(Task *_parent): Task(_parent), Layer(0)
+{
+    enableRead(fd);
+}
 
-#include <string>
+SocketLayer::~SocketLayer()
+{
+}
 
-class RTTask;
+void SocketLayer::pass_down(Layer* _client, 
+        const char* _buf, size_t _bufLen)
+{
+    wptr = buf = _buf;
+    bufLen = _bufLen;
+    client = _client;
 
-class RTComServer: public TCPServerTask {
-    public:
-        RTComServer(RTTask* rtTask);
-        ~RTComServer();
-    protected:
-    private:
-        RTTask* const rtTask;
+    enableWrite(fd);
+}
 
-        int port;
-        std::string s_addr;
+// Method from class Task
+int SocketLayer::write(int fd)
+{
+    int len;
+    
+    len = ::write(fd, wptr, bufLen);
 
-        int read(int fd);
-};
+    if (len <= 0)
+        return len;
 
-#endif // RTCOMSERVERTASK_H
+    bufLen -= len;
+    wptr += len;
+    if (!bufLen) {
+        client->transmitted(buf);
+        disableWrite();
+    }
 
+    return len;
+}
+
+int SocketLayer::read(int fd)
+{
+    return 0;
+}
+
+void SocketLayer::received(const char* buf)
+{
+    delete[] buf;
+}

@@ -30,6 +30,8 @@
 #include <iostream>
 using namespace std;
 
+Dispatcher dispatcher;
+
 //************************************************************************
 Dispatcher::Dispatcher()
 //************************************************************************
@@ -58,7 +60,7 @@ int Dispatcher::run()
 int Dispatcher::run_detached()
 //************************************************************************
 {
-    detach();
+    dispatcher.detach();
     run();
     return 0;
 }
@@ -75,7 +77,7 @@ void* Dispatcher::setWriteable(Task* task, int fd)
 {
     struct event* event = new(struct event);
 
-    events.push_front(event);
+    dispatcher.events.push_front(event);
     event_set(event, fd, EV_WRITE | EV_PERSIST, eventCallbackFunc,
             task);
     event_add(event, NULL);
@@ -88,7 +90,7 @@ void* Dispatcher::setReadable(Task *task, int fd)
 {
     struct event* event = new(struct event);
 
-    events.push_front(event);
+    dispatcher.events.push_front(event);
     event_set(event, fd, EV_READ | EV_PERSIST, eventCallbackFunc,
             task);
     event_add(event, NULL);
@@ -103,7 +105,7 @@ void Dispatcher::remove(void* p)
     if (!event)
         return;
     event_del(event);
-    events.remove(event);
+    dispatcher.events.remove(event);
     delete event;
 }
 

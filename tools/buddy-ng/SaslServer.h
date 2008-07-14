@@ -31,21 +31,45 @@
 
 #include <streambuf>
 
+class RTTask;
+
 class RTComIOTask: public Task, public std::streambuf {
     public:
-        RTComIOTask(Task* parent, int fd, 
+        RTComIOTask(Task* parent, RTTask* _rtTask, int fd, 
                 unsigned int buflen = 4096, unsigned int max_buffers = 0);
         ~RTComIOTask();
 
+        // Reimplemented from class Task
         int write(int fd);
-
-        void reset();
+        int read(int fd);
 
         void hello();
-        void send(const std::string& s);
+//        void send(const std::string& s);
+
+        // Called when a model is added or removed dynamically
+        void newModel(const std::string& model);
+        void delModel(const std::string& model);
 
     private:
         const int fd;
+        RTTask* const rtTask;
+
+        /* The following attributes are needed to parse incoming data
+         * from the network clients. */
+        char *inBuf;
+        char *inBufEnd;
+        char *inBufPtr;
+        unsigned int inBufLen;
+
+        enum ParserState_t {Init, Idle, LoginInit, LoginContinue, LoginFail,
+            //Unknown, Login, List, 
+            //Subscribe, Poll, Write
+        };
+
+        ParserState_t parserState;
+
+        /* The following attributes are needed to manage the output channel
+         * to the network clients. */
 
         const unsigned int buflen;
         const unsigned int max_buffers;
@@ -65,15 +89,19 @@ class RTComIOTask: public Task, public std::streambuf {
         unsigned int bufSize;
         void pbump(int);
         void setp(char*, char*);
-//        std::streampos seekoff ( std::streamoff off, 
-//                std::ios_base::seekdir way, 
-//                std::ios_base::openmode which = 
-//                   std::ios_base::in | std::ios_base::out );
 
-        // Buffer list.
-        // Output buffer is the first buffer
-        // Input buffer is the last buffer
-        std::list<char *> buf;
+        // List of output buffers to send to client
+        std::list<char *> outBuf;
+
+        sasl_conn_t *sasl_connection;
+        const char* mechanisms;
+        unsigned int mechanism_len;
+        int mechanism_count;
+        sasl_callback_t *sasl_callbacks;
+        std::list<std::string> sasl_options;
+
+        static int sasl_getopt(void *context, const char *plugin_name,
+                const char *option, const char **result, unsigned *len);
 };
 
 #endif // RTCOMIOTASK_H

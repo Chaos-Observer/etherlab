@@ -24,28 +24,33 @@
  *
  */
 
-#ifndef RTCOMSERVERTASK_H
-#define RTCOMSERVERTASK_H
+#ifndef SOCKETLAYER_H
+#define SOCKETLAYER_H
 
-#include "TCPServerTask.h"
+#include "Task.h"
+#include "Layer.h"
 
-#include <string>
-
-class RTTask;
-
-class RTComServer: public TCPServerTask {
+class SocketLayer: public Task, public Layer {
     public:
-        RTComServer(RTTask* rtTask);
-        ~RTComServer();
-    protected:
-    private:
-        RTTask* const rtTask;
+        SocketLayer(Task *parent);
+        ~SocketLayer();
 
-        int port;
-        std::string s_addr;
+    protected:
+        int write(int fd);
+
+    private:
+        int fd;
 
         int read(int fd);
+
+        const char* buf;
+        const char* wptr;
+        size_t bufLen;
+        Layer* client;
+
+        void pass_down(Layer*, const char*, size_t);
+        void received(const char* buf);
 };
 
-#endif // RTCOMSERVERTASK_H
+#endif // SOCKETLAYER_H
 
