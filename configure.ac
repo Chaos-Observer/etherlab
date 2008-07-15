@@ -288,8 +288,6 @@ AC_CONFIG_FILES([
         blocks/EtherCAT/setup.m 
         blocks/EtherCAT/xml/Makefile
         blocks/EtherCAT/xml/setup.m 
-        blocks/EtherCAT/@EtherCATDevice/Makefile
-        blocks/EtherCAT/@EtherCATDevice/private/Makefile
         blocks/EtherCAT/@EtherCATInfo/Makefile
         blocks/EtherCAT/@EtherCATInfo/private/Makefile
         blocks/Hilscher/Makefile 
