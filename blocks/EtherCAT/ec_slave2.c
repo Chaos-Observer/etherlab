@@ -369,6 +369,11 @@ struct ecat_slave {
             uint_T bitlen;
             int_T datatype;
 
+            uint_T vector_length;
+
+            uint_T pwork_index;
+            uint_T iwork_index;
+
             struct io_port **io_port, **io_port_end;
         } *entry, *entry_end;
 
@@ -413,8 +418,7 @@ struct ecat_slave {
     struct io_port {
         uint_T direction;
 
-        struct pdo_entry **pdo_entry;
-        uint_T pdo_entry_count;
+        struct pdo_entry **pdo_entry, **pdo_entry_end;
 
         /* The length of the significant bits in the pdo entry */
         uint32_T data_bit_len;
@@ -467,8 +471,6 @@ struct ecat_slave {
         char_T *filter_name;
         real_T *filter_values;
 
-        uint_T pwork_index;
-        uint_T iwork_index;
     } *io_port, *io_port_end;
 
     /* Number of input and output ports */
@@ -1205,6 +1207,10 @@ get_slave_pdo(struct ecat_slave *slave,
                 RETURN_ON_ERROR(get_data_type(slave, p_ctxt, context, 
                             __LINE__, pdo_entry->datatype, &dummy_datatype,
                             0, 0));
+
+                pdo_entry->vector_length = 
+                    pdo_entry->bitlen / abs(pdo_entry->datatype);
+
                 pr_debug(slave, NULL, "", indent_level+1, 
                         "Found PDO Entry Index #x%04X, SubIndex #x%02X, "
                         "BitLen %u, DataType %i\n",
@@ -1655,6 +1661,7 @@ get_ioport_config(SimStruct *S, struct ecat_slave *slave)
         const mxArray *pdo_entry_spec =
             mxGetField(port_spec, io_spec_idx, "PdoEntry");
         struct pdo_entry **pdo_entry_ptr;
+        uint_T pdo_entry_count;
         struct pdo *pdo;
         uint_T pdo_entry_idx;
         boolean_T struct_access;
@@ -1684,8 +1691,8 @@ get_ioport_config(SimStruct *S, struct ecat_slave *slave)
              * the fields 'Index', 'EntryIndex' and 'EntrySubIndex' */
             struct_access = 1;
 
-            port->pdo_entry_count = mxGetNumberOfElements(pdo_entry_spec);
-            if (!port->pdo_entry_count) {
+            pdo_entry_count = mxGetNumberOfElements(pdo_entry_spec);
+            if (!pdo_entry_count) {
                 pr_error(slave, port_ctxt, pdo_entry_ctxt, __LINE__,
                         "Structure is empty.\n");
                 return -1;
@@ -1700,14 +1707,14 @@ get_ioport_config(SimStruct *S, struct ecat_slave *slave)
              * 'EntrySubIndex' */
             struct_access = 0;
 
-            port->pdo_entry_count = mxGetM(pdo_entry_spec);
+            pdo_entry_count = mxGetM(pdo_entry_spec);
 
             pdo_entry_index_field = mxGetPr(pdo_entry_spec);
             pdo_entry_subindex_field =
-                pdo_entry_index_field + port->pdo_entry_count;
+                pdo_entry_index_field + pdo_entry_count;
 
             if ( !mxIsNumeric(pdo_entry_spec)
-                    || !port->pdo_entry_count
+                    || !pdo_entry_count
                     || mxGetN(pdo_entry_spec) != 2
                     || !pdo_entry_index_field) {
                 pr_error(slave, port_ctxt, pdo_entry_ctxt, __LINE__,
@@ -1721,18 +1728,18 @@ get_ioport_config(SimStruct *S, struct ecat_slave *slave)
             return -1;
         }
 
-        CHECK_CALLOC(S, port->pdo_entry_count, sizeof(struct pdo_entry*),
+        CHECK_CALLOC(S, pdo_entry_count, sizeof(struct pdo_entry*),
                 port->pdo_entry);
+        port->pdo_entry_end = port->pdo_entry + pdo_entry_count;
 
 
         /* Get the list of pdo entries that are mapped to this port */
         for (pdo_entry_idx = 0, pdo_entry_ptr = port->pdo_entry;
-                pdo_entry_idx < port->pdo_entry_count;
+                pdo_entry_idx < pdo_entry_count;
                 pdo_entry_idx++, pdo_entry_ptr++) {
             uint16_T pdo_entry_index;
             uint8_T pdo_entry_subindex;
             char_T pdo_entry_array_ctxt[50];
-            uint_T vector_len;
 
             snprintf(pdo_entry_array_ctxt, sizeof(pdo_entry_array_ctxt),
                     "%s(%u)", pdo_entry_ctxt, pdo_entry_idx+1);
@@ -1821,8 +1828,8 @@ get_ioport_config(SimStruct *S, struct ecat_slave *slave)
                 return -1;
             }
 
-            vector_len = (*pdo_entry_ptr)->bitlen / port->data_bit_len;
-            port->width += vector_len;
+            port->width += (*pdo_entry_ptr)->vector_length;
+
             pr_debug(slave, NULL, "", 3,
                     "Added Pdo Entry #x%04X.%02X to %s port %u. "
                     "Vector length %u\n",
@@ -1837,11 +1844,11 @@ get_ioport_config(SimStruct *S, struct ecat_slave *slave)
 
         if (port->direction) {
             slave->input_port_count++;
-            slave->input_pdo_entry_count  += port->pdo_entry_count;
+            slave->input_pdo_entry_count  += pdo_entry_count;
         }
         else {
             slave->output_port_count++;
-            slave->output_pdo_entry_count += port->pdo_entry_count;
+            slave->output_pdo_entry_count += pdo_entry_count;
         }
 
         /* Make sure that the PDO has a supported data type */
@@ -1970,6 +1977,7 @@ set_io_port_width(SimStruct *S, struct ecat_slave *slave,
 {
     struct io_port *port = &slave->io_port[port_idx];
     const char_T * direction = port->direction ? "INPUT" : "OUTPUT";
+    struct pdo_entry **pdo_entry_ptr;
 
     if (width > port->width) {
         snprintf(errmsg, sizeof(errmsg),
@@ -1988,10 +1996,15 @@ set_io_port_width(SimStruct *S, struct ecat_slave *slave,
 
     slave->max_port_width = max(width, slave->max_port_width);
 
-    slave->pwork_count += width;
+    for (pdo_entry_ptr = port->pdo_entry;
+            pdo_entry_ptr != port->pdo_entry_end; pdo_entry_ptr++) {
+        (*pdo_entry_ptr)->pwork_index = slave->pwork_count;
+        slave->pwork_count += (*pdo_entry_ptr)->vector_length;
+        if (port->bitop) {
+            (*pdo_entry_ptr)->iwork_index = slave->iwork_count;
+            slave->iwork_count += (*pdo_entry_ptr)->vector_length;
+        }
 
-    if (port->bitop) {
-        slave->iwork_count += width;
     }
 
     if (port->gain_count) {
@@ -2169,11 +2182,11 @@ check_pdo_configuration(SimStruct *S, struct ecat_slave *slave)
 
     for (io_port = slave->io_port; 
             io_port != slave->io_port_end; io_port++) {
-        uint_T idx;
+        struct pdo_entry **pdo_entry_ptr;
 
-        for (idx = 0; idx != io_port->pdo_entry_count; idx++) {
-            struct pdo_entry *pdo_entry = io_port->pdo_entry[idx];
-            *pdo_entry->io_port_end++ = io_port;
+        for (pdo_entry_ptr = io_port->pdo_entry;
+                pdo_entry_ptr != io_port->pdo_entry_end; pdo_entry_ptr++) {
+            *(*pdo_entry_ptr)->io_port_end++ = io_port;
         }
     }
 
@@ -2530,8 +2543,6 @@ char_T *createStrVect(const char_T *strings[], uint_T count)
 static void mdlRTW(SimStruct *S)
 {
     struct ecat_slave *slave = ssGetUserData(S);
-    uint_T pwork_index = 0;
-    uint_T iwork_index = 0;
     uint_T const_index = 0;
     uint_T filter_index = 0;
     real_T const_vector[slave->constant_count];
@@ -2691,9 +2702,6 @@ static void mdlRTW(SimStruct *S)
                     for (port_ptr = pdo_entry->io_port;
                             port_ptr != pdo_entry->io_port_end; port_ptr++) {
 
-                        uint_T vector_length =
-                            pdo_entry->bitlen / (*port_ptr)->data_bit_len;
-
                         mapped_pdo_entry[PdoEntryIndex][m_pdo_entry_idx] =
                             pdo_entry->index;
                         mapped_pdo_entry[PdoEntrySubIndex][m_pdo_entry_idx] =
@@ -2701,22 +2709,16 @@ static void mdlRTW(SimStruct *S)
                         mapped_pdo_entry[PdoEntryDir][m_pdo_entry_idx] = 
                             (*port_ptr)->direction;
                         mapped_pdo_entry[PdoEntryLength][m_pdo_entry_idx] =
-                            vector_length;
+                            pdo_entry->vector_length;
                         mapped_pdo_entry[PdoEntryDType][m_pdo_entry_idx] =
                             (*port_ptr)->pdo_data_type;
                         mapped_pdo_entry[PdoEntryBitLen][m_pdo_entry_idx] =
                             (*port_ptr)->data_bit_len;
                         mapped_pdo_entry[PdoEntryPWork][m_pdo_entry_idx] = 
-                            pwork_index;
+                            pdo_entry->pwork_index;
                         mapped_pdo_entry[PdoEntryIWork][m_pdo_entry_idx] =
-                            (*port_ptr)->bitop ? iwork_index : -1;
-
-                        (*port_ptr)->pwork_index = pwork_index;
-                        (*port_ptr)->iwork_index = iwork_index;
-
-                        pwork_index += vector_length;
-                        if ((*port_ptr)->bitop)
-                            iwork_index += vector_length;
+                            (*port_ptr)->bitop 
+                            ? pdo_entry->iwork_index : -1;
 
                         m_pdo_entry_idx++;
                     }
@@ -2776,13 +2778,15 @@ static void mdlRTW(SimStruct *S)
             port_spec[PortSpecDir][port_idx] = port->direction;
             port_spec[PortSpecPortIdx][port_idx] = 
                 port->direction ? input_port_idx++ : output_port_idx++;
-            port_spec[PortSpecPWork][port_idx] = port->pwork_index;
+            port_spec[PortSpecPWork][port_idx] = 
+                port->pdo_entry[0]->pwork_index;
             port_spec[PortSpecDType][port_idx] =
                 port->pdo_data_type == SS_BOOLEAN
                 ? SS_UINT8 : port->pdo_data_type;
             port_spec[PortSpecBitLen][port_idx] =
                 port->bitop ? port->data_bit_len : 0;
-            port_spec[PortSpecIWork][port_idx] = port->iwork_index;
+            port_spec[PortSpecIWork][port_idx] = 
+                port->pdo_entry[0]->iwork_index;
 
             if (port->gain_count) {
                 port_spec[PortSpecGainCount][port_idx] =
