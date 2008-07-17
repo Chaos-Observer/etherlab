@@ -1189,7 +1189,7 @@ get_slave_pdo(struct ecat_slave *slave,
                 }
 
                 RETURN_ON_ERROR(get_numeric_field(slave, p_ctxt, __LINE__,
-                            pdo_entry_info, entry_idx, 0, 0, "SubIndex",
+                            pdo_entry_info, entry_idx, 1, 0, "SubIndex",
                             &val));
                 pdo_entry->subindex = val;
 
