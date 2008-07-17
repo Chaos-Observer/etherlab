@@ -27,7 +27,9 @@ end
 fprintf('Precompiling ''%s'' ... ', 'Beckhoff EL4xxx.xml');
 EtherCATInfo_el4xxx_beckhoff = EtherCATInfo('Beckhoff EL4xxx.xml');
 EtherCATInfo_el4132 = EtherCATInfo('EL4132-mod.xml');
+EtherCATInfo_el4102 = EtherCATInfo('EL4102-mod.xml');
 EtherCATInfo_el4xxx = appendDevice(EtherCATInfo_el4xxx_beckhoff,EtherCATInfo_el4132);
+EtherCATInfo_el4xxx = appendDevice(EtherCATInfo_el4xxx_beckhoff,EtherCATInfo_el4102);
 save('../EtherCATInfo_el4xxx', 'EtherCATInfo_el4xxx');
 fprintf('done\n');
 
