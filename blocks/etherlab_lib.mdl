@@ -34,8 +34,8 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "rich"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Mon Jul 14 15:06:35 2008"
-  ModelVersionFormat	  "1.%<AutoIncrement:663>"
+  LastModifiedDate	  "Tue Jul 15 12:05:49 2008"
+  ModelVersionFormat	  "1.%<AutoIncrement:664>"
   ConfigurationManager	  "rcs"
   LinearizationMsg	  "none"
   Profile		  off
@@ -129,7 +129,7 @@ Library {
   }
   System {
     Name		    "etherlab_lib"
-    Location		    [782, 601, 1377, 994]
+    Location		    [786, 601, 1381, 994]
     Open		    on
     ModelBrowserVisibility  off
     ModelBrowserWidth	    200
@@ -155,7 +155,7 @@ Library {
       System {
 	Name			"EtherCAT"
 	Location		[898, 626, 1395, 994]
-	Open			off
+	Open			on
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
 	ScreenColor		"white"
@@ -787,7 +787,7 @@ Library {
 	Block {
 	  BlockType		  "S-Function"
 	  Name			  "Generic Slave"
-	  Ports			  []
+	  Ports			  [2, 2]
 	  Position		  [170, 259, 250, 301]
 	  BackgroundColor	  "yellow"
 	  FunctionName		  "ec_slave2"
@@ -811,40 +811,41 @@ Library {
 "code=@4;revision=@5;pdo_list=@6;group=&7;sdo_config=@8;tsample=@9;debug=@10;"
 	  MaskInitialization	  "masterStr = '';\npositionStr = '';\nproduct"
 "_name = 'Unknown';\n[Address masterStr positionStr] = getEtherCATAddress(gcb,"
-"master,index);\n\nSdoConfig = [];\n\n% Generate a LayoutVersion that is uniqu"
-"e for every slave\n% of this type to enure that a separate slave config is ge"
-"nerated\n% for every slave\nLayoutVersion = 0;\n\nif ~(isnumeric(product_code"
-") && isnumeric(revision) ...\n        && isnumeric(pdo_list) && isnumeric(sdo"
-"_config))\n    fname = '';\n    errordlg([gcb ':Value for Product Code, Revis"
-"ion Number '...\n        'Pdo List and Sdo Config must be numeric']);\nend\n"
-"\nif isa(ethercatinfo, class(EtherCATInfo))\n    ei = ethercatinfo;\nelseif i"
-"sa(ethercatinfo,'char')\n    ei = EtherCATInfo;\n    \n    if length(ethercat"
-"info)\n        try\n            ei = EtherCATInfo(ethercatinfo);\n        cat"
-"ch\n        end\n\n        if isempty(ei)\n            try\n                l"
-"oad(ethercatinfo);\n                eval(['ei = ' ethercatinfo ';']);\n      "
-"      catch\n            end\n        end\n\n        if isempty(ei)\n        "
-"    warndlg([gcb ':File ''' ethercatinfo ''' not found']);\n        end\n    "
-"end\nelse\n    errordlg([gcb ':File name for EtherCAT Info not a valid string"
-"']);\nend\n\n\nIOSpec = [];\nSlaveConfig = [];\n\nif ~isempty(ei)\n    if ~is"
-"empty(product_code) && product_code(1)\n        dev = ei(product_code, revisi"
-"on);\n        if isempty(dev)\n            errordlg([gcb ': Product with spec"
-"ified Product Code '...\n                'and Revision Number does not exist'"
-"]);\n        end\n    else\n        dev = ei{1};\n    end\n    \n    SlaveCon"
-"fig = genSlaveConfig(dev);\n\n    switch lower(group)\n        case 'group da"
-"ta types in pdo'\n            type = 'PDO';\n        case 'group data types'"
-"\n            type = 'ALL';\n        otherwise\n            type = 'None';\n "
-"   end\n    \n    PdoEntries = getEntries(dev,'GroupType',type);\n    if ~ise"
-"mpty(SlaveConfig)\n        product_name = SlaveConfig.Descriptions.Devices.De"
-"vice.Type.TextContent;\n    end\n    IOSpec.Port = struct('PdoEntry', PdoEntr"
-"ies);\nend\n"
+"master,index);\n\nSdoConfig = cell2struct(...\n    num2cell(sdo_config),...\n"
+"    {'Index' 'SubIndex' 'BitLen' 'Value'}, 2);\n\n\n% Generate a LayoutVersio"
+"n that is unique for every slave\n% of this type to enure that a separate sla"
+"ve config is generated\n% for every slave\nLayoutVersion = 0;\n\nif ~(isnumer"
+"ic(product_code) && isnumeric(revision) ...\n        && isnumeric(pdo_list) &"
+"& isnumeric(sdo_config))\n    fname = '';\n    errordlg([gcb ':Value for Prod"
+"uct Code, Revision Number '...\n        'Pdo List and Sdo Config must be nume"
+"ric']);\nend\n\nif isa(ethercatinfo, class(EtherCATInfo))\n    ei = ethercati"
+"nfo;\nelseif isa(ethercatinfo,'char')\n    ei = EtherCATInfo;\n    \n    if l"
+"ength(ethercatinfo)\n        try\n            ei = EtherCATInfo(ethercatinfo)"
+";\n        catch\n        end\n\n        if isempty(ei)\n            try\n   "
+"             load(ethercatinfo);\n                eval(['ei = ' ethercatinfo "
+"';']);\n            catch\n            end\n        end\n\n        if isempty"
+"(ei)\n            warndlg([gcb ':File ''' ethercatinfo ''' not found']);\n   "
+"     end\n    end\nelse\n    errordlg([gcb ':File name for EtherCAT Info not "
+"a valid string']);\nend\n\n\nIOSpec = [];\nSlaveConfig = [];\n\nif ~isempty(e"
+"i)\n    if ~isempty(product_code) && product_code(1)\n        dev = ei(produc"
+"t_code, revision);\n        if isempty(dev)\n            errordlg([gcb ': Pro"
+"duct with specified Product Code '...\n                'and Revision Number d"
+"oes not exist']);\n        end\n    else\n        dev = ei{1};\n    end\n    "
+"\n    SlaveConfig = genSlaveConfig(dev);\n\n    switch lower(group)\n        "
+"case 'group data types in pdo'\n            type = 'PDO';\n        case 'grou"
+"p data types'\n            type = 'ALL';\n        otherwise\n            type"
+" = 'None';\n    end\n    \n    PdoEntries = getEntries(dev,'GroupType',type);"
+"\n    if ~isempty(SlaveConfig)\n        product_name = SlaveConfig.Descriptio"
+"ns.Devices.Device.Type.TextContent;\n    end\n    IOSpec.Port = struct('PdoEn"
+"try', PdoEntries);\nend\n"
 	  MaskDisplay		  "fprintf('%s\\nM:%s Idx:%s',...\n    product"
 "_name,masterStr,positionStr);\n"
 	  MaskIconFrame		  on
 	  MaskIconOpaque	  on
 	  MaskIconRotate	  "none"
 	  MaskIconUnits		  "autoscale"
-	  MaskValueString	  "0|1|''|hex2dec('0')|[]|[]|Group Data Types "
-"in PDO|[]|0|0"
+	  MaskValueString	  "0|0|'lenze.xml'|hex2dec('0')|[]|[]|No Group"
+"ing|[hex2dec('6060') 0 8 9]|0|0"
 	  MaskTabNameString	  ",,,,,,,,,"
 	}
 	Block {
