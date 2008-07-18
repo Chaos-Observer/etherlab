@@ -477,6 +477,12 @@ struct ecat_slave {
     uint_T input_port_count;
     uint_T output_port_count;
 
+    /* Here is the list of input and output ports in the sequence of
+     * definition. This allows direct indexing into the io_port structure
+     * knowing the port number */
+    struct io_port **input_port;
+    struct io_port **output_port;
+
     uint_T input_pdo_entry_count;
     uint_T output_pdo_entry_count;
 
@@ -1276,7 +1282,7 @@ get_ethercat_info(struct ecat_slave *slave)
                 "RevisionNo", &val));
     slave->revision_no = val;
     RETURN_ON_ERROR(get_string_field(slave, context, __LINE__, type, 0,
-                "Type", "Unspecified", &slave->type));
+                "TextContent", "Unspecified", &slave->type));
 
     pr_debug(slave, NULL, NULL, 0,
             "  VendorId %u\n", slave->vendor_id);
@@ -1965,6 +1971,9 @@ slave_mem_op(struct ecat_slave *slave, void (*method)(void*))
 
     (*method)(slave->io_sync_manager);
 
+    (*method)(slave->input_port);
+    (*method)(slave->output_port);
+
     (*method)(slave->sdo_config);
     (*method)(slave->type);
 
@@ -1973,39 +1982,28 @@ slave_mem_op(struct ecat_slave *slave, void (*method)(void*))
 
 int_T
 set_io_port_width(SimStruct *S, struct ecat_slave *slave,
-    uint_T port_idx, uint_T width)
+    uint_T port_idx, struct io_port *port, uint_T width)
 {
-    struct io_port *port = &slave->io_port[port_idx];
     const char_T * direction = port->direction ? "INPUT" : "OUTPUT";
-    struct pdo_entry **pdo_entry_ptr;
 
     if (width > port->width) {
-        snprintf(errmsg, sizeof(errmsg),
+        pr_error(slave, "Set IO Port Width", "", __LINE__,
                 "Maximum port width for %s port %u is %u.\n"
-                "Tried to set it to %i.",
+                "Tried to set it to %u.",
                 direction,
                 port_idx+1, port->width, width);
-        ssSetErrorStatus(S, errmsg);
         return -1;
     }
 
     if (width > 1 && slave->max_port_width > 1
             && slave->max_port_width != width) {
+        if (!slave->have_mixed_port_widths)
+            pr_info(slave, "Set IO Port Width", "", 0,
+                    "Setting mixed port widths\n");
         slave->have_mixed_port_widths = 1;
     }
 
     slave->max_port_width = max(width, slave->max_port_width);
-
-    for (pdo_entry_ptr = port->pdo_entry;
-            pdo_entry_ptr != port->pdo_entry_end; pdo_entry_ptr++) {
-        (*pdo_entry_ptr)->pwork_index = slave->pwork_count;
-        slave->pwork_count += (*pdo_entry_ptr)->vector_length;
-        if (port->bitop) {
-            (*pdo_entry_ptr)->iwork_index = slave->iwork_count;
-            slave->iwork_count += (*pdo_entry_ptr)->vector_length;
-        }
-
-    }
 
     if (port->gain_count) {
         if (port->gain_name)
@@ -2180,12 +2178,36 @@ check_pdo_configuration(SimStruct *S, struct ecat_slave *slave)
         }
     }
 
+    CHECK_CALLOC(slave->S, slave->input_port_count,
+            sizeof(*slave->input_port), slave->input_port);
+    CHECK_CALLOC(slave->S, slave->output_port_count,
+            sizeof(*slave->output_port), slave->output_port);
+
+    slave->input_port_count = 0;
+    slave->output_port_count = 0;
+
     for (io_port = slave->io_port; 
             io_port != slave->io_port_end; io_port++) {
         struct pdo_entry **pdo_entry_ptr;
 
+        if (io_port->direction) {
+            slave->input_port[slave->input_port_count++] = io_port;
+        }
+        else {
+            slave->output_port[slave->output_port_count++] = io_port;
+        }
+
         for (pdo_entry_ptr = io_port->pdo_entry;
                 pdo_entry_ptr != io_port->pdo_entry_end; pdo_entry_ptr++) {
+
+            (*pdo_entry_ptr)->pwork_index = slave->pwork_count;
+            slave->pwork_count += (*pdo_entry_ptr)->vector_length;
+
+            if (io_port->bitop) {
+                (*pdo_entry_ptr)->iwork_index = slave->iwork_count;
+                slave->iwork_count += (*pdo_entry_ptr)->vector_length;
+            }
+
             *(*pdo_entry_ptr)->io_port_end++ = io_port;
         }
     }
@@ -2235,8 +2257,7 @@ static void mdlInitializeSizes(SimStruct *S)
 {
     uint_T i;
     struct ecat_slave *slave;
-    struct io_port *port;
-    uint_T output_port_idx, input_port_idx;
+    struct io_port **port_ptr;
 
     ssSetNumSFcnParams(S, PARAM_COUNT);  /* Number of expected parameters */
     if (ssGetNumSFcnParams(S) != ssGetSFcnParamsCount(S)) {
@@ -2271,29 +2292,24 @@ static void mdlInitializeSizes(SimStruct *S)
     if (!ssSetNumOutputPorts(S, slave->output_port_count))
         return;
 
-    for ( port = slave->io_port, input_port_idx = output_port_idx = 0;
-            port != slave->io_port_end; port++) {
+    for (i = 0, port_ptr = slave->input_port; 
+            i < slave->input_port_count; i++, port_ptr++) {
+        /* Input port */
+        ssSetInputPortWidth(S, i, DYNAMICALLY_SIZED);
+        ssSetInputPortDataType(S, i,
+                ( (*port_ptr)->pdo_full_scale
+                  ? DYNAMICALLY_TYPED : (*port_ptr)->data_type));
+    }
 
-        if (port->direction) {
-            /* Input port */
-            ssSetInputPortWidth(S, input_port_idx, DYNAMICALLY_SIZED);
-            ssSetInputPortDataType(S, input_port_idx,
-                    ( port->pdo_full_scale
-                      ? DYNAMICALLY_TYPED : port->data_type));
+    for (i = 0, port_ptr = slave->output_port; 
+            i < slave->output_port_count; i++, port_ptr++) {
+        /* Output port */
+        ssSetOutputPortWidth(S,    i, (*port_ptr)->width);
+        ssSetOutputPortDataType(S, i, (*port_ptr)->data_type);
 
-            input_port_idx++;
-        }
-        else {
-            /* Output port */
-            ssSetOutputPortWidth(S,    output_port_idx, port->width);
-            ssSetOutputPortDataType(S, output_port_idx, port->data_type);
+        if (set_io_port_width(S, slave, i, *port_ptr, (*port_ptr)->width))
+            return;
 
-            if (set_io_port_width(S, slave,
-                        port - slave->io_port, port->width))
-                return;
-
-            output_port_idx++;
-        }
     }
 
     ssSetNumSampleTimes(S, 1);
@@ -2352,11 +2368,12 @@ static void mdlSetInputPortWidth(SimStruct *S, int_T port, int_T width)
 
     for (io_port = slave->io_port; io_port != slave->io_port_end; io_port++) {
         if (io_port->direction) {
-            if (port_idx++ == port)
+            if (port_idx == port)
                 break;
+            port_idx++;
         }
     }
-    set_io_port_width(S, slave, port_idx-1, width);
+    set_io_port_width(S, slave, port_idx, slave->input_port[port_idx], width);
 }
 
 /* This function is called when some ports are still DYNAMICALLY_SIZED
@@ -2366,28 +2383,24 @@ static void mdlSetInputPortWidth(SimStruct *S, int_T port, int_T width)
 static void mdlSetDefaultPortDimensionInfo(SimStruct *S)
 {
     struct ecat_slave *slave = ssGetUserData(S);
-    int_T input_port_idx, output_port_idx;
-    struct io_port *port;
+    int_T i;
+    struct io_port **port_ptr;
 
     if (!slave)
         return;
 
-    for (port = slave->io_port, input_port_idx = output_port_idx = 0;
-            port != slave->io_port_end; port++) {
-        if (port->direction) {
-            if (ssGetInputPortWidth(S, input_port_idx)
-                    == DYNAMICALLY_SIZED) {
-                ssSetInputPortWidth(S, input_port_idx, port->width);
-                set_io_port_width(S, slave, input_port_idx, port->width);
-            }
-            input_port_idx++;
+    for (i = 0, port_ptr = slave->input_port; 
+            i < slave->input_port_count; i++, port_ptr++) {
+        if (ssGetInputPortWidth(S, i) == DYNAMICALLY_SIZED) {
+            ssSetInputPortWidth(S, i, (*port_ptr)->width);
+            set_io_port_width(S, slave, i, *port_ptr, (*port_ptr)->width);
         }
-        else {
-            if (ssGetOutputPortWidth(S, output_port_idx)
-                    == DYNAMICALLY_SIZED) {
-                ssSetOutputPortWidth(S, output_port_idx, port->width);
-            }
-            output_port_idx++;
+    }
+
+    for (i = 0, port_ptr = slave->output_port; 
+            i < slave->output_port_count; i++, port_ptr++) {
+        if (ssGetOutputPortWidth(S, i) == DYNAMICALLY_SIZED) {
+            ssSetOutputPortWidth(S, i, (*port_ptr)->width);
         }
     }
 }
@@ -2545,6 +2558,7 @@ static void mdlRTW(SimStruct *S)
     struct ecat_slave *slave = ssGetUserData(S);
     uint_T const_index = 0;
     uint_T filter_index = 0;
+    uint_T sm_idx_max = 0;
     real_T const_vector[slave->constant_count];
 
     /* General assignments of array indices that form the basis for
@@ -2657,20 +2671,21 @@ static void mdlRTW(SimStruct *S)
         int32_T mapped_pdo_entry[PdoEntryMax][mapped_pdo_entry_count];
         uint_T m_pdo_entry_idx = 0;
         uint32_T pdo_entry_info[PdoEI_Max][slave->pdo_entry_count];
-        uint_T sm_idx = 0;
 
         uint_T pdo_idx = 0, pdo_entry_idx = 0;
 
         struct sync_manager **sm_ptr;
 
+        memset(sync_manager, 0, sizeof(sync_manager));
+
         for (sm_ptr = slave->io_sync_manager; 
                 sm_ptr != slave->io_sync_manager_end; sm_ptr++) {
             struct pdo **pdo_ptr;
 
-            sync_manager[SM_Index][sm_idx] = (*sm_ptr)->index;
-            sync_manager[SM_Direction][sm_idx] =
+            sync_manager[SM_Index][sm_idx_max] = (*sm_ptr)->index;
+            sync_manager[SM_Direction][sm_idx_max] =
                 (*sm_ptr)->direction == EC_SM_INPUT;
-            sync_manager[SM_PdoCount][sm_idx] = 0;
+            sync_manager[SM_PdoCount][sm_idx_max] = 0;
 
             for (pdo_ptr = (*sm_ptr)->pdo_ptr; 
                     pdo_ptr != (*sm_ptr)->pdo_ptr_end; pdo_ptr++) {
@@ -2679,7 +2694,7 @@ static void mdlRTW(SimStruct *S)
                 if ((*pdo_ptr)->exclude_from_config)
                     continue;
 
-                sync_manager[SM_PdoCount][sm_idx]++;
+                sync_manager[SM_PdoCount][sm_idx_max]++;
 
                 pdo_info[PdoInfo_PdoIndex][pdo_idx] =
                     (*pdo_ptr)->index;
@@ -2690,7 +2705,6 @@ static void mdlRTW(SimStruct *S)
                         pdo_entry != (*pdo_ptr)->entry_end;
                         pdo_entry++, pdo_entry_idx++) {
                     struct io_port **port_ptr;
-
 
                     pdo_entry_info[PdoEI_Index][pdo_entry_idx] =
                         pdo_entry->index;
@@ -2716,6 +2730,7 @@ static void mdlRTW(SimStruct *S)
                             (*port_ptr)->data_bit_len;
                         mapped_pdo_entry[PdoEntryPWork][m_pdo_entry_idx] = 
                             pdo_entry->pwork_index;
+
                         mapped_pdo_entry[PdoEntryIWork][m_pdo_entry_idx] =
                             (*port_ptr)->bitop 
                             ? pdo_entry->iwork_index : -1;
@@ -2725,7 +2740,8 @@ static void mdlRTW(SimStruct *S)
                 }
                 pdo_idx++;
             }
-            sm_idx++;
+            if (sync_manager[SM_PdoCount][sm_idx_max])
+                sm_idx_max++;
         }
 
         if (mapped_pdo_entry_count) {
@@ -2748,7 +2764,9 @@ static void mdlRTW(SimStruct *S)
         /* Don't need to check for slave->sync_manager_count here,
          * was checked already */
         if (!ssWriteRTW2dMatParam(S, "SyncManager", sync_manager,
-                    SS_UINT32, sm_count, SM_Max))
+                    SS_UINT32, 
+                    slave->io_sync_manager_end - slave->io_sync_manager,
+                    SM_Max))
             return;
     }
 
@@ -2862,6 +2880,10 @@ static void mdlRTW(SimStruct *S)
                     io_port_count))
             return;
     }
+
+    if (!ssWriteRTWScalarParam(S,
+                "SyncManagerCount", &sm_idx_max, SS_UINT32))
+        return;
 
     if (!ssWriteRTWScalarParam(S,
                 "FilterCount", &slave->filter_count, SS_UINT32))
