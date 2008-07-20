@@ -169,9 +169,13 @@ rt_OneStep()
 {
     RT_MODEL *S = rt_app.app_privdata;
     real_T tnext;
+    double *wt;
 
     etl_world_time[0] = (double)task_stats[0].time.tv_sec 
         + (double)task_stats[0].time.tv_usec / 1.0e6;
+    for (wt = etl_world_time; wt != etl_world_time + NUMST; wt++) {
+        *wt = etl_world_time[0];
+    }
 
     tnext = rt_SimGetNextSampleHit();
     rtsiSetSolverStopTime(rtmGetRTWSolverInfo(S),tnext);
