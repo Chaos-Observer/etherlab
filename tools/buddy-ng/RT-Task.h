@@ -34,7 +34,7 @@
 #include "include/fio_ioctl.h"
 
 class RTModel;
-class RTComIOTask;
+class RTAppClient;
 
 class RTTask: public Task {
     public:
@@ -48,14 +48,14 @@ class RTTask: public Task {
         }
         const std::string& getDevice() const { return device; }
 
-        void setComTask(RTComIOTask* rtComTask);
-        void clrComTask(RTComIOTask* rtComTask);
+        void regAppClient(RTAppClient* rtComTask);
+        void deregAppClient(RTAppClient* rtComTask);
 
     private:
         const std::string device;
         FileDevice fd;
 
-        std::list<RTComIOTask*> rtComTaskList;
+        std::list<RTAppClient*> rtComTaskList;
 
         ModelMap modelMap;
 

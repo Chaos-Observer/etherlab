@@ -67,8 +67,8 @@ int main(int argc, const char *argv[])
 {
     ConfigFile::ConfigFile("buddy.conf");
 
-    RTTask *rtTask = NULL;
-    RTComServer rtcomServer(rtTask);
+    RTTask rtTask;
+    RTComServer rtcomServer(&rtTask);
 
     Dispatcher::run();
 

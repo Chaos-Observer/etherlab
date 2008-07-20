@@ -24,28 +24,29 @@
  *
  */
 
-#include "RTComProtocol.h"
-#include "SocketLayer.h"
-#include "PacketLayer.h"
+#ifndef RTCOMPROTOCOLSERVER_H
+#define RTCOMPROTOCOLSERVER_H
 
-#undef DEBUG
-//#define DEBUG 1
+#include "Layer.h"
+#include "RTAppClient.h"
 
-
-using namespace std;
-
-//************************************************************************
-RTComProtocol::RTComProtocol(Task* parent, RTTask *_rtTask, int _fd, 
-        unsigned int _buflen, unsigned int _maxbuf): 
-    rtTask(_rtTask)
-//************************************************************************
-{
-    layers.push(new SocketLayer(parent, _fd));
-    layers.push(new PacketLayer(layers.top()));
+namespace LayerStack {
+    class IOBuffer;
 }
 
-//************************************************************************
-RTComProtocol::~RTComProtocol()
-//************************************************************************
-{
-}
+class RTComProtocolServer: public LayerStack::Layer, public RTAppClient {
+    public:
+        RTComProtocolServer(Layer* below, RTTask *rtTask);
+        ~RTComProtocolServer();
+
+    private:
+        RTTask* const rtTask;
+
+        // Reimplemented from RTAppClient
+        void newApplication(const std::string& model);
+        void delApplication(const std::string& model);
+
+        void finished(const LayerStack::IOBuffer* buf);
+};
+
+#endif // RTCOMPROTOCOLSERVER_H

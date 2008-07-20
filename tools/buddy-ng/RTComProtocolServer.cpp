@@ -24,45 +24,58 @@
  *
  */
 
-#include "RTComServer.h"
-#include "RTComSocket.h"
-#include "ConfigFile.h"
+#include "RTComProtocolServer.h"
+#include "IOBuffer.h"
+#include "RT-Task.h"
+
+#include "RTComVocab.h"
 
 #include <iostream>
 
-using namespace std;
+#undef DEBUG
+//#define DEBUG 1
 
 //************************************************************************
-RTComServer::RTComServer(RTTask* _rtTask): 
-    TCPServerTask(NULL), rtTask(_rtTask)
+RTComProtocolServer::RTComProtocolServer(Layer *below, RTTask *_rtTask):
+    Layer(below,"RTComProtocolServer", 0), RTAppClient(_rtTask),
+    rtTask(_rtTask)
 //************************************************************************
 {
-    port = ConfigFile::getInt("rtcom", "port", 2500);
-    s_addr = ConfigFile::getString("rtcom", "interface", "0.0.0.0");
+    std::cerr << "XXXXXXXXXXXXX 2 " << __func__ << std::endl;
 
-    // Open a TCP port
-    open(s_addr.c_str(), port);
-    enableRead(fd);
-}
-
-//************************************************************************
-RTComServer::~RTComServer()
-//************************************************************************
-{
-}
-
-//************************************************************************
-int RTComServer::read(int)
-//************************************************************************
-{
-    struct sockaddr_in in_addr;
-    socklen_t size = sizeof(in_addr);
-    int new_fd;
-
-    new_fd = SocketServerTask::accept((struct sockaddr*)&in_addr, size);
-    if (new_fd >= 0) {
-        new RTComSocket(this, rtTask, new_fd);
+    RTTask::ModelMap mm = rtTask->getModelMap();
+    for (RTTask::ModelMap::iterator m = mm.begin(); m != mm.end(); m++) {
+        newApplication(m->first);
     }
+}
 
-    return new_fd;
+//************************************************************************
+RTComProtocolServer::~RTComProtocolServer()
+//************************************************************************
+{
+}
+
+//************************************************************************
+void RTComProtocolServer::newApplication(const std::string& name)
+//************************************************************************
+{
+    LayerStack::IOBuffer *buf = new LayerStack::IOBuffer(this);
+    buf->appendInt(0);
+    buf->appendInt(NEW_APPLICATION);
+    buf->append(name);
+    buf->transmit();
+}
+
+//************************************************************************
+void RTComProtocolServer::delApplication(const std::string&)
+//************************************************************************
+{
+}
+
+//************************************************************************
+void RTComProtocolServer::finished(const LayerStack::IOBuffer* buf)
+//************************************************************************
+{
+    std::cerr << __func__ << " delete buf " << buf << std::endl;
+    delete buf;
 }

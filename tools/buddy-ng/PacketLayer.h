@@ -31,6 +31,8 @@
 
 #include <queue>
 
+namespace LayerStack {
+
 class PacketLayer: public Layer {
     public:
         PacketLayer(Layer* below);
@@ -43,6 +45,8 @@ class PacketLayer: public Layer {
         size_t receive(const char* buf, size_t data_len);
         std::string getHeader(const char* puf, size_t len) const;
 };
+
+} // namespace LayerStack
 
 #endif // PACKETLAYER_H
 

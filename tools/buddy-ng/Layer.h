@@ -28,15 +28,22 @@
 #define LAYER_H
 
 #include <cstddef>
+#include <string>
 
-#include "IOBuffer.h"
+namespace LayerStack {
+
+class IOBuffer;
 
 class Layer {
     public:
         Layer(Layer* below, const std::string& name, size_t headerLen);
         virtual ~Layer();
 
-        void sendName();
+//        void sendName();
+
+        const std::string& getName() const;
+
+        bool isRecvTerminal() const;
 
         /** Called by the layer below to say that the buffer was sent */
         virtual void finished(const IOBuffer*);
@@ -51,10 +58,22 @@ class Layer {
         virtual bool send(const IOBuffer*);
         virtual size_t receive(const char* data_ptr, size_t data_len);
 
+    protected:
+        void setSendTerminal(bool terminate);
+        void setRecvTerminal(bool terminate);
+        
+        void setLayerBelow(Layer* _below);
+
+        size_t post(const char* buf, size_t data_len) const;
+        size_t post(const std::string* buf, size_t offset = 0) const;
+
     private:
-        Layer* const below;
+        Layer* below;
         const std::string name;
         const size_t headerLen;
+
+        bool sendTerminal;
+        bool recvTerminal;
 
         IOBuffer *nameBuf;
 
@@ -64,6 +83,8 @@ class Layer {
          * layer below */
         void introduce(Layer* newLayer);
 };
+
+} // namespace LayerStack
 
 #endif // LAYER_H
 

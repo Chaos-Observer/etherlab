@@ -3,7 +3,7 @@
  * **********************************************************************/
 
 /*
- * @note Copyright (C) 2008 Richard Hacker
+ * Copyright (C) 2008 Richard Hacker
  * <lerichi@gmx.net>
  *
  *  License: GPL
@@ -24,41 +24,19 @@
  *
  */
 
-#ifndef DISPATCHER_H
-#define DISPATCHER_H
+#ifndef RTCOMSOCKET_H
+#define RTCOMSOCKET_H
 
-#include <sys/types.h>
-#include <sys/time.h>
-#include <event.h>
+#include "SocketLayer.h"
 
-#include <list>
+class RTTask;
 
-class Task;
-
-class Dispatcher {
-    friend class Task;
-
+class RTComSocket: public SocketLayer {
     public:
-        Dispatcher();
-        ~Dispatcher();
-        static void addEvent(Task *t);
-
-        static int run();
-        static int run_detached();
-
-        static void* setReadable(Task*, int fd);
-        static void* setWriteable(Task*, int fd);
-        static void remove(void*);
+        RTComSocket(Task* parent, RTTask *rtTask, int fd);
+        ~RTComSocket();
 
     private:
-        typedef struct event Event;
-
-        void detach();
-
-        std::list<Event*> events;
-
-        static void eventCallbackFunc(int, short, void*);
 };
 
-#endif // DISPATCHER_H
-
+#endif // RTCOMSOCKET_H

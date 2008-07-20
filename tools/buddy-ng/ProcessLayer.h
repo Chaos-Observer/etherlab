@@ -24,41 +24,33 @@
  *
  */
 
-#ifndef DISPATCHER_H
-#define DISPATCHER_H
+#ifndef PROCESSLAYER_H
+#define PROCESSLAYER_H
 
-#include <sys/types.h>
-#include <sys/time.h>
-#include <event.h>
+#include <cstddef>
+#include <string>
 
-#include <list>
+#include "Layer.h"
 
-class Task;
+namespace LayerStack {
 
-class Dispatcher {
-    friend class Task;
+class IOBuffer;
 
+class ProcessLayer: public Layer {
     public:
-        Dispatcher();
-        ~Dispatcher();
-        static void addEvent(Task *t);
+        ProcessLayer(Layer* below);
+        virtual ~ProcessLayer();
 
-        static int run();
-        static int run_detached();
-
-        static void* setReadable(Task*, int fd);
-        static void* setWriteable(Task*, int fd);
-        static void remove(void*);
+    protected:
 
     private:
-        typedef struct event Event;
+        /** Reimplemented from class Layer */
+        void finished(const IOBuffer*);
+        size_t receive(const char* data_ptr, size_t data_len);
 
-        void detach();
-
-        std::list<Event*> events;
-
-        static void eventCallbackFunc(int, short, void*);
 };
 
-#endif // DISPATCHER_H
+} // namespace LayerStack
+
+#endif // PROCESSLAYER_H
 

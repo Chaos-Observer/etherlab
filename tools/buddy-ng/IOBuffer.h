@@ -30,6 +30,8 @@
 #include <string>
 #include <list>
 
+namespace LayerStack {
+
 class Layer;
 
 class IOBuffer: public std::string {
@@ -55,11 +57,9 @@ class IOBuffer: public std::string {
          */
         bool transmit();
 
-        /** Send the receive buffer up the layer stack. 
-         *
-         * Return: number of bytes consumed
-         */
-        size_t receive();
+        IOBuffer& appendInt(uint32_t);
+
+//        size_t receive();
 
     private:
         Layer* const owner;
@@ -76,6 +76,8 @@ class IOBuffer: public std::string {
 
         void init();
 };
+
+} // namespace LayerStack
 
 #endif // IOBUFFER_H
 

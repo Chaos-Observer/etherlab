@@ -24,41 +24,20 @@
  *
  */
 
-#ifndef DISPATCHER_H
-#define DISPATCHER_H
+#ifndef DEBUGLAYER_H
+#define DEBUGLAYER_H
 
-#include <sys/types.h>
-#include <sys/time.h>
-#include <event.h>
+#include "Layer.h"
 
-#include <list>
-
-class Task;
-
-class Dispatcher {
-    friend class Task;
-
+class DebugLayer: public LayerStack::Layer {
     public:
-        Dispatcher();
-        ~Dispatcher();
-        static void addEvent(Task *t);
-
-        static int run();
-        static int run_detached();
-
-        static void* setReadable(Task*, int fd);
-        static void* setWriteable(Task*, int fd);
-        static void remove(void*);
+        DebugLayer(LayerStack::Layer* below);
+        ~DebugLayer();
 
     private:
-        typedef struct event Event;
-
-        void detach();
-
-        std::list<Event*> events;
-
-        static void eventCallbackFunc(int, short, void*);
+        /* Methods implemented from LayerStack::Layer */
+        size_t receive(const char* buf, size_t data_len);
 };
 
-#endif // DISPATCHER_H
+#endif // DEBUGLAYER_H
 

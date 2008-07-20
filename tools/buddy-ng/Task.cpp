@@ -111,8 +111,7 @@ int Task::write(int)
 void Task::disableRead()
 //************************************************************************
 {
-    if (readRef)
-        Dispatcher::remove(readRef);
+    Dispatcher::remove(readRef);
     readRef = NULL;
 }
 
@@ -120,8 +119,7 @@ void Task::disableRead()
 void Task::disableWrite()
 //************************************************************************
 {
-    if (writeRef)
-        Dispatcher::remove(writeRef);
+    Dispatcher::remove(writeRef);
     writeRef = NULL;
 }
 

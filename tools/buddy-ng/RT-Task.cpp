@@ -22,7 +22,7 @@
 
 #include "RT-Task.h"
 #include "RT-Model.h"
-#include "RTComIOTask.h"
+#include "RTAppClient.h"
 #include "ConfigFile.h"
 #include "Exception.h"
 
@@ -49,7 +49,7 @@ int RTTask::read(int)
 {
     struct rtcom_event event;
     int n;
-    std::list<RTComIOTask*>::iterator it;
+    std::list<RTAppClient*>::iterator it;
     std::string appName;
 
     n = fd.read(&event, sizeof(event));
@@ -121,12 +121,12 @@ void RTTask::kill(Task* child, int rv)
     }
 }
 
-void RTTask::setComTask(RTComIOTask* rtComTask)
+void RTTask::regAppClient(RTAppClient* appClient)
 {
-    rtComTaskList.push_back(rtComTask);
+    rtComTaskList.push_back(appClient);
 }
 
-void RTTask::clrComTask(RTComIOTask* rtComTask)
+void RTTask::deregAppClient(RTAppClient* appClient)
 {
-    rtComTaskList.remove(rtComTask);
+    rtComTaskList.remove(appClient);
 }

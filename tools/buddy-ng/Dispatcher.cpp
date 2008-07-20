@@ -43,7 +43,7 @@ Dispatcher::Dispatcher()
 Dispatcher::~Dispatcher()
 //************************************************************************
 {
-    for (list<struct event*>::iterator it = events.begin();
+    for (list<Event*>::iterator it = events.begin();
             it != events.end(); it++)
         event_del(*it);
 }
@@ -75,12 +75,18 @@ void Dispatcher::detach()
 void* Dispatcher::setWriteable(Task* task, int fd)
 //************************************************************************
 {
-    struct event* event = new(struct event);
+    std::cerr << __func__ << " 0" << std::endl;
+    Event* event = new Event;
+    std::cerr << ">>>>> new event " << event << std::endl;
 
+    std::cerr << __func__ << " 1" << std::endl;
     dispatcher.events.push_front(event);
+    std::cerr << __func__ << " 2" << std::endl;
     event_set(event, fd, EV_WRITE | EV_PERSIST, eventCallbackFunc,
             task);
+    std::cerr << __func__ << " 3" << std::endl;
     event_add(event, NULL);
+    std::cerr << __func__ << " 4" << std::endl;
     return event;
 }
 
@@ -88,7 +94,8 @@ void* Dispatcher::setWriteable(Task* task, int fd)
 void* Dispatcher::setReadable(Task *task, int fd)
 //************************************************************************
 {
-    struct event* event = new(struct event);
+    Event* event = new Event;
+    std::cerr << ">>>>> new event " << event << std::endl;
 
     dispatcher.events.push_front(event);
     event_set(event, fd, EV_READ | EV_PERSIST, eventCallbackFunc,
@@ -101,12 +108,13 @@ void* Dispatcher::setReadable(Task *task, int fd)
 void Dispatcher::remove(void* p)
 //************************************************************************
 {
-    struct event* event = reinterpret_cast<struct event*>(p);
-    if (!event)
+    Event* event = reinterpret_cast<Event*>(p);
+    if (!p)
         return;
     event_del(event);
     dispatcher.events.remove(event);
     delete event;
+    std::cerr << "<<<<< delete event " << event << std::endl;
 }
 
 //************************************************************************

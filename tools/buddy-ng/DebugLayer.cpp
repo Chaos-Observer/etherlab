@@ -25,59 +25,40 @@
  */
 
 #include <iostream>
-#include "PacketLayer.h"
-#include "IOBuffer.h"
-
-#include <arpa/inet.h>
-
-namespace LS = LayerStack;
+#include "DebugLayer.h"
 
 ////////////////////////////////////////////////////////////////////////
-LS::PacketLayer::PacketLayer(Layer* below):
-    Layer(below,"PacketLayer\n",sizeof(uint32_t))
+DebugLayer::DebugLayer(Layer* below):
+    Layer(below,"DebugLayer\n",0)
 {
-    setRecvTerminal(true);
 }
 
 ////////////////////////////////////////////////////////////////////////
-LS::PacketLayer::~PacketLayer()
+DebugLayer::~DebugLayer()
 {
 }
 
 ////////////////////////////////////////////////////////////////////////
 // Method from class Layer
-std::string LS::PacketLayer::getHeader(const char*, size_t len) const
+size_t DebugLayer::receive(const char* buf, size_t data_len)
 {
-    uint32_t packetLen = htonl(len);
-    std::cerr << "Packet layer here; sending header " 
-        << packetLen << " " << len << std::endl;
-    return std::string((char*)&packetLen, sizeof(packetLen));
-}
+    const char* ptr = buf;
+    const char* ptr_end = buf + data_len;
+    std::ios_base::fmtflags flags = std::cout.flags();
+    unsigned int i = 0;
 
-////////////////////////////////////////////////////////////////////////
-// Method from class Layer
-size_t LS::PacketLayer::receive(const char* buf, size_t data_len)
-{
-    size_t processed = 0;
-
-    while (data_len - processed >= sizeof(packetLen)) {
-
-        packetLen = ntohl(*(uint32_t*)(buf + processed));
-        processed += sizeof(packetLen);
-
-        std::cerr << "Expecting " << packetLen << std::endl;
-
-        if (data_len - processed < packetLen) {
-            processed -= sizeof(packetLen);
-            break;
-        }
-
-        if (packetLen != post(buf + processed, packetLen)) {
-            std::cerr << "did not process everything" << std::endl;
-        }
-
-        processed += packetLen;
+    std::cout.width(10);
+    std::cout.flags(std::ios_base::right | std::ios_base::hex);
+    std::cout << "Received:";
+    for (ptr = buf; ptr_end != ptr; ptr++) {
+        if (!(i++ & 0x0f)) 
+            std::cout << std::endl;
+        std::cout << " " << std::hex << (uint32_t)*ptr;
     }
+    std::cout << std::endl;
 
-    return processed;
+    std::cout.flags(flags);
+
+    post(buf,data_len);
+    return 0;
 }

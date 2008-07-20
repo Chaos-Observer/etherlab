@@ -3,7 +3,7 @@
  * **********************************************************************/
 
 /*
- * @note Copyright (C) 2008 Richard Hacker
+ * Copyright (C) 2008 Richard Hacker
  * <lerichi@gmx.net>
  *
  *  License: GPL
@@ -24,42 +24,34 @@
  *
  */
 
-#ifndef SOCKETLAYER_H
-#define SOCKETLAYER_H
+#include "RTComSocket.h"
+#include "PacketLayer.h"
+#include "DebugLayer.h"
+#include "RTComProtocolServer.h"
 
-#include "Task.h"
-#include "Layer.h"
+#include <iostream>
 
-#include <queue>
-#include <string>
+#undef DEBUG
+//#define DEBUG 1
 
-namespace LayerStack {
-    class IOBuffer;
+//************************************************************************
+RTComSocket::RTComSocket(Task* parent, RTTask *rtTask, int fd):
+    SocketLayer(parent, fd)
+//************************************************************************
+{
+    std::cerr << "XXXXXXXXXXXXX 2" << std::endl;
+    Layer* layer;
+
+    layer = new DebugLayer(this);
+    layer = new LayerStack::PacketLayer(layer);
+    layer = new LayerStack::Layer(layer, "dummy", 0);
+    layer = new RTComProtocolServer(layer, rtTask);
+
 }
 
-class SocketLayer: public Task, public LayerStack::Layer {
-    public:
-        SocketLayer(Task *parent, int fd);
-        ~SocketLayer();
-
-    private:
-        const int fd;
-
-        const char* wptr;
-        size_t bufLen;
-
-        typedef std::queue<const LayerStack::IOBuffer*> BufferQ;
-        BufferQ sendq;
-        std::string inBuf;
-
-        /* Method implemented from Task */
-        int read(int fd);
-        int write(int fd);
-
-        /* Methods implemented from Layer */
-        bool send(const LayerStack::IOBuffer*);
-        void finished(const LayerStack::IOBuffer*);
-};
-
-#endif // SOCKETLAYER_H
-
+//************************************************************************
+RTComSocket::~RTComSocket()
+//************************************************************************
+{
+    std::cerr << "Kill XXXXXXXXXXXXX 2" << std::endl;
+}

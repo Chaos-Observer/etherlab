@@ -24,45 +24,34 @@
  *
  */
 
-#include "RTComServer.h"
-#include "RTComSocket.h"
-#include "ConfigFile.h"
+#include "RT-Task.h"
+#include "RTAppClient.h"
 
 #include <iostream>
 
-using namespace std;
-
 //************************************************************************
-RTComServer::RTComServer(RTTask* _rtTask): 
-    TCPServerTask(NULL), rtTask(_rtTask)
+RTAppClient::RTAppClient(RTTask* _rtTask): rtTask(_rtTask)
 //************************************************************************
 {
-    port = ConfigFile::getInt("rtcom", "port", 2500);
-    s_addr = ConfigFile::getString("rtcom", "interface", "0.0.0.0");
-
-    // Open a TCP port
-    open(s_addr.c_str(), port);
-    enableRead(fd);
+    std::cerr << "XXXXXXXXXXXXX 3" << std::endl;
+    rtTask->regAppClient(this);
 }
 
 //************************************************************************
-RTComServer::~RTComServer()
+RTAppClient::~RTAppClient()
+//************************************************************************
+{
+    rtTask->deregAppClient(this);
+}
+
+//************************************************************************
+void RTAppClient::newApplication(const std::string&)
 //************************************************************************
 {
 }
 
 //************************************************************************
-int RTComServer::read(int)
+void RTAppClient::delApplication(const std::string&)
 //************************************************************************
 {
-    struct sockaddr_in in_addr;
-    socklen_t size = sizeof(in_addr);
-    int new_fd;
-
-    new_fd = SocketServerTask::accept((struct sockaddr*)&in_addr, size);
-    if (new_fd >= 0) {
-        new RTComSocket(this, rtTask, new_fd);
-    }
-
-    return new_fd;
 }

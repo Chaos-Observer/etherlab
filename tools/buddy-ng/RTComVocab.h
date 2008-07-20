@@ -24,26 +24,9 @@
  *
  */
 
-#ifndef RTCOMPROTOCOL_H
-#define RTCOMPROTOCOL_H
+#ifndef RTCOMVOCAB_H
+#define RTCOMVOCAB_H
 
-#include <stack>
+#define NEW_APPLICATION 1
 
-class Layer;
-class Task;
-class RTTask;
-
-class RTComProtocol {
-    public:
-        RTComProtocol(Task* parent, RTTask *rtTask, int fd,
-                unsigned int buflen = 4096, unsigned int max_buffers = 0);
-        ~RTComProtocol();
-
-    private:
-        RTTask* const rtTask;
-
-        typedef std::stack<Layer*> LayerStack;
-        LayerStack layers;
-};
-
-#endif // RTCOMPROTOCOL_H
+#endif // RTCOMVOCAB_H

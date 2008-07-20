@@ -25,25 +25,43 @@
  */
 
 #include <iostream>
+
 #include "SocketLayer.h"
+#include "IOBuffer.h"
 
 ////////////////////////////////////////////////////////////////////////
 SocketLayer::SocketLayer(Task *_parent, int _fd): 
-    Task(_parent), Layer(0, "SocketLayer\n", 0), 
-    fd(_fd), bufLen(0), inBuf(this)
+    Task(_parent), Layer(0, "RTCom", 0), 
+    fd(_fd), bufLen(0)
 {
+    LayerStack::IOBuffer 
+        *name = new LayerStack::IOBuffer(this, "RTCom\0", 6);
+    name->transmit();
     enableRead(fd);
-    sendName();
+    setSendTerminal(true);
 }
 
 ////////////////////////////////////////////////////////////////////////
 SocketLayer::~SocketLayer()
 {
+    std::cerr << "Kill SocketLayer 2" << std::endl;
+    while(sendq.size()) {
+        sendq.front()->getOwner()->finished(sendq.front());
+        sendq.pop();
+    }
+    close(fd);
 }
 
 ////////////////////////////////////////////////////////////////////////
 // Method from class Layer
-bool SocketLayer::send(const IOBuffer* buf)
+void SocketLayer::finished(const LayerStack::IOBuffer* buf)
+{
+    delete buf;
+}
+
+////////////////////////////////////////////////////////////////////////
+// Method from class Layer
+bool SocketLayer::send(const LayerStack::IOBuffer* buf)
 {
     sendq.push(buf);
 
@@ -74,7 +92,7 @@ int SocketLayer::write(int fd)
     wptr += len;
 
     if (!bufLen) {
-        const IOBuffer* buf = sendq.front();
+        const LayerStack::IOBuffer* buf = sendq.front();
 
         buf->getOwner()->finished(buf);
         sendq.pop();
@@ -105,9 +123,9 @@ int SocketLayer::read(int fd)
         return len;
 
     inBuf.append(data,len);
-    size_t processed = inBuf.receive();
-
-    inBuf.erase(0, processed);
+    std::cerr << "inbuf length" << inBuf.length() << std::endl;
+    inBuf.erase(0, post(&inBuf));
+    std::cerr << "inbuf length" << inBuf.length() << std::endl;
 
     return len;
 }

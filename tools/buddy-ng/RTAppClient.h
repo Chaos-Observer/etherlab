@@ -3,7 +3,7 @@
  * **********************************************************************/
 
 /*
- * @note Copyright (C) 2008 Richard Hacker
+ * Copyright (C) 2008 Richard Hacker
  * <lerichi@gmx.net>
  *
  *  License: GPL
@@ -24,41 +24,22 @@
  *
  */
 
-#ifndef DISPATCHER_H
-#define DISPATCHER_H
+#ifndef RTAPPCLIENT_H
+#define RTAPPCLIENT_H
 
-#include <sys/types.h>
-#include <sys/time.h>
-#include <event.h>
+class RTTask;
 
-#include <list>
-
-class Task;
-
-class Dispatcher {
-    friend class Task;
-
+class RTAppClient {
     public:
-        Dispatcher();
-        ~Dispatcher();
-        static void addEvent(Task *t);
+        RTAppClient(RTTask* _rtTask);
+        virtual ~RTAppClient();
 
-        static int run();
-        static int run_detached();
-
-        static void* setReadable(Task*, int fd);
-        static void* setWriteable(Task*, int fd);
-        static void remove(void*);
+        // Called when a model is added or removed dynamically
+        virtual void newApplication(const std::string& model);
+        virtual void delApplication(const std::string& model);
 
     private:
-        typedef struct event Event;
-
-        void detach();
-
-        std::list<Event*> events;
-
-        static void eventCallbackFunc(int, short, void*);
+        RTTask* const rtTask;
 };
 
-#endif // DISPATCHER_H
-
+#endif // RTAPPCLIENT_H
