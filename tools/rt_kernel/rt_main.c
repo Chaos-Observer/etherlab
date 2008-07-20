@@ -480,7 +480,7 @@ int start_rt_app(const struct rt_app *rt_app,
     rt_kernel.application[app_id] = app;
 
     app->rt_app = rt_app;
-    app->task_stats_len = rt_app->num_st * sizeof(struct task_stats);
+    app->task_stats_len = rt_app->num_tasks * sizeof(struct task_stats);
 
     for (tid = 0; tid < rt_app->num_tasks; tid++) {
         struct rt_task *task = &app->task[tid];
