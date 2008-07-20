@@ -687,7 +687,7 @@ int msr_print_param_list(char *buf,char *aname,char *id,int shrt,int mode)
 
     /* Element in der Liste suchen */
     FOR_THE_LIST(element,msr_param_head) {
-	if (element &&  ((aname == NULL) || (strstr(element->p_bez,aname) == element->p_bez))){  //suche alle Parameter, die mit aname anfangen 
+        if (element &&  ((aname == NULL) || strcmp(aname,element->p_bez) == 0)){
 
 	    if(element->p_read !=NULL) /* erst die Aktualisierungsfunktion aufrufen */
 		element->p_read(element);
