@@ -173,7 +173,7 @@ rt_OneStep()
 
     etl_world_time[0] = (double)task_stats[0].time.tv_sec 
         + (double)task_stats[0].time.tv_usec / 1.0e6;
-    for (wt = etl_world_time; wt != etl_world_time + NUMST; wt++) {
+    for (wt = etl_world_time; wt < etl_world_time + NUMST; wt++) {
         *wt = etl_world_time[0];
     }
 
