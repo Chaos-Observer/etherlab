@@ -88,13 +88,20 @@ void LS::IOBuffer::init()
         headerLen += l.headerLen;
     }
     headerLen -= owner->getHeaderLength();
-    std::cerr << "Setting headerlength " << headerLen << std::endl;
-    append(headerLen, '-');
 
+    reset();
 }
 
 LS::IOBuffer::~IOBuffer()
 {
+    std::cerr << "Killing IIIIIIIIIIO Buffer " << this << *this << std::endl;
+}
+
+void LS::IOBuffer::reset()
+{
+    std::cerr << "Setting headerlength " << headerLen << std::endl;
+    clear();
+    append(headerLen, '-');
 }
 
 // size_t LS::IOBuffer::receive()

@@ -28,6 +28,7 @@
 #define RTAPPCLIENT_H
 
 class RTTask;
+class RTModel;
 
 class RTAppClient {
     public:
@@ -35,8 +36,8 @@ class RTAppClient {
         virtual ~RTAppClient();
 
         // Called when a model is added or removed dynamically
-        virtual void newApplication(const std::string& model);
-        virtual void delApplication(const std::string& model);
+        virtual void newApplication(const RTModel*);
+        virtual void delApplication(const RTModel*);
 
     private:
         RTTask* const rtTask;

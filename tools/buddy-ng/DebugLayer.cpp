@@ -42,23 +42,24 @@ DebugLayer::~DebugLayer()
 // Method from class Layer
 size_t DebugLayer::receive(const char* buf, size_t data_len)
 {
-    const char* ptr = buf;
-    const char* ptr_end = buf + data_len;
-    std::ios_base::fmtflags flags = std::cout.flags();
     unsigned int i = 0;
 
-    std::cout.width(10);
-    std::cout.flags(std::ios_base::right | std::ios_base::hex);
-    std::cout << "Received:";
-    for (ptr = buf; ptr_end != ptr; ptr++) {
-        if (!(i++ & 0x0f)) 
-            std::cout << std::endl;
-        std::cout << " " << std::hex << (uint32_t)*ptr;
+    for (i = 0; i < data_len; i += 16) {
+        printf(i ? "\n%04u" : "%04X", i);
+        for (unsigned int j = 0; j < 16; j++) {
+            if (i + j < data_len)
+                printf(" %02X", (unsigned char)buf[i+j]);
+            else
+                printf("   ");
+        }
+        printf("    ");
+        for (unsigned int j = 0; j < 16; j++) {
+            if (i + j < data_len)
+                printf("%c", isprint(buf[i+j]) ? buf[i+j] : '.');
+            else
+                printf(" ");
+        }
     }
-    std::cout << std::endl;
 
-    std::cout.flags(flags);
-
-    post(buf,data_len);
-    return 0;
+    return post(buf,data_len);
 }

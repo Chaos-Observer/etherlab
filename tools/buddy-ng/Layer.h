@@ -68,7 +68,6 @@ class Layer {
         size_t post(const std::string* buf, size_t offset = 0) const;
 
     private:
-        Layer* below;
         const std::string name;
         const size_t headerLen;
 
@@ -78,6 +77,7 @@ class Layer {
         IOBuffer *nameBuf;
 
         Layer* above;
+        Layer* below;
 
         /** Layers placed above must introduce themselves to the 
          * layer below */

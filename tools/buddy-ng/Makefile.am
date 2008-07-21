@@ -10,13 +10,13 @@ AM_CPPFLAGS = -DDEBUG=$(DEBUG) -I$(top_srcdir)/tools -Wall
 #lib_LTLIBRARIES = liblayer.la
 #liblayer_la_SOURCES =
 noinst_LIBRARIES = liblayer.a libtask.a libconfig.a
-include_HEADERS = Layer.h IOBuffer.h PacketLayer.h ProcessLayer.h \
+
+liblayer_a_HDRS = Layer.h IOBuffer.h PacketLayer.h \
         RTComVocab.h DebugLayer.h
 liblayer_a_SOURCES = \
-        $(include_HEADERS) \
+        $(liblayer_a_HDRS) \
         Layer.cpp Layer.h \
         IOBuffer.cpp IOBuffer.h \
-        ProcessLayer.cpp ProcessLayer.h \
         RTComProtocolServer.cpp RTComProtocolServer.h \
         DebugLayer.cpp DebugLayer.h \
         PacketLayer.cpp PacketLayer.h
@@ -30,6 +30,8 @@ libtask_a_SOURCES = \
 libconfig_a_SOURCES = \
         ConfigFile.cpp ConfigFile.h
 
+include_HEADERS = $(liblayer_a_HDRS)
+
 noinst_PROGRAMS = etherlab_buddy
 etherlab_buddy_SOURCES = \
         Exception.h \
@@ -41,13 +43,13 @@ etherlab_buddy_SOURCES = \
         RTComSocket.cpp RTComSocket.h \
         FileDevice.cpp FileDevice.h \
         RT-Task.cpp RT-Task.h \
-        RT-Model.cpp RT-Model.h \
         RTSignal.cpp RTSignal.h \
-        RTParameter.cpp RTParameter.h \
         RTVariable.cpp RTVariable.h \
+        RT-Model.cpp RT-Model.h \
+        RTParameter.cpp RTParameter.h \
         HTTPTask.cpp HTTPTask.h
-etherlab_buddy_LDADD = libconfig.a libtask.a liblayer.a /usr/lib/libevent.la \
-        /usr/lib/libsasl2.la libiniparser.a
+etherlab_buddy_LDADD = $(noinst_LIBRARIES)  \
+        /usr/lib/libevent.la /usr/lib/libsasl2.la libiniparser.a
 etherlab_buddy_LDFLAGS = 
 
 BUILT_SOURCES = libiniparser.a iniparser.h dictionary.h

@@ -44,7 +44,6 @@ RTComSocket::RTComSocket(Task* parent, RTTask *rtTask, int fd):
 
     layer = new DebugLayer(this);
     layer = new LayerStack::PacketLayer(layer);
-    layer = new LayerStack::Layer(layer, "dummy", 0);
     layer = new RTComProtocolServer(layer, rtTask);
 
 }

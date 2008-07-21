@@ -39,6 +39,8 @@ class RTVariable {
         const std::string& getName() const { return name; }
         const std::string& getAlias() const { return alias; }
         si_datatype_t getDataType() const { return dataType; }
+
+        typedef std::vector<size_t> DimList;
         const std::vector<size_t>& getDims() const { return dims; }
 
         virtual unsigned int getSampleTime() const {return 0;}

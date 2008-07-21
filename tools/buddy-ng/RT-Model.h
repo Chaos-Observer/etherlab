@@ -1,3 +1,4 @@
+
 /* **********************************************************************
  *
  * $Id$
@@ -33,7 +34,6 @@
 class RTVariable;
 class RTSignal;
 class RTParameter;
-struct timeval;
 
 class RTModel: public Task {
     public:
@@ -43,10 +43,14 @@ class RTModel: public Task {
         unsigned int getId() const { return id; }
         const std::string& getName() const { return name; }
         const std::string& getVersion() const { return version; }
-        const std::vector<RTVariable*>& getVariableList() const { 
+
+        typedef std::vector<RTVariable*> VariableList;
+        const VariableList& getVariableList() const { 
             return variableList; 
         }
-        const std::vector<uint32_t>& getSampleTimes() const {
+
+        typedef std::vector<uint32_t> StList;
+        const StList& getSampleTimes() const {
             return sampleTime;
         }
 
@@ -61,13 +65,11 @@ class RTModel: public Task {
 
         struct rt_kernel_prop rt_properties;
 
-        std::vector<RTVariable*> variableList;
-        std::vector<uint32_t> sampleTime;
+        VariableList variableList;
+        StList sampleTime;
 
         void getDims(std::vector<size_t>& dims, const struct signal_info *si,
                 unsigned int type);
-
-        void cleanup();
 
         // Reimplemented from class Task
         int read(int fd);

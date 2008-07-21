@@ -38,7 +38,7 @@ class RTAppClient;
 
 class RTTask: public Task {
     public:
-        typedef std::map<std::string,RTModel*> ModelMap;
+        typedef std::map<unsigned int,RTModel*> ModelMap;
 
         RTTask();
         ~RTTask();
@@ -47,6 +47,8 @@ class RTTask: public Task {
             return modelMap;
         }
         const std::string& getDevice() const { return device; }
+
+        const RTModel* getApplication(unsigned int id);
 
         void regAppClient(RTAppClient* rtComTask);
         void deregAppClient(RTAppClient* rtComTask);
@@ -58,9 +60,10 @@ class RTTask: public Task {
         std::list<RTAppClient*> rtComTaskList;
 
         ModelMap modelMap;
+        std::map<Task*,unsigned int> taskMap;
 
         // Reimplemented from class Task
         int read(int fd);
-        void kill(Task* child, int rv);
+        void kill(Task*, int);
 };
 #endif // RTTASK_H

@@ -36,7 +36,7 @@ namespace LS = LayerStack;
 
 /*****************************************************************/
 LS::ProcessLayer::ProcessLayer(Layer* _below): 
-    Layer(_below, "ProcessLayer", 0)
+    Layer(_below, "ProcessLayer", 0), cmd(this)
 {
     setRecvTerminal(true);
 }
@@ -49,6 +49,7 @@ LS::ProcessLayer::~ProcessLayer()
 /*****************************************************************/
 void LS::ProcessLayer::finished(const LS::IOBuffer* buf)
 {
+    delete buf;
 }
 
 /*****************************************************************/
@@ -61,13 +62,17 @@ size_t LS::ProcessLayer::receive(const char* buf, size_t data_len)
     if (channel == 0) {
         uint32_t command = ntohl(*(uint32_t*)(buf));
         buf += sizeof(channel);
+        LayerStack::IOBuffer *cmd = new LayerStack::IOBuffer(this);
 
         switch (command) {
             case NEW_APPLICATION:
                 std::cerr << "new application " 
                     << std::string(buf, buf_end - buf)
                     << std::endl;
-                ::exit(0);
+                cmd->appendInt(GET_APPLICATION);
+                cmd->append(std::string(buf, buf_end - buf));
+                if (cmd->transmit())
+                    delete cmd;
                 break;
             default:
                 break;

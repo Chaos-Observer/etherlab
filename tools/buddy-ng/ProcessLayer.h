@@ -44,6 +44,8 @@ class ProcessLayer: public Layer {
     protected:
 
     private:
+        LayerStack::IOBuffer cmd;
+
         /** Reimplemented from class Layer */
         void finished(const IOBuffer*);
         size_t receive(const char* data_ptr, size_t data_len);

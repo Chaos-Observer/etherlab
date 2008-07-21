@@ -65,12 +65,14 @@ size_t LS::PacketLayer::receive(const char* buf, size_t data_len)
         packetLen = ntohl(*(uint32_t*)(buf + processed));
         processed += sizeof(packetLen);
 
-        std::cerr << "Expecting " << packetLen << std::endl;
+        std::cerr << "Expecting " << packetLen 
+            << " got " << data_len - processed << std::endl;
 
         if (data_len - processed < packetLen) {
             processed -= sizeof(packetLen);
             break;
         }
+        std::cerr << "got it " << packetLen << std::endl;
 
         if (packetLen != post(buf + processed, packetLen)) {
             std::cerr << "did not process everything" << std::endl;

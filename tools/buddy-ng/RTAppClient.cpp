@@ -41,17 +41,18 @@ RTAppClient::RTAppClient(RTTask* _rtTask): rtTask(_rtTask)
 RTAppClient::~RTAppClient()
 //************************************************************************
 {
+    std::cerr << "YYYYYYYYYYYYY 3" << std::endl;
     rtTask->deregAppClient(this);
 }
 
 //************************************************************************
-void RTAppClient::newApplication(const std::string&)
+void RTAppClient::newApplication(const RTModel*)
 //************************************************************************
 {
 }
 
 //************************************************************************
-void RTAppClient::delApplication(const std::string&)
+void RTAppClient::delApplication(const RTModel*)
 //************************************************************************
 {
 }

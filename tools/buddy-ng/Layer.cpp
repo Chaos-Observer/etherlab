@@ -33,11 +33,12 @@ namespace LS = LayerStack;
 
 /*****************************************************************/
 LS::Layer::Layer(Layer* _below, const std::string& _name, size_t _headerLen): 
-    name(_name), headerLen(_headerLen), above(0)
+    name(_name), headerLen(_headerLen), above(0), below(0)
 {
-    std::cerr << "XX New layer " << name << std::endl;
+    std::cerr << "XX New layer " << name << this << std::endl;
     sendTerminal = recvTerminal = false;
     setLayerBelow(_below);
+    std::cerr << "XX New layer " << name << std::endl;
 }
 
 /*****************************************************************/
@@ -51,6 +52,7 @@ LS::Layer::~Layer()
 /*****************************************************************/
 void LS::Layer::setLayerBelow(Layer* _below)
 {
+    std::cerr << "XX setting layer bwloe " << _below << std::endl;
     if (below)
         below->introduce(0);
 

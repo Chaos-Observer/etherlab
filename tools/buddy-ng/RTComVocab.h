@@ -28,5 +28,8 @@
 #define RTCOMVOCAB_H
 
 #define NEW_APPLICATION 1
+#define DEL_APPLICATION 2
+
+#define APPLICATION_INFO 3
 
 #endif // RTCOMVOCAB_H

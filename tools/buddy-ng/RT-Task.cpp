@@ -50,7 +50,6 @@ int RTTask::read(int)
     struct rtcom_event event;
     int n;
     std::list<RTAppClient*>::iterator it;
-    std::string appName;
 
     n = fd.read(&event, sizeof(event));
 
@@ -64,61 +63,52 @@ int RTTask::read(int)
     std::cout << "read " << n << "bytes." << std::endl;
     switch (event.type) {
         case rtcom_event::new_app:
-            {
-                std::cout << "new RTModel " << event.id << std::endl;
+            std::cout << "new RTModel " << event.id << std::endl;
 
-                try {
-                    RTModel *model =
-                        new RTModel(this, event.id);
-                    appName = model->getName();
-                    modelMap[appName] = model;
-                } catch (Exception& e) {
-                    std::cerr << "Could not open model id " << event.id 
-                        << ": " << e.what() << std::endl;
-                }
-
+            try {
+                RTModel *app = new RTModel(this, event.id);
+                modelMap[event.id] = app;
+                taskMap[app] = event.id;
                 for (it = rtComTaskList.begin(); it != rtComTaskList.end();
                         it++) {
-                    (*it)->newApplication(appName);
+                    (*it)->newApplication(app);
                 }
-
-                break;
+            } catch (Exception& e) {
+                std::cerr << "Could not open model id " << event.id 
+                    << ": " << e.what() << std::endl;
             }
+
+            break;
+
         case rtcom_event::del_app:
-            {
-                for (ModelMap::iterator m = modelMap.begin();
-                        m != modelMap.end(); m++) {
-                    if (m->second->getId() == event.id) {
-                        std::cout << "delete RTModel " << event.id 
-                            << std::endl;
-                        appName = m->second->getName();
-                        for (it = rtComTaskList.begin(); 
-                                it != rtComTaskList.end(); it++) {
-                            (*it)->delApplication(appName);
-                        }
+            std::cout << "delete RTModel " << event.id 
+                << std::endl;
 
-                        kill(m->second, 0);
-                        break;
-                    }
-                }
-            }
+            delete modelMap[event.id];
+
+            modelMap.erase(event.id);
+            taskMap.erase(modelMap[event.id]);
+
             break;
     }
 
     return n;
 }
 
+const RTModel* RTTask::getApplication(unsigned int id)
+{
+    ModelMap::iterator it = modelMap.find(id);
+    return (it == modelMap.end()) ? 0 : it->second;
+}
+
 void RTTask::kill(Task* child, int rv)
 {
-    ModelMap::iterator old_m, m = modelMap.begin();
-    while (m != modelMap.end()) {
-        old_m = m++;
+    unsigned int childId = taskMap[child];
 
-        if (old_m->second == child) {
-            delete child;
-            modelMap.erase(old_m);
-        }
-    }
+    delete modelMap[childId];
+
+    modelMap.erase(childId);
+    taskMap.erase(child);
 }
 
 void RTTask::regAppClient(RTAppClient* appClient)

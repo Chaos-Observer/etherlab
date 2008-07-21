@@ -34,10 +34,11 @@ SocketLayer::SocketLayer(Task *_parent, int _fd):
     Task(_parent), Layer(0, "RTCom", 0), 
     fd(_fd), bufLen(0)
 {
+    enableRead(fd);
+    std::cerr << "New Socketlayer here " << std::endl;
     LayerStack::IOBuffer 
         *name = new LayerStack::IOBuffer(this, "RTCom\0", 6);
     name->transmit();
-    enableRead(fd);
     setSendTerminal(true);
 }
 
@@ -46,7 +47,8 @@ SocketLayer::~SocketLayer()
 {
     std::cerr << "Kill SocketLayer 2" << std::endl;
     while(sendq.size()) {
-        sendq.front()->getOwner()->finished(sendq.front());
+        const LayerStack::IOBuffer *buf = sendq.front();
+        buf->getOwner()->finished(buf);
         sendq.pop();
     }
     close(fd);
@@ -124,8 +126,10 @@ int SocketLayer::read(int fd)
 
     inBuf.append(data,len);
     std::cerr << "inbuf length" << inBuf.length() << std::endl;
-    inBuf.erase(0, post(&inBuf));
-    std::cerr << "inbuf length" << inBuf.length() << std::endl;
+    int n;
+    inBuf.erase(0, (n=post(&inBuf)));
+    std::cerr << "inbuf length" << inBuf.length() 
+        << " " << n << std::endl;
 
     return len;
 }

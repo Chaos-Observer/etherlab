@@ -34,6 +34,8 @@ namespace LayerStack {
     class IOBuffer;
 }
 
+class RTModel;
+
 class RTComProtocolServer: public LayerStack::Layer, public RTAppClient {
     public:
         RTComProtocolServer(Layer* below, RTTask *rtTask);
@@ -43,10 +45,12 @@ class RTComProtocolServer: public LayerStack::Layer, public RTAppClient {
         RTTask* const rtTask;
 
         // Reimplemented from RTAppClient
-        void newApplication(const std::string& model);
-        void delApplication(const std::string& model);
+        void newApplication(const RTModel*);
+        void delApplication(const RTModel*);
 
         void finished(const LayerStack::IOBuffer* buf);
+
+        size_t receive(const char* buf, size_t data_len);
 };
 
 #endif // RTCOMPROTOCOLSERVER_H

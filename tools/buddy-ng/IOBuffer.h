@@ -57,6 +57,8 @@ class IOBuffer: public std::string {
          */
         bool transmit();
 
+        void reset();
+
         IOBuffer& appendInt(uint32_t);
 
 //        size_t receive();

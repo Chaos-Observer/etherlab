@@ -75,18 +75,11 @@ void Dispatcher::detach()
 void* Dispatcher::setWriteable(Task* task, int fd)
 //************************************************************************
 {
-    std::cerr << __func__ << " 0" << std::endl;
     Event* event = new Event;
-    std::cerr << ">>>>> new event " << event << std::endl;
 
-    std::cerr << __func__ << " 1" << std::endl;
     dispatcher.events.push_front(event);
-    std::cerr << __func__ << " 2" << std::endl;
-    event_set(event, fd, EV_WRITE | EV_PERSIST, eventCallbackFunc,
-            task);
-    std::cerr << __func__ << " 3" << std::endl;
+    event_set(event, fd, EV_WRITE | EV_PERSIST, eventCallbackFunc, task);
     event_add(event, NULL);
-    std::cerr << __func__ << " 4" << std::endl;
     return event;
 }
 
