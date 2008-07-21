@@ -6,17 +6,17 @@
 %
 %-----------------------------------------------------------------------------
 
-\SVN $Id$
-\rfoot{\SVNId}
+%\SVN $Id$
+%\rfoot{\SVNId}
 
-\begin{ighsec}{Introduction}
+\chapter{Introduction}
 \label{sec:intro}
 
-The name EtherLab\regTM\ once stood for an open-source solution of using the
-EtherCAT\regTM\ fieldbus technology with MATLAB/Simulink\regTM\ for automation
-and test purposes. Today, EtherLab is much more than this: It is neither
-depending on EtherCAT, nor on MATLAB/Simulink any more. Below is a short
-summary of what EtherLab is capable of:
+The name EtherLab once stood for an open-source solution of using the EtherCAT
+fieldbus technology with MATLAB/Simulink for automation and test purposes.
+Today, EtherLab is much more than this: It is neither depending on EtherCAT,
+nor on MATLAB/Simulink any more. Below is a short summary of what EtherLab is
+capable of:
 
 \begin{itemize}
 
@@ -35,11 +35,9 @@ blockset (see section~\ref{sec:simulink}).
 
 \end{itemize}
 
-\end{ighsec}
-
 %-----------------------------------------------------------------------------
 
-\begin{ighsec}{Architecture}
+\chapter{Architecture}
 \label{sec:arch}
 
 The EtherLab package can be subdivided into the components listed below:
@@ -75,14 +73,14 @@ applications from Simulink models.
   \end{center}
 \end{figure}
 
-\end{ighsec}
+%-----------------------------------------------------------------------------
+
+\chapter{Installation}
+\label{sec:install}
 
 %-----------------------------------------------------------------------------
 
-\begin{ighsec}{Installation}
-\label{sec:install}
-
-\begin{ighsec}{Prerequisites}
+\section{Prerequisites}
 
 Prerequisites for the installation of EtherLab:
 
@@ -110,9 +108,9 @@ this directory does not exist, it can be created with the commands below:
   # `\textbf{chmod 775 /opt/etherlab}`
 \end{lstlisting}
 
-\end{ighsec}
+%-----------------------------------------------------------------------------
 
-\begin{ighsec}{Installation}
+\section{Installation}
 \label{sec:inst-paket}
 
 Installation is done after copying the EtherLab tarball from the EtherLab CD
@@ -130,9 +128,9 @@ the commands below. The last command installs EtherLab into the directory
   `\$` `\textbf{make install}`
 \end{lstlisting}
 
-\end{ighsec}
+%-----------------------------------------------------------------------------
 
-\begin{ighsec}{Installation of the Simulink Library}
+\section{Installation of the Simulink Library}
 \label{sec:inst-blockset}
 
 As a prerequisite for the \texttt{setup\_etherlab} command (see below) to
@@ -155,9 +153,9 @@ MATLAB, the below commands must be entered (out of MATLAB).
   >> `\textbf{setup\_etherlab}`
 \end{lstlisting}
 
-\end{ighsec}
+%-----------------------------------------------------------------------------
 
-\begin{ighsec}{Starting EtherLab as a Service}
+\section{Starting EtherLab as a Service}
 \label{sec:dienst}
 
 If the EtherLab kernel/buddy are to be started as a service, the provided init
@@ -170,16 +168,14 @@ intended for openSUSE Linux:
   # `\textbf{insserv etherlab}`
 \end{lstlisting}
 
-\end{ighsec}
+%-----------------------------------------------------------------------------
 
-\end{ighsec}
+\chapter{The EtherLab C-API}
+\label{sec:api}
 
 %-----------------------------------------------------------------------------
 
-\begin{ighsec}{The EtherLab C-API}
-\label{sec:api}
-
-\begin{ighsec}{Concept}
+\section{Concept}
 \label{sec:api-concept}
 
 EtherLab provides a generic way of executing realtime applications in the
@@ -214,9 +210,9 @@ application's variables visible and accessible in userspace.
   \end{center}
 \end{figure}
 
-\end{ighsec}
+%-----------------------------------------------------------------------------
 
-\begin{ighsec}{Realtime Application Description XML}
+\section{Realtime Application Description XML}
 \label{sec:xml}
 
 Listing~\ref{lst:min-desc} shows a minimal realtime application description.
@@ -235,7 +231,9 @@ Listing~\ref{lst:min-desc} shows a minimal realtime application description.
 </application>
 \end{lstlisting}
 
-\begin{ighsec}{Application}
+%-----------------------------------------------------------------------------
+
+\subsection{Application}
 \label{sec:xml-app}
 
 The root of the realtime application description XML is the
@@ -272,9 +270,9 @@ application's data structure and can be considered as a system-like element
 
 \end{description}
 
-\end{ighsec}
+%-----------------------------------------------------------------------------
 
-\begin{ighsec}{Systems}
+\subsection{Systems}
 \label{sec:xml-system}
 
 The elements \texttt{<data>}, \texttt{<subsystem>} and \texttt{<refsystem>}
@@ -342,9 +340,7 @@ data type in C code (for example as a function parameter's type).
 
 \end{description}
 
-\end{ighsec}
-
-\begin{ighsec}{Variables}
+\subsection{Variables}
 \label{sec:vars}
 
 Signals and parameters are considered as variables. Variables are the
@@ -422,20 +418,14 @@ strings. This has to be defined in the future.
 
 \end{description}
 
-\end{ighsec}
-
-\end{ighsec}
-
-\end{ighsec}
-
 %-----------------------------------------------------------------------------
 
-\begin{ighsec}{Simulink Integration}
+\chapter{Simulink Integration}
 \label{sec:simulink}
 
 %-----------------------------------------------------------------------------
 
-\begin{ighsec}{The Simulink Library}
+\section{The Simulink Library}
 \label{sec:lib}
 
 The EtherLab library \texttt{etherlab\_lib} was designed to allow the creation
@@ -573,11 +563,9 @@ master status block.
   \end{center}
 \end{figure}
 
-\end{ighsec}
-
 %-----------------------------------------------------------------------------
 
-\begin{ighsec}{Creation of EtherLab Applications with Simulink}
+\section{Creation of EtherLab Applications with Simulink}
 \label{sec:simu-apps}
 
 After creating a new model sheet within Simulink, a few parameters have to be
@@ -613,15 +601,9 @@ EtherLab blocks, open the \texttt{etherlab\_lib} (see sec.~\ref{sec:lib}) and
 drag the desired blocks on the new model sheet. When finished, \textit{Ctrl-B}
 will generate the application code contained a Linux kernel module.
 
-\end{ighsec}
-
 %-----------------------------------------------------------------------------
 
-\end{ighsec} % Simulink
-
-%-----------------------------------------------------------------------------
-
-\begin{ighsec}{Starting EtherLab Applications}
+\chapter{Starting EtherLab Applications}
 \label{sec:start}
 
 The \texttt{rt\_kernel} module must be inserted before inserting any EtherLab
@@ -656,7 +638,5 @@ DLS or the RTCom library (have a look at
 \texttt{etherlab\_buddy} acts as a TCP server listening on port 2345 and
 communicating with an XML-based protocol called MSR (see the German
 documentation at \url{http://etherlab.org/download/m-igh_rt_api.pdf}).
-
-\end{ighsec}
 
 %-----------------------------------------------------------------------------
