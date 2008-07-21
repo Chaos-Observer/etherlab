@@ -177,17 +177,12 @@ fop_ioctl( struct file *filp, unsigned int command, unsigned long data)
  * Here the file operations to control the Real-Time Kernel are defined.
  * The buddy needs this to be able to change things in the Kernel.
  *#########################################################################*/
-void signal_app_change(struct app_dev *app_dev, char insert)
+void signal_new_app(struct app_dev *app_dev)
 {
     if (!event_wp)
         return;
 
-    if (insert) {
-        event_wp->type = new_app;
-    }
-    else {
-        event_wp->type = del_app;
-    }
+    event_wp->type = new_app;
     event_wp->id = app_dev->id;
 
     /* Update write pointer */
@@ -225,7 +220,7 @@ select_kernel(void)
     /* Inform the buddy of currently running apps */
     list_for_each_entry(app_dev, &app_list, list) {
         if (app_dev->app)
-            signal_app_change(app_dev, 1);
+            signal_new_app(app_dev);
     }
 
     pr_debug("Opened rtcom file: %p\n", event_list);
@@ -427,7 +422,7 @@ fop_poll_app( struct file *filp, poll_table *wait)
     poll_wait(filp, &app_dev->waitq, wait);
 
     /* Check whether there was a change in the states of a Real-Time Process */
-    if (app_dev->event_wp != app_dev->event_rp) {
+    if (app_dev->event_wp != app_dev->event_rp || !app_dev->app) {
         mask = POLLIN | POLLRDNORM;
     }
 
@@ -583,6 +578,10 @@ fop_read_app( struct file * filp, char *buffer,
     struct app_event *curr_wp = app_dev->event_wp;
     size_t len;
 
+    /* Check whether the application is still alive */
+    if (!app_dev->app)
+        return -ENODEV;
+
     /* If event_wp is NULL, there was a buffer overflow */
     if (!curr_wp)
         return -ENOSPC;
@@ -693,7 +692,7 @@ rtcom_new_app(struct app *app)
     rt_sem_init(&app->rtP_sem,1);
 
     /* Append a new_app event to the end of the rtcom event list */
-    signal_app_change(app_dev, 1);
+    signal_new_app(app_dev);
 
     return 0;
 
@@ -710,11 +709,11 @@ void rtcom_del_app(struct app *app)
         if (app_dev->app == app)
             break;
     }
-    signal_app_change(app_dev, 0);
 
     /* If the buddy does not not exist any more, free the memory */
     if (app_dev->buddy_lock) {
         app_dev->app = NULL;
+        wake_up_interruptible(&app_dev->waitq);
     }
     else {
         list_del(&app_dev->list);
