@@ -9,7 +9,7 @@ AM_CPPFLAGS = -DDEBUG=$(DEBUG) -I$(top_srcdir)/tools -Wall
 
 #lib_LTLIBRARIES = liblayer.la
 #liblayer_la_SOURCES =
-noinst_LIBRARIES = liblayer.a libtask.a libconfig.a
+lib_LIBRARIES = liblayer.a libtask.a libconfig.a
 
 liblayer_a_HDRS = Layer.h IOBuffer.h PacketLayer.h \
         RTComVocab.h DebugLayer.h
@@ -21,16 +21,19 @@ liblayer_a_SOURCES = \
         DebugLayer.cpp DebugLayer.h \
         PacketLayer.cpp PacketLayer.h
 
+libtask_a_HDRS = Task.h Dispatcher.h \
+        SocketServerTask.h TCPServerTask.h
 libtask_a_SOURCES = \
-        Task.cpp Task.h \
-        Dispatcher.cpp Dispatcher.h \
-        SocketServerTask.cpp SocketServerTask.h \
-        TCPServerTask.cpp TCPServerTask.h
+        $(libtask_a_HDRS) \
+        Task.cpp \
+        Dispatcher.cpp \
+        SocketServerTask.cpp \
+        TCPServerTask.cpp
 
 libconfig_a_SOURCES = \
         ConfigFile.cpp ConfigFile.h
 
-include_HEADERS = $(liblayer_a_HDRS)
+include_HEADERS = $(liblayer_a_HDRS) $(libtask_a_HDRS)
 
 noinst_PROGRAMS = etherlab_buddy
 etherlab_buddy_SOURCES = \
@@ -48,7 +51,7 @@ etherlab_buddy_SOURCES = \
         RT-Model.cpp RT-Model.h \
         RTParameter.cpp RTParameter.h \
         HTTPTask.cpp HTTPTask.h
-etherlab_buddy_LDADD = $(noinst_LIBRARIES)  \
+etherlab_buddy_LDADD = $(lib_LIBRARIES)  \
         /usr/lib/libevent.la /usr/lib/libsasl2.la libiniparser.a
 etherlab_buddy_LDFLAGS = 
 

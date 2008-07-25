@@ -35,20 +35,30 @@ class Task {
     friend class Dispatcher;
 
     public:
-        Task(Task* parent);
+        Task(Task* parent = 0);
         virtual ~Task();
 
         Task* getParent() const;
         virtual void kill(Task* child, int rv);
 
     protected:
+        /* Reimplement these methods to receive the calls.
+         * Return:
+         *    <= 0 : Error occurred. If the task has a parent, it will
+         *           be called with a kill
+         *    > 0  : No problem; continue
+         */
         virtual int read(int fd);
         virtual int write(int fd);
+        virtual int timeout();
 
         void enableRead(int fd);
         void enableWrite(int fd);
+        void enableTimer(struct timeval&);
+
         void disableRead();
         void disableWrite();
+        void disableTimer();
 
     private:
         Task * const parent;
@@ -59,6 +69,7 @@ class Task {
 
         void* readRef;
         void* writeRef;
+        void* timerRef;
 };
 
 #endif // TASK_H

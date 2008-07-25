@@ -41,7 +41,7 @@ Task::Task(Task* parent): parent(parent)
 
     cerr << "Born task " << this << endl;
 
-    readRef = writeRef = NULL;
+    readRef = writeRef = timerRef = NULL;
 }
 
 //************************************************************************
@@ -52,6 +52,7 @@ Task::~Task()
 
     disableRead();
     disableWrite();
+    disableTimer();
 
     list<Task*>::iterator it = children.begin(); 
     while (it != children.end()) {
@@ -108,10 +109,17 @@ int Task::write(int)
 }
 
 //************************************************************************
+int Task::timeout()
+//************************************************************************
+{
+    return -1;
+}
+
+//************************************************************************
 void Task::disableRead()
 //************************************************************************
 {
-    Dispatcher::remove(readRef);
+    Dispatcher::remove(readRef, this);
     readRef = NULL;
 }
 
@@ -119,8 +127,16 @@ void Task::disableRead()
 void Task::disableWrite()
 //************************************************************************
 {
-    Dispatcher::remove(writeRef);
+    Dispatcher::remove(writeRef, this);
     writeRef = NULL;
+}
+
+//************************************************************************
+void Task::disableTimer()
+//************************************************************************
+{
+    Dispatcher::remove(timerRef, this);
+    timerRef = NULL;
 }
 
 //************************************************************************
@@ -136,4 +152,12 @@ void Task::enableWrite(int fd)
 {
     if (!writeRef)
         writeRef = Dispatcher::setWriteable(this, fd);
+}
+
+//************************************************************************
+void Task::enableTimer(struct timeval& tv)
+//************************************************************************
+{
+    if (!timerRef)
+        timerRef = Dispatcher::setTimer(this, tv);
 }

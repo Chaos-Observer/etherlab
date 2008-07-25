@@ -41,23 +41,30 @@ class Dispatcher {
     public:
         Dispatcher();
         ~Dispatcher();
-        static void addEvent(Task *t);
 
+        /* Detach from controlling terminal and go into background */
+        static void detach();
+
+        /* call the dispatcher */
         static int run();
-        static int run_detached();
 
         static void* setReadable(Task*, int fd);
         static void* setWriteable(Task*, int fd);
-        static void remove(void*);
+        static void* setTimer(Task*, struct timeval&);
+        static void  remove(void*, Task* task);
 
     private:
-        typedef struct event Event;
-
-        void detach();
+        typedef struct {
+            struct event ev;
+            struct timeval tv;
+            Task* task;
+        } Event;
 
         std::list<Event*> events;
 
-        static void eventCallbackFunc(int, short, void*);
+        static void readCallbackFunc(int, short, void*);
+        static void writeCallbackFunc(int, short, void*);
+        static void timerCallbackFunc(int, short, void*);
 };
 
 #endif // DISPATCHER_H

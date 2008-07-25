@@ -45,7 +45,7 @@ Dispatcher::~Dispatcher()
 {
     for (list<Event*>::iterator it = events.begin();
             it != events.end(); it++)
-        event_del(*it);
+        event_del(&(*it)->ev);
 }
 
 //************************************************************************
@@ -53,15 +53,6 @@ int Dispatcher::run()
 //************************************************************************
 {
     event_dispatch();
-    return 0;
-}
-
-//************************************************************************
-int Dispatcher::run_detached()
-//************************************************************************
-{
-    dispatcher.detach();
-    run();
     return 0;
 }
 
@@ -76,10 +67,13 @@ void* Dispatcher::setWriteable(Task* task, int fd)
 //************************************************************************
 {
     Event* event = new Event;
+    std::cerr << ">>>>> write event " << event << std::endl;
+
+    event->task = task;
 
     dispatcher.events.push_front(event);
-    event_set(event, fd, EV_WRITE | EV_PERSIST, eventCallbackFunc, task);
-    event_add(event, NULL);
+    event_set(&event->ev, fd, EV_WRITE | EV_PERSIST, writeCallbackFunc, task);
+    event_add(&event->ev, NULL);
     return event;
 }
 
@@ -88,54 +82,125 @@ void* Dispatcher::setReadable(Task *task, int fd)
 //************************************************************************
 {
     Event* event = new Event;
-    std::cerr << ">>>>> new event " << event << std::endl;
+    std::cerr << ">>>>> read event " << event << std::endl;
+
+    event->task = task;
 
     dispatcher.events.push_front(event);
-    event_set(event, fd, EV_READ | EV_PERSIST, eventCallbackFunc,
-            task);
-    event_add(event, NULL);
+    event_set(&event->ev, fd, EV_READ | EV_PERSIST, readCallbackFunc, task);
+    event_add(&event->ev, NULL);
     return event;
 }
 
 //************************************************************************
-void Dispatcher::remove(void* p)
+void* Dispatcher::setTimer(Task *task, struct timeval& tv)
+//************************************************************************
+{
+    Event* event = new Event;
+    std::cerr << ">>>>> timer event " << event << std::endl;
+
+    event->tv = tv;
+    event->task = task;
+
+    dispatcher.events.push_front(event);
+    evtimer_set(&event->ev, timerCallbackFunc, event);
+    event_add(&event->ev, &event->tv);
+    return event;
+}
+
+//************************************************************************
+void Dispatcher::remove(void* p, Task* task)
 //************************************************************************
 {
     Event* event = reinterpret_cast<Event*>(p);
     if (!p)
         return;
-    event_del(event);
+
+    // Check the task pointer. If this is null, do not remove the Event
+    // object because it is still required. See timerCallbackFunc()
+    if (!event->task) {
+        event->task = task;
+        return;
+    }
+
+    event_del(&event->ev);
     dispatcher.events.remove(event);
     delete event;
     std::cerr << "<<<<< delete event " << event << std::endl;
 }
 
 //************************************************************************
-void Dispatcher::eventCallbackFunc(int fd, short event, void *priv_data)
+void Dispatcher::readCallbackFunc(int fd, short event, void *priv_data)
 //************************************************************************
 {
     Task* task = reinterpret_cast<Task*>(priv_data);
     int rv;
 
-    if (event & EV_READ) {
-        rv = task->read(fd);
-        cerr << "Returnval from read: " << rv << endl;
-        if (rv  <= 0) {
-            Task* parent = task->getParent();
-            cerr << "dispatcher read callling kill " << parent << endl;
-            if (parent)
-                parent->kill(task, rv);
-        }
+    rv = task->read(fd);
+    cerr << "Returnval from read: " << rv << endl;
+    if (rv  <= 0) {
+        Task* parent = task->getParent();
+        cerr << "dispatcher read callling kill " << parent << endl;
+        if (parent)
+            parent->kill(task, rv);
+        else
+            delete task;
+    }
+}
+
+//************************************************************************
+void Dispatcher::writeCallbackFunc(int fd, short event, void *priv_data)
+//************************************************************************
+{
+    Task* task = reinterpret_cast<Task*>(priv_data);
+    int rv;
+
+    rv = task->write(fd);
+    cerr << "Returnval from write: " << rv << endl;
+    if (rv <= 0) {
+        Task* parent = task->getParent();
+        cerr << "dispatcher write callling kill " << parent << endl;
+        if (parent)
+            parent->kill(task, rv);
+        else
+            delete task;
+    }
+}
+
+//************************************************************************
+void Dispatcher::timerCallbackFunc(int fd, short _event, void *priv_data)
+//************************************************************************
+{
+    Event* event = reinterpret_cast<Event*>(priv_data);
+    Task* task = event->task;
+    int rv;
+
+    // Setting event->task to NULL is a signal to remove() that, if
+    // the application called remove() during this thread of execution,
+    // the object is not really removed. This is important since it is
+    // required further down.
+    event->task = 0;
+
+    rv = task->timeout();
+    cerr << "Returnval from timeout: " << rv << endl;
+    if (rv <= 0) {
+        Task* parent = task->getParent();
+        cerr << "dispatcher timer callling kill " << parent << endl;
+        if (parent)
+            parent->kill(task, rv);
+        else 
+            delete task;
     }
 
-    if (event & EV_WRITE) {
-        rv = task->write(fd);
-        cerr << "Returnval from write: " << rv << endl;
-        if (rv <= 0) {
-            Task* parent = task->getParent();
-            cerr << "dispatcher write callling kill " << parent << endl;
-            if (parent)
-                parent->kill(task, rv);
-        }
+    if (event->task) {
+        // If event->task is set here, the application called
+        // remove() during this thread. The event was not really removed,
+        // so do this now
+        remove(event, task);
+    }
+    else {
+        // Place it on the timer queue again.
+        event->task = task;
+        event_add(&event->ev, &event->tv);
     }
 }
