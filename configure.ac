@@ -231,22 +231,22 @@ AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PATH_PROG(RM, rm)
 AC_PATH_PROG(UNZIP, unzip)
-AC_PATH_PROG(SED, sed)
-AC_PATH_PROG(ED, ed)
+#AC_PATH_PROG(SED, sed)
+#AC_PATH_PROG(ED, ed)
 AC_PATH_PROG(GREP, grep)
-AC_PATH_PROG(PYTHON, python)
+#AC_PATH_PROG(PYTHON, python)
 AC_PATH_PROG(AR, ar)
 AC_PATH_PROG(MV, mv)
 AC_PATH_PROG(XSLTPROC, xsltproc)
 AC_PATH_PROG(INDENT, indent)
 
 # Checks for libraries
-AC_CHECK_LIB([dl],[dlopen],[:],[
-    AC_MSG_ERROR([dlopen() not found])
-])
-AC_CHECK_LIB([z],[deflate],[:],[
-    AC_MSG_ERROR([deflate() not found])
-])
+#AC_CHECK_LIB([dl],[dlopen],[:],[
+#    AC_MSG_ERROR([dlopen() not found])
+#])
+#AC_CHECK_LIB([z],[deflate],[:],[
+#    AC_MSG_ERROR([deflate() not found])
+#])
 
 # Checks for header files
 AC_HEADER_STDC

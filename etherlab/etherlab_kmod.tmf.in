@@ -106,7 +106,7 @@ STAGING_DIR          := |>STAGING_DIR<|
 
 ETHERLAB_DIR         := $(STAGING_DIR)/@prefix@
 #GZIP                 := @GZIP@
-ED                   := @ED@
+#ED                   := @ED@
 GREP                 := @GREP@
 AR                   := @AR@
 
@@ -341,7 +341,7 @@ cc = @echo -e "  CC\t" $@ && $(CC)
 ld = @echo -e "  LD\t" $@ && $(LD)
 ar = @echo -e "  AR\t" $@ && $(AR)
 endif
-ed = "  ED\t" $@
+#ed = "  ED\t" $@
 
 DEPFILES := $(wildcard .*.dep)
 ifneq ($(DEPFILES),)
