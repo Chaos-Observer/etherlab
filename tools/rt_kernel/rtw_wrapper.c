@@ -90,54 +90,6 @@ extern const char* rt_OneStep(void);
 extern void mdl_set_error_msg(const char *msg);
 
 double etl_world_time[NUMST];
-unsigned int task_period[NUMST - (TID01EQ ? 1 : 0)];
-struct task_stats task_stats[NUMST - (TID01EQ ? 1 : 0)];
-
-/* Instantiate and initialise rt_app here */
-struct rt_app rt_app = {
-    .app_rtB = &rtB,
-    .rtB_size = sizeof(rtB),
-
-#ifdef rtP
-    .app_rtP = &rtP,
-    .rtP_size = sizeof(rtP),
-#else
-    .app_rtP = NULL,
-    .rtP_size = 0,
-#endif
-
-    /* Some variables concerning sample times passed to the model */
-    .num_st = TID01EQ ? NUMST-1 : NUMST,
-#ifdef MULTITASKING
-    .num_tasks = TID01EQ ? NUMST-1 : NUMST,
-    .rt_OneStepMain = rt_OneStepMain,
-    .rt_OneStepTid = rt_OneStepTid,
-#else
-    .num_tasks = 1,
-    .rt_OneStepMain = rt_OneStep,
-    .rt_OneStepTid = NULL,
-#endif
-
-    .get_signal_info = get_signal_info,
-#ifdef rtP
-    .get_param_info = get_param_info,
-#endif
-
-    .task_period = task_period,
-
-    .decimation = DECIMATION > 1 ? DECIMATION : 1,
-    .max_overrun = OVERRUNMAX,
-    .buffer_time = BUFFER_TIME > 0 ? BUFFER_TIME*1e6 : 0,
-    .stack_size = STACKSIZE,
-    .task_stats = task_stats,
-
-    .payload_files = payload_files,
-
-    /* Register model callbacks */
-    .set_error_msg = mdl_set_error_msg,
-    .appVersion = STR(MODELVERSION),
-    .appName = STR(MODEL),
-};
 
 #if NCSTATES > 0
   extern void rt_ODECreateIntegrationData(RTWSolverInfo *si);
@@ -317,14 +269,16 @@ app_stop(void)
 const char *
 app_start(void)
 {
-    RT_MODEL  *S;
+    RT_MODEL  *S = MODEL();
     const char *errmsg;
     int i;
 
     /************************
      * Initialize the model *
      ************************/
-    rt_app.app_privdata = S = MODEL();
+    if ((errmsg = app_info_init(S))) {
+        return errmsg;
+    }
 
     if (rtmGetErrorStatus(S) != NULL) {
 	    return rtmGetErrorStatus(S);
@@ -353,12 +307,15 @@ app_start(void)
         return errmsg;
     }
 
-    if ((errmsg = rtw_capi_init(S, 
-                    &rt_app.signal_count,
-                    &rt_app.param_count,
-                    &rt_app.variable_path_len))) {
-        return errmsg;
-    }
+    /* Register model callbacks */
+#ifdef MULTITASKING
+    rt_app.rt_OneStepMain = rt_OneStepMain;
+    rt_app.rt_OneStepTid = rt_OneStepTid;
+#else
+    rt_app.rt_OneStepMain = rt_OneStep;
+    rt_app.rt_OneStepTid = NULL;
+#endif
+    rt_app.set_error_msg = mdl_set_error_msg;
 
     for (i = 0; i < rt_app.num_st; i++) {
         task_period[i] = (unsigned int)

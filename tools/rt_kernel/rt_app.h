@@ -22,8 +22,6 @@
  *
  *****************************************************************************/ 
 
-#include <linux/limits.h>       // PATH_MAX
-#include <stddef.h>             // size_t
 #include <include/taskstats.h>      // struct task_stats
 #include "module_payload.h"
 
@@ -64,9 +62,9 @@ struct rt_app {
         /* Variables used to pass model symbol to the buddy */
         const struct payload_files *payload_files;
 
-        size_t signal_count;
-        size_t param_count;
-        size_t variable_path_len;
+        unsigned int signal_count;
+        unsigned int param_count;
+        unsigned int variable_path_len;
 
         struct task_stats *task_stats;
 
@@ -81,10 +79,13 @@ struct rt_app {
 };
 
 extern struct rt_app rt_app;
+extern struct task_stats task_stats[];
+extern unsigned int task_period[];
 
 /* Revision number that will be used to check whether the structure
  * definitions have changed */
 #define REVISION "$Revision$"
 
 const char *app_start(void);
+const char *app_info_init(void* priv_data);
 void app_stop(void);

@@ -10,7 +10,7 @@
 #error LIBXML_TREE_ENABLED or LIBXML_OUTPUT_ENABLED not set for libxml2
 #endif
 
-#include "defines.h"
+#include "include/defines.h"
 #include "capi.h"
 #include "rtmodel.h"
 
@@ -64,10 +64,6 @@ void dump_rtBlockSignals(xmlNodePtr root_node, unsigned int *maxSampTimeIndex)
     signals_node = xmlNewChild(root_node, NULL, BAD_CAST "signals", NULL);
     CHECK_ERR(!signals_node, "xmlNewChild", err_no_mem);
 
-    snprintf(buf, sizeof(buf), "%u", rtwCAPI_GetNumSignals(mmi));
-    CHECK_ERR( !xmlNewProp(signals_node, BAD_CAST "count", BAD_CAST buf),
-            "xmlNewProp", err_no_mem);
-
     for (sigIdx = 0; sigIdx < rtwCAPI_GetNumSignals(mmi); sigIdx++) {
         unsigned int sysNum;
         const char *blockPath;
@@ -102,11 +98,6 @@ void dump_rtBlockSignals(xmlNodePtr root_node, unsigned int *maxSampTimeIndex)
 
         signal_node = xmlNewChild(signals_node, NULL, BAD_CAST "signal", NULL);
         CHECK_ERR(!signal_node, "xmlNewChild", err_no_mem);
-
-        snprintf(buf, sizeof(buf), "%u", sigIdx);
-        CHECK_ERR( 
-                !xmlNewProp(signal_node, BAD_CAST "index", BAD_CAST buf),
-                "xmlNewProp", err_no_mem);
 
         snprintf(buf, sizeof(buf), "%u", sysNum);
         CHECK_ERR( 
@@ -173,10 +164,6 @@ void dump_rtBlockParameters(xmlNodePtr root_node)
     parameters_node = xmlNewChild(root_node, NULL, BAD_CAST "parameters", NULL);
     CHECK_ERR(!parameters_node, "xmlNewChild", err_no_mem);
 
-    snprintf(buf, sizeof(buf), "%u", rtwCAPI_GetNumBlockParameters(mmi));
-    CHECK_ERR( !xmlNewProp(parameters_node, BAD_CAST "count", BAD_CAST buf),
-            "xmlNewProp", err_no_mem);
-
     for (paramIdx = 0; paramIdx < rtwCAPI_GetNumBlockParameters(mmi); 
             paramIdx++) {
 #ifdef rtP
@@ -223,11 +210,6 @@ void dump_rtBlockParameters(xmlNodePtr root_node)
 //                BAD_CAST path);
         CHECK_ERR(!parameter_node, "xmlNewChild", err_no_mem);
 
-        snprintf(buf, sizeof(buf), "%u", paramIdx);
-        CHECK_ERR( 
-                !xmlNewProp(parameter_node, BAD_CAST "index", BAD_CAST buf),
-                "xmlNewProp", err_no_mem);
-
         snprintf(buf, sizeof(buf), "%u", dataTypeIndex);
         CHECK_ERR( 
                 !xmlNewProp(parameter_node, BAD_CAST "dataTypeIndex", BAD_CAST buf),
@@ -264,10 +246,6 @@ void dump_dataTypeMap(xmlNodePtr root_node)
     dataTypeMaps_node = xmlNewChild(root_node, NULL, BAD_CAST "datatypes", NULL);
     CHECK_ERR(!dataTypeMaps_node, "xmlNewChild", err_no_mem);
 
-    snprintf(buf, sizeof(buf), "%u", numDataTypeMaps+1);
-    CHECK_ERR( !xmlNewProp(dataTypeMaps_node, BAD_CAST "count", BAD_CAST buf),
-            "xmlNewProp", err_no_mem);
-
     for (idx = 0; idx <= numDataTypeMaps; idx++) {
         const char_T *cDataName;   /* C language data type name                    */
         const char_T *mwDataName;  /* MathWorks data type, typedef in rtwtypes.h   */
@@ -290,11 +268,6 @@ void dump_dataTypeMap(xmlNodePtr root_node)
         dataTypeMap_node = xmlNewChild(dataTypeMaps_node, NULL, 
                 BAD_CAST "datatype", NULL);
         CHECK_ERR(!dataTypeMap_node, "xmlNewChild", err_no_mem);
-
-        snprintf(buf, sizeof(buf), "%u", idx);
-        CHECK_ERR( 
-                !xmlNewProp(dataTypeMap_node, BAD_CAST "index", BAD_CAST buf),
-                "xmlNewProp", err_no_mem);
 
         CHECK_ERR( 
                 !xmlNewProp(dataTypeMap_node, BAD_CAST "cdataname",
@@ -347,10 +320,6 @@ void dump_dimensionMap(xmlNodePtr root_node)
             BAD_CAST "dimensionMaps", NULL);
     CHECK_ERR(!dimensionMaps_node, "xmlNewChild", err_no_mem);
 
-    snprintf(buf, sizeof(buf), "%u", numDims+1);
-    CHECK_ERR( !xmlNewProp(dimensionMaps_node, BAD_CAST "count", BAD_CAST buf),
-            "xmlNewProp", err_no_mem);
-
     for (idx = 0; idx <= numDims; idx++) {
         rtwCAPI_Orientation orientation;
         uint_T      dimArrayIndex; /* index into dimension array */
@@ -365,11 +334,6 @@ void dump_dimensionMap(xmlNodePtr root_node)
         dimensionMap_node = xmlNewChild(dimensionMaps_node, NULL, 
                 BAD_CAST "dimensionMap", NULL);
         CHECK_ERR(!dimensionMap_node, "xmlNewChild", err_no_mem);
-
-        snprintf(buf, sizeof(buf), "%u", idx);
-        CHECK_ERR( 
-                !xmlNewProp(dimensionMap_node, BAD_CAST "index", BAD_CAST buf),
-                "xmlNewProp", err_no_mem);
 
         switch (orientation) {
             case rtwCAPI_SCALAR:
@@ -403,11 +367,6 @@ void dump_dimensionMap(xmlNodePtr root_node)
                     BAD_CAST "dimension", NULL);
             CHECK_ERR(!dimension_node, "xmlNewChild", err_no_mem);
 
-            snprintf(buf, sizeof(buf), "%u", jdx);
-            CHECK_ERR( 
-                    !xmlNewProp(dimension_node, BAD_CAST "index", BAD_CAST buf),
-                    "xmlNewProp", err_no_mem);
-
             snprintf(buf, sizeof(buf), "%u", dimensionArray[dimArrayIndex+jdx]);
             CHECK_ERR( 
                     !xmlNewProp(dimension_node, BAD_CAST "value", BAD_CAST buf),
@@ -430,15 +389,11 @@ void dump_sampleTime(xmlNodePtr root_node, unsigned int maxSampTimeIndex)
             BAD_CAST "sampleTimes", NULL);
     CHECK_ERR(!sampletimes_node, "xmlNewChild", err_no_mem);
 
-    snprintf(buf, sizeof(buf), "%u", maxSampTimeIndex);
-    CHECK_ERR( !xmlNewProp(sampletimes_node, BAD_CAST "count", BAD_CAST buf),
-            "xmlNewProp", err_no_mem);
-
     snprintf(buf, sizeof(buf), "%u", TID01EQ);
     CHECK_ERR( !xmlNewProp(sampletimes_node, BAD_CAST "tid01eq", BAD_CAST buf),
             "xmlNewProp", err_no_mem);
 
-    for (idx = 0; idx < maxSampTimeIndex; idx++) {
+    for (idx = 0; idx <= maxSampTimeIndex; idx++) {
         real_T  *samplePeriodPtr;  /* pointer to sample time period value       */
         real_T  *sampleOffsetPtr;  /* pointer to sample time Offset value       */
         int8_T    tid;              /* task identifier  */
@@ -452,11 +407,6 @@ void dump_sampleTime(xmlNodePtr root_node, unsigned int maxSampTimeIndex)
         sampletime_node = xmlNewChild(sampletimes_node, NULL, 
                 BAD_CAST "sampleTime", NULL);
         CHECK_ERR(!sampletime_node, "xmlNewChild", err_no_mem);
-
-//        snprintf(buf, sizeof(buf), "%u", idx);
-//        CHECK_ERR( 
-//                !xmlNewProp(sampletime_node, BAD_CAST "index", BAD_CAST buf),
-//                "xmlNewProp", err_no_mem);
 
         snprintf(buf, sizeof(buf), "%u", tid);
         CHECK_ERR( 
@@ -490,7 +440,8 @@ int main(int argc, char **argv)
     xmlNodePtr root_node;
     unsigned int maxSampTimeIndex = 0;
 
-#include "capi_init.c"
+    /* From capi_init.c */
+    capi_init();
 
     LIBXML_TEST_VERSION;
 

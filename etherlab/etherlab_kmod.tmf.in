@@ -235,6 +235,11 @@ KERNEL_MODULE      := $(MODEL)_kmod.ko
 RUN	:= $(RELATIVE_PATH_TO_ANCHOR)/run
 RUNINFO	:= $(RELATIVE_PATH_TO_ANCHOR)/.runinfo
 
+# Files needed for Model Symbols
+SYMBOL_SRCS      := $(filter %_capi.c,$(MODULES)) \
+                        $(filter %_data.c,$(MODULES))
+SYMBOL_OBJS      := $(SYMBOL_SRCS:.c=.o)
+
 # Differentiate between builds for Model Referencing and Standard
 #   Model Referending: only create a library
 #   Standard: Make kernel modules and user helper process
@@ -369,7 +374,8 @@ $(MODULE_MAIN_SRC): $(ETHERLAB_DIR)/src/kernel/$(MODULE_MAIN_SRC)
 	@cp $< $@
 
 # Create <model>.o_shipped object for use in KBuild
-$(SHIPPED_MODEL): rtw_wrapper.o $(MODELLIB) $(SHARED_LIB) $(LIBS) $(MODELREF_LINK_LIBS) 
+$(SHIPPED_MODEL): rtw_wrapper.o rtw_app_info.o $(MODELLIB) $(SHARED_LIB) \
+                $(LIBS) $(MODELREF_LINK_LIBS) 
 	$(ld) $(LDFLAGS) -r -o $@ $^
 	@echo "### Created $@"
 
@@ -395,13 +401,6 @@ rtw_data_interface.o: $(ETHERLAB_DIR)/src/kernel/rtw_data_interface.c capi.h
 	@$(GCC_TEST_CMD) $< $(GCC_TEST_OUT)
 	$(cc) -c $(LOCAL_CFLAGS) $(KERNEL_OPTS) $(GCC_WALL_FLAG) $<
 
-$(MODEL).xml: gen_msf
-	@echo Generating XML Model Symbol File $(MODEL).xml
-	@./$< > $@
-
-$(MODEL).so: $(SYMBOL_OBJS) etherlab_buddy_data.o model_reg.o
-	$(cc) -shared -fpic -nostartfiles -o $@ $^
-
 $(MODELLIB): $(LINK_OBJS)
 	$(ar) rs $@ $^
 
@@ -409,9 +408,36 @@ $(MODELLIB): $(LINK_OBJS)
 # Level 4 targets
 ###################
 capi.h: $(MODEL).c
+	@echo -e $(grep)
+	@$(GREP) 'include.*_capi\.h' $< > $@
+
+###################
+# gen_msf
+###################
+$(MODEL).xml: gen_msf
+	@echo Generating XML Model Symbol File $(MODEL).xml
+	@./$< $@
+
+gen_msf: $(SYMBOL_SRCS) \
+               $(ETHERLAB_DIR)/src/buddy/etherlab_buddy_data.c \
+               $(ETHERLAB_DIR)/src/buddy/dump_capi.c capi_init.c capi.h
+	$(cc) -o $@ $(DEP) $(LOCAL_CFLAGS) $(GCC_WALL_FLAG_MAX) $^ \
+               `xml2-config --libs --cflags`
+
+capi_init.c: $(MODEL).c
 	@echo -e $(ed)
-	@echo -e "e $<\n /capi.h/d\n 0x\n 2\n ;d\n w $@\n q\n" | \
-                $(ED) -s >/dev/null
+	@echo '#include "capi.h"' > $@
+	@echo "void capi_init(void) {" >> $@
+	@$(GREP) -A1 "C API" $< >> $@
+	@echo "}" >> $@
+
+$(MODEL).so: $(SYMBOL_SRCS) module_payload.c capi_init.c capi.h \
+               $(ETHERLAB_DIR)/src/kernel/rtw_data_interface.c \
+               $(ETHERLAB_DIR)/src/kernel/etl_data_types.c \
+               $(ETHERLAB_DIR)/src/kernel/rtw_app_info.c \
+               $(ETHERLAB_DIR)/src/buddy/rtw_app_info_init.c
+	$(cc) -shared -fpic -nostartfiles -o $@ $(DEP) $(LOCAL_CFLAGS) $^
+
 
 ###################
 # Various targets on demand
@@ -423,10 +449,6 @@ capi.h: $(MODEL).c
 %.o : $(RELATIVE_PATH_TO_ANCHOR)/%.c
 	@$(GCC_TEST_CMD) $< $(GCC_TEST_OUT)
 	$(cc) $(DEP) -c $(LOCAL_CFLAGS) $(KERNEL_OPTS) $(GCC_WALL_FLAG) $<
-
-%.o : $(ETHERLAB_DIR)/blocks/%.c
-	@$(GCC_TEST_CMD) $< $(GCC_TEST_OUT)
-	$(cc) $(DEP) -c $(LOCAL_CFLAGS) $(KERNEL_OPTS) $(GCC_WALL_FLAG_MAX) $<
 
 %.o : $(ETHERLAB_DIR)/src/kernel/%.c
 	@$(GCC_TEST_CMD) $(LOCAL_CFLAGS) $(KERNEL_OPTS) $< $(GCC_TEST_OUT)
@@ -508,7 +530,8 @@ purge : clean
 
 clean :
 	@echo "### Deleting the objects and $(PRODUCT)"
-	@\rm -f $(LINK_OBJS) $(PRODUCT) $(MODELLIB) .*.dep
+	@\rm -f $(LINK_OBJS) $(PRODUCT) $(MODELLIB) .*.dep *.o *.o_shipped
+	@\rm -f $(MODEL).xml gen_msf $(MODEL).so capi.h capi_init.c module_payload.c
 
 endif # ($(KERNELRELEASE))
 
