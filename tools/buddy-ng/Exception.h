@@ -31,10 +31,28 @@
 #include <string>
 #include <sstream>
 
+#include <cerrno>
+#include <cstring>
+
 struct Exception: public std::runtime_error {
     Exception(const std::string& s): std::runtime_error(s) {}
     Exception(const std::ostringstream& s): std::runtime_error(s.str()) {}
 };
+
+struct FileOpenException: public std::runtime_error {
+    FileOpenException(const std::string& filename): std::runtime_error(
+            std::string("open(): Could not open file ")
+            .append(filename)
+            .append(": ")
+            .append(strerror(errno))) {}
+};
+
+struct IoctlException: public std::runtime_error {
+    IoctlException(): std::runtime_error(
+            std::string("ioctl(): ioctl error: ")
+            .append(strerror(errno))) {}
+};
+
 
 #endif // EXCEPTION_H
 

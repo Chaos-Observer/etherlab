@@ -57,8 +57,7 @@ The central dispatcher then calls the function that was registered when
 */
 
 #include "ConfigFile.h"
-#include "RTComServer.h"
-#include "RT-Task.h"
+#include "AppCtlTask.h"
 #include "Dispatcher.h"
 
 #include <iostream>
@@ -67,8 +66,8 @@ int main(int argc, const char *argv[])
 {
     ConfigFile::ConfigFile("buddy.conf");
 
-    RTTask rtTask;
-    RTComServer rtcomServer(&rtTask);
+    AppCtlTask appCtlTask;
+//    RTComServer rtcomServer(&rtTask);
 
     Dispatcher::run();
 

@@ -5,6 +5,9 @@
 #AM_YFLAGS = -d
 #AM_LFLAGS = --header-file=lexer.h
 
+buddydatadir = $(prefix)/src/buddy
+dist_buddydata_DATA = etherlab_buddy_data.c dump_capi.c rtw_app_info_init.c
+
 AM_CPPFLAGS = -DDEBUG=$(DEBUG) -I$(top_srcdir)/tools -Wall
 
 #lib_LTLIBRARIES = liblayer.la
@@ -40,17 +43,18 @@ etherlab_buddy_SOURCES = \
         Exception.h \
         SocketExcept.h \
         main.cpp \
-        RTAppClient.cpp RTAppClient.h \
-        SocketLayer.cpp SocketLayer.h \
-        RTComServer.cpp RTComServer.h \
-        RTComSocket.cpp RTComSocket.h \
-        FileDevice.cpp FileDevice.h \
-        RT-Task.cpp RT-Task.h \
-        RTSignal.cpp RTSignal.h \
-        RTVariable.cpp RTVariable.h \
-        RT-Model.cpp RT-Model.h \
-        RTParameter.cpp RTParameter.h \
-        HTTPTask.cpp HTTPTask.h
+        AppCtlTask.cpp AppCtlTask.h
+
+#        RTAppClient.cpp RTAppClient.h \
+#        SocketLayer.cpp SocketLayer.h \
+#        RTComServer.cpp RTComServer.h \
+#        RTComSocket.cpp RTComSocket.h \
+#        RT-Task.cpp RT-Task.h \
+#        RTSignal.cpp RTSignal.h \
+#        RTVariable.cpp RTVariable.h \
+#        RT-Model.cpp RT-Model.h \
+#        RTParameter.cpp RTParameter.h \
+#        HTTPTask.cpp HTTPTask.h
 etherlab_buddy_LDADD = $(lib_LIBRARIES)  \
         /usr/lib/libevent.la /usr/lib/libsasl2.la libiniparser.a
 etherlab_buddy_LDFLAGS = 
