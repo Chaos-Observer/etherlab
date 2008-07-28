@@ -113,6 +113,7 @@ app_info_init(void* priv_data)
     rt_app.app_privdata = priv_data;
 
     if ((errmsg = rtw_capi_init(S, 
+                    task_period,
                     &rt_app.signal_count,
                     &rt_app.param_count,
                     &rt_app.variable_path_len))) {

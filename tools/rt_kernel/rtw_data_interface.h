@@ -33,6 +33,7 @@ const char* get_param_info(struct signal_info *si);
 
 const char* rtw_capi_init(
         RT_MODEL *rtM,
+        unsigned int task_period[],
         unsigned int *max_signals,
         unsigned int *max_parameters,
         unsigned int *max_path_len

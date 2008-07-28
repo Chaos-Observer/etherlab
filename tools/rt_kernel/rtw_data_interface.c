@@ -42,18 +42,19 @@
 #define min(x1,x2) ((x2) > (x1) ? (x1) : (x2))
 #endif
 
-rtwCAPI_ModelMappingInfo* mmi;
-const rtwCAPI_DimensionMap*    dimMap;
-const rtwCAPI_DataTypeMap*     dTypeMap;
-const uint_T*                  dimArray;
-const rtwCAPI_Signals* signals;
-const rtwCAPI_BlockParameters* blockParams;
-unsigned int maxSignalIdx;
-unsigned int maxParameterIdx;
-void ** dataAddressMap;
+static rtwCAPI_ModelMappingInfo* mmi;
+static const rtwCAPI_DimensionMap*    dimMap;
+static const rtwCAPI_DataTypeMap*     dTypeMap;
+static const uint_T*                  dimArray;
+static const rtwCAPI_Signals* signals;
+static const rtwCAPI_BlockParameters* blockParams;
+static const rtwCAPI_SampleTimeMap* sampleTimeMap;
+static unsigned int maxSignalIdx;
+static unsigned int maxParameterIdx;
+static void ** dataAddressMap;
 
 // Length of model name
-size_t model_name_len;
+static size_t model_name_len;
 
 const char* get_signal_info(struct signal_info *si)
 {
@@ -314,6 +315,7 @@ const char* get_param_info(struct signal_info* si)
 
 const char* rtw_capi_init(
         RT_MODEL *rtM,
+        unsigned int task_period[],
         unsigned int *max_signals,
         unsigned int *max_parameters,
         unsigned int *max_path_len
@@ -367,5 +369,19 @@ const char* rtw_capi_init(
         }
     }
 #endif
+
+    sampleTimeMap = rtwCAPI_GetSampleTimeMap(mmi);
+    for (i = 0; i < NUMST; i++) {
+        real_T *samplePeriodPtr = 
+            (real_T*)rtwCAPI_GetSamplePeriodPtr(sampleTimeMap, i);
+        unsigned int tid = rtwCAPI_GetSampleTimeTID(sampleTimeMap, i);
+#if TID01EQ
+        if (!tid)
+            continue;
+        tid -= 1;
+#endif
+        task_period[tid] = *samplePeriodPtr * 1.0e6 + 0.5;
+    }
+
     return NULL;
 }

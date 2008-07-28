@@ -317,10 +317,10 @@ app_start(void)
 #endif
     rt_app.set_error_msg = mdl_set_error_msg;
 
-    for (i = 0; i < rt_app.num_st; i++) {
-        task_period[i] = (unsigned int)
-            (rtmGetSampleTime(S, i + (TID01EQ ? 1 : 0))*1.0e6 + 0.5);
-    }
+//    for (i = 0; i < rt_app.num_st; i++) {
+//        task_period[i] = (unsigned int)
+//            (rtmGetSampleTime(S, i + (TID01EQ ? 1 : 0))*1.0e6 + 0.5);
+//    }
 
     // Cannot assign this in struct definition :(
 //    rt_app.symbol_len = model_symbols_len;
