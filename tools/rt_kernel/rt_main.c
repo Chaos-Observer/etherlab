@@ -169,14 +169,32 @@ void update_time(void)
  */
 #define K_P (2*0.707*6.28*HELPER_CALL_RATE/50)
 #define K_I (6.28*HELPER_CALL_RATE/50)*(6.28*HELPER_CALL_RATE/50)
-    double e, p;
 
     /* Check whether a new time sample has arrived. This happens at a 
      * rate of HELPER_CALL_RATE.  */
     if (test_and_clear_bit(0, &rt_kernel.time.flag)) {
         /* Time error between Real World time and time observer */
+        double e, p;
+
+#if 0
+        struct timeval e_tv;
+        e_tv.tv_sec = rt_kernel.time.tv.tv_sec - rt_kernel.time.tv_sec;
+        if (rt_kernel.time.tc.tv_usec < rt_kernel.time.tv_usec) {
+            e_tv.tv_sec--;
+            e_tv.tv_usec = 
+                rt_kernel.time.tv.tv_usec + 1000000 - rt_kernel.time.tv_usec;
+        }
+        else {
+            e_tv.tv_usec = 
+                rt_kernel.time.tv.tv_usec - rt_kernel.time.tv_usec;
+        }
+
+        e = e_tv.tv_sec + 1.0e-6 * e_tv.tv_usec*1.0e-6;
+#else
+
         e = (double)rt_kernel.time.tv.tv_sec + 
             rt_kernel.time.tv.tv_usec*1.0e-6 - rt_kernel.time.value;
+#endif
 
         /* Proportional part */
         p = K_P*e;
