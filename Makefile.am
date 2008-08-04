@@ -4,15 +4,7 @@
 #
 #-----------------------------------------------------------------------------
 
-SUBDIRS = etherlab tools
-
-if KERNEL
-SUBDIRS += \
-        tools \
-        src \
-        doc \
-        lib
-endif
+SUBDIRS = tools
 
 if SIMULINK
 SUBDIRS += rtw

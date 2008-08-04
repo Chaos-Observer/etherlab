@@ -6,5 +6,5 @@ dist_etherlab_DATA = \
         get_meta_tag.m \
         etherlab_config.m \
         etherlab_postprocess.m \
-        etherlab_tools.m \
+        etherlab_tools.mk \
         etherlab.tlc

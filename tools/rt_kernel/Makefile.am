@@ -1,12 +1,6 @@
 moduledir = $(prefix)/modules
 module_DATA = rt_kernel.ko rt_test.ko
 
-# Files needed for Real-Time Workshop
-rtwdatadir = $(prefix)/$(RTW_DIR)/src/kernel
-include_rtwdir = $(prefix)/$(RTW_DIR)/include
-dist_rtwdata_DATA = rtw_wrapper.c rtw_data_interface.c rtw_app_info.c
-include_rtw_HEADERS = mdl_time.h rtw_data_interface.h
-
 # Files needed to build an Application
 kerneldatadir = $(prefix)/src/kernel
 dist_kerneldata_DATA = rt_app_main.c
@@ -28,7 +22,7 @@ clean-local: Kbuild
 	make -C "$(LINUX_DIR)" M="@abs_builddir@" \
 		V="$(VERBOSE)" DEFS="$(DEFS)" clean
 
-kflags_mkdir = $(prefix)/$(RTW_DIR)/etherlab
+kflags_mkdir = $(prefix)/$(subdir)
 kflags_mk_DATA = kflags.mk
 kflags.mk: kernel-cflags
 	./kernel-cflags > $@

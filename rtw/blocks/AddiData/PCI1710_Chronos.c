@@ -15,7 +15,7 @@
 #define S_FUNCTION_LEVEL 2
 
 #include "simstruc.h"
-#include "ethercat_ss_funcs.h"
+#include "../ethercat_ss_funcs.h"
 
 #define PARAM_COUNT 6
 #define MASTER   ((uint_T)mxGetScalar(ssGetSFcnParam(S,0)))

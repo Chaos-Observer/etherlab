@@ -6,7 +6,7 @@ SUBDIRS += \
         Hilscher
 endif
 
-blocksdir = $(prefix)/$(RTW_DIR)/blocks
+blocksdir = $(prefix)/$(subdir)
 dist_blocks_DATA = \
         ETL.tlc \
         RaiseCatch.tlc \

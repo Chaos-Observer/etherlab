@@ -6,6 +6,6 @@ if ~length(strfind(path,pwd))
 end
 
 disp(['Precompiling functions in ' pwd]);
-mex -I@prefix@/include cif_pd_in.c
-mex -I@prefix@/include cif_pd_out.c
+mex xPCI1710_inc.c
+mex xPCI1710_etm.c
 return

@@ -104,7 +104,7 @@ VERBOSE              := |>VERBOSE_BUILD<|
 MODULE_PAYLOAD       := |>MODULE_PAYLOAD<|
 STAGING_DIR          := |>STAGING_DIR<|
 
-ETHERLAB_DIR         := $(STAGING_DIR)/@ETHERLAB_DIR@
+ETHERLAB_DIR         := $(STAGING_DIR)/@prefix@
 RTW_DIR              := $(ETHERLAB_DIR)/@RTW_DIR@
 #GZIP                 := @GZIP@
 #ED                   := @ED@
@@ -133,7 +133,7 @@ endif
 
 #include $(MATLAB_ROOT)/rtw/c/tools/unixtools.mk
 
-include $(ETHERLAB_DIR)/etherlab/etherlab_tools.mk
+include $(RTW_DIR)/etherlab/etherlab_tools.mk
 
 #------------------------------ Include Path -----------------------------------
 

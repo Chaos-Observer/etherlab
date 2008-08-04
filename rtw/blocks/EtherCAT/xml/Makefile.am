@@ -1,5 +1,5 @@
 
-xmldir = $(prefix)/$(RTW_DIR)/$(subdir)
+xmldir = $(prefix)/$(subdir)
 
 dist_xml_DATA = \
         Beckhoff_EtherCAT_XML.zip \

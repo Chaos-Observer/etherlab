@@ -1,3 +1,4 @@
+libdir = $(prefix)/$(subdir)
 lib_LIBRARIES = libetherlab.a
 
 #-----------------------------------------------------------------------
@@ -29,16 +30,3 @@ ecrt_support.o: ecrt_support.h ecrt_support.c Kbuild
 clean-local: Kbuild
 	make -C "$(LINUX_DIR)" M="@abs_builddir@" \
 		V="$(VERBOSE)" DEFS="$(DEFS)" clean
-
-#-----------------------------------------------------------------------
-
-EXTRA_DIST += rtwtypes.h
-
-if MATLAB_ROOT
-librtw_adir = $(libdir)
-librtw_a_DATA = librtw.a
-
-librtw.a: Makefile.rtw
-	$(MAKE) -f Makefile.rtw V=$(VERBOSE) $(librtw_a_DATA)
-
-endif

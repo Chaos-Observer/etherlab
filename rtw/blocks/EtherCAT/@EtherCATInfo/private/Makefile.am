@@ -1,5 +1,5 @@
 
-privatedir = $(prefix)/$(RTW_DIR)/$(subdir)
+privatedir = $(prefix)/$(subdir)
 
 dist_private_DATA = \
         ParseXML.m \
