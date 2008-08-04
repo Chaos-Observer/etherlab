@@ -9,19 +9,17 @@
  */
 
 
-#define S_FUNCTION_NAME  xPCI1710_etm
+#define S_FUNCTION_NAME  xPCI1710_digio
 #define S_FUNCTION_LEVEL 2
 
 #include "simstruc.h"
-#include "get_string.h"
+#include "../get_string.h"
 
-#define PARAM_COUNT 6
-#define CARD_ID                          (ssGetSFcnParam(S,0))
-#define MODULE       ((uint_T)mxGetScalar(ssGetSFcnParam(S,1)))
-#define CLOCK_SRC    ((uint_T)mxGetScalar(ssGetSFcnParam(S,2)))
-#define DIVISOR      ((uint_T)mxGetScalar(ssGetSFcnParam(S,3)))
-#define OP_TYPE      ((uint_T)mxGetScalar(ssGetSFcnParam(S,4)))
-#define TSAMPLE              (mxGetScalar(ssGetSFcnParam(S,5)))
+#define CARD_ID                         (ssGetSFcnParam(S,0))
+#define MODULE      ((uint_T)mxGetScalar(ssGetSFcnParam(S,1)))
+#define A_DIR       ((uint_T)mxGetScalar(ssGetSFcnParam(S,2)))
+#define B_DIR       ((uint_T)mxGetScalar(ssGetSFcnParam(S,3)))
+#define PARAM_COUNT                                       4
 
 /*====================*
  * S-function methods *
@@ -58,18 +56,19 @@ static void mdlInitializeSizes(SimStruct *S)
     /*
      * Set Inputs
      */
-    if (!ssSetNumInputPorts(S,0)) return;
+    if (A_DIR != 1 || B_DIR != 1) {
+        if (!ssSetNumInputPorts(S,0)) return;
+        ssSetInputPortWidth(   S, 0, 1);
+        ssSetInputPortDataType(S, 0, DYNAMICALLY_TYPED);
+        ssSetInputPortDirectFeedThrough(S, 0, 1);
+    }
 
     /*
      * Set Outputs
      */
-    if (!ssSetNumOutputPorts(S, 3)) return;
-    ssSetOutputPortWidth(   S, 0, 2);
-    ssSetOutputPortDataType(S, 0, dataType[OP_TYPE]);
-    ssSetOutputPortWidth(   S, 1, 2);
-    ssSetOutputPortDataType(S, 1, dataType[OP_TYPE]);
-    ssSetOutputPortWidth(   S, 2, 2);
-    ssSetOutputPortDataType(S, 2, SS_UINT8);
+    if (!ssSetNumOutputPorts(S, 1)) return;
+    ssSetOutputPortWidth(   S, 0, 1);
+    ssSetOutputPortDataType(S, 0, SS_UINT8);
 
     ssSetNumSampleTimes(S, 1);
     ssSetNumContStates(S, 0);

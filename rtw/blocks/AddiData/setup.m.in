@@ -1,5 +1,10 @@
 function setup()
 
+if ~length(strfind(path,pwd))
+    disp(['Adding ' pwd ' to $MATLABPATH']);
+    addpath(pwd);
+end
+
 disp(['Precompiling functions in ' pwd]);
 mex -I@prefix@/include xPCI1710_inc.c
 mex -I@prefix@/include xPCI1710_etm.c

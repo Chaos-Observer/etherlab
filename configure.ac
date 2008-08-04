@@ -15,9 +15,8 @@ AC_CONFIG_AUX_DIR(config)
 AM_INIT_AUTOMAKE([-Wall -Werror])
 AC_CONFIG_SRCDIR([config.h.in])
 AC_CONFIG_HEADERS([config.h])
-ETHERLAB_DIR=/opt/etherlab
-AC_PREFIX_DEFAULT([/opt/etherlab/rtw])
-AC_SUBST(ETHERLAB_DIR)
+AC_PREFIX_DEFAULT([/opt/etherlab])
+AC_SUBST(RTW_DIR,[rtw])
 
 dnl Compile and install Simulink related components (default: yes)
 AC_ARG_ENABLE([simulink],
@@ -65,9 +64,9 @@ AC_ARG_WITH([staging-dir],
     [ staging_dir= ]
     )
 if test "x$staging_dir" != x; then
-AC_MSG_CHECKING(for $ETHERLAB_DIR in $staging_dir)
-test -d "$staging_dir/$ETHERLAB_DIR" ||\
-    AC_MSG_ERROR([Could not find $staging_dir/$ETHERLAB_DIR])
+AC_MSG_CHECKING(for $prefix in $staging_dir)
+test -d "$staging_dir/$prefix" ||\
+    AC_MSG_ERROR([Could not find $staging_dir/$prefix])
 AC_MSG_RESULT(yes)
 fi
 AC_SUBST(STAGING_DIR,[$staging_dir])
@@ -158,9 +157,9 @@ AC_ARG_ENABLE([ethercat],
 )
 if test "x$ethercat" = "x1"; then
 AC_MSG_CHECKING(EtherCat header file)
-test -r "$staging_dir/${ETHERLAB_DIR}/include/ecrt.h" || \
-        AC_MSG_ERROR([ecrt.h not found in $staging_dir/${ETHERLAB_DIR}/include])
-AC_MSG_RESULT($staging_dir/${ETHERLAB_DIR}/include/ecrt.h)
+test -r "$staging_dir/${prefix}/include/ecrt.h" || \
+        AC_MSG_ERROR([ecrt.h not found in $staging_dir/${prefix}/include])
+AC_MSG_RESULT($staging_dir/${prefix}/include/ecrt.h)
 fi
 fi
 AM_CONDITIONAL(ETHERCAT, test x$ethercat = x1)
@@ -282,24 +281,19 @@ AC_CHECK_FUNCS([memset mkfifo munmap select socket strdup])
 # Output files
 AC_CONFIG_FILES([
         Makefile 
-        blocks/AddiData/Makefile 
-        blocks/AddiData/setup.m 
-        blocks/EtherCAT/Makefile
-        blocks/EtherCAT/setup.m 
-        blocks/EtherCAT/xml/Makefile
-        blocks/EtherCAT/xml/setup.m 
-        blocks/EtherCAT/@EtherCATInfo/Makefile
-        blocks/EtherCAT/@EtherCATInfo/private/Makefile
-        blocks/Hilscher/Makefile 
-        blocks/Hilscher/setup.m 
-        blocks/Makefile 
-        blocks/setup.m 
+        rtw/blocks/AddiData/Makefile 
+        rtw/blocks/Hilscher/Makefile 
+        rtw/blocks/EtherCAT/Makefile
+        rtw/blocks/EtherCAT/xml/Makefile
+        rtw/blocks/EtherCAT/@EtherCATInfo/Makefile
+        rtw/blocks/EtherCAT/@EtherCATInfo/private/Makefile
+        rtw/blocks/Makefile 
+        rtw/blocks/setup.m 
+        rtw/etherlab/Makefile 
+        rtw/etherlab/etherlab_config.m
+        rtw/etherlab/etherlab_kmod.tmf
+        rtw/etherlab/etherlab_tools.mk 
         doc/Makefile
-        etherlab/Makefile 
-        etherlab/etherlab_config.m
-        etherlab/etherlab_kmod.tmf
-        etherlab/etherlab_tools.mk 
-        etherlab/setup_etherlab.m 
         lib/Kbuild
         lib/Makefile
         lib/Makefile.rtw

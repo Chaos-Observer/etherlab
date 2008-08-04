@@ -3,25 +3,26 @@
  * $Revision$
  * $Date$
  *
- * SFunction to implement CIF-80PB output Process Data
  *
  * Copyright (c) 2006, Richard Hacker
  * License: GPL
  */
 
 
-#define S_FUNCTION_NAME  cif_pd_out
+#define S_FUNCTION_NAME  xPCI1710_inc
 #define S_FUNCTION_LEVEL 2
 
 #include "simstruc.h"
-#include "get_string.h"
+#include "../get_string.h"
 
-#define PARAM_COUNT 5
-#define DEVICE                       (ssGetSFcnParam(S,0))
-#define ADDR     ((uint_T)mxGetScalar(ssGetSFcnParam(S,1)))
-#define OP_TYPE  ((uint_T)mxGetScalar(ssGetSFcnParam(S,2)))
-#define SWAP     ((uint_T)mxGetScalar(ssGetSFcnParam(S,3)))
-#define TSAMPLE          (mxGetScalar(ssGetSFcnParam(S,4)))
+#define PARAM_COUNT 7
+#define CARD_ID                          (ssGetSFcnParam(S,0))
+#define MODULE       ((uint_T)mxGetScalar(ssGetSFcnParam(S,1)))
+#define MODE         ((uint_T)mxGetScalar(ssGetSFcnParam(S,2)))
+#define WIDTH        ((uint_T)mxGetScalar(ssGetSFcnParam(S,3)))
+#define OP_TYPE      ((uint_T)mxGetScalar(ssGetSFcnParam(S,4)))
+#define PRESET       ((uint_T)mxGetScalar(ssGetSFcnParam(S,5)))
+#define TSAMPLE              (mxGetScalar(ssGetSFcnParam(S,6)))
 
 /*====================*
  * S-function methods *
@@ -34,16 +35,17 @@
  */
 static void mdlInitializeSizes(SimStruct *S)
 {
-    int_T i, channels;
+    uint_T i;
     uint_T dataType[] = {  0, /*i Dummy, DTYPE starts at 1 */
+        SS_DOUBLE, SS_SINGLE, 
         SS_INT8, SS_UINT8, 
         SS_INT16, SS_UINT16,
         SS_INT32, SS_UINT32, 
         SS_BOOLEAN, 
-        SS_DOUBLE, SS_SINGLE, 
         DYNAMICALLY_TYPED
     };
     
+
     /* See sfuntmpl_doc.c for more details on the macros below */
     
     ssSetNumSFcnParams(S, PARAM_COUNT);  /* Number of expected parameters */
@@ -57,29 +59,36 @@ static void mdlInitializeSizes(SimStruct *S)
     /*
      * Set Inputs
      */
-    if (!ssSetNumInputPorts(S,1)) return;
-    ssSetInputPortWidth(   S, 0, DYNAMICALLY_SIZED);
-    ssSetInputPortDataType(S, 0, DYNAMICALLY_TYPED);
-    ssSetInputPortRequiredContiguous(S, 0, 0);
-    ssSetInputPortDirectFeedThrough(S, 0, 1);
+    if (PRESET) {
+        if (!ssSetNumInputPorts(S,2)) return;
+        ssSetInputPortWidth(S,0,WIDTH);
+        ssSetInputPortWidth(S,1,WIDTH);
+        ssSetInputPortDirectFeedThrough(S,0,1);
+        ssSetInputPortDirectFeedThrough(S,1,1);
+        ssSetInputPortDataType(S,0,DYNAMICALLY_TYPED);
+        ssSetInputPortDataType(S,1,DYNAMICALLY_TYPED);
+    } else {
+        if (!ssSetNumInputPorts(S,0)) return;
+    }
 
     /*
      * Set Outputs
      */
-    if (!ssSetNumOutputPorts(S, 0)) return;
+    if (!ssSetNumOutputPorts(S, 1)) return;
+    ssSetOutputPortWidth(   S, 0, WIDTH);
+    ssSetOutputPortDataType(S, 0, dataType[OP_TYPE]);
 
     ssSetNumSampleTimes(S, 1);
     ssSetNumContStates(S, 0);
     ssSetNumDiscStates(S, 0);
     ssSetNumRWork(S, 0);
-    ssSetNumIWork(S, 0);
-    ssSetNumPWork(S, 1);  /* Used in RTW to store input byte address */
+    ssSetNumIWork(S, PRESET ? WIDTH : 0);
+    ssSetNumPWork(S, 1);
     ssSetNumModes(S, 0);
     ssSetNumNonsampledZCs(S, 0);
 
     ssSetOptions(S, 
             SS_OPTION_WORKS_WITH_CODE_REUSE | 
-            /* SS_OPTION_PLACE_ASAP | */
             SS_OPTION_RUNTIME_EXCEPTION_FREE_CODE);
 
 }
@@ -118,22 +127,26 @@ static void mdlTerminate(SimStruct *S)
 #define MDL_RTW
 static void mdlRTW(SimStruct *S)
 {
-    const char *device = getString(S,DEVICE);
-    int32_T addr    = ADDR;
-    int32_T op_type = OP_TYPE;
-    int32_T swap    = SWAP;
+    const char *card_id = getString(S,CARD_ID);
+    int32_T module = MODULE-1;
+    int32_T mode   = MODE;
+    int32_T preset = PRESET;
+    int32_T width  = WIDTH;
 
-    if (!ssWriteRTWStrParam(S, "CIF_CardId", device))
+    if (!ssWriteRTWStrParam(S, "CardId", card_id))
         return;
-    if (!ssWriteRTWScalarParam(S, "Addr", &addr, SS_INT32))
+    if (!ssWriteRTWScalarParam(S, "Module", &module, SS_INT32))
         return;
-    if (!ssWriteRTWScalarParam(S, "OutputDataFormat", &op_type, SS_INT32))
+    if (!ssWriteRTWScalarParam(S, "Mode", &mode, SS_INT32))
         return;
-    if (!ssWriteRTWScalarParam(S, "Swap", &swap, SS_INT32))
+    if (!ssWriteRTWScalarParam(S, "Width", &width, SS_INT32))
         return;
-    if (!ssWriteRTWWorkVect(S, "PWork", 1, "OutputAddr", 1))
+    if (!ssWriteRTWScalarParam(S, "Preset", &preset, SS_INT32))
         return;
-
+    if (!ssWriteRTWWorkVect(S, "PWork", 1, "PrivData", 1))
+        return;
+    if (PRESET && !ssWriteRTWWorkVect(S, "IWork", 1, "PresetState", WIDTH))
+        return;
 }
 
 

@@ -1,2 +1,3 @@
-bin_SCRIPTS = etherlab
+initdir = $(sysconfdir)/init.d
+init_SCRIPTS = etherlab
 dist_bin_SCRIPTS = gen_payload.py

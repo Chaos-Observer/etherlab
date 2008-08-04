@@ -5,8 +5,8 @@
 #define __init
 #endif
 
-#include <include/ecrt.h>
-#include <include/etl_data_info.h>
+#include <ecrt.h>
+#include <etl_data_info.h>
 
 struct pdo_map {
     uint16_t pdo_entry_index;

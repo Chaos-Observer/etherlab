@@ -21,7 +21,7 @@
  ******************************************************************************/
 
 
-#include "include/defines.h"
+#include "include/rtw_defines.h"
 #include "rtmodel.h"
 
 #include "include/rt_app.h"

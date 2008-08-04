@@ -15,13 +15,15 @@ SUBDIRS += \
 endif
 
 if SIMULINK
-SUBDIRS += \
-        blocks
+SUBDIRS += rtw
 endif
         
 EXTRA_DIST = bootstrap ReleaseNotes
 
-include_HEADERS = config.h
+include_HEADERS = appcore_config.h
+
+appcore_config.h: config.h
+	cp $< $@
 
 install-data-hook:
 	@echo '##############################################################'

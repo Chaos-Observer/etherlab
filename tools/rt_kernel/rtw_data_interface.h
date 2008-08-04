@@ -22,7 +22,7 @@
  ***********************************************************************/
 
 #include <stddef.h>
-#include "defines.h"    // RT_MODEL
+#include <mdl_defines.h>    // RT_MODEL
 
 #include "rtmodel.h"    // Supplied by RTW
 

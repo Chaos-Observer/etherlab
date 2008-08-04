@@ -1,7 +1,7 @@
 
 SUBDIRS = private
 
-ethercatinfodir = $(prefix)/$(subdir)
+ethercatinfodir = $(prefix)/$(RTW_DIR)/$(subdir)
 
 dist_ethercatinfo_DATA = \
         EtherCATInfo.m \

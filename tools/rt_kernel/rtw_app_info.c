@@ -32,10 +32,11 @@
  *
  *****************************************************************************/ 
 
-#include <include/rt_app.h>
-#include <include/mdl_time.h>
-#include <include/rtw_data_interface.h>
-#include <include/defines.h>
+#include <rt_app.h>
+
+#include <rtw_time.h>
+#include <rtw_data_interface.h>
+#include <rtw_defines.h>
 
 #ifndef RT
 # error "must define RT"

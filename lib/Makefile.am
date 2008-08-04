@@ -8,22 +8,25 @@ EXTRA_DIST = \
         ecrt_support.h ecrt_support.c \
         raise_catch.c raise_catch.h
 
-include_HEADERS = raise_catch.h
+include_rtwdir = $(prefix)/$(RTW_DIR)/include
+include_rtw_HEADERS = raise_catch.h
 
 if ETHERCAT
 libetherlab_a_LIBADD += ecrt_support.o
-include_HEADERS += ecrt_support.h
+include_rtw_HEADERS += ecrt_support.h
 endif
 
-raise_catch.o: raise_catch.c raise_catch.h
+raise_catch.o: raise_catch.c raise_catch.h Kbuild
 	make -C "$(LINUX_DIR)" M="@abs_builddir@" \
-		V="$(VERBOSE)" DEFS="$(DEFS)" "_module_@abs_builddir@"
+		V="$(VERBOSE)" DEFS="$(DEFS)" \
+		"_module_@abs_builddir@"
 
-ecrt_support.o: ecrt_support.h ecrt_support.c
+ecrt_support.o: ecrt_support.h ecrt_support.c Kbuild
 	make -C "$(LINUX_DIR)" M="@abs_builddir@" \
-		V="$(VERBOSE)" DEFS="$(DEFS)" "_module_@abs_builddir@"
+		V="$(VERBOSE)" DEFS="$(DEFS)" \
+		"_module_@abs_builddir@"
 
-clean-local:
+clean-local: Kbuild
 	make -C "$(LINUX_DIR)" M="@abs_builddir@" \
 		V="$(VERBOSE)" DEFS="$(DEFS)" clean
 

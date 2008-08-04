@@ -1,7 +1,7 @@
 
 SUBDIRS = xml @EtherCATInfo
 
-ethercatdir = $(prefix)/$(subdir)
+ethercatdir = $(prefix)/$(RTW_DIR)/$(subdir)
 
 dist_ethercat_DATA = \
         EtherCAT.tlc \

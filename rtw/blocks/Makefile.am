@@ -6,14 +6,13 @@ SUBDIRS += \
         Hilscher
 endif
 
-include_HEADERS = get_string.h
-
-blocksdir = $(prefix)/blocks
+blocksdir = $(prefix)/$(RTW_DIR)/blocks
 dist_blocks_DATA = \
         ETL.tlc \
         RaiseCatch.tlc \
         get_string.h \
         ss_analog_in_funcs.c \
+        get_string.h \
         raise.c raise.tlc \
         taskinfo.c taskinfo.tlc \
         test_var.m \

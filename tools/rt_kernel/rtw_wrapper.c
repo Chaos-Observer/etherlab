@@ -43,11 +43,12 @@
  *
  *****************************************************************************/ 
 
-#include <include/rt_app.h>
-#include <include/mdl_time.h>
-#include <include/fio_ioctl.h>
-#include <include/rtw_data_interface.h>
-#include <include/defines.h>
+#include <rt_app.h>
+#include <fio_ioctl.h>
+
+#include <rtw_time.h>
+#include <rtw_defines.h>
+#include <rtw_data_interface.h>
 
 #include "rtmodel.h"
 #include "rt_sim.h"

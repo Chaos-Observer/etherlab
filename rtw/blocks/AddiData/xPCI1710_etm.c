@@ -3,27 +3,25 @@
  * $Revision$
  * $Date$
  *
- * SFunction to implement CIF-80PB input Process Data
  *
  * Copyright (c) 2006, Richard Hacker
  * License: GPL
  */
 
 
-#define S_FUNCTION_NAME  cif_pd_in
+#define S_FUNCTION_NAME  xPCI1710_etm
 #define S_FUNCTION_LEVEL 2
 
 #include "simstruc.h"
-#include "get_string.h"
+#include "../get_string.h"
 
-#define PARAM_COUNT 7
-#define DEVICE                       (ssGetSFcnParam(S,0))
-#define ADDR     ((uint_T)mxGetScalar(ssGetSFcnParam(S,1)))
-#define IP_TYPE  ((uint_T)mxGetScalar(ssGetSFcnParam(S,2)))
-#define WIDTH    ((uint_T)mxGetScalar(ssGetSFcnParam(S,3)))
-#define SWAP     ((uint_T)mxGetScalar(ssGetSFcnParam(S,4)))
-#define OP_TYPE  ((uint_T)mxGetScalar(ssGetSFcnParam(S,5)))
-#define TSAMPLE          (mxGetScalar(ssGetSFcnParam(S,6)))
+#define PARAM_COUNT 6
+#define CARD_ID                          (ssGetSFcnParam(S,0))
+#define MODULE       ((uint_T)mxGetScalar(ssGetSFcnParam(S,1)))
+#define CLOCK_SRC    ((uint_T)mxGetScalar(ssGetSFcnParam(S,2)))
+#define DIVISOR      ((uint_T)mxGetScalar(ssGetSFcnParam(S,3)))
+#define OP_TYPE      ((uint_T)mxGetScalar(ssGetSFcnParam(S,4)))
+#define TSAMPLE              (mxGetScalar(ssGetSFcnParam(S,5)))
 
 /*====================*
  * S-function methods *
@@ -36,16 +34,17 @@
  */
 static void mdlInitializeSizes(SimStruct *S)
 {
-    int_T i, channels;
+    uint_T i;
     uint_T dataType[] = {  0, /*i Dummy, DTYPE starts at 1 */
+        SS_DOUBLE, SS_SINGLE, 
         SS_INT8, SS_UINT8, 
         SS_INT16, SS_UINT16,
         SS_INT32, SS_UINT32, 
         SS_BOOLEAN, 
-        SS_DOUBLE, SS_SINGLE, 
         DYNAMICALLY_TYPED
     };
     
+
     /* See sfuntmpl_doc.c for more details on the macros below */
     
     ssSetNumSFcnParams(S, PARAM_COUNT);  /* Number of expected parameters */
@@ -64,22 +63,25 @@ static void mdlInitializeSizes(SimStruct *S)
     /*
      * Set Outputs
      */
-    if (!ssSetNumOutputPorts(S, 1)) return;
-    ssSetOutputPortWidth(   S, 0, WIDTH);
+    if (!ssSetNumOutputPorts(S, 3)) return;
+    ssSetOutputPortWidth(   S, 0, 2);
     ssSetOutputPortDataType(S, 0, dataType[OP_TYPE]);
+    ssSetOutputPortWidth(   S, 1, 2);
+    ssSetOutputPortDataType(S, 1, dataType[OP_TYPE]);
+    ssSetOutputPortWidth(   S, 2, 2);
+    ssSetOutputPortDataType(S, 2, SS_UINT8);
 
     ssSetNumSampleTimes(S, 1);
     ssSetNumContStates(S, 0);
     ssSetNumDiscStates(S, 0);
     ssSetNumRWork(S, 0);
     ssSetNumIWork(S, 0);
-    ssSetNumPWork(S, 1);  /* Used in RTW to store input byte address */
+    ssSetNumPWork(S, 1);
     ssSetNumModes(S, 0);
     ssSetNumNonsampledZCs(S, 0);
 
     ssSetOptions(S, 
             SS_OPTION_WORKS_WITH_CODE_REUSE | 
-            /* SS_OPTION_PLACE_ASAP | */
             SS_OPTION_RUNTIME_EXCEPTION_FREE_CODE);
 
 }
@@ -118,37 +120,21 @@ static void mdlTerminate(SimStruct *S)
 #define MDL_RTW
 static void mdlRTW(SimStruct *S)
 {
-    /*
-#define DEVICE                       (ssGetSFcnParam(S,0))
-#define ADDR     ((uint_T)mxGetScalar(ssGetSFcnParam(S,1)))
-#define IP_TYPE  ((uint_T)mxGetScalar(ssGetSFcnParam(S,2)))
-#define WIDTH    ((uint_T)mxGetScalar(ssGetSFcnParam(S,3)))
-#define SWAP     ((uint_T)mxGetScalar(ssGetSFcnParam(S,4)))
-#define OP_TYPE  ((uint_T)mxGetScalar(ssGetSFcnParam(S,5)))
-#define TSAMPLE          (mxGetScalar(ssGetSFcnParam(S,6)))
-     */
-    const char *device = getString(S,DEVICE);
-    int32_T addr    = ADDR;
-    int32_T ip_type = IP_TYPE;
-    int32_T width   = WIDTH;
-    int32_T swap    = SWAP;
-    int32_T op_type = OP_TYPE;
+    const char *card_id = getString(S,CARD_ID);
+    int32_T module = MODULE-1;
+    int32_T clock_source = CLOCK_SRC;
+    int32_T divisor = DIVISOR;
 
-    if (!ssWriteRTWStrParam(S, "CIF_CardId", device))
+    if (!ssWriteRTWStrParam(S, "CardId", card_id))
         return;
-    if (!ssWriteRTWScalarParam(S, "Addr", &addr, SS_INT32))
+    if (!ssWriteRTWScalarParam(S, "Module", &module, SS_INT32))
         return;
-    if (!ssWriteRTWScalarParam(S, "InputDataFormat", &ip_type, SS_INT32))
+    if (!ssWriteRTWScalarParam(S, "ClockSrc", &clock_source, SS_INT32))
         return;
-    if (!ssWriteRTWScalarParam(S, "Width", &width, SS_INT32))
+    if (!ssWriteRTWScalarParam(S, "Divisor", &divisor, SS_INT32))
         return;
-    if (!ssWriteRTWScalarParam(S, "Swap", &swap, SS_INT32))
+    if (!ssWriteRTWWorkVect(S, "PWork", 1, "PrivData", 1))
         return;
-    if (!ssWriteRTWScalarParam(S, "OutputDataFormat", &op_type, SS_INT32))
-        return;
-    if (!ssWriteRTWWorkVect(S, "PWork", 1, "InputAddr", 1))
-        return;
-
 }
 
 

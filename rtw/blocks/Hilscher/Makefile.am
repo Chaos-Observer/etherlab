@@ -1,4 +1,4 @@
-cif_pbdir = $(prefix)/blocks/Hilscher
+cif_pbdir = $(prefix)/$(RTW_DIR)/blocks/Hilscher
 dist_cif_pb_DATA = \
         CIF_PB.tlc \
         cif_pd_in.c cif_pd_in.tlc \

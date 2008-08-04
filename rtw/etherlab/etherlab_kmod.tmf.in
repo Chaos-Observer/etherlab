@@ -104,7 +104,8 @@ VERBOSE              := |>VERBOSE_BUILD<|
 MODULE_PAYLOAD       := |>MODULE_PAYLOAD<|
 STAGING_DIR          := |>STAGING_DIR<|
 
-ETHERLAB_DIR         := $(STAGING_DIR)/@prefix@
+ETHERLAB_DIR         := $(STAGING_DIR)/@ETHERLAB_DIR@
+RTW_DIR              := $(ETHERLAB_DIR)/@RTW_DIR@
 #GZIP                 := @GZIP@
 #ED                   := @ED@
 GREP                 := @GREP@

@@ -1,4 +1,4 @@
-xpci1710dir = $(prefix)/blocks/AddiData
+xpci1710dir = $(prefix)/$(RTW_DIR)/blocks/AddiData
 dist_xpci1710_DATA = \
         xPCI1710.tlc \
         xPCI1710_inc.c xPCI1710_inc.tlc \

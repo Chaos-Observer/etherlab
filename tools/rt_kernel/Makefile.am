@@ -1,12 +1,16 @@
 moduledir = $(prefix)/modules
 module_DATA = rt_kernel.ko rt_test.ko
 
-kerneldatadir = $(prefix)/src/kernel
-dist_kerneldata_DATA = rt_app_main.c rtw_wrapper.c rtw_data_interface.c \
-        rtw_app_info.c
+# Files needed for Real-Time Workshop
+rtwdatadir = $(prefix)/$(RTW_DIR)/src/kernel
+include_rtwdir = $(prefix)/$(RTW_DIR)/include
+dist_rtwdata_DATA = rtw_wrapper.c rtw_data_interface.c rtw_app_info.c
+include_rtw_HEADERS = mdl_time.h rtw_data_interface.h
 
-include_HEADERS = rt_vars.h rt_kernel.h mdl_time.h rt_app.h \
-        module_payload.h rtw_data_interface.h
+# Files needed to build an Application
+kerneldatadir = $(prefix)/src/kernel
+dist_kerneldata_DATA = rt_app_main.c
+include_HEADERS = rt_vars.h rt_kernel.h rt_app.h app_payload.h
 
 RT_KERNEL_SRCS = rt_main.c mdl_chardev.c rt_vars.c rtcom_chardev.c
 RT_KERNEL_HEADER = rt_main.h rtcom_chardev.h
@@ -24,7 +28,7 @@ clean-local: Kbuild
 	make -C "$(LINUX_DIR)" M="@abs_builddir@" \
 		V="$(VERBOSE)" DEFS="$(DEFS)" clean
 
-kflags_mkdir = $(prefix)/etherlab
+kflags_mkdir = $(prefix)/$(RTW_DIR)/etherlab
 kflags_mk_DATA = kflags.mk
 kflags.mk: kernel-cflags
 	./kernel-cflags > $@

@@ -17,9 +17,9 @@ ANSI_OPTS        =
 CC               = gcc
 LD               = ld
 LDFLAGS		 =
-INSTRUMENT_LIBS  = $(STAGING_DIR)/@prefix@/lib/libetherlab.a
-PRECOMP_RTW_LIB  = $(wildcard $(STAGING_DIR)/@prefix@/lib/librtw.a)
-USER_INCLUDES    = -I$(STAGING_DIR)/@ETHERLAB_DIR@ -I$(ETHERLAB_DIR)
+INSTRUMENT_LIBS  = $(STAGING_DIR)/@RTW_DIR@/lib/libetherlab.a
+PRECOMP_RTW_LIB  = $(wildcard $(STAGING_DIR)/@RTW_DIR@/lib/librtw.a)
+USER_INCLUDES    = -I$(STAGING_DIR)/@prefix@/include
 
 # These definitions are used by targets that have the WARN_ON_GLNX option
 GCC_WARN_OPTS     := -pedantic -Wall -Wwrite-strings \
@@ -36,5 +36,5 @@ KERNEL_DIR           := @LINUX_DIR@
 RTAI_FLAGS           := @RTAI_FLAGS@
 
 # load KERNEL_OPTS from kflags.mk
-include $(STAGING_DIR)/@prefix@/etherlab/kflags.mk
+include $(STAGING_DIR)/@RTW_DIR@/etherlab/kflags.mk
 KERNEL_OPTS := $(filter-out -Wundef,$(KERNEL_OPTS)) $(RTAI_FLAGS)
