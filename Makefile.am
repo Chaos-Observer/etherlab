@@ -4,7 +4,7 @@
 #
 #-----------------------------------------------------------------------------
 
-SUBDIRS = etherlab
+SUBDIRS = etherlab tools
 
 if KERNEL
 SUBDIRS += \
