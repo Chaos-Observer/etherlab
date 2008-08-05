@@ -32,5 +32,5 @@ GCC_WARN_OPTS_MAX := -pedantic -Wall -Wshadow \
 GCC_WARN_OPTS_MAX := $(GCC_WARN_OPTS) -Wshadow -Wcast-qual
 
 # load KERNEL_CFLAGS
-KERNEL_CFLAGS = $(shell $(STAGING_DIR)/$(ETHERLAB_DIR)/bin/kernel-cflags)
+KERNEL_CFLAGS = $(shell $(ETHERLAB_DIR)/bin/kernel-cflags)
 KERNEL_CFLAGS := $(filter-out -Wundef,$(KERNEL_CFLAGS))

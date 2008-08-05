@@ -17,6 +17,7 @@ $(module_DATA) kernel-cflags: $(RT_KERNEL_SRCS) $(RT_KERNEL_HEADER) Kbuild
 	make -C "$(LINUX_DIR)" M="@abs_builddir@" \
 		V="$(VERBOSE)" DEFS="$(DEFS)" \
 		RTAI_DIR="$(RTAI_DIR)" \
+                STAGING_DIR="$(STAGING_DIR)" \
                 RT_KERNEL_SRCS="$(RT_KERNEL_SRCS)"
 
 clean-local: Kbuild

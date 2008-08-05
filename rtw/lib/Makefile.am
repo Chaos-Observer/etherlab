@@ -29,6 +29,7 @@ raise_catch.o: raise_catch.c raise_catch.h Kbuild
 	make -C "$(LINUX_DIR)" M="@abs_builddir@" \
 		V="$(VERBOSE)" DEFS="$(DEFS)" \
 		RTAI_DIR=$(RTAI_DIR) \
+                STAGING_DIR=$(STAGING_DIR) \
 		PREFIX=@prefix@ \
 		"_module_@abs_builddir@"
 
@@ -36,6 +37,7 @@ ecrt_support.o: ecrt_support.h ecrt_support.c Kbuild
 	make -C "$(LINUX_DIR)" M="@abs_builddir@" \
 		V="$(VERBOSE)" DEFS="$(DEFS)" \
 		RTAI_DIR=$(RTAI_DIR) \
+                STAGING_DIR=$(STAGING_DIR) \
 		PREFIX=@prefix@ \
 		"_module_@abs_builddir@"
 

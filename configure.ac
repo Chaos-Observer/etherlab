@@ -49,24 +49,47 @@ AC_ARG_ENABLE([kernel],
 AM_CONDITIONAL(KERNEL, test x$kernel = x1)
 AC_SUBST(KERNEL,${kernel})
 
+dnl Staging directory for host compile
+dnl Sometimes you want to create an environment where the real time models
+dnl are compiled on a different host than the target. In this case you can
+dnl compile the target host's packages normally, install them there as well
+dnl as in a staging directory (using DESTDIR=/staging/dir). To tell
+dnl etherlab about this, use --with-staging-dir
+dnl Note that nothing will be installed in $staging_dir
+dnl 
+AC_ARG_WITH([staging-dir], 
+    AS_HELP_STRING(
+        [--with-staging-dir=<staging-dir>],
+        [Host staging directory for cross compile]),
+    [ staging_dir=${withval} ],
+    [ staging_dir= ]
+    )
+if test "x$staging_dir" != x; then
+AC_MSG_CHECKING(for $prefix in $staging_dir)
+test -d "$staging_dir/$prefix" ||\
+    AC_MSG_ERROR([Could not find $staging_dir/$prefix])
+AC_MSG_RESULT(yes)
+fi
+AC_SUBST(STAGING_DIR,[$staging_dir])
+
 dnl Path to RTAI installation
 if test "x$kernel" = "x1"; then
 AC_ARG_WITH([rtai-dir], 
     AS_HELP_STRING(
         [--with-rtai-dir=<rtai-dir>],
-        [RTAI directory (/usr/realtime)]),
+        [RTAI directory ($staging_dir/usr/realtime)]),
     [ rtai_dir=${withval} ],
     [
-        if test -x "/usr/realtime/bin/rtai-config"; then
-            rtai_dir="/usr/realtime"
+        if test -x "$staging_dir/usr/realtime/bin/rtai-config"; then
+            rtai_dir="$staging_dir/usr/realtime"
         else
             rtai_dir=$(type -p rtai-config)
             rtai_dir=${rtai_dir%%bin/rtai-config}
         fi
     ])
 AC_MSG_CHECKING(RTAI path)
-test -r "$rtai_dir"/include/rtai.h ||\
-    AC_MSG_ERROR([No installed RTAI found $rtai_dir/include/rtai.h])
+test -r "$staging_dir/$rtai_dir"/include/rtai.h ||\
+    AC_MSG_ERROR([No installed RTAI found $staging_dir/$rtai_dir/include/rtai.h])
 AC_SUBST(RTAI_DIR,[$rtai_dir])
 AC_MSG_RESULT($RTAI_DIR)
 fi
@@ -80,7 +103,7 @@ AC_ARG_WITH([linux-dir],
         [Kernel directory (rtai-config --linux-dir)]),
     [ linux_dir=${withval} ],
     [
-        linux_dir=$(${RTAI_DIR}/bin/rtai-config --linux-dir)
+        linux_dir=$($staging_dir/${RTAI_DIR}/bin/rtai-config --linux-dir)
     ])
 AC_MSG_CHECKING(Linux kernel path)
 test -r "${linux_dir}/.config" || \
@@ -113,9 +136,9 @@ AC_ARG_ENABLE([ethercat],
 )
 if test "x$ethercat" = "x1"; then
 AC_MSG_CHECKING(EtherCat header file)
-test -r "${prefix}/include/ecrt.h" || \
-        AC_MSG_ERROR([ecrt.h not found in ${prefix}/include])
-AC_MSG_RESULT(${prefix}/include/ecrt.h)
+test -r "$staging_dir/${prefix}/include/ecrt.h" || \
+        AC_MSG_ERROR([ecrt.h not found in $staging_dir/${prefix}/include])
+AC_MSG_RESULT($staging_dir/${prefix}/include/ecrt.h)
 fi
 fi
 AM_CONDITIONAL(ETHERCAT, test x$ethercat = x1)

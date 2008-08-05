@@ -1,7 +1,9 @@
 
 EXTRA_CFLAGS := -Wall $(DEFS) -I$(M)/../.. -I$(M)/../../tools/include
 
-EXTRA_CFLAGS += $(shell $(RTAI_DIR)/bin/rtai-config --module-cflags)
+EXTRA_CFLAGS += $(shell \
+        DESTDIR=$(STAGING_DIR) $(STAGING_DIR)/$(RTAI_DIR)/bin/rtai-config \
+                --module-cflags)
 
 EXTRA_SYMBOLS := $(RTAI_DIR)/include/Module.symvers
 
