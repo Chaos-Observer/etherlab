@@ -61,7 +61,7 @@
 #include <msr_hex_bin.h>
 #include <msr_interpreter.h>
 #include <msr_attributelist.h>
-#include "include/etl_data_info.h"
+#include "etl_data_info.h"
 
 #define DBG 0
 /*--external functions---------------------------------------------------------------------------*/

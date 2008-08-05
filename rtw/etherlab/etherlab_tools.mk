@@ -31,9 +31,6 @@ GCC_WARN_OPTS_MAX := -pedantic -Wall -Wshadow \
 			-Wnested-externs -Wpointer-arith
 GCC_WARN_OPTS_MAX := $(GCC_WARN_OPTS) -Wshadow -Wcast-qual
 
-KERNEL_DIR           := @LINUX_DIR@
-RTAI_FLAGS           := @RTAI_FLAGS@
-
-# load KERNEL_OPTS from kflags.mk
-include $(ETHERLAB_DIR)/tools/rt_kernel/kflags.mk
-KERNEL_OPTS := $(filter-out -Wundef,$(KERNEL_OPTS)) $(RTAI_FLAGS)
+# load KERNEL_CFLAGS
+KERNEL_CFLAGS = $(shell $(STAGING_DIR)/$(ETHERLAB_DIR)/bin/kernel-cflags)
+KERNEL_CFLAGS := $(filter-out -Wundef,$(KERNEL_CFLAGS))

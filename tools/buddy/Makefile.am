@@ -38,7 +38,7 @@ libmsr_a_SOURCES = \
         msrio_lib/msr-math/msr_base64.c \
         msrio_lib/msr-math/msr_hex_bin.c
 
-libmsr_a_CFLAGS = -Imsrio_lib/include -DRTW_BUDDY -Wall -I$(top_srcdir)/tools
+libmsr_a_CFLAGS = -Imsrio_lib/include -DRTW_BUDDY -Wall -I$(top_srcdir)/tools/include
 
 # Here comes etherlab_buddy
 bin_PROGRAMS = etherlab_buddy

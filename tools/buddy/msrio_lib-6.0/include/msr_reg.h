@@ -40,7 +40,7 @@
 #include <msr_mem.h>
 #include <msr_charbuf.h>
 #include <msr_lists.h>
-#include "include/etl_data_info.h"
+#include "etl_data_info.h"
 
 /*--defines--------------------------------------------------------------------------------------*/
 

@@ -1,0 +1,10 @@
+EXTRA_CFLAGS := $(DEFS) -I$(M)/../.. -I$(M)/../../tools/include \
+	-I$(PREFIX)/include
+
+EXTRA_CFLAGS += $(shell $(RTAI_DIR)/bin/rtai-config --module-cflags)
+
+obj-m   := raise_catch.o
+
+ifneq ($(wildcard $(PREFIX)/include/ecrt.h),)
+obj-m   +=  ecrt_support.o
+endif

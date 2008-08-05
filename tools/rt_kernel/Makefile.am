@@ -16,18 +16,14 @@ all: $(module_DATA)
 $(module_DATA) kernel-cflags: $(RT_KERNEL_SRCS) $(RT_KERNEL_HEADER) Kbuild
 	make -C "$(LINUX_DIR)" M="@abs_builddir@" \
 		V="$(VERBOSE)" DEFS="$(DEFS)" \
+		RTAI_DIR="$(RTAI_DIR)" \
                 RT_KERNEL_SRCS="$(RT_KERNEL_SRCS)"
 
 clean-local: Kbuild
 	make -C "$(LINUX_DIR)" M="@abs_builddir@" \
 		V="$(VERBOSE)" DEFS="$(DEFS)" clean
 
-kflags_mkdir = $(prefix)/$(subdir)
-kflags_mk_DATA = kflags.mk
-kflags.mk: kernel-cflags
-	./kernel-cflags > $@
-
-CLEANFILES = $(kflags_mk_DATA)
+bin_SCRIPTS = kernel-cflags
 
 # Following list is used by TAGS
 nodist_noinst_HEADERS = $(EXTRA_DIST) $(dist_kerneldata_DATA)

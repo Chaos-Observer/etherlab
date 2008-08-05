@@ -63,8 +63,8 @@ function etherlab_config(hDlg,hSrc)
 
 %slConfigUISetVal(hDlg, hSrc, 'ModelReferenceCompliant', 'on');
 
-  if ~@KERNEL@
-       set_param(bdroot,'GenCodeOnly','on');
-  end
+%  if ~@KERNEL@
+%       set_param(bdroot,'GenCodeOnly','on');
+%  end
   set_param(bdroot,'PostCodeGenCommand', 'etherlab_postprocess(modelName,buildInfo)');
 

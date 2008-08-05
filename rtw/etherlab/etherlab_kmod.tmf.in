@@ -106,6 +106,7 @@ STAGING_DIR          := |>STAGING_DIR<|
 
 ETHERLAB_DIR         := $(STAGING_DIR)/@prefix@
 RTW_DIR              := $(ETHERLAB_DIR)/@RTW_DIR@
+RTAI_DIR             := $(STAGING_DIR)/@RTAI_DIR@
 #GZIP                 := @GZIP@
 #ED                   := @ED@
 GREP                 := @GREP@
@@ -135,6 +136,14 @@ endif
 #include $(MATLAB_ROOT)/rtw/c/tools/unixtools.mk
 
 include $(RTW_DIR)/etherlab/etherlab_tools.mk
+
+KERNEL_DIR = $(shell \
+        DESTDIR=$(STAGING_DIR) $(RTAI_DIR)/bin/rtai-config --linux-dir)
+RTAI_FLAGS = $(shell \
+        DESTDIR=$(STAGING_DIR) $(RTAI_DIR)/bin/rtai-config --module-cflags)
+
+# CFLAGS to use when building a module
+MODULE_CFLAGS = $(KERNEL_CFLAGS) $(RTAI_FLAGS)
 
 #------------------------------ Include Path -----------------------------------
 
@@ -207,18 +216,19 @@ SYSLIBS = $(EXT_LIB)
 
 LIBS =
 |>START_PRECOMP_LIBRARIES<|
+# Test whether |>EXPAND_LIBRARY_NAME<|.a already exists in $(RTW_DIR)/lib
+PRECOMP_RTW_LIB := $(wildcard $(RTW_DIR)/lib/|>EXPAND_LIBRARY_NAME<|.a)
+
 ifeq ($(OPT_OPTS),$(DEFAULT_OPT_OPTS))
 LIBS += |>EXPAND_LIBRARY_LOCATION<|/|>EXPAND_LIBRARY_NAME<|_std.a
+else ifneq ($(PRECOMP_RTW_LIB),)
+LIBS += $(PRECOMP_RTW_LIB)
 else
 LIBS += |>EXPAND_LIBRARY_NAME<|.a
 endif
 |>END_PRECOMP_LIBRARIES<| |>START_EXPAND_LIBRARIES<|
 LIBS += |>EXPAND_LIBRARY_NAME<|.a |>END_EXPAND_LIBRARIES<|
 LIBS += $(S_FUNCTIONS_LIB) $(INSTRUMENT_LIBS)
-
-ifneq ($(PRECOMP_RTW_LIB),)
-LIBS := $(filter-out rtwlib.a,$(LIBS)) $(PRECOMP_RTW_LIB)
-endif
 
 #----------------------------- Source Files ------------------------------------
 
@@ -397,11 +407,11 @@ module_payload.c: $(MODULE_PAYLOAD)
 ###################
 $(MODEL).o : $(MODEL).$(TARGET_LANG_EXT)
 	@$(GCC_TEST_CMD) $< $(GCC_TEST_OUT)
-	$(cc) -c $(LOCAL_CFLAGS) $(KERNEL_OPTS) $(GCC_WALL_FLAG) $<
+	$(cc) -c $(LOCAL_CFLAGS) $(MODULE_CFLAGS) $(GCC_WALL_FLAG) $<
 
 rtw_data_interface.o: $(RTW_DIR)/src/rtw_data_interface.c capi.h
 	@$(GCC_TEST_CMD) $< $(GCC_TEST_OUT)
-	$(cc) -c $(LOCAL_CFLAGS) $(KERNEL_OPTS) $(GCC_WALL_FLAG) $<
+	$(cc) -c $(LOCAL_CFLAGS) $(MODULE_CFLAGS) $(GCC_WALL_FLAG) $<
 
 $(MODELLIB): $(LINK_OBJS)
 	$(ar) rs $@ $^
@@ -446,49 +456,49 @@ $(MODEL).so: $(SYMBOL_SRCS) module_payload.c capi_init.c capi.h \
 ###################
 %.o : %.c
 	@$(GCC_TEST_CMD) $< $(GCC_TEST_OUT)
-	$(cc) $(DEP) -c $(LOCAL_CFLAGS) $(KERNEL_OPTS) $(GCC_WALL_FLAG) $<
+	$(cc) $(DEP) -c $(LOCAL_CFLAGS) $(MODULE_CFLAGS) $(GCC_WALL_FLAG) $<
 
 %.o : $(RELATIVE_PATH_TO_ANCHOR)/%.c
 	@$(GCC_TEST_CMD) $< $(GCC_TEST_OUT)
-	$(cc) $(DEP) -c $(LOCAL_CFLAGS) $(KERNEL_OPTS) $(GCC_WALL_FLAG) $<
+	$(cc) $(DEP) -c $(LOCAL_CFLAGS) $(MODULE_CFLAGS) $(GCC_WALL_FLAG) $<
 
 %.o : $(ETHERLAB_DIR)/src/%.c
-	@$(GCC_TEST_CMD) $(LOCAL_CFLAGS) $(KERNEL_OPTS) $< $(GCC_TEST_OUT)
-	$(cc) $(DEP) -c $(LOCAL_CFLAGS) $(KERNEL_OPTS) $(GCC_WALL_FLAG_MAX) $<
+	@$(GCC_TEST_CMD) $(LOCAL_CFLAGS) $(MODULE_CFLAGS) $< $(GCC_TEST_OUT)
+	$(cc) $(DEP) -c $(LOCAL_CFLAGS) $(MODULE_CFLAGS) $(GCC_WALL_FLAG_MAX) $<
 
 %.o : $(RTW_DIR)/src/%.c
-	@$(GCC_TEST_CMD) $(LOCAL_CFLAGS) $(KERNEL_OPTS) $< $(GCC_TEST_OUT)
-	$(cc) $(DEP) -c $(LOCAL_CFLAGS) $(KERNEL_OPTS) $(GCC_WALL_FLAG_MAX) $<
+	@$(GCC_TEST_CMD) $(LOCAL_CFLAGS) $(MODULE_CFLAGS) $< $(GCC_TEST_OUT)
+	$(cc) $(DEP) -c $(LOCAL_CFLAGS) $(MODULE_CFLAGS) $(GCC_WALL_FLAG_MAX) $<
 
 %.o : $(MATLAB_ROOT)/rtw/c/src/%.c
 	@$(GCC_TEST_CMD) $< $(GCC_TEST_OUT)
-	$(cc) -c $(LOCAL_CFLAGS) $(KERNEL_OPTS) $(GCC_WALL_FLAG_MAX) $<
+	$(cc) -c $(LOCAL_CFLAGS) $(MODULE_CFLAGS) $(GCC_WALL_FLAG_MAX) $<
 
 %.o : $(MATLAB_ROOT)/rtw/c/src/ext_mode/common/%.c
 	@$(GCC_TEST_CMD) $< $(GCC_TEST_OUT)
-	$(cc) -c $(LOCAL_CFLAGS) $(KERNEL_OPTS) $(GCC_WALL_FLAG_MAX) $<
+	$(cc) -c $(LOCAL_CFLAGS) $(MODULE_CFLAGS) $(GCC_WALL_FLAG_MAX) $<
 
 %.o : $(MATLAB_ROOT)/rtw/c/src/ext_mode/tcpip/%.c
 	@$(GCC_TEST_CMD) $< $(GCC_TEST_OUT)
-	$(cc) -c $(LOCAL_CFLAGS) $(KERNEL_OPTS) $(GCC_WALL_FLAG_MAX) $<
+	$(cc) -c $(LOCAL_CFLAGS) $(MODULE_CFLAGS) $(GCC_WALL_FLAG_MAX) $<
 
 %.o : $(MATLAB_ROOT)/rtw/c/src/ext_mode/custom/%.c
 	@$(GCC_TEST_CMD) $< $(GCC_TEST_OUT)
-	$(cc) -c $(LOCAL_CFLAGS) $(KERNEL_OPTS) $(GCC_WALL_FLAG_MAX) $<
+	$(cc) -c $(LOCAL_CFLAGS) $(MODULE_CFLAGS) $(GCC_WALL_FLAG_MAX) $<
 
 %.o : $(MATLAB_ROOT)/rtw/c/src/%.c
 	@$(GCC_TEST_CMD) $< $(GCC_TEST_OUT)
-	$(cc) -c $(LOCAL_CFLAGS) $(KERNEL_OPTS) $(GCC_WALL_FLAG_MAX) $<
+	$(cc) -c $(LOCAL_CFLAGS) $(MODULE_CFLAGS) $(GCC_WALL_FLAG_MAX) $<
 
 |>START_EXPAND_RULES<|%.o : |>EXPAND_DIR_NAME<|/%.c
 	@$(GCC_TEST_CMD) $< $(GCC_TEST_OUT)
-	$(cc) -c $(LOCAL_CFLAGS) $(KERNEL_OPTS) $(GCC_WALL_FLAG_MAX) $<
+	$(cc) -c $(LOCAL_CFLAGS) $(MODULE_CFLAGS) $(GCC_WALL_FLAG_MAX) $<
 
 |>END_EXPAND_RULES<|
 
 %.o : $(MATLAB_ROOT)/simulink/src/%.c
 	@$(GCC_TEST_CMD) $< $(GCC_TEST_OUT)
-	$(cc) -c $(LOCAL_CFLAGS) $(KERNEL_OPTS) $(GCC_WALL_FLAG_MAX) $<
+	$(cc) -c $(LOCAL_CFLAGS) $(MODULE_CFLAGS) $(GCC_WALL_FLAG_MAX) $<
 
 #------------------------------- Libraries -------------------------------------
 
