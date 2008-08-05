@@ -21,7 +21,7 @@
  *
  ***********************************************************************/
 
-#include "include/etl_data_info.h"
+#include <etl_data_info.h>
 
 #ifdef __KERNEL__
 #include <linux/types.h>

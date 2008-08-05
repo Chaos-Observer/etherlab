@@ -41,7 +41,7 @@
 #include <linux/wait.h>
 #include <rtai_sem.h>
 
-#include "include/fio_ioctl.h"          /* MAX_MODELS */
+#include "fio_ioctl.h"          /* MAX_MODELS */
 
 /* The calling frequency of the kernel helper */
 #define HELPER_CALL_RATE 10

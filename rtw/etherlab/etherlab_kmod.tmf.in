@@ -110,6 +110,7 @@ RTW_DIR              := $(ETHERLAB_DIR)/@RTW_DIR@
 #ED                   := @ED@
 GREP                 := @GREP@
 AR                   := @AR@
+CP                   := cp
 
 ifeq ($(KERNELRELEASE),)
 MODELVERSION 	     = $(shell $(GREP) -m1 "Model Version" $(MODEL).h)
@@ -206,18 +207,19 @@ SYSLIBS = $(EXT_LIB)
 
 LIBS =
 |>START_PRECOMP_LIBRARIES<|
+# Test whether |>EXPAND_LIBRARY_NAME<|.a already exists in $(RTW_DIR)/lib
+PRECOMP_RTW_LIB := $(wildcard $(RTW_DIR)/lib/|>EXPAND_LIBRARY_NAME<|.a)
+
 ifeq ($(OPT_OPTS),$(DEFAULT_OPT_OPTS))
 LIBS += |>EXPAND_LIBRARY_LOCATION<|/|>EXPAND_LIBRARY_NAME<|_std.a
+else ifneq ($(PRECOMP_RTW_LIB),)
+LIBS += $(PRECOMP_RTW_LIB)
 else
 LIBS += |>EXPAND_LIBRARY_NAME<|.a
 endif
 |>END_PRECOMP_LIBRARIES<| |>START_EXPAND_LIBRARIES<|
 LIBS += |>EXPAND_LIBRARY_NAME<|.a |>END_EXPAND_LIBRARIES<|
 LIBS += $(S_FUNCTIONS_LIB) $(INSTRUMENT_LIBS)
-
-ifneq ($(PRECOMP_RTW_LIB),)
-LIBS := $(filter-out rtwlib.a,$(LIBS)) $(PRECOMP_RTW_LIB)
-endif
 
 #----------------------------- Source Files ------------------------------------
 
@@ -311,7 +313,7 @@ ifneq ($(KERNELRELEASE),)
 
 EXTRA_SYMBOLS := $(STAGING_DIR)/$(RTAI_DIR)/modules/Module.symvers
 
-EXTRA_CFLAGS	:= $(CODE_DEBUG) $(RTAI_FLAGS) -I$(USER_INCLUDES)
+EXTRA_CFLAGS	:= $(CODE_DEBUG) $(RTAI_FLAGS) $(USER_INCLUDES)
 obj-m		:= $(KERNEL_MODULE:.ko=.o)
 $(KERNEL_MODULE:.ko=)-y := $(MODULE_MAIN_SRC:.c=.o) $(SHIPPED_MODEL) \
         module_payload.o
@@ -353,7 +355,7 @@ endif
 # Level 1 targets
 ###################
 $(RUN): $(ETHERLAB_DIR)/tools/rt_kernel/$(notdir $(RUN))
-	@cp $< $@
+	@$(CP) $< $@
 	@chmod 755 $@
 
 $(RUNINFO)::
@@ -371,8 +373,8 @@ $(KERNEL_MODULE): $(MODULE_MAIN_SRC) $(SHIPPED_MODEL) Makefile module_payload.c
 # Level 2 targets
 ###################
 # Copy $(MODULE_MAIN_SRC) to local dir. KBuild needs it there
-$(MODULE_MAIN_SRC): $(ETHERLAB_DIR)/src/kernel/$(MODULE_MAIN_SRC)
-	@cp $< $@
+$(MODULE_MAIN_SRC): $(ETHERLAB_DIR)/src/$(MODULE_MAIN_SRC)
+	@$(CP) $< $@
 
 # Create <model>.o_shipped object for use in KBuild
 $(SHIPPED_MODEL): rtw_wrapper.o rtw_app_info.o $(MODELLIB) $(SHARED_LIB) \
@@ -398,7 +400,7 @@ $(MODEL).o : $(MODEL).$(TARGET_LANG_EXT)
 	@$(GCC_TEST_CMD) $< $(GCC_TEST_OUT)
 	$(cc) -c $(LOCAL_CFLAGS) $(KERNEL_OPTS) $(GCC_WALL_FLAG) $<
 
-rtw_data_interface.o: $(ETHERLAB_DIR)/src/kernel/rtw_data_interface.c capi.h
+rtw_data_interface.o: $(RTW_DIR)/src/rtw_data_interface.c capi.h
 	@$(GCC_TEST_CMD) $< $(GCC_TEST_OUT)
 	$(cc) -c $(LOCAL_CFLAGS) $(KERNEL_OPTS) $(GCC_WALL_FLAG) $<
 
@@ -451,7 +453,11 @@ $(MODEL).so: $(SYMBOL_SRCS) module_payload.c capi_init.c capi.h \
 	@$(GCC_TEST_CMD) $< $(GCC_TEST_OUT)
 	$(cc) $(DEP) -c $(LOCAL_CFLAGS) $(KERNEL_OPTS) $(GCC_WALL_FLAG) $<
 
-%.o : $(ETHERLAB_DIR)/src/kernel/%.c
+%.o : $(ETHERLAB_DIR)/src/%.c
+	@$(GCC_TEST_CMD) $(LOCAL_CFLAGS) $(KERNEL_OPTS) $< $(GCC_TEST_OUT)
+	$(cc) $(DEP) -c $(LOCAL_CFLAGS) $(KERNEL_OPTS) $(GCC_WALL_FLAG_MAX) $<
+
+%.o : $(RTW_DIR)/src/%.c
 	@$(GCC_TEST_CMD) $(LOCAL_CFLAGS) $(KERNEL_OPTS) $< $(GCC_TEST_OUT)
 	$(cc) $(DEP) -c $(LOCAL_CFLAGS) $(KERNEL_OPTS) $(GCC_WALL_FLAG_MAX) $<
 
@@ -507,6 +513,7 @@ $(MODEL).so: $(SYMBOL_SRCS) module_payload.c capi_init.c capi.h \
 #|>EXPAND_LIBRARY_NAME<|.a : $(MAKEFILE) rtw_proj.tmw $(MODULES_|>EXPAND_LIBRARY_NAME<|)
 	@echo "### Creating $@ "
 	$(ar) rs $@ $(MODULES_|>EXPAND_LIBRARY_NAME<|)
+	-@$(CP) $@ $(RTW_DIR)/lib
 	@echo "### $@ Created "
 
 |>END_PRECOMP_LIBRARIES<|

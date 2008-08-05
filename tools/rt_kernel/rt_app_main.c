@@ -40,7 +40,7 @@
 #include <linux/init.h>
 #include <linux/moduleparam.h>
 #include <linux/autoconf.h>
-#include <include/rt_kernel.h>
+#include <rt_kernel.h>
 
 extern struct rt_app rt_app;
 

@@ -22,7 +22,7 @@
  *
  *****************************************************************************/ 
 
-#include <include/app_taskstats.h>      // struct task_stats
+#include <app_taskstats.h>      // struct task_stats
 #include "app_payload.h"
 
 struct signal_info;

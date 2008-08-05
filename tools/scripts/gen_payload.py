@@ -42,7 +42,7 @@ out.write("""\
  * 
  */
 
-#include "include/app_payload.h"
+#include "app_payload.h"
 
 """)
 

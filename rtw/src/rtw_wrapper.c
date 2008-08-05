@@ -272,7 +272,7 @@ app_start(void)
 {
     RT_MODEL  *S = MODEL();
     const char *errmsg;
-    int i;
+//    int i;
 
     /************************
      * Initialize the model *

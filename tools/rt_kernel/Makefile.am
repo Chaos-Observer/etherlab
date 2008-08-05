@@ -2,7 +2,7 @@ moduledir = $(prefix)/modules
 module_DATA = rt_kernel.ko rt_test.ko
 
 # Files needed to build an Application
-kerneldatadir = $(prefix)/src/kernel
+kerneldatadir = $(prefix)/src
 dist_kerneldata_DATA = rt_app_main.c
 include_HEADERS = rt_vars.h rt_kernel.h rt_app.h app_payload.h
 

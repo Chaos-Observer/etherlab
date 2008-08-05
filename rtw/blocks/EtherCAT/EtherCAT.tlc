@@ -45,8 +45,8 @@
 
   %with CompiledModel
     %% EtherCAT header
-    %<LibAddToCommonIncludes("include/ecrt_support.h")>
-    %<LibAddToCommonIncludes("include/etl_data_info.h")>
+    %<LibAddToCommonIncludes("ecrt_support.h")>
+    %<LibAddToCommonIncludes("etl_data_info.h")>
   
     %openfile buf
     /* Sample times for EtherCAT */
