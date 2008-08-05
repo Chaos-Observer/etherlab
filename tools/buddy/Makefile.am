@@ -1,3 +1,11 @@
+#-----------------------------------------------------------------------------
+#
+# $Id$
+#
+#-----------------------------------------------------------------------------
+
+if KERNEL
+
 # Compile msr library for use with rtai_buddy. This lib is not installed
 noinst_HEADERS = \
         msrio_lib/include/msr_main.h \
@@ -11,15 +19,7 @@ noinst_LIBRARIES = libmsr.a
 
 libmsr_a_SOURCES = \
         $(noinst_HEADERS) \
-        msrio_lib/msr-core/msr_main.c \
-        msrio_lib/msr-core/msr_charbuf.c \
-        msrio_lib/msr-core/msr_reg.c \
-        msrio_lib/msr-core/msr_interpreter.c \
-        msrio_lib/msr-core/msr_messages.c \
-        msrio_lib/msr-core/msr_lists.c \
-        msrio_lib/msr-core/msr_attributelist.c \
-        msrio_lib/msr-math/msr_base64.c \
-        msrio_lib/msr-math/msr_hex_bin.c \
+        msrio_lib/include/msr_attributelist.h \
         msrio_lib/include/msr_base64.h \
         msrio_lib/include/msr_hex_bin.h \
         msrio_lib/include/msr_interpreter.h \
@@ -27,12 +27,22 @@ libmsr_a_SOURCES = \
         msrio_lib/include/msr_rcsinfo.h \
         msrio_lib/include/msr_taskname.h \
         msrio_lib/include/msr_utils.h \
-        msrio_lib/include/msr_attributelist.h \
-        msrio_lib/include/msr_version.h 
+        msrio_lib/include/msr_version.h \
+        msrio_lib/msr-core/msr_attributelist.c \
+        msrio_lib/msr-core/msr_charbuf.c \
+        msrio_lib/msr-core/msr_interpreter.c \
+        msrio_lib/msr-core/msr_lists.c \
+        msrio_lib/msr-core/msr_main.c \
+        msrio_lib/msr-core/msr_messages.c \
+        msrio_lib/msr-core/msr_reg.c \
+        msrio_lib/msr-math/msr_base64.c \
+        msrio_lib/msr-math/msr_hex_bin.c
+
 libmsr_a_CFLAGS = -Imsrio_lib/include -DRTW_BUDDY -Wall -I$(top_srcdir)/tools
 
 # Here comes etherlab_buddy
 bin_PROGRAMS = etherlab_buddy
+
 etherlab_buddy_SOURCES = \
         buddy_main.c \
         buddy_main.h \
@@ -48,3 +58,7 @@ etherlab_buddy_CFLAGS = -Imsrio_lib/include \
 
 datatypedir = $(prefix)/src
 datatype_DATA = etl_data_types.c
+
+endif # KERNEL
+
+#-----------------------------------------------------------------------------
