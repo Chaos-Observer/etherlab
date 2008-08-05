@@ -33,6 +33,4 @@ EtherCATInfo_el4xxx = appendDevice(EtherCATInfo_el4xxx,EtherCATInfo_el4102);
 save('../EtherCATInfo_el4xxx', 'EtherCATInfo_el4xxx');
 fprintf('done\n');
 
-if @EXPERIMENTAL@
-end
 return

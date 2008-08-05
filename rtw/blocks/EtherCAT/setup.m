@@ -13,6 +13,4 @@ mex -I.. moog_msd.c
 
 run xml/setup.m
 
-if @EXPERIMENTAL@
-end
 return

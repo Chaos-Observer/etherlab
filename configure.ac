@@ -15,7 +15,8 @@ AC_CONFIG_AUX_DIR(config)
 AM_INIT_AUTOMAKE([-Wall -Werror])
 AC_CONFIG_SRCDIR([config.h.in])
 AC_CONFIG_HEADERS([config.h])
-AC_PREFIX_DEFAULT(/opt/etherlab)
+prefix=/opt/etherlab
+AC_PREFIX_DEFAULT($prefix)
 AC_SUBST(RTW_DIR,[rtw])
 
 dnl Compile and install Simulink related components (default: yes)
@@ -238,16 +239,14 @@ AC_CONFIG_FILES([
         Makefile 
         doc/Makefile
         rtw/Makefile 
-        rtw/blocks/AddiData/Makefile 
-        rtw/blocks/EtherCAT/@EtherCATInfo/Makefile
-        rtw/blocks/EtherCAT/@EtherCATInfo/private/Makefile
-        rtw/blocks/EtherCAT/Makefile
-        rtw/blocks/EtherCAT/setup.m
-        rtw/blocks/EtherCAT/xml/Makefile
-        rtw/blocks/EtherCAT/xml/setup.m
-        rtw/blocks/Hilscher/Makefile 
         rtw/blocks/Makefile 
         rtw/blocks/setup.m 
+        rtw/blocks/Hilscher/Makefile 
+        rtw/blocks/AddiData/Makefile 
+        rtw/blocks/EtherCAT/Makefile
+        rtw/blocks/EtherCAT/xml/Makefile
+        rtw/blocks/EtherCAT/@EtherCATInfo/Makefile
+        rtw/blocks/EtherCAT/@EtherCATInfo/private/Makefile
         rtw/etherlab/Makefile 
         rtw/etherlab/etherlab_kmod.tmf
         rtw/lib/Makefile
