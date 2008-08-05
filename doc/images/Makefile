@@ -6,7 +6,7 @@
 
 FIGS := \
 	c-api.fig \
-	etl-arch.fig
+	overview.fig
 
 PDFS = $(FIGS:.fig=.pdf)
 

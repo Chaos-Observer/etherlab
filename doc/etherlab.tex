@@ -2,7 +2,7 @@
 %
 % $Id$
 %
-% vim700: spelllang=en spell 
+% vim700: spelllang=en spell tw=78
 %
 %-----------------------------------------------------------------------------
 
@@ -20,11 +20,11 @@ capable of:
 
 \begin{itemize}
 
-\item Realtime execution of multiple applications with multiple tasks inside
-the Linux kernel.
+\item Realtime execution of multiple applications consisting of multiple tasks
+with signals and parameters.
 
-\item Accessing the application's signals and parameters via TCP/IP. There is
-a generic C++ library called RTCom and many tools for visualisation, data
+\item Accessing the applications' signals and parameters via TCP/IP. There is
+a generic C++ library called PdCom and many tools for visualisation, data
 logging, etc. available from \url{http://etherlab.org/en/components.php}.
 
 \item Creation of realtime applications with a C-API (see
@@ -44,32 +44,38 @@ The EtherLab package can be subdivided into the components listed below:
 
 \begin{itemize}
 
-\item The Linux kernel module \texttt{rt\_kernel}, that is responsible for the
-realtime execution of the created applications.
+\item The application core (represented by the Linux kernel module
+\lstinline+rt_app_core+), that is responsible for the execution of the realtime
+applications. It manages the applications tasks, signals and parameters.
 
-\item The EtherLab ``Buddy Process'', that acts as a userspace counterpart to
-the \texttt{rt\_kernel} and is responsible for exporting the realtime
-application's data via TCP/IP (see figure~\ref{fig:architektur}).
+\item The buddy process, acting as a userspace counterpart to the
+\lstinline+rt_app_core+. It maintains internal representations of the loaded
+applications and is responsible for presenting signals and parameters via
+TCP/IP (see figure~\ref{fig:overview}). Each application is
+accessible\footnote{To access the realtime application data via TCP/IP, there
+is a platform-independent library called PdCom, that is not part of this
+document. See \url{http://etherlab.org/en/components.php}.} via an own TCP
+port.
 
 \item The EtherLab C-API, that is used to create realtime applications,
 basically consisting of tasks, signals and parameters. The C-API provides a
 generic way to describe applications using an EtherLab realtime application
-description XML file that is a source for the application's data structures
-and the appropriate information for the buddy process, that is necessary for
-exporting and presenting the data.
+description XML file that is a source for the application's data structures and
+the appropriate information for the buddy process, that is necessary for
+presenting the data.
 
 \item The MATLAB/Simulink integration of EtherLab in terms of the
-\texttt{etherlab\_lib} for Simulink (containing all necessary blocks) and the
+\lstinline+etherlab_lib+ for Simulink (containing all necessary blocks) and the
 EtherLab target for the Realtime Workshop, that is able to create EtherLab
 applications from Simulink models.
 
 \end{itemize}
 
-\begin{figure}[H]
+\begin{figure}[htb]
   \begin{center}
-    \includegraphics[width=\textwidth]{images/etl-arch}
-    \caption{EtherLab runtime architecture}
-    \label{fig:architektur}
+    \includegraphics[width=\textwidth]{images/overview}
+    \caption{EtherLab Component Overview}
+    \label{fig:overview}
   \end{center}
 \end{figure}
 
@@ -155,13 +161,13 @@ MATLAB, the below commands must be entered (out of MATLAB).
 
 %-----------------------------------------------------------------------------
 
-\section{Starting EtherLab as a Service}
-\label{sec:dienst}
+\section{Starting the Application Core as a Service}
+\label{sec:service}
 
-If the EtherLab kernel/buddy are to be started as a service, the provided init
-script \texttt{etherlab} can be used. However, the insertion of the service is
-dependent on the GNU/Linux distribution used. The command sequence below is
-intended for openSUSE Linux:
+If the EtherLab application core shall be started as a service, the provided
+init script \lstinline+etherlab+ can be used. However, the insertion of the
+service is dependent on the GNU/Linux distribution used. The command sequence
+below is intended for openSUSE Linux:
 
 \begin{lstlisting}[gobble=2]
   # `\textbf{ln -s /opt/etherlab/etc/init.d/etherlab /etc/init.d/}`
@@ -190,7 +196,7 @@ EtherLab C-API provides functions to
 application, i.\,e.\,application attributes, different tasks, signals and
 parameters, to allow access from userspace.
 
-\item Execute an application's tasks with different sample times.
+\item Execute application tasks with different sample times.
 
 \end{itemize}
 
@@ -199,13 +205,13 @@ section~\ref{sec:xml}). This file is parsed to create the C data structures
 for signals and parameters (see fig.~\ref{fig:c-api}). This means the user
 only has to provide the application description XML and the C-code algorithms
 operating on the given data structures to create an EtherLab realtime
-application. The \texttt{rt\_kernel} provides machanisms to make the
-application's variables visible and accessible in userspace.
+application. The application core and the buddy process provide mechanisms to
+make the application's variables visible and accessible from userspace.
 
 \begin{figure}[H]
   \begin{center}
     \includegraphics[width=0.9\textwidth]{images/c-api}
-    \caption{Creation of a realtime application}
+    \caption{Creation of a Realtime Application}
     \label{fig:c-api}
   \end{center}
 \end{figure}
@@ -244,7 +250,7 @@ order is mandatory).
 
 \item[\small\texttt{<description>}] (\textit{mandatory}) May contain an
 arbitrary textual description of the application. Please note, that this
-results in a C string, so please avoid doublequotes and \lstinline+\0+.
+results in a C string, so please avoid double quotes and \lstinline+\0+.
 
 \item[\small\texttt{<version>}] (\textit{mandatory}) May contain an arbitrary
 version string. The same constraints as for the \texttt{<description>}
@@ -301,7 +307,7 @@ types listed in section~\ref{sec:vars}.
 \item[\small\texttt{sampleTimeIndex}] (\textit{optional}) The index of the
 sample time referencing the task or subtask defined in the application (see
 section~\ref{sec:xml-app}). This also specifies the fastest rate of change for
-the signal. If \texttt{sampleTimeIndex} is ommitted, the signal will belong to
+the signal. If \texttt{sampleTimeIndex} is omitted, the signal will belong to
 the fastest sample time.
 
 \item[\small\texttt{alias}] (\textit{optional}) An alternate global name for
@@ -327,7 +333,7 @@ types listed in section~\ref{sec:vars}.
 \end{description}
 
 \item[\small\texttt{<subsystem>}] A subsystem will create a deeper nesting
-level and a new namespace for signals, parameters and further subsystems. The
+level and a new name space for signals, parameters and further subsystems. The
 \texttt{name} attribute defines the name of the subsystem and is therefore
 mandatory. A subsystem will result in an unnamed C structure. If a named data
 structure is required, use \texttt{<reference>} instead.
@@ -370,10 +376,10 @@ again.
 \begin{description}
 
 \item[\small\texttt{<dim>}] (\textit{optional}) A variable can be
-multi-dimensional. Any \texttt{<dim>} element will add another dimension to
-the variable. If ommitted, the variable is considered as a scalar. Every
-\texttt{<dim>} element has a mandatory \texttt{value} attribute, that
-specifies the size of the dimension. For example
+multi-dimensional. Any \texttt{<dim>} element will add another dimension to the
+variable. If omitted, the variable is considered as a scalar. Every
+\texttt{<dim>} element has a mandatory \texttt{value} attribute, that specifies
+the size of the dimension. For example
 
 \begin{lstlisting}
 <signal name="matrix" datatype="double_T">
@@ -572,71 +578,82 @@ After creating a new model sheet within Simulink, a few parameters have to be
 set up (menu \textit{Simulation/Configuration Parameters\ldots}):
 
 \begin{itemize}
-\item The input field \textit{Realtime Workshop} $\rightarrow$
-  \textit{System target file} must contain the file name
-  \texttt{etherlab.tlc}. It can be chosen via the
-  \textit{Browse\ldots} button (see figure~\ref{fig:konfiguration}).
-  \begin{figure}[H]
+
+\item The input field \textit{Realtime Workshop} $\rightarrow$ \textit{System
+target file} must contain the file name \texttt{etherlab.tlc}. It can be
+chosen via the \textit{Browse\ldots} button (see
+figure~\ref{fig:model-config}).
+
+  \begin{figure}[htb]
     \begin{center}
       \includegraphics[width=.9\textwidth]{images/config_param.png}
       \caption{Configuration of model parameters}
-      \label{fig:konfiguration}
+      \label{fig:model-config}
     \end{center}
   \end{figure}
-\item The input field \textit{Solver} $\rightarrow$ \textit{Fixed-step
-    size} must contain the period time of the real time cycle, for
-  example \texttt{0.01} meaning $100$ Hz (see
-  figure~\ref{fig:config_solver}).
-  \begin{figure}[H]
+
+\item The input field \textit{Solver} $\rightarrow$ \textit{Fixed-step size}
+must contain the period time of the real time cycle, for example
+\lstinline+0.01+ meaning $100$ Hz (see figure~\ref{fig:config_solver}).
+
+  \begin{figure}[htb]
     \begin{center}
       \includegraphics[width=.9\textwidth]{images/config_solver.png}
       \caption{Configuration of model parameters (2)}
       \label{fig:config_solver}
     \end{center}
   \end{figure}
+
 \end{itemize}
 
 After the model has been parametrized, it can be edited as usual. To use
 EtherLab blocks, open the \texttt{etherlab\_lib} (see sec.~\ref{sec:lib}) and
 drag the desired blocks on the new model sheet. When finished, \textit{Ctrl-B}
-will generate the application code contained a Linux kernel module.
+will generate the application code contained in a Linux kernel module.
 
 %-----------------------------------------------------------------------------
 
-\chapter{Starting EtherLab Applications}
+\chapter{Starting Realtime Applications}
 \label{sec:start}
 
-The \texttt{rt\_kernel} module must be inserted before inserting any EtherLab
-modules. If EtherLab is configured as a service (see
-section~\ref{sec:dienst}), this is done automatically at system startup.
-Otherwise the module can be inserted manually. It is recommended to start the
-module using the init script, because the necessary device files are then
-created automatically:
+The application core (\lstinline+rt_app_core+) must be running before any
+realtime applications can be started. If it is configured as a service (see
+section~\ref{sec:service}), this is done automatically at system startup.
+Otherwise the application core module can be inserted manually. It is
+recommended to start the application core using the init script, because the
+necessary device files are then created automatically:
 
 \begin{lstlisting}[gobble=2]
   # `\textbf{/opt/etherlab/etc/init.d/etherlab start}`
 \end{lstlisting}
 
-After that, an EtherLab module can be loaded.
+After that, a realtime application can be started by inserting the generated
+kernel module.
 
 \begin{lstlisting}[gobble=2]
   # `\textbf{insmod <application>\_kmod.ko}`
 \end{lstlisting}
 
-If the \texttt{insmod} command returns with an error, the kernel ring
-buffer can be analyzed for possible software or hardware
-misconfigurations:
+If the \lstinline+insmod+ command fails, the kernel ring buffer can be
+analyzed for possible software or hardware misconfiguration:
 
 \begin{lstlisting}[gobble=2]
   # `\textbf{dmesg | less}`
 \end{lstlisting}
 
-If the application was loaded successfully, its variables (i.\,e.\,signals and
-parameters) can be accessed via TCP/IP with EtherLab tools like Testmanager,
-DLS or the RTCom library (have a look at
-\url{http://etherlab.org/en/components.php}. Therefore the
-\texttt{etherlab\_buddy} acts as a TCP server listening on port 2345 and
-communicating with an XML-based protocol called MSR (see the German
-documentation at \url{http://etherlab.org/download/m-igh_rt_api.pdf}).
+If the \lstinline+insmod+ command succeeds (no output), the application is
+running. To access its data from userspace, the buddy process has to be
+started:
+
+\begin{lstlisting}[gobble=2]
+  # `\textbf{etherlab\_buddy}`
+\end{lstlisting}
+
+The buddy process now acts as a TCP/IP server\footnote{The buddy uses an
+XML-based protocol called MSR; there is a German documentation at
+\url{http://etherlab.org/download/m-igh_rt_api.pdf}}, so the application data
+can be accessed via the network with EtherLab tools like Testmanager, DLS or
+the PdCom library (have a look at
+\url{http://etherlab.org/en/components.php}).
 
 %-----------------------------------------------------------------------------
