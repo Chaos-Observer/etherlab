@@ -207,19 +207,18 @@ SYSLIBS = $(EXT_LIB)
 
 LIBS =
 |>START_PRECOMP_LIBRARIES<|
-# Test whether |>EXPAND_LIBRARY_NAME<|.a already exists in $(RTW_DIR)/lib
-PRECOMP_RTW_LIB := $(wildcard $(RTW_DIR)/lib/|>EXPAND_LIBRARY_NAME<|.a)
-
 ifeq ($(OPT_OPTS),$(DEFAULT_OPT_OPTS))
 LIBS += |>EXPAND_LIBRARY_LOCATION<|/|>EXPAND_LIBRARY_NAME<|_std.a
-else ifneq ($(PRECOMP_RTW_LIB),)
-LIBS += $(PRECOMP_RTW_LIB)
 else
 LIBS += |>EXPAND_LIBRARY_NAME<|.a
 endif
 |>END_PRECOMP_LIBRARIES<| |>START_EXPAND_LIBRARIES<|
 LIBS += |>EXPAND_LIBRARY_NAME<|.a |>END_EXPAND_LIBRARIES<|
 LIBS += $(S_FUNCTIONS_LIB) $(INSTRUMENT_LIBS)
+
+ifneq ($(PRECOMP_RTW_LIB),)
+LIBS := $(filter-out rtwlib.a,$(LIBS)) $(PRECOMP_RTW_LIB)
+endif
 
 #----------------------------- Source Files ------------------------------------
 
