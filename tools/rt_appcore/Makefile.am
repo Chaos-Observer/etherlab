@@ -7,14 +7,14 @@
 RT_APPCORE_SRCS = rt_main.c mdl_chardev.c rt_vars.c rtcom_chardev.c
 RT_APPCORE_HEADER = rt_main.h rtcom_chardev.h
 
-EXTRA_DIST = $(RT_APPCORE_SRCS) $(RT_APPCORE_HEADER) test_vars.c
+EXTRA_DIST = $(RT_APPCORE_SRCS) $(RT_APPCORE_HEADER) test_vars.c Kbuild
 
 moduledir = $(prefix)/modules
 module_DATA = rt_appcore.ko rt_test.ko
 
 # Files needed to build an Application
-appcoredatadir = $(prefix)/src
-dist_appcoredata_DATA = rt_app_main.c
+capidir = $(prefix)/capi
+dist_capi_DATA = rt_app_main.c
 include_HEADERS = rt_vars.h rt_appcore.h rt_app.h app_payload.h
 
 if APPCORE
@@ -36,6 +36,6 @@ bin_SCRIPTS = kernel-cflags
 endif # APPCORE
 
 # Following list is used by TAGS
-nodist_noinst_HEADERS = $(EXTRA_DIST) $(dist_appcoredata_DATA)
+nodist_noinst_HEADERS = $(EXTRA_DIST) $(dist_capi_DATA)
 
 #-----------------------------------------------------------------------------

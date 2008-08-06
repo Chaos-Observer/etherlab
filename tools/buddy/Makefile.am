@@ -56,8 +56,8 @@ etherlab_buddy_LDADD = libmsr.a
 etherlab_buddy_CFLAGS = -Imsrio_lib/include \
         -DDEBUG=$(DEBUG) -I$(top_srcdir)/tools/include -Wall
 
-datatypedir = $(prefix)/src
-datatype_DATA = etl_data_types.c
+capidir = $(prefix)/capi
+capi_DATA = etl_data_types.c
 
 endif # APPCORE
 

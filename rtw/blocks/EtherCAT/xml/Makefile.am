@@ -5,9 +5,8 @@ dist_xml_DATA = \
         Beckhoff_EtherCAT_XML.zip \
         MTS.xml \
         EL4132-mod.xml \
-        EL4102-mod.xml
-
-xml_DATA = setup.m
+        EL4102-mod.xml \
+		setup.m
 
 install-data-hook:
 	$(UNZIP) -o $(DESTDIR)/$(xmldir)/Beckhoff_EtherCAT_XML.zip \

@@ -91,7 +91,7 @@ AC_ARG_WITH([rtai-dir],
     [ rtai_dir=${withval} ],
     [
         if test -x "$staging_dir/usr/realtime/bin/rtai-config"; then
-            rtai_dir="$staging_dir/usr/realtime"
+            rtai_dir="/usr/realtime"
         else
             rtai_dir=$(type -p rtai-config)
             rtai_dir=${rtai_dir%%bin/rtai-config}
@@ -208,22 +208,6 @@ AM_CONDITIONAL(EXPERIMENTAL, test x$exp = x1)
 AC_SUBST(EXPERIMENTAL,${exp})
 
 #-----------------------------------------------------------------------------
-# C-API
-#-----------------------------------------------------------------------------
-
-AC_ARG_ENABLE([C],
-    AS_HELP_STRING(
-        [--enable-C],
-        [Enable new C-interface]),
-    [ case "${enableval}" in
-        yes) : ;;
-        *)   enableval=
-      esac],
-    [ enableval= ]
-)
-AM_CONDITIONAL(C_INTERFACE, test x$enableval != x)
-
-#-----------------------------------------------------------------------------
 # Buddy NG
 #-----------------------------------------------------------------------------
 
@@ -324,9 +308,8 @@ AC_CONFIG_FILES([
         rtw/etherlab/etherlab_kmod.tmf
         rtw/lib/Makefile
         rtw/src/Makefile
-        src/C/Kbuild.makefile
-        src/C/Makefile
-        src/Makefile
+        capi/Kbuild.makefile
+        capi/Makefile
         tools/Makefile
         tools/buddy-ng/Makefile
         tools/buddy/Makefile

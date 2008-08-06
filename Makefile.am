@@ -4,7 +4,7 @@
 #
 #-----------------------------------------------------------------------------
 
-SUBDIRS = tools
+SUBDIRS = tools capi
 
 if SIMULINK
 SUBDIRS += rtw

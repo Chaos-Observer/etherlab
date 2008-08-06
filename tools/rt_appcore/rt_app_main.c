@@ -2,9 +2,9 @@
  *
  * $Id$
  *
- * module_init() and module_exit() are defined here. This file will be 
- * compiled together with the Real-Time Model to form a kernel module,
- * registering it with the rt_kernel.
+ * module_init() and module_exit() are defined here. This file will be
+ * compiled together with the Real-Time application to form a kernel module,
+ * registering it with the RT-AppCore.
  * 
  * Copyright (C) 2008  Richard Hacker
  * 
@@ -50,23 +50,23 @@ MODULE_PARM_DESC(application_name,"Assign alternative application name.");
 
 unsigned long stack_size = 0;
 module_param(stack_size, ulong, S_IRUGO);
-MODULE_PARM_DESC(stack_size,"Override the stack size specified in the model.");
+MODULE_PARM_DESC(stack_size,"Override the stack size specified in the application.");
 
 unsigned long decimation = 0;
 module_param(decimation, ulong, S_IRUGO);
-MODULE_PARM_DESC(decimation, "Override the photo decimation rate in the model.");
+MODULE_PARM_DESC(decimation, "Override the photo decimation rate in the application.");
 
 unsigned long overrun = 0;
 module_param(overrun, ulong, S_IRUGO);
-MODULE_PARM_DESC(overrun,"Override the model's overrun count.");
+MODULE_PARM_DESC(overrun,"Override the application's overrun count.");
 
 unsigned long buffer_time = 0;
 module_param(buffer_time, ulong, S_IRUGO);
-MODULE_PARM_DESC(buffer_time,"Override BlockIO buffer time specified in the model.");
+MODULE_PARM_DESC(buffer_time,"Override BlockIO buffer time specified in the application.");
 
 unsigned long tick = 0;
 module_param(tick, ulong, S_IRUGO);
-MODULE_PARM_DESC(tick,"Override tick rate specified in the model.");
+MODULE_PARM_DESC(tick,"Override tick rate specified in the application.");
 
 static void __exit 
 mod_cleanup(void)
@@ -74,8 +74,7 @@ mod_cleanup(void)
     stop_rt_app(rt_app.app_id);
     kfree(rt_app.pend_rtP);
     app_stop();
-    pr_info("Removed RTW Model \"%s\" from RT-Kernel\n", 
-            rt_app.appName);
+    pr_info("Removed application \"%s\".\n", rt_app.name);
 }
 
 
@@ -86,20 +85,20 @@ mod_init(void)
     const char *errmsg;
     unsigned int i;
 
-    pr_debug("Inserting RTW model\n");
+    pr_debug("Inserting application.\n");
 
-    /* Initialise the real time model */
+    /* Initialise the real time application */
     if ((errmsg = app_start())) {
-            printk("ERROR: Could not initialize model: %s\n", errmsg);
+            printk("ERROR: Could not initialize application: %s\n", errmsg);
             err = -1;
             goto out;
     }
 
     if (app_name && strlen(app_name)) {
-        rt_app.appName = app_name;
+        rt_app.name = app_name;
     }
 
-    // If a new tick is supplied, use it instead of the model's
+    // If a new tick is supplied, use it instead of the application's
     for (i = rt_app.num_st; tick && i--; ) {
         rt_app.task_period[i] = 
             rt_app.task_period[i] / rt_app.task_period[0] * tick;
@@ -110,7 +109,7 @@ mod_init(void)
         buffer_time ? buffer_time*1000000 : rt_app.buffer_time;
     rt_app.stack_size = stack_size ? stack_size : rt_app.stack_size;
 
-    /* Work out how fast the model is sampled by test_manager */
+    /* Work out how fast the application is sampled by test_manager */
     rt_app.sample_period = rt_app.decimation 
         ? rt_app.task_period[0]*rt_app.decimation
         : rt_app.task_period[0];
@@ -129,18 +128,18 @@ mod_init(void)
     /* Initialise the pending parameter area with the current parameters */
     memcpy(rt_app.pend_rtP, rt_app.app_rtP, rt_app.rtP_size);
 
-    /* Having finished all the model initialisation, it is now time to 
+    /* Having finished all the application initialisation, it is now time to 
      * register this RTW Model with the Real-Time Kernel to be scheduled */
     if ((rt_app.app_id = start_rt_app(&rt_app,
                     sizeof(rt_app), REVISION, THIS_MODULE)) < 0) {
-        printk("Could not register model with rtw_manager; rc = %i\n",
+        printk("Could not register application with RT-AppCore; rc = %i\n",
                 rt_app.app_id);
         err = rt_app.app_id;
         goto out_register_mdl;
     }
 
-    pr_info("Successfully registered RTW Model \"%s\" with RT-Kernel\n",
-            rt_app.appName);
+    pr_info("Successfully registered application \"%s\" with RT-AppCore.\n",
+            rt_app.name);
 
     return 0;
 

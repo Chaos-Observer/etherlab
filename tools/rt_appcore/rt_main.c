@@ -2,7 +2,7 @@
  *
  * $Id$
  *
- * Here is the main file for the rt_appcore. It prepares the environment in
+ * Here is the main file for the RT-AppCore. It prepares the environment in
  * which Real-Time Models can run in.
  * 
  * Copyright (C) 2008  Richard Hacker
@@ -50,7 +50,7 @@
 
 /* Local headers */
 #include "rt_appcore.h"          /* Public functions exported by manager */
-#include "rt_main.h"            /* Private to kernel */
+#include "rt_main.h"            /* Private to AppCore. */
 #include "rtcom_chardev.h"
 
 struct rt_appcore rt_appcore;
@@ -99,7 +99,7 @@ static int rt_task_stack_check(RT_TASK * task, int pattern)
     return unused;
 }
 
-/** Function: rt_kernel_helper
+/** Function: rt_appcore_helper
  *
  * This separate task thread runs in parallel to the real time tasks and
  * has the following tasks:
@@ -107,7 +107,7 @@ static int rt_task_stack_check(RT_TASK * task, int pattern)
  *   - wake up the buddy if the real time processes have produced data for the 
  *     buddy
  */
-int rt_kernel_helper(void *_unused_data)
+int rt_appcore_helper(void *_unused_data)
 {
     struct timeval current_time;
 
@@ -147,7 +147,7 @@ void init_time(void)
 
 /* This function gets called at the fastest sampling rate and is an 
  * observer interpolating the time between the samples of real world time
- * provided by rt_kernel_helper().
+ * provided by rt_appcore_helper().
  * It is a second order feedback system:
  *
  *                            +-----+   p                          
@@ -284,7 +284,7 @@ static void mdl_main_thread(long priv_data)
             if (overrun++) {
                 printk(".");
             } else {
-                pr_info(//"Model overrun on main task ... "
+                pr_info(//"Application overrun on main task ... "
                         "tick %lu took %lu(%lu)us, allowed are %uus %llu %llu",
                         counter,
                         (unsigned long)(get_cycles() - rt_prevstart)/cpu_mhz,
@@ -310,7 +310,7 @@ static void mdl_main_thread(long priv_data)
             update_time();
         }
     }
-    rt_printk("Model %s main task aborted. Error message:\n\t%s\n", 
+    rt_printk("Application %s main task aborted. Error message:\n\t%s\n", 
             rt_app->name, errmsg);
 
     /* If this task is not the master, it can end here */
@@ -325,7 +325,7 @@ static void mdl_main_thread(long priv_data)
 }
 
 /** Function: mdl_sec_thread
- * arguments: long app_id: RT-Kernel Task Id for this task
+ * arguments: long app_id: RT-AppCore Task Id for this task
  *
  * This calls secondary app threads running more slowly than the main
  * task.
@@ -365,7 +365,7 @@ static void mdl_sec_thread(long priv_data)
 
         /* Wait until next call */
         if (rt_task_wait_period()) {
-            pr_info("Model overrun on tid %i ... "
+            pr_info("Task overrun on tid %i ... "
                     "tick %lu took %luus, allowed are %uus\n",
                     mdl_tid,
                     counter,
@@ -381,7 +381,7 @@ static void mdl_sec_thread(long priv_data)
                 overrun--;
         }
     }
-    rt_printk("Model %s tid %u aborted. Error message:\n\t%s\n", 
+    rt_printk("Application %s tid %u aborted. Error message:\n\t%s\n", 
             rt_app->name, mdl_tid, errmsg);
 }
 
@@ -432,9 +432,9 @@ int start_rt_app(const struct rt_app *rt_app,
 
     if (strcmp(revision_str, REVISION)) {
         pr_info("Error: The header file revisions do not match.\n"
-                "Model has: %s\n"
+                "Application has: %s\n"
                 "Expected: " REVISION "\n"
-                "You have probably updated and are using an old rt_appcore.\n"
+                "You have probably updated and are using an old RT-AppCore.\n"
                 "Recompile and reinstall all parts of " PACKAGE_NAME ".\n",
                 revision_str);
         return -1;
@@ -442,15 +442,15 @@ int start_rt_app(const struct rt_app *rt_app,
 
     if (struct_len != sizeof(struct rt_app)) {
         pr_info("Error: The header file lengths do not match.\n"
-                "Model has: %i\n"
+                "Application has: %i\n"
                 "Expected: %i\n"
-                "You have probably updated and are using an old rt_appcore.\n"
+                "You have probably updated and are using an old RT-AppCore.\n"
                 "Recompile and reinstall all parts of " PACKAGE_NAME ".\n",
                 struct_len, sizeof(struct rt_app));
         return -1;
     }
 
-    pr_debug("Registering new RTW Model %s with rtw_manager\n", 
+    pr_debug("Registering new application %s with rtw_manager\n", 
             rt_app->name);
 
     /* Make sure the app name is within range */
@@ -464,7 +464,7 @@ int start_rt_app(const struct rt_app *rt_app,
      * compatible */
     if (rt_appcore.base_period && 
             rt_app->task_period[0] % rt_appcore.base_period) {
-        pr_info("Model's base rate (%uns) is not an integer multiple of "
+        pr_info("Application's base rate (%uns) is not an integer multiple of "
                 "RTAI baserate %luus\n", 
                 rt_app->task_period[0], rt_appcore.base_period);
         err = -EINVAL;
@@ -540,14 +540,14 @@ int start_rt_app(const struct rt_app *rt_app,
                 rt_appcore.base_period);
     } else {
         if (rt_app->task_period[0] < rt_appcore.base_period) {
-            printk("ERROR: Period of app faster than rt_appcore's base "
+            printk("ERROR: Period of app faster than RT-AppCore's base "
                     "period. Load fastest app first.\n");
             goto out_incompatible_ticks;
         } 
 
         if (rt_app->task_period[0] % rt_appcore.base_period) {
             printk("ERROR: Period of app not an integral multiple "
-                    "of rt_appcore's base period.\n");
+                    "of RT-AppCore's base period.\n");
             goto out_incompatible_ticks;
         } 
     }
@@ -569,7 +569,7 @@ int start_rt_app(const struct rt_app *rt_app,
     now = rt_get_time();
     app->photo_sample = 1;           /* Take a photo of next calculation */
     for (tid = 0; tid < rt_app->num_tasks; tid++) {
-        pr_info("RTW Model tid %i running at %uus\n", 
+        pr_info("Application tid %i running at %uus\n", 
                 tid, rt_app->task_period[tid]);
         decimation = rt_app->task_period[tid] / rt_app->task_period[0];
         if ((err = rt_task_make_periodic(
@@ -615,7 +615,7 @@ out:
 RT_TASK test_thread[2];
 
 /** Function: test_thread
- * arguments: long app_id: RT-Kernel Task Id for this task
+ * arguments: long app_id: RT-AppCore Task Id for this task
  *
  * This is the main task that is called by RTAI.
  */
@@ -645,7 +645,7 @@ static void test_thread_func(long priv_data)
     rt_printk("Max overrun reached. Aborting...\n");
 }
 
-void free_test_model(void)
+void free_test_application(void)
 {
     int i;
 
@@ -657,12 +657,12 @@ void free_test_model(void)
     return;
 }
 
-int register_test_model(void)
+int register_test_application(void)
 {
     RTIME tick_period, now;
     int err, i;
 
-    pr_debug("Registering new TEST Model with rtw_manager\n");
+    pr_debug("Registering new TEST application with rtw_manager\n");
 
 #if 1
     rt_set_periodic_mode();
@@ -714,7 +714,7 @@ out_test_task_init:
 void __exit mod_cleanup(void)
 {
 #ifdef TEST_THREAD
-    free_test_model();
+    free_test_application();
     return;
 #endif //TEST_THREAD
 
@@ -724,7 +724,7 @@ void __exit mod_cleanup(void)
     /* Stop world time task */
     kthread_stop(rt_appcore.helper_thread);
 
-    pr_info("RT-Kernel stopped\n");
+    pr_info("RT-AppCore stopped\n");
     return;
 }
 
@@ -732,10 +732,10 @@ int __init mod_init(void)
 {
     int err = -1;
 
-    pr_info("Starting RT-Kernel " PACKAGE_VERSION "\n");
+    pr_info("Starting RT-AppCore " PACKAGE_VERSION "\n");
 
 #ifdef TEST_THREAD
-    return register_test_model();
+    return register_test_application();
 #endif //TEST_THREAD
 
     /* First start a separate thread to fetch world time.
@@ -765,16 +765,16 @@ int __init mod_init(void)
 
     /* The only thing to do here is start a thread to fetch world time */
     rt_appcore.helper_thread = 
-        kthread_run(rt_kernel_helper, NULL, "rt_kernel_helper");
+        kthread_run(rt_appcore_helper, NULL, "rt_appcore_helper");
     if (rt_appcore.helper_thread == ERR_PTR(-ENOMEM)) {
         pr_info("Could not start timer thread - Out of memory\n");
         goto out_start_thread;
     }
 
-    /* Now the module is ready to accept RT models, that register themselves
-     * here by calling register_rtw_model() */
+    /* Now the module is ready to accept RT application, that register themselves
+     * here by calling start_rt_app() */
 
-    pr_info("Successfully started RT-Kernel\n");
+    pr_info("Successfully started RT-AppCore\n");
 
     return 0;
 
@@ -789,7 +789,7 @@ out_fio_init:
 
 
 MODULE_LICENSE("GPL v2");
-MODULE_DESCRIPTION("RT-Kernel for " PACKAGE_NAME);
+MODULE_DESCRIPTION("RT-AppCore for " PACKAGE_NAME);
 MODULE_AUTHOR("Richard Hacker");
 MODULE_VERSION(PACKAGE_VERSION);
 

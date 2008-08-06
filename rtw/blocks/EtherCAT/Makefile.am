@@ -14,13 +14,13 @@ dist_ethercat_DATA = \
         el5101_check.m \
         fromHexString.m \
         getEtherCATAddress.m \
-        ec_slave2.c ec_slave2.tlc
+        ec_slave2.c ec_slave2.tlc \
+		setup.m
 
 if EXPERIMENTAL
 dist_ethercat_DATA += 
 endif
 
-ethercat_DATA = setup.m
 
 install-data-hook:
 	$(RM) -f $(DESTDIR)/$(ethercatdir)/ETL.tlc

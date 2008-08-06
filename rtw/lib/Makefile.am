@@ -8,7 +8,8 @@ EXTRA_DIST = \
 	ecrt_support.c \
 	raise_catch.h \
 	ecrt_support.h \
-	raise_catch.c
+	raise_catch.c \
+	Kbuild
 
 #-----------------------------------------------------------------------------
 # libetherlab.a
