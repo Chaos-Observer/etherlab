@@ -631,7 +631,7 @@
 
   %openfile buf
     /* Constant values for %<Type> Block: %<Name>  */
-    real_T %<ident> = { 
+    real_T %<ident>[] = { 
       %foreach idx = ConstantCount
         %<ConstantValues[idx]>, \
       %endforeach
