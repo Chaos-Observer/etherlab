@@ -13,8 +13,8 @@ moduledir = $(prefix)/modules
 module_DATA = rt_appcore.ko rt_test.ko
 
 # Files needed to build an Application
-kerneldatadir = $(prefix)/src
-dist_kerneldata_DATA = rt_app_main.c
+appcoredatadir = $(prefix)/src
+dist_appcoredata_DATA = rt_app_main.c
 include_HEADERS = rt_vars.h rt_appcore.h rt_app.h app_payload.h
 
 if APPCORE
@@ -36,6 +36,6 @@ bin_SCRIPTS = kernel-cflags
 endif # APPCORE
 
 # Following list is used by TAGS
-nodist_noinst_HEADERS = $(EXTRA_DIST) $(dist_kerneldata_DATA)
+nodist_noinst_HEADERS = $(EXTRA_DIST) $(dist_appcoredata_DATA)
 
 #-----------------------------------------------------------------------------
