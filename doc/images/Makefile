@@ -4,13 +4,13 @@
 #
 #-----------------------------------------------------------------------------
 
-FIGS := \
+FIGS = \
 	c-api.fig \
 	overview.fig
 
 PDFS = $(FIGS:.fig=.pdf)
 
-all: $(PDFS)
+pdfs: $(PDFS)
 
 %.pdf: %.fig
 	fig2dev -L pdf -z A4 -p xxx -c $< $@	

@@ -4,14 +4,13 @@
 #
 #-----------------------------------------------------------------------------
 
-SUBDIRS = images
-
-all: doc
-
-doc:
+doc: pdfs
 	pdflatex m-etherlab.tex
 
-clean-local:
+pdfs:
+	$(MAKE) -C images pdfs
+
+clean:
 	rm -f \
 		*.aux \
 		*.lof \
