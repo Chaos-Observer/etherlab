@@ -281,7 +281,7 @@ AC_CONFIG_FILES([
         tools/buddy-ng/Makefile
         tools/buddy/Makefile
         tools/include/Makefile
-        tools/rt_kernel/Makefile
+        tools/rt_appcore/Makefile
         tools/scripts/Makefile
         tools/scripts/etherlab
 ])

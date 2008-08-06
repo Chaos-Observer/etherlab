@@ -1,10 +1,10 @@
 moduledir = $(prefix)/modules
-module_DATA = rt_kernel.ko rt_test.ko
+module_DATA = rt_appcore.ko rt_test.ko
 
 # Files needed to build an Application
 kerneldatadir = $(prefix)/src
 dist_kerneldata_DATA = rt_app_main.c
-include_HEADERS = rt_vars.h rt_kernel.h rt_app.h app_payload.h
+include_HEADERS = rt_vars.h rt_appcore.h rt_app.h app_payload.h
 
 RT_KERNEL_SRCS = rt_main.c mdl_chardev.c rt_vars.c rtcom_chardev.c
 RT_KERNEL_HEADER = rt_main.h rtcom_chardev.h

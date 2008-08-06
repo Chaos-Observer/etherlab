@@ -1,7 +1,7 @@
 SUBDIRS = scripts include buddy
 
 if KERNEL
-SUBDIRS += rt_kernel
+SUBDIRS += rt_appcore
 endif
 
 if BUDDY_NG
