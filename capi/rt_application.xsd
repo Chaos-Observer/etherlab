@@ -1,0 +1,234 @@
+<?xml version="1.0"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+<!--
+This is the main structure of a model. It consists of 5 main elements:
+ * description  : Description of the model. (string)
+ * version      : Version information (string)
+ * parameters   : Various model parameter settings
+ * task         : Information about call rates and subtasks
+ * data         : Model signals and variables
+
+The name attribute is required.
+-->
+<xs:element name="application">
+  <xs:complexType>
+    <xs:sequence>
+      <xs:element ref="description"/>
+      <xs:element ref="version"/>
+      <xs:element ref="parameters" minOccurs="0"/>
+      <xs:element ref="task"/>
+      <xs:element ref="include" minOccurs="0"/>
+      <xs:element ref="refsystem" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element ref="data"/>
+    </xs:sequence>
+  </xs:complexType>
+</xs:element>
+
+<xs:simpleType name="cstring">
+ <xs:restriction base="xs:string">
+  <xs:pattern value="[a-zA-Z ]+"/>
+ </xs:restriction>
+</xs:simpleType>
+
+<xs:element name="description" type="cstring"/>
+<xs:element name="version" type="xs:string"/>
+
+<!-- 
+The parameters element defines various properties of the model. It can
+define the following attributes:
+  attribute           default Description
+  ====================================================================
+  max_overruns:       5       Execution is stopped after 5 overruns
+  stacksize           2048    Stack size for real-time task
+  photo_decimation    1       Decimation for passing values to buddy
+  buffer_time         10      Buffer for transferring data to buddy
+
+<parameters max_overruns="5" stacksize="2048" 
+      photo_decimation="1" buffer_time="10"/>
+-->
+<xs:element name="parameters">
+ <xs:complexType>
+  <xs:attribute name="max_overruns" type="xs:positiveInteger" default="5"/>
+  <xs:attribute name="stacksize" type="xs:positiveInteger" default="2048"/>
+  <xs:attribute name="photo_decimation" type="xs:positiveInteger" 
+        default="1"/>
+  <xs:attribute name="buffer_time" type="xs:positiveInteger" default="2"/>
+ </xs:complexType>
+</xs:element>
+
+<!-- Element task describes the tasks to be called. Task has to appear once,
+     with basetick as an attribute defining the main tasks calling period
+     in microseconds.
+     Element task can have any number of subtask elements.
+     Subtask elements must have a decimation attribute.
+     eg
+     
+     <task basetick="1000">
+       <subtask decimation="10"/>
+       <subtask decimation="100"/>
+     </task>
+
+     will define a basic calling rate of 1000us for the main task, and
+     two subtasks with calling rates of 0.01ms and 0.1ms
+-->
+<xs:element name="task">
+ <xs:complexType>
+  <xs:sequence>
+   <xs:element name="subtask" minOccurs="0" maxOccurs="unbounded">
+    <xs:complexType>
+     <xs:attribute name="decimation" type="xs:positiveInteger" 
+        use="required"/>
+    </xs:complexType>
+   </xs:element>
+  </xs:sequence>
+  <xs:attribute name="basetick" type="xs:positiveInteger" use="required"/>
+ </xs:complexType>
+</xs:element>
+
+<!-- Element <include> is used to include header files into the sources.
+     It can have any number of the following child elements:
+       - <system> : to include system wide headers aka #include <file.h>
+       - <file> : to include local headers aka #include "file.h"
+-->
+<xs:element name="include">
+ <xs:complexType>
+  <xs:sequence maxOccurs="unbounded">
+   <xs:choice>
+    <xs:element name="file" type="xs:string"/>
+    <xs:element name="system" type="xs:string"/>
+   </xs:choice>
+  </xs:sequence>
+ </xs:complexType>
+</xs:element>
+
+<!--
+The data element describes the model's signals and parameters in a tree
+like structure.
+It can consist of any number of the following elements:
+ * signal       : a signal
+ * parameter    : a model parameter
+ * subsystem    : builds a hierarchy into the variable structure
+
+For the purposes of this schema, signals and parameters are grouped together
+as variables
+-->
+<xs:element name="data">
+ <xs:complexType>
+  <xs:complexContent>
+   <xs:extension base="DataType"/>
+  </xs:complexContent>
+ </xs:complexType>
+</xs:element>
+
+<xs:element name="refsystem">
+ <xs:complexType>
+  <xs:complexContent>
+   <xs:extension base="SystemType">
+   </xs:extension>
+  </xs:complexContent>
+ </xs:complexType>
+</xs:element>
+
+<xs:complexType name="DataType">
+ <xs:sequence minOccurs="0" maxOccurs="unbounded">
+   <xs:choice>
+    <xs:element ref="signal"/>
+    <xs:element ref="parameter"/>
+    <xs:element ref="subsystem"/>
+    <xs:element ref="reference"/>
+   </xs:choice>
+ </xs:sequence>
+</xs:complexType>
+
+<xs:complexType name="SystemType">
+ <xs:complexContent>
+  <xs:extension base="DataType">
+   <!--xs:sequence minOccurs="0">
+    <xs:element name="meta"/>
+   </xs:sequence -->
+   <xs:attribute name="name" type="xs:string" use="required"/>
+  </xs:extension>
+ </xs:complexContent>
+</xs:complexType>
+
+<!--
+ A subsystem is just like the <data> element except with a mandatory
+ name attribute
+-->
+<xs:element name="subsystem">
+ <xs:complexType>
+  <xs:complexContent>
+   <xs:extension base="SystemType"/>
+  </xs:complexContent>
+ </xs:complexType>
+</xs:element>
+
+
+<xs:element name="reference">
+ <xs:complexType>
+  <xs:complexContent>
+   <xs:extension base="structBase">
+    <xs:attribute name="system" type="xs:string"/>
+   </xs:extension>
+  </xs:complexContent>
+ </xs:complexType>
+</xs:element>
+
+<xs:element name="signal">
+ <xs:complexType>
+  <xs:complexContent>
+   <xs:extension base="variableBase">
+    <xs:attribute name="sampleTimeIndex" type="xs:nonNegativeInteger"/>
+    <xs:attribute name="alias" type="xs:string"/>
+   </xs:extension>
+  </xs:complexContent>
+ </xs:complexType>
+</xs:element>
+
+<xs:element name="parameter">
+ <xs:complexType>
+  <xs:complexContent>
+   <xs:extension base="variableBase"/>
+  </xs:complexContent>
+ </xs:complexType>
+</xs:element>
+
+<xs:complexType name="structBase">
+ <xs:attribute name="name" type="xs:string"/>
+</xs:complexType>
+
+<xs:complexType name="variableBase">
+ <xs:complexContent>
+  <xs:extension base="structBase">
+   <xs:sequence>
+    <xs:element name="dim" minOccurs="0" maxOccurs="unbounded"/>
+    <xs:element name="value" type="initval" minOccurs="0"/>
+   </xs:sequence>
+   <xs:attribute name="datatype" type="datatype" use="required"/>
+  </xs:extension>
+ </xs:complexContent>
+</xs:complexType>
+
+<xs:simpleType name="datatype">
+ <xs:restriction base="xs:string">
+  <xs:enumeration value="double_T"/>
+  <xs:enumeration value="float_T"/>
+  <xs:enumeration value="uint8_T"/>
+  <xs:enumeration value="sint8_T"/>
+  <xs:enumeration value="uint16_T"/>
+  <xs:enumeration value="sint16_T"/>
+  <xs:enumeration value="uint32_T"/>
+  <xs:enumeration value="sint32_T"/>
+ </xs:restriction>
+</xs:simpleType>
+
+<!-- Not using this, but this is a proposal for a list of values that
+     is used to initialise parameters -->
+<xs:complexType name="initval" mixed="true">
+ <xs:sequence minOccurs="0" maxOccurs="unbounded">
+  <xs:element name="value" type="initval"/>
+ </xs:sequence>
+</xs:complexType>
+
+</xs:schema>
