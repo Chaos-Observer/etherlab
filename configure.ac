@@ -260,7 +260,6 @@ AC_CHECK_FUNCS([memset mkfifo munmap select socket strdup])
 # Output files
 AC_CONFIG_FILES([
         Makefile 
-        doc/Makefile
         rtw/Makefile 
         rtw/blocks/Makefile 
         rtw/blocks/setup.m 
