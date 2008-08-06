@@ -44,12 +44,12 @@ The EtherLab package can be subdivided into the components listed below:
 
 \begin{itemize}
 
-\item The application core (represented by the Linux kernel module
-\lstinline+rt_app_core+), that is responsible for the execution of the realtime
+\item The realtime application core (represented by the Linux kernel module
+\lstinline+rt_appcore+), that is responsible for the execution of the realtime
 applications. It manages the applications tasks, signals and parameters.
 
 \item The buddy process, acting as a userspace counterpart to the
-\lstinline+rt_app_core+. It maintains internal representations of the loaded
+\lstinline+rt_appcore+. It maintains internal representations of the loaded
 applications and is responsible for presenting signals and parameters via
 TCP/IP (see figure~\ref{fig:overview}). Each application is
 accessible\footnote{To access the realtime application data via TCP/IP, there
@@ -616,7 +616,7 @@ will generate the application code contained in a Linux kernel module.
 \chapter{Starting Realtime Applications}
 \label{sec:start}
 
-The application core (\lstinline+rt_app_core+) must be running before any
+The application core (\lstinline+rt_appcore+) must be running before any
 realtime applications can be started. If it is configured as a service (see
 section~\ref{sec:service}), this is done automatically at system startup.
 Otherwise the application core module can be inserted manually. It is
