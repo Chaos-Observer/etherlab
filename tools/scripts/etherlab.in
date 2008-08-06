@@ -2,7 +2,7 @@
 
 #------------------------------------------------------------------------------
 #
-#  Init script for EtherLab/RTW
+#  Init script for EtherLab
 #
 #  $Id$
 #
@@ -18,31 +18,15 @@
 # Should-Stop:       $time ntp ethercat
 # Default-Start:     3 5
 # Default-Stop:      0 1 2 6
-# Short-Description: EtherLab/RTW
+# Short-Description: EtherLab AppCore
 # Description:
 ### END INIT INFO
 
 #------------------------------------------------------------------------------
 
-SERVICE="EtherLab/RTW"
+SERVICE="EtherLab AppCore"
 MODULE="rt_appcore"
-DEVICE="etl"
 MODULE_PATH="@prefix@/modules/$MODULE.ko"
-
-#------------------------------------------------------------------------------
-
-# ETHERLAB_CONFIG=/etc/sysconfig/etherlab
-
-# if [ ! -r $ETHERLAB_CONFIG ]; then
-# 	echo "$ETHERLAB_CONFIG not existing";
-# 	if [ "$1" = "stop" ]; then
-# 		exit 0
-# 	else
-# 		exit 6
-# 	fi
-# fi
-
-# . $ETHERLAB_CONFIG
 
 #------------------------------------------------------------------------------
 
@@ -54,6 +38,8 @@ function rc_status () { echo; }
 function rc_exit  () { echo; exit; }
 fi
 
+#------------------------------------------------------------------------------
+
 rc_reset
 
 case "$1" in
@@ -61,28 +47,14 @@ case "$1" in
 	start)
 		echo -n Starting $SERVICE
 
-		# remove stale device nodes
-		rm -f /dev/${DEVICE}*
-
-                if ! ( grep -q rtai_hal /proc/modules || insmod @RTAI_DIR@/modules/rtai_hal.ko ) || \
-                        ! ( egrep -q 'rtai_(up|sched)' /proc/modules || insmod @RTAI_DIR@/modules/rtai_up.ko ) || \
-                        ! ( grep -q rtai_sem /proc/modules || insmod @RTAI_DIR@/modules/rtai_sem.ko ) || \
-                        ! ( grep -q rtai_math /proc/modules || insmod @RTAI_DIR@/modules/rtai_math.ko ) || \
-		        ! insmod $MODULE_PATH; then
-			
-                    /bin/false
-		    rc_status -v
-		    rc_exit
-		fi
-
-		# get dynamic major number
-		major=$(awk "\$2==\"$MODULE\" {print \$1}" /proc/devices)
-
-		# create device nodes
-		if test ! -c /dev/${DEVICE}0; then
-		    for i in {0..32}; do
-			    mknod /dev/${DEVICE}$i c $major $i
-		    done
+        if ! ( grep -q rtai_hal /proc/modules || insmod @RTAI_DIR@/modules/rtai_hal.ko ) || \
+                ! ( egrep -q 'rtai_(up|sched)' /proc/modules || insmod @RTAI_DIR@/modules/rtai_up.ko ) || \
+                ! ( grep -q rtai_sem /proc/modules || insmod @RTAI_DIR@/modules/rtai_sem.ko ) || \
+                ! ( grep -q rtai_math /proc/modules || insmod @RTAI_DIR@/modules/rtai_math.ko ) || \
+                ! insmod $MODULE_PATH; then
+            /bin/false
+            rc_status -v
+            rc_exit
 		fi
 
 		rc_status -v
@@ -99,9 +71,6 @@ case "$1" in
 			fi;
 		fi;
 
-		# remove device nodes
-		rm -f /dev/${DEVICE}*
-
 		rc_status -v
 		;;
 
@@ -116,9 +85,9 @@ case "$1" in
 		echo -n Checking for $SERVICE
 
 		lsmod | grep "^$MODULE " > /dev/null
-		rt_kernel_running=$?
+		appcore_running=$?
 
-		test $rt_kernel_running -eq 0
+		test $appcore_running -eq 0
 
 		rc_status -v
 		;;
