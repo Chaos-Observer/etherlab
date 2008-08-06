@@ -30,6 +30,10 @@ struct signal_info;
 /** Structure describing the Real-Time Model
  */
 struct rt_app {
+        /* Name and version information of the application */
+        const char *name;
+        const char *version;
+
 	/** Block IO
 	 * This part is filled in during app_init()
 	 */
@@ -73,9 +77,6 @@ struct rt_app {
         void        (*set_error_msg)(const char *);
         const char *(*get_signal_info)(struct signal_info*);
         const char *(*get_param_info)(struct signal_info*);
-
-        const char *appVersion;
-        const char *appName;
 };
 
 extern struct rt_app rt_app;

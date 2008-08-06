@@ -201,11 +201,11 @@ static long rtp_ioctl(
                     + rt_app->num_tasks * sizeof(struct task_stats);
                 properties.rtP_size      = rt_app->rtP_size;
 
-                strncpy(properties.name, rt_app->appName, 
+                strncpy(properties.name, rt_app->name, 
                         sizeof(properties.name));
                 properties.name[sizeof(properties.name)-1] = '\0';
 
-                strncpy(properties.version, rt_app->appVersion, 
+                strncpy(properties.version, rt_app->version, 
                         sizeof(properties.version));
                 properties.name[sizeof(properties.version)-1] = '\0';
 
@@ -666,7 +666,7 @@ static long rtp_main_ioctl(
                     break;
                 }
 
-                name = rt_appcore.application[mdl_number]->rt_app->appName;
+                name = rt_appcore.application[mdl_number]->rt_app->name;
 
                 // Model name length was checked to be less than 
                 // MAX_MODEL_NAME_LEN when it was registered

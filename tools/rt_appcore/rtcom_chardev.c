@@ -357,7 +357,7 @@ select_app(unsigned int id)
     }
     app_dev->event_list_end = app_dev->event_list + app->rtB_cnt;
 
-    pr_debug("Opened rtcom app file to %s\n", app->rt_app->appName);
+    pr_debug("Opened rtcom app file to %s\n", app->rt_app->name);
 
     /* Put new file operations in place. These now operate on the kernel */
     init_waitqueue_head(&app_dev->waitq);
@@ -379,7 +379,7 @@ out_vmalloc:
     printk("Could not vmalloc %i segments of %i bytes\n", 
             rt_app->rtB_count, rt_app->rtB_size);
 out_trylock:
-    printk("Buddy already active for app %s\n", rt_app->appName);
+    printk("Buddy already active for app %s\n", rt_app->name);
 out_no_app:
     printk("Model with id %u not found\n", id);
     return ERR_PTR(err);
@@ -547,8 +547,8 @@ fop_ioctl_app( struct file *filp, unsigned int command, unsigned long data)
 
                 // No buffer overflow here, the array is defined as
                 // name[MAX+1]
-                strncpy(p.name, rt_app->appName, MAX_MODEL_NAME_LEN);
-                strncpy(p.version, rt_app->appVersion, 
+                strncpy(p.name, rt_app->name, MAX_MODEL_NAME_LEN);
+                strncpy(p.version, rt_app->version, 
                         MAX_MODEL_VER_LEN);
                 p.name[MAX_MODEL_NAME_LEN] = '\0';
                 p.version[MAX_MODEL_VER_LEN] = '\0';

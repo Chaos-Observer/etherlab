@@ -311,7 +311,7 @@ static void mdl_main_thread(long priv_data)
         }
     }
     rt_printk("Model %s main task aborted. Error message:\n\t%s\n", 
-            rt_app->appName, errmsg);
+            rt_app->name, errmsg);
 
     /* If this task is not the master, it can end here */
     if (!rt_task->master)
@@ -382,7 +382,7 @@ static void mdl_sec_thread(long priv_data)
         }
     }
     rt_printk("Model %s tid %u aborted. Error message:\n\t%s\n", 
-            rt_app->appName, mdl_tid, errmsg);
+            rt_app->name, mdl_tid, errmsg);
 }
 
 void stop_rt_app(int app_id)
@@ -451,10 +451,10 @@ int start_rt_app(const struct rt_app *rt_app,
     }
 
     pr_debug("Registering new RTW Model %s with rtw_manager\n", 
-            rt_app->appName);
+            rt_app->name);
 
     /* Make sure the app name is within range */
-    if (strlen(rt_app->appName) > MAX_MODEL_NAME_LEN-1) {
+    if (strlen(rt_app->name) > MAX_MODEL_NAME_LEN-1) {
         pr_info("Error: app name exceeds %i bytes\n", MAX_MODEL_NAME_LEN-1);
         err = -E2BIG;
         goto out;

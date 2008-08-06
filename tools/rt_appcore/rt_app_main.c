@@ -40,9 +40,13 @@
 #include <linux/init.h>
 #include <linux/moduleparam.h>
 #include <linux/autoconf.h>
-#include <rt_kernel.h>
+#include <rt_appcore.h>
 
 extern struct rt_app rt_app;
+
+char *app_name;
+module_param_named(application_name, app_name, charp, S_IRUGO);
+MODULE_PARM_DESC(application_name,"Assign alternative application name.");
 
 unsigned long stack_size = 0;
 module_param(stack_size, ulong, S_IRUGO);
@@ -89,6 +93,10 @@ mod_init(void)
             printk("ERROR: Could not initialize model: %s\n", errmsg);
             err = -1;
             goto out;
+    }
+
+    if (app_name && strlen(app_name)) {
+        rt_app.appName = app_name;
     }
 
     // If a new tick is supplied, use it instead of the model's
