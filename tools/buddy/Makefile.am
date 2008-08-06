@@ -4,7 +4,7 @@
 #
 #-----------------------------------------------------------------------------
 
-if KERNEL
+if APPCORE
 
 # Compile msr library for use with rtai_buddy. This lib is not installed
 noinst_HEADERS = \
@@ -59,6 +59,6 @@ etherlab_buddy_CFLAGS = -Imsrio_lib/include \
 datatypedir = $(prefix)/src
 datatype_DATA = etl_data_types.c
 
-endif # KERNEL
+endif # APPCORE
 
 #-----------------------------------------------------------------------------

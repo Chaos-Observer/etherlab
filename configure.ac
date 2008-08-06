@@ -15,9 +15,12 @@ AC_CONFIG_AUX_DIR(config)
 AM_INIT_AUTOMAKE([-Wall -Werror])
 AC_CONFIG_SRCDIR([config.h.in])
 AC_CONFIG_HEADERS([config.h])
-prefix=/opt/etherlab
-AC_PREFIX_DEFAULT($prefix)
+AC_PREFIX_DEFAULT(/opt/etherlab)
 AC_SUBST(RTW_DIR,[rtw])
+
+#-----------------------------------------------------------------------------
+# Simulink
+#-----------------------------------------------------------------------------
 
 dnl Compile and install Simulink related components (default: yes)
 AC_ARG_ENABLE([simulink],
@@ -34,20 +37,29 @@ AC_ARG_ENABLE([simulink],
 AM_CONDITIONAL(SIMULINK, test x$simulink = x1)
 AC_SUBST(SIMULINK,${simulink})
 
-dnl Compile and install rt_kernel related components (default: yes)
-AC_ARG_ENABLE([kernel],
+#-----------------------------------------------------------------------------
+# AppCore
+#-----------------------------------------------------------------------------
+
+dnl Compile and install appcore related components (default: yes)
+AC_ARG_ENABLE([appcore],
     AS_HELP_STRING(
-        [--disable-kernel],
-        [Do not install RT-Kernel components]),
+        [--disable-appcore],
+        [Do not install AppCore components]),
     [ case "${enableval}" in
-        yes) kernel=1 ;;
-        no)  kernel=0 ;;
-        *)   AC_MSG_ERROR([bad value for --enable-kernel]) ;;
+        yes) appcore=1 ;;
+        no)  appcore=0 ;;
+        *)   AC_MSG_ERROR([bad value for --enable-appcore]) ;;
       esac],
-    [ kernel=1 ]
+    [ appcore=1 ]
 )
-AM_CONDITIONAL(KERNEL, test x$kernel = x1)
-AC_SUBST(KERNEL,${kernel})
+
+AM_CONDITIONAL(APPCORE, test x$appcore = x1)
+AC_SUBST(APPCORE,${appcore})
+
+#-----------------------------------------------------------------------------
+# Staging directory
+#-----------------------------------------------------------------------------
 
 dnl Staging directory for host compile
 dnl Sometimes you want to create an environment where the real time models
@@ -56,7 +68,7 @@ dnl compile the target host's packages normally, install them there as well
 dnl as in a staging directory (using DESTDIR=/staging/dir). To tell
 dnl etherlab about this, use --with-staging-dir
 dnl Note that nothing will be installed in $staging_dir
-dnl 
+
 AC_ARG_WITH([staging-dir], 
     AS_HELP_STRING(
         [--with-staging-dir=<staging-dir>],
@@ -64,16 +76,14 @@ AC_ARG_WITH([staging-dir],
     [ staging_dir=${withval} ],
     [ staging_dir= ]
     )
-if test "x$staging_dir" != x; then
-AC_MSG_CHECKING(for $prefix in $staging_dir)
-test -d "$staging_dir/$prefix" ||\
-    AC_MSG_ERROR([Could not find $staging_dir/$prefix])
-AC_MSG_RESULT(yes)
-fi
+
 AC_SUBST(STAGING_DIR,[$staging_dir])
 
+#-----------------------------------------------------------------------------
+# RTAI directory
+#-----------------------------------------------------------------------------
+
 dnl Path to RTAI installation
-if test "x$kernel" = "x1"; then
 AC_ARG_WITH([rtai-dir], 
     AS_HELP_STRING(
         [--with-rtai-dir=<rtai-dir>],
@@ -87,16 +97,26 @@ AC_ARG_WITH([rtai-dir],
             rtai_dir=${rtai_dir%%bin/rtai-config}
         fi
     ])
-AC_MSG_CHECKING(RTAI path)
-test -r "$staging_dir/$rtai_dir"/include/rtai.h ||\
-    AC_MSG_ERROR([No installed RTAI found $staging_dir/$rtai_dir/include/rtai.h])
+
+if test "x$appcore" = "x1"; then
+
 AC_SUBST(RTAI_DIR,[$rtai_dir])
-AC_MSG_RESULT($RTAI_DIR)
-fi
+
+AC_MSG_CHECKING(RTAI path)
+dir="$staging_dir/$rtai_dir"
+header="$dir/include/rtai.h"
+test -r $header || AC_MSG_ERROR([No installed RTAI found in $dir])
+AC_MSG_RESULT($rtai_dir)
+
+fi # appcore
+
+#-----------------------------------------------------------------------------
+# Linux directory
+#-----------------------------------------------------------------------------
 
 dnl Make sure rtai-config reports correct kernel
 dnl and that IPIPE is configured for the kernel
-if test "x$kernel" = "x1"; then
+
 AC_ARG_WITH([linux-dir], 
     AS_HELP_STRING(
         [--with-linux-dir=<linux-dir>],
@@ -105,11 +125,17 @@ AC_ARG_WITH([linux-dir],
     [
         linux_dir=$($staging_dir/${RTAI_DIR}/bin/rtai-config --linux-dir)
     ])
+
+if test "x$appcore" = "x1"; then
+
+AC_SUBST(LINUX_DIR,$linux_dir)
+
 AC_MSG_CHECKING(Linux kernel path)
 test -r "${linux_dir}/.config" || \
         AC_MSG_ERROR([.config not found in ${linux_dir}])
 AC_MSG_RESULT(${linux_dir})
-AC_MSG_CHECKING(Checking IPIPE configured in kernel)
+
+AC_MSG_CHECKING(IPIPE configured in kernel)
 ipipe_conf=$(make -s -f - -I${linux_dir} <<'EOF'
 include .config
 all:
@@ -118,11 +144,13 @@ EOF)
 test "x${ipipe_conf}" == "xy" || \
     AC_MSG_ERROR(not configured)
 AC_MSG_RESULT(yes)
-AC_SUBST(LINUX_DIR,$linux_dir)
-fi
 
-dnl When kernel is selected, EtherCAT can be switched off
-if test "x$kernel" = "x1"; then
+fi # appcore
+
+#-----------------------------------------------------------------------------
+# EtherCAT
+#-----------------------------------------------------------------------------
+
 AC_ARG_ENABLE([ethercat],
     AS_HELP_STRING(
         [--disable-ethercat],
@@ -134,17 +162,37 @@ AC_ARG_ENABLE([ethercat],
       esac],
     [ ethercat=1 ]
 )
-if test "x$ethercat" = "x1"; then
-AC_MSG_CHECKING(EtherCat header file)
-test -r "$staging_dir/${prefix}/include/ecrt.h" || \
-        AC_MSG_ERROR([ecrt.h not found in $staging_dir/${prefix}/include])
-AC_MSG_RESULT($staging_dir/${prefix}/include/ecrt.h)
-fi
-fi
+
 AM_CONDITIONAL(ETHERCAT, test x$ethercat = x1)
 AC_SUBST(ETHERCAT,${ethercat})
 
+dnl Path to EtherCAT installation
+AC_ARG_WITH([ethercat-dir], 
+    AS_HELP_STRING(
+        [--with-ethercat-dir=<ethercat-dir>],
+        [EtherCAT directory (/opt/etherlab)]),
+    [ ethercat_dir=${withval} ],
+    [ ethercat_dir=/opt/etherlab ])
+
+if test "x$appcore" = "x1" -a "x$ethercat" = "x1"; then
+
+AC_MSG_CHECKING(EtherCAT path)
+dir="${staging_dir}/${ethercat_dir}"
+header="${dir}/include/ecrt.h"
+test -r $header ||\
+    AC_MSG_ERROR([No installed EtherCAT found in $dir])
+AC_MSG_RESULT($ethercat_dir)
+
+AC_SUBST(ETHERCAT_DIR,[$ethercat_dir])
+
+fi # appcore and ethercat
+
+#-----------------------------------------------------------------------------
+# Experimental
+#-----------------------------------------------------------------------------
+
 dnl Allow experimental stuff for development
+
 AC_ARG_ENABLE([experimental],
     AS_HELP_STRING(
         [--enable-experimental],
@@ -159,7 +207,10 @@ AC_ARG_ENABLE([experimental],
 AM_CONDITIONAL(EXPERIMENTAL, test x$exp = x1)
 AC_SUBST(EXPERIMENTAL,${exp})
 
-dnl new C code
+#-----------------------------------------------------------------------------
+# C-API
+#-----------------------------------------------------------------------------
+
 AC_ARG_ENABLE([C],
     AS_HELP_STRING(
         [--enable-C],
@@ -172,7 +223,10 @@ AC_ARG_ENABLE([C],
 )
 AM_CONDITIONAL(C_INTERFACE, test x$enableval != x)
 
-dnl Buddy-NG
+#-----------------------------------------------------------------------------
+# Buddy NG
+#-----------------------------------------------------------------------------
+
 AC_ARG_ENABLE([buddy-ng],
     AS_HELP_STRING(
         [--enable-buddy-ng],
@@ -185,7 +239,10 @@ AC_ARG_ENABLE([buddy-ng],
 )
 AM_CONDITIONAL(BUDDY_NG, test x$enableval != x)
 
-dnl Allow experimental stuff  for development
+#-----------------------------------------------------------------------------
+# Debug
+#-----------------------------------------------------------------------------
+
 AC_ARG_ENABLE([debug],
     AS_HELP_STRING(
         [--enable-debug],
@@ -199,6 +256,8 @@ AC_ARG_ENABLE([debug],
       esac ],
     [ debug=0 ]
 )
+
+#-----------------------------------------------------------------------------
 
 # Checks for programs
 AC_PROG_CXX
@@ -217,14 +276,6 @@ AC_PATH_PROG(AR, ar)
 AC_PATH_PROG(MV, mv)
 AC_PATH_PROG(XSLTPROC, xsltproc)
 AC_PATH_PROG(INDENT, indent)
-
-# Checks for libraries
-#AC_CHECK_LIB([dl],[dlopen],[:],[
-#    AC_MSG_ERROR([dlopen() not found])
-#])
-#AC_CHECK_LIB([z],[deflate],[:],[
-#    AC_MSG_ERROR([deflate() not found])
-#])
 
 # Checks for header files
 AC_HEADER_STDC

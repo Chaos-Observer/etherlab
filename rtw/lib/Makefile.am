@@ -14,7 +14,8 @@ EXTRA_DIST = \
 # libetherlab.a
 #-----------------------------------------------------------------------------
 
-if KERNEL
+if APPCORE
+
 mylibdir = $(prefix)/$(subdir)
 mylib_LIBRARIES = libetherlab.a
 
@@ -45,13 +46,14 @@ clean-local: Kbuild
 	make -C "$(LINUX_DIR)" M="@abs_builddir@" \
 		V="$(VERBOSE)" DEFS="$(DEFS)" clean
 
-endif
+endif # APPCORE
 
 #-----------------------------------------------------------------------------
 # include_rtw_HEADERS
 #-----------------------------------------------------------------------------
 
-if KERNEL
+if APPCORE
+
 include_rtwdir = $(prefix)/$(RTW_DIR)/include
 include_rtw_HEADERS = \
 	raise_catch.h
@@ -59,6 +61,7 @@ include_rtw_HEADERS = \
 if ETHERCAT
 include_rtw_HEADERS += ecrt_support.h
 endif
-endif
+
+endif # APPCORE
 
 #-----------------------------------------------------------------------------

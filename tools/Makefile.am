@@ -1,6 +1,6 @@
 SUBDIRS = scripts include buddy
 
-if KERNEL
+if APPCORE
 SUBDIRS += rt_appcore
 endif
 
