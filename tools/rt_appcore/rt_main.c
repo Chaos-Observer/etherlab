@@ -2,7 +2,7 @@
  *
  * $Id$
  *
- * Here is the main file for the rt_kernel. It prepares the environment in
+ * Here is the main file for the rt_appcore. It prepares the environment in
  * which Real-Time Models can run in.
  * 
  * Copyright (C) 2008  Richard Hacker
@@ -49,11 +49,11 @@
 #include <rtai_sem.h>
 
 /* Local headers */
-#include "rt_kernel.h"          /* Public functions exported by manager */
+#include "rt_appcore.h"          /* Public functions exported by manager */
 #include "rt_main.h"            /* Private to kernel */
 #include "rtcom_chardev.h"
 
-struct rt_kernel rt_kernel;
+struct rt_appcore rt_appcore;
 
 unsigned long basetick = 0;        /**< Basic tick in microseconds; 
                                     * default 1000us
@@ -116,10 +116,10 @@ int rt_kernel_helper(void *_unused_data)
         do_gettimeofday(&current_time);
 
         /* Inform RTAI processes that there is a new time */
-        rt_sem_wait(&rt_kernel.time.lock);
-        rt_kernel.time.tv = current_time;
-        rt_sem_signal(&rt_kernel.time.lock);
-        set_bit(0,&rt_kernel.time.flag);
+        rt_sem_wait(&rt_appcore.time.lock);
+        rt_appcore.time.tv = current_time;
+        rt_sem_signal(&rt_appcore.time.lock);
+        set_bit(0,&rt_appcore.time.flag);
 
         /* Check the availability of data */
         rtp_data_avail_handler();
@@ -135,14 +135,14 @@ int rt_kernel_helper(void *_unused_data)
 /* Initialise the internal time keeper observer */
 void init_time(void)
 {
-    clear_bit(0, &rt_kernel.time.flag);
+    clear_bit(0, &rt_appcore.time.flag);
 
-    rt_kernel.time.i = 1.0;
-    rt_kernel.time.base_step = rt_kernel.base_period/1.0e6;
-    rt_kernel.time.u = rt_kernel.time.base_step;
+    rt_appcore.time.i = 1.0;
+    rt_appcore.time.base_step = rt_appcore.base_period/1.0e6;
+    rt_appcore.time.u = rt_appcore.time.base_step;
 
-    rt_kernel.time.value = 
-        (double)rt_kernel.time.tv.tv_sec + rt_kernel.time.tv.tv_usec*1.0e-6;
+    rt_appcore.time.value = 
+        (double)rt_appcore.time.tv.tv_sec + rt_appcore.time.tv.tv_usec*1.0e-6;
 }
 
 /* This function gets called at the fastest sampling rate and is an 
@@ -172,48 +172,48 @@ void update_time(void)
 
     /* Check whether a new time sample has arrived. This happens at a 
      * rate of HELPER_CALL_RATE.  */
-    if (test_and_clear_bit(0, &rt_kernel.time.flag)) {
+    if (test_and_clear_bit(0, &rt_appcore.time.flag)) {
         /* Time error between Real World time and time observer */
         double e, p;
 
 #if 0
         struct timeval e_tv;
-        e_tv.tv_sec = rt_kernel.time.tv.tv_sec - rt_kernel.time.tv_sec;
-        if (rt_kernel.time.tc.tv_usec < rt_kernel.time.tv_usec) {
+        e_tv.tv_sec = rt_appcore.time.tv.tv_sec - rt_appcore.time.tv_sec;
+        if (rt_appcore.time.tc.tv_usec < rt_appcore.time.tv_usec) {
             e_tv.tv_sec--;
             e_tv.tv_usec = 
-                rt_kernel.time.tv.tv_usec + 1000000 - rt_kernel.time.tv_usec;
+                rt_appcore.time.tv.tv_usec + 1000000 - rt_appcore.time.tv_usec;
         }
         else {
             e_tv.tv_usec = 
-                rt_kernel.time.tv.tv_usec - rt_kernel.time.tv_usec;
+                rt_appcore.time.tv.tv_usec - rt_appcore.time.tv_usec;
         }
 
         e = e_tv.tv_sec + 1.0e-6 * e_tv.tv_usec*1.0e-6;
 #else
 
-        e = (double)rt_kernel.time.tv.tv_sec + 
-            rt_kernel.time.tv.tv_usec*1.0e-6 - rt_kernel.time.value;
+        e = (double)rt_appcore.time.tv.tv_sec + 
+            rt_appcore.time.tv.tv_usec*1.0e-6 - rt_appcore.time.value;
 #endif
 
         /* Proportional part */
         p = K_P*e;
 
         /* Integration part */
-        rt_kernel.time.i += K_I/HELPER_CALL_RATE*e;
+        rt_appcore.time.i += K_I/HELPER_CALL_RATE*e;
 
         /* Input to the time integrator */
-        rt_kernel.time.u = (p + rt_kernel.time.i)*rt_kernel.time.base_step;
+        rt_appcore.time.u = (p + rt_appcore.time.i)*rt_appcore.time.base_step;
     }
 
     /* Here is the time integrator, called once at the fastest sampling
      * rate */
-    rt_sem_wait(&rt_kernel.time.lock);
-    rt_kernel.time.value += rt_kernel.time.u;
-    rt_kernel.time.tv.tv_sec = rt_kernel.time.value;
-    rt_kernel.time.tv.tv_usec = 
-        1.0e6 * (rt_kernel.time.value - rt_kernel.time.tv.tv_sec);
-    rt_sem_signal(&rt_kernel.time.lock);
+    rt_sem_wait(&rt_appcore.time.lock);
+    rt_appcore.time.value += rt_appcore.time.u;
+    rt_appcore.time.tv.tv_sec = rt_appcore.time.value;
+    rt_appcore.time.tv.tv_usec = 
+        1.0e6 * (rt_appcore.time.value - rt_appcore.time.tv.tv_sec);
+    rt_sem_signal(&rt_appcore.time.lock);
 }
 
 /** Function: mdl_main_thread
@@ -254,9 +254,9 @@ static void mdl_main_thread(long priv_data)
         }
 
         /* Do one calculation step of the app */
-        rt_sem_wait(&rt_kernel.time.lock);
-        rt_task->stats->time = rt_kernel.time.tv;
-        rt_sem_signal(&rt_kernel.time.lock);
+        rt_sem_wait(&rt_appcore.time.lock);
+        rt_task->stats->time = rt_appcore.time.tv;
+        rt_sem_signal(&rt_appcore.time.lock);
         if ((errmsg = rt_app->rt_OneStepMain()))
             break;
 
@@ -348,9 +348,9 @@ static void mdl_sec_thread(long priv_data)
         rt_start = get_cycles();
 
         /* Do one calculation step of the app */
-        rt_sem_wait(&rt_kernel.time.lock);
-        rt_task->stats->time = rt_kernel.time.tv;
-        rt_sem_signal(&rt_kernel.time.lock);
+        rt_sem_wait(&rt_appcore.time.lock);
+        rt_task->stats->time = rt_appcore.time.tv;
+        rt_sem_signal(&rt_appcore.time.lock);
         if ((errmsg = rt_app->rt_OneStepTid(mdl_tid))) 
             break;
 
@@ -387,10 +387,10 @@ static void mdl_sec_thread(long priv_data)
 
 void stop_rt_app(int app_id)
 {
-    struct app *app = rt_kernel.application[app_id];
+    struct app *app = rt_appcore.application[app_id];
     unsigned int i;
 
-    down(&rt_kernel.lock);
+    down(&rt_appcore.lock);
 
     for (i = 0; i < app->rt_app->num_tasks; i++) {
         rt_task_suspend(&app->task[i].rtai_thread);
@@ -400,20 +400,20 @@ void stop_rt_app(int app_id)
         rt_task_delete(&app->task[i].rtai_thread);
     }
 
-    clear_bit(app_id, &rt_kernel.loaded_apps);
+    clear_bit(app_id, &rt_appcore.loaded_apps);
     rtp_fio_clear_mdl(app);
     rtcom_del_app(app);
 
-    if (!rt_kernel.loaded_apps) {
+    if (!rt_appcore.loaded_apps) {
         /* Last process to be removed */
-        rt_kernel.base_period = 0;
+        rt_appcore.base_period = 0;
         stop_rt_timer();
         pr_info("Stopped RT Timer\n");
     }
 
     kfree(app);
 
-    up(&rt_kernel.lock);
+    up(&rt_appcore.lock);
 
     return;
 }
@@ -434,7 +434,7 @@ int start_rt_app(const struct rt_app *rt_app,
         pr_info("Error: The header file revisions do not match.\n"
                 "Model has: %s\n"
                 "Expected: " REVISION "\n"
-                "You have probably updated and are using an old rt_kernel.\n"
+                "You have probably updated and are using an old rt_appcore.\n"
                 "Recompile and reinstall all parts of " PACKAGE_NAME ".\n",
                 revision_str);
         return -1;
@@ -444,7 +444,7 @@ int start_rt_app(const struct rt_app *rt_app,
         pr_info("Error: The header file lengths do not match.\n"
                 "Model has: %i\n"
                 "Expected: %i\n"
-                "You have probably updated and are using an old rt_kernel.\n"
+                "You have probably updated and are using an old rt_appcore.\n"
                 "Recompile and reinstall all parts of " PACKAGE_NAME ".\n",
                 struct_len, sizeof(struct rt_app));
         return -1;
@@ -462,11 +462,11 @@ int start_rt_app(const struct rt_app *rt_app,
 
     /* If the ticker is already running, check that the base rates are
      * compatible */
-    if (rt_kernel.base_period && 
-            rt_app->task_period[0] % rt_kernel.base_period) {
+    if (rt_appcore.base_period && 
+            rt_app->task_period[0] % rt_appcore.base_period) {
         pr_info("Model's base rate (%uns) is not an integer multiple of "
                 "RTAI baserate %luus\n", 
-                rt_app->task_period[0], rt_kernel.base_period);
+                rt_app->task_period[0], rt_appcore.base_period);
         err = -EINVAL;
         goto out;
     }
@@ -482,20 +482,20 @@ int start_rt_app(const struct rt_app *rt_app,
     pr_info("Malloc'ed struct app *(%p) for rt_app *(%p)\n",
             app, rt_app);
 
-    down(&rt_kernel.lock);
+    down(&rt_appcore.lock);
 
     /* Make sure there is one free slot */
-    if (rt_kernel.loaded_apps == ~0UL) {
+    if (rt_appcore.loaded_apps == ~0UL) {
         printk("Exceeded maximum number of tasks (%i)\n", MAX_MODELS);
         err = -ENOMEM;
         goto out_check_full;
     }
-    app_id = ffz(rt_kernel.loaded_apps);
+    app_id = ffz(rt_appcore.loaded_apps);
     app->id = app_id;
-    set_bit(app_id, &rt_kernel.loaded_apps);
+    set_bit(app_id, &rt_appcore.loaded_apps);
     pr_debug("Found free RTW Task %i\n", app_id);
 
-    rt_kernel.application[app_id] = app;
+    rt_appcore.application[app_id] = app;
 
     app->rt_app = rt_app;
     app->task_stats_len = rt_app->num_tasks * sizeof(struct task_stats);
@@ -527,27 +527,27 @@ int start_rt_app(const struct rt_app *rt_app,
         rt_task_stack_init(&task->rtai_thread, STACK_MAGIC);
     }
 
-    /* Check that the app's rate is a multiple of rt_kernel's baserate */
-    if (!rt_kernel.base_period) {
+    /* Check that the app's rate is a multiple of rt_appcore's baserate */
+    if (!rt_appcore.base_period) {
         /* Use global baserate if it has been passed as a module parameter
          * otherwise take that from the app */
-        rt_kernel.base_period = 
+        rt_appcore.base_period = 
             basetick ? basetick : rt_app->task_period[0];
-        rt_kernel.tick_period = 
-            start_rt_timer_ns(rt_kernel.base_period*1000);
+        rt_appcore.tick_period = 
+            start_rt_timer_ns(rt_appcore.base_period*1000);
         app->task[0].master = 1;
         pr_info("Started RT timer at a rate of %luus\n", 
-                rt_kernel.base_period);
+                rt_appcore.base_period);
     } else {
-        if (rt_app->task_period[0] < rt_kernel.base_period) {
-            printk("ERROR: Period of app faster than rt_kernel's base "
+        if (rt_app->task_period[0] < rt_appcore.base_period) {
+            printk("ERROR: Period of app faster than rt_appcore's base "
                     "period. Load fastest app first.\n");
             goto out_incompatible_ticks;
         } 
 
-        if (rt_app->task_period[0] % rt_kernel.base_period) {
+        if (rt_app->task_period[0] % rt_appcore.base_period) {
             printk("ERROR: Period of app not an integral multiple "
-                    "of rt_kernel's base period.\n");
+                    "of rt_appcore's base period.\n");
             goto out_incompatible_ticks;
         } 
     }
@@ -574,15 +574,15 @@ int start_rt_app(const struct rt_app *rt_app,
         decimation = rt_app->task_period[tid] / rt_app->task_period[0];
         if ((err = rt_task_make_periodic(
                         &app->task[tid].rtai_thread, 
-                        now + nano2count(1e7), //rt_kernel.tick_period,
-                        decimation*rt_kernel.tick_period
+                        now + nano2count(1e7), //rt_appcore.tick_period,
+                        decimation*rt_appcore.tick_period
                         ))) {
                 printk("ERROR: Could not start periodic RTAI rask.\n");
                 goto out_make_periodic;
         }
     }
 
-    up(&rt_kernel.lock);
+    up(&rt_appcore.lock);
 
     return app_id;
 
@@ -597,13 +597,13 @@ out_incompatible_ticks:
         rt_task_delete(&app->task[tid].rtai_thread);
     }
 out_task_init:
-    clear_bit(app_id, &rt_kernel.loaded_apps);
-    if (!rt_kernel.loaded_apps) {
-        rt_kernel.base_period = 0;
+    clear_bit(app_id, &rt_appcore.loaded_apps);
+    if (!rt_appcore.loaded_apps) {
+        rt_appcore.base_period = 0;
         stop_rt_timer();
     }
 out_check_full:
-    up(&rt_kernel.lock);
+    up(&rt_appcore.lock);
     kfree(app);
 out:
     return err;
@@ -722,7 +722,7 @@ void __exit mod_cleanup(void)
     rtp_fio_clear();
 
     /* Stop world time task */
-    kthread_stop(rt_kernel.helper_thread);
+    kthread_stop(rt_appcore.helper_thread);
 
     pr_info("RT-Kernel stopped\n");
     return;
@@ -741,13 +741,13 @@ int __init mod_init(void)
     /* First start a separate thread to fetch world time.
      * Do this first so that the app can initialise to the correct
      * time */
-    rt_sem_init(&rt_kernel.time.lock,1);
+    rt_sem_init(&rt_appcore.time.lock,1);
 
     /* Initialise management variables */
-    init_MUTEX(&rt_kernel.lock);
-    init_MUTEX(&rt_kernel.file_lock);
-    init_waitqueue_head(&rt_kernel.event_q);
-    rt_kernel.loaded_apps = 0;
+    init_MUTEX(&rt_appcore.lock);
+    init_MUTEX(&rt_appcore.file_lock);
+    init_waitqueue_head(&rt_appcore.event_q);
+    rt_appcore.loaded_apps = 0;
 
     /* Initialise RTAI */
     rt_set_periodic_mode();
@@ -764,9 +764,9 @@ int __init mod_init(void)
 
 
     /* The only thing to do here is start a thread to fetch world time */
-    rt_kernel.helper_thread = 
+    rt_appcore.helper_thread = 
         kthread_run(rt_kernel_helper, NULL, "rt_kernel_helper");
-    if (rt_kernel.helper_thread == ERR_PTR(-ENOMEM)) {
+    if (rt_appcore.helper_thread == ERR_PTR(-ENOMEM)) {
         pr_info("Could not start timer thread - Out of memory\n");
         goto out_start_thread;
     }
@@ -778,7 +778,7 @@ int __init mod_init(void)
 
     return 0;
 
-    kthread_stop(rt_kernel.helper_thread);
+    kthread_stop(rt_appcore.helper_thread);
 out_start_thread:
     rtcom_fio_clear();
 out_rtcom_fio_init:

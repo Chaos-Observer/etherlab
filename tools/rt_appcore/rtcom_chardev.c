@@ -130,7 +130,7 @@ fop_ioctl( struct file *filp, unsigned int command, unsigned long data)
 {
     long rv = 0;
 
-    down(&rt_kernel.lock);
+    down(&rt_appcore.lock);
     switch (command) {
         // Try to gain access to main rtcom kernel
         case SELECT_KERNEL:
@@ -168,7 +168,7 @@ fop_ioctl( struct file *filp, unsigned int command, unsigned long data)
             rv = -ENOTTY;
             break;
     }
-    up(&rt_kernel.lock);
+    up(&rt_appcore.lock);
 
     return rv;
 }
@@ -314,7 +314,7 @@ select_app(unsigned int id)
     struct app_dev *app_dev;
     const struct rt_app *rt_app;
 
-    /* Find app with name app_name. Note that since the rt_kernel is
+    /* Find app with name app_name. Note that since the rt_appcore is
      * locked, no apps can be added or removed, nor opening and closing
      * of file handles. This means that no structures will change here. */
     list_for_each_entry(app_dev, &app_list, list) {
@@ -402,12 +402,12 @@ fop_release_app( struct inode *inode, struct file *filp)
     app_dev->buddy_lock = 0;
 
     /* If app does not exist any more, remove this item from the list */
-    down(&rt_kernel.lock);
+    down(&rt_appcore.lock);
     if (!app_dev->app) {
         list_del(&app_dev->list);
         kfree(app_dev);
     }
-    up(&rt_kernel.lock);
+    up(&rt_appcore.lock);
 
     return 0;
 }
@@ -437,13 +437,13 @@ fop_ioctl_app( struct file *filp, unsigned int command, unsigned long data)
     struct app* app;
     const struct rt_app* rt_app;
 
-    pr_debug("rt_kernel ioctl command %#x, data %lu\n", command, data);
+    pr_debug("rt_appcore ioctl command %#x, data %lu\n", command, data);
 
-    down(&rt_kernel.lock);
+    down(&rt_appcore.lock);
 
     app = app_dev->app;
     if (!app) {
-        up(&rt_kernel.lock);
+        up(&rt_appcore.lock);
         return -ENODEV;
     }
 
@@ -564,7 +564,7 @@ fop_ioctl_app( struct file *filp, unsigned int command, unsigned long data)
             rv = -ENOTTY;
             break;
     }
-    up(&rt_kernel.lock);
+    up(&rt_appcore.lock);
 
     return rv;
 }
@@ -730,19 +730,19 @@ struct miscdevice misc_dev = {
 /* Clear the Real-Time Kernel file handles */
 void __exit rtcom_fio_clear(void)
 {
-    pr_debug("Tearing down FIO for rt_kernel\n");
+    pr_debug("Tearing down FIO for rt_appcore\n");
 
     misc_deregister(&misc_dev);
 }
 
 /* Set up the Real-Time Kernel file handles. This is called once when
- * the rt_kernel is loaded, and opens up the char device for 
- * communication between rtcom-buddy and rt_kernel */
+ * the rt_appcore is loaded, and opens up the char device for 
+ * communication between rtcom-buddy and rt_appcore */
 int __init rtcom_fio_init(void)
 {
     int err = -1;
 
-    pr_debug("Initialising FIO for rt_kernel\n");
+    pr_debug("Initialising FIO for rt_appcore\n");
 
     if ((err = misc_register(&misc_dev))) {
         printk("Could not create misc device etl.\n");

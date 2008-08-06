@@ -63,8 +63,8 @@ struct rt_task {
 
 struct app {
     int id;                     /** The app index in the array 
-                                 * \ref rt_kernel.rt_mdl assigned by 
-                                 * rt_kernel for this app. */
+                                 * \ref rt_appcore.rt_mdl assigned by 
+                                 * rt_appcore for this app. */
     const struct rt_app *rt_app; /** Data structure for the RTW app. 
                                   * This gets passed to us when the app
                                   * is registered */
@@ -102,13 +102,13 @@ struct app {
                                  * of sample times the app has. */
 };
 
-struct rt_kernel {
-    dev_t dev;                  /**< Char dev range registered for rt_kernel */
-    struct cdev buddy_dev;      /**< Char dev struct for rt_kernel 
+struct rt_appcore {
+    dev_t dev;                  /**< Char dev range registered for rt_appcore */
+    struct cdev buddy_dev;      /**< Char dev struct for rt_appcore 
                                   * communication with the buddy */
     unsigned int chrdev_cnt;    /**< Count of character devices reserved */
     struct class *sysfs_class;  /**< Pointer to SysFS class */
-    struct class_device *sysfs_dev; /**< Base device of rt_kernel */
+    struct class_device *sysfs_dev; /**< Base device of rt_appcore */
 
     unsigned long loaded_apps;  /**< The bits represent whether a RT app 
                                    * is loaded in this slot. Max no of RT 
@@ -123,7 +123,7 @@ struct rt_kernel {
     struct app *application[MAX_MODELS];
 
     /* The following variables are used to manage the communication between
-     * the main buddy process and the rt_kernel */
+     * the main buddy process and the rt_appcore */
     wait_queue_head_t event_q;  /* Event queue for poll of task load/unload
                                  * events */
 
@@ -152,7 +152,7 @@ struct rt_kernel {
     } time;
 };
 
-extern struct rt_kernel rt_kernel;
+extern struct rt_appcore rt_appcore;
 
 /* Copies the current Process Image to the internal buffer */
 void rtp_make_photo(struct app *);

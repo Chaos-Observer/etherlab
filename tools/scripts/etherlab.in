@@ -25,7 +25,7 @@
 #------------------------------------------------------------------------------
 
 SERVICE="EtherLab/RTW"
-MODULE="rt_kernel"
+MODULE="rt_appcore"
 DEVICE="etl"
 MODULE_PATH="@prefix@/modules/$MODULE.ko"
 

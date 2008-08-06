@@ -44,7 +44,7 @@
 
 /* Local headers */
 #include "rt_main.h"
-#include "rt_kernel.h"
+#include "rt_appcore.h"
 
 /*#########################################################################*
  * Here the file operations for the RTW Process IO are defined.
@@ -475,15 +475,15 @@ void rtp_data_avail_handler(void)
 {
     unsigned int model_id;
 
-    down(&rt_kernel.lock);
-    while ((model_id = ffs(rt_kernel.data_mask))) {
+    down(&rt_appcore.lock);
+    while ((model_id = ffs(rt_appcore.data_mask))) {
         model_id--;
-        clear_bit(model_id, &rt_kernel.data_mask);
+        clear_bit(model_id, &rt_appcore.data_mask);
         //pr_debug("TID %u has data for buddy\n", model_id);
 
-        wake_up_interruptible( &rt_kernel.application[model_id]->waitq);
+        wake_up_interruptible( &rt_appcore.application[model_id]->waitq);
     }
-    up(&rt_kernel.lock);
+    up(&rt_appcore.lock);
 }
 
 /* This makes a snapshot of the current process and places this slice
@@ -516,7 +516,7 @@ void rtp_make_photo(struct app *app)
     rt_sem_signal(&app->buf_sem);
 
     /* Send a signal that data is available */
-    set_bit(app->id, &rt_kernel.data_mask);
+    set_bit(app->id, &rt_appcore.data_mask);
 }
 
 
@@ -530,14 +530,14 @@ void rtp_fio_clear_mdl(struct app *app)
 {
     pr_debug("Tearing down FIO for app_id %u\n", app->id);
 
-    clear_bit(app->id, &rt_kernel.data_mask);
-    class_device_destroy(rt_kernel.sysfs_class, 
-            rt_kernel.dev + app->id + 1);
+    clear_bit(app->id, &rt_appcore.data_mask);
+    class_device_destroy(rt_appcore.sysfs_class, 
+            rt_appcore.dev + app->id + 1);
     cdev_del(&app->rtp_dev);
 
     /* Wake the buddy to tell that there is a new process */
-    rt_kernel.app_state_changed = 1;
-    wake_up_interruptible(&rt_kernel.event_q);
+    rt_appcore.app_state_changed = 1;
+    wake_up_interruptible(&rt_appcore.event_q);
 }
 
 /** 
@@ -558,7 +558,7 @@ int rtp_fio_init_mdl(struct app *app, struct module *owner)
     /* Character device for BlockIO stream */
     cdev_init(&app->rtp_dev, &rtp_fops);
     app->rtp_dev.owner = owner;
-    devno = rt_kernel.dev + app->id + 1;
+    devno = rt_appcore.dev + app->id + 1;
     if ((err = cdev_add(&app->rtp_dev, devno, 1))) {
         printk("Could not add Process IO FOPS to cdev\n");
         goto out_add_rtp;
@@ -566,10 +566,10 @@ int rtp_fio_init_mdl(struct app *app, struct module *owner)
     pr_debug("Added char dev for BlockIO, minor %u\n", MINOR(devno));
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 15)
-    app->sysfs_dev = class_device_create(rt_kernel.sysfs_class,
+    app->sysfs_dev = class_device_create(rt_appcore.sysfs_class,
             devno, NULL, "etl%d", app->id + 1);
 #else
-    app->sysfs_dev = class_device_create(rt_kernel.sysfs_class, NULL, 
+    app->sysfs_dev = class_device_create(rt_appcore.sysfs_class, NULL, 
             devno, NULL, "etl%d", app->id + 1);
 #endif
     if (IS_ERR(app->sysfs_dev)) {
@@ -579,12 +579,12 @@ int rtp_fio_init_mdl(struct app *app, struct module *owner)
     }
 
     /* Wake the buddy to tell that there is a new process */
-    rt_kernel.app_state_changed = 1;
-    wake_up_interruptible(&rt_kernel.event_q);
+    rt_appcore.app_state_changed = 1;
+    wake_up_interruptible(&rt_appcore.event_q);
 
     return 0;
 
-    class_device_destroy(rt_kernel.sysfs_class, devno);
+    class_device_destroy(rt_appcore.sysfs_class, devno);
 out_class_device_create:
     cdev_del(&app->rtp_dev);
 out_add_rtp:
@@ -602,10 +602,10 @@ static int rtp_main_open(
         ) {
     int err = 0;
 
-    if (down_trylock(&rt_kernel.file_lock)) {
+    if (down_trylock(&rt_appcore.file_lock)) {
         err = -EBUSY;
     }
-    rt_kernel.app_state_changed = 0;
+    rt_appcore.app_state_changed = 0;
 
     return err;
 }
@@ -613,7 +613,7 @@ static int rtp_main_release(
         struct inode *inode,
         struct file *filp
         ) {
-    up(&rt_kernel.file_lock);
+    up(&rt_appcore.file_lock);
     return 0;
 }
 static unsigned int rtp_main_poll(
@@ -623,12 +623,12 @@ static unsigned int rtp_main_poll(
     unsigned int mask = 0;
 
     /* Wait for data */
-    poll_wait(filp, &rt_kernel.event_q, wait);
+    poll_wait(filp, &rt_appcore.event_q, wait);
 
     /* Check whether there was a change in the states of a Real-Time Process */
-    if (rt_kernel.app_state_changed) {
+    if (rt_appcore.app_state_changed) {
         mask = POLLIN | POLLRDNORM;
-        rt_kernel.app_state_changed = 0;
+        rt_appcore.app_state_changed = 0;
     }
 
     return mask;
@@ -641,12 +641,12 @@ static long rtp_main_ioctl(
         ) {
     long rv = 0;
 
-    pr_debug("rt_kernel ioctl command %#x, data %lu\n", command, data);
+    pr_debug("rt_appcore ioctl command %#x, data %lu\n", command, data);
 
-    down(&rt_kernel.lock);
+    down(&rt_appcore.lock);
     switch (command) {
         case RTK_GET_ACTIVE_MODELS:
-            rv = put_user(rt_kernel.loaded_apps, (uint32_t *)data);
+            rv = put_user(rt_appcore.loaded_apps, (uint32_t *)data);
             break;
 
         case RTK_MODEL_NAME:
@@ -659,14 +659,14 @@ static long rtp_main_ioctl(
                 if ((rv = get_user(mdl_number, &rt_app_name->number)))
                     break;
                 if (mdl_number >= MAX_MODELS || 
-                        !test_bit(mdl_number, &rt_kernel.loaded_apps)) {
+                        !test_bit(mdl_number, &rt_appcore.loaded_apps)) {
                     pr_debug("Requested app number %i does not exist\n", 
                             mdl_number);
                     rv = -ENODEV;
                     break;
                 }
 
-                name = rt_kernel.application[mdl_number]->rt_app->appName;
+                name = rt_appcore.application[mdl_number]->rt_app->appName;
 
                 // Model name length was checked to be less than 
                 // MAX_MODEL_NAME_LEN when it was registered
@@ -678,7 +678,7 @@ static long rtp_main_ioctl(
             rv = -ENOTTY;
             break;
     }
-    up(&rt_kernel.lock);
+    up(&rt_appcore.lock);
 
     return rv;
 }
@@ -700,73 +700,73 @@ static struct file_operations kernel_fops = {
 /* Clear the Real-Time Kernel file handles */
 void rtp_fio_clear(void)
 {
-    pr_debug("Tearing down FIO for rt_kernel\n");
+    pr_debug("Tearing down FIO for rt_appcore\n");
 
-    class_device_destroy(rt_kernel.sysfs_class, rt_kernel.dev);
-    cdev_del(&rt_kernel.buddy_dev);
-    unregister_chrdev_region(rt_kernel.dev, rt_kernel.chrdev_cnt);
-    class_destroy(rt_kernel.sysfs_class);
+    class_device_destroy(rt_appcore.sysfs_class, rt_appcore.dev);
+    cdev_del(&rt_appcore.buddy_dev);
+    unregister_chrdev_region(rt_appcore.dev, rt_appcore.chrdev_cnt);
+    class_destroy(rt_appcore.sysfs_class);
 }
 
 /* Set up the Real-Time Kernel file handles. This is called once when
- * the rt_kernel is loaded, and opens up the char device for 
- * communication between buddy and rt_kernel */
+ * the rt_appcore is loaded, and opens up the char device for 
+ * communication between buddy and rt_appcore */
 int rtp_fio_init(void)
 {
     int err = -1;
 
-    pr_debug("Initialising FIO for rt_kernel\n");
+    pr_debug("Initialising FIO for rt_appcore\n");
 
-    rt_kernel.app_state_changed = 0;
+    rt_appcore.app_state_changed = 0;
 
-    rt_kernel.sysfs_class = class_create(THIS_MODULE, "rt_kernel");
-    if (IS_ERR(rt_kernel.sysfs_class)) {
+    rt_appcore.sysfs_class = class_create(THIS_MODULE, "rt_appcore");
+    if (IS_ERR(rt_appcore.sysfs_class)) {
         printk("Could not create SysFS class structure.\n");
-        err = PTR_ERR(rt_kernel.sysfs_class);
+        err = PTR_ERR(rt_appcore.sysfs_class);
         goto out_class_create;
     }
 
     /* Create character devices for this process. Each RT app needs 1
-     * char device, and rt_kernel needs 1 */
-    rt_kernel.chrdev_cnt = MAX_MODELS+1;
-    if ((err = alloc_chrdev_region(&rt_kernel.dev, 0, 
-                    rt_kernel.chrdev_cnt, "rt_kernel"))) {
+     * char device, and rt_appcore needs 1 */
+    rt_appcore.chrdev_cnt = MAX_MODELS+1;
+    if ((err = alloc_chrdev_region(&rt_appcore.dev, 0, 
+                    rt_appcore.chrdev_cnt, "rt_appcore"))) {
         printk("Could not allocate character device\n");
         goto out_chrdev;
     }
-    pr_debug("Reserved char dev for rt_kernel, major %u, minor start %u\n",
-            MAJOR(rt_kernel.dev), MINOR(rt_kernel.dev));
+    pr_debug("Reserved char dev for rt_appcore, major %u, minor start %u\n",
+            MAJOR(rt_appcore.dev), MINOR(rt_appcore.dev));
 
-    cdev_init(&rt_kernel.buddy_dev, &kernel_fops);
-    rt_kernel.buddy_dev.owner = THIS_MODULE;
-    if ((err = cdev_add(&rt_kernel.buddy_dev, rt_kernel.dev, 1))) {
+    cdev_init(&rt_appcore.buddy_dev, &kernel_fops);
+    rt_appcore.buddy_dev.owner = THIS_MODULE;
+    if ((err = cdev_add(&rt_appcore.buddy_dev, rt_appcore.dev, 1))) {
         printk("Could not add Process IO FOPS to cdev\n");
         goto out_add_rtp;
     }
-    pr_debug("Started char dev for rt_kernel\n");
+    pr_debug("Started char dev for rt_appcore\n");
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 15)
-    rt_kernel.sysfs_dev = class_device_create(rt_kernel.sysfs_class,
-            rt_kernel.dev, NULL, "etl0");
+    rt_appcore.sysfs_dev = class_device_create(rt_appcore.sysfs_class,
+            rt_appcore.dev, NULL, "etl0");
 #else
-    rt_kernel.sysfs_dev = class_device_create(rt_kernel.sysfs_class, NULL, 
-            rt_kernel.dev, NULL, "etl0");
+    rt_appcore.sysfs_dev = class_device_create(rt_appcore.sysfs_class, NULL, 
+            rt_appcore.dev, NULL, "etl0");
 #endif
-    if (IS_ERR(rt_kernel.sysfs_dev)) {
+    if (IS_ERR(rt_appcore.sysfs_dev)) {
         printk("Could not create device etl0.\n");
-        err = PTR_ERR(rt_kernel.sysfs_dev);
+        err = PTR_ERR(rt_appcore.sysfs_dev);
         goto out_class_device_create;
     }
 
     return 0;
 
-    class_device_destroy(rt_kernel.sysfs_class, rt_kernel.dev);
+    class_device_destroy(rt_appcore.sysfs_class, rt_appcore.dev);
 out_class_device_create:
-    cdev_del(&rt_kernel.buddy_dev);
+    cdev_del(&rt_appcore.buddy_dev);
 out_add_rtp:
-    unregister_chrdev_region(rt_kernel.dev, rt_kernel.chrdev_cnt);
+    unregister_chrdev_region(rt_appcore.dev, rt_appcore.chrdev_cnt);
 out_chrdev:
-    class_destroy(rt_kernel.sysfs_class);
+    class_destroy(rt_appcore.sysfs_class);
 out_class_create:
     return err;
 }
