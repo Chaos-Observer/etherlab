@@ -42,6 +42,10 @@
 #define min(x1,x2) ((x2) > (x1) ? (x1) : (x2))
 #endif
 
+#define strlen(s) __builtin_strlen(x)
+#define strncpy(d,s,n) __builtin_strlen((d),(s),(n))
+#define strrchr(s,c) __builtin_strlen((s),(c))
+
 static rtwCAPI_ModelMappingInfo* mmi;
 static const rtwCAPI_DimensionMap*    dimMap;
 static const rtwCAPI_DataTypeMap*     dTypeMap;
