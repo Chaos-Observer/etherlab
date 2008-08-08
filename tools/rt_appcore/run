@@ -1,12 +1,10 @@
 #!/bin/bash
 
-# $RCSfile: run,v $
-# $Revision$
-# $Date$
+# $Id$
 #
-# This is a helper file to start a realtime process. This file is copied
-# to the compile directory (Matlab's current working directory). The
-# model is then started by simply typing ./run in that directory
+# This is a helper file to start a realtime application. This file is copied to
+# the compile directory (Matlab's current working directory). The application
+# is then started by simply typing ./run in that directory
 #
 # Copyright (c), 2006 Richard Hacker
 # License: GPL

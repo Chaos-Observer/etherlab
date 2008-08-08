@@ -46,9 +46,9 @@ class RTComIOTask: public Task, public std::streambuf {
         void hello();
 //        void send(const std::string& s);
 
-        // Called when a model is added or removed dynamically
-        void newModel(const std::string& model);
-        void delModel(const std::string& model);
+        // Called when an application is added or removed dynamically
+        void newApplication(const std::string& app);
+        void delApplication(const std::string& app);
 
     private:
         const int fd;

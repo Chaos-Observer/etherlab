@@ -2,10 +2,10 @@
 <!--
  * $Id: header.xsl 266 2008-04-11 14:58:33Z ha $
  *
- * This file is used by an XSLT processor to generate the header file of
- * the current value table (cvt). All model calculations operate on the 
- * current value table, and only these values can be made visible to the
- * user by the rt_kernel.
+ * This file is used by an XSLT processor to generate the header file of the
+ * current value table (cvt). All application calculations operate on the
+ * current value table, and only these values can be made visible to the user
+ * by the rt_appcore.
  * 
  * Copyright (C) 2008  Richard Hacker
  * 

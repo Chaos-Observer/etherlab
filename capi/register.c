@@ -39,13 +39,13 @@
 
 static const char* rt_OneStepMain(void);
 static const char* rt_OneStepTid(unsigned int);
-static void        mdl_set_error_msg(const char*);
+static void        app_set_error_msg(const char*);
 static const char* get_signal_info(struct signal_info *si);
 static const char* get_param_info(struct signal_info *si);
 
 struct task_stats task_stats[NUMST];
 
-// Cannot declare static, as it is still required by rt_mdl_register.c
+// Cannot declare static, as it is still required by rt_app_register.c
 struct rt_app rt_app = {
     .app_rtB = &signal,
     .rtB_size = sizeof(signal),
@@ -73,7 +73,7 @@ struct rt_app rt_app = {
     .payload_files = NULL,
 
     /* Register application callbacks */
-    .set_error_msg = mdl_set_error_msg,
+    .set_error_msg = app_set_error_msg,
     .version = STR(APP_VERSION),
     .name = STR(APP_NAME),
 };
@@ -99,7 +99,7 @@ rt_OneStepTid(unsigned int tid)
 } /* end rtOneStepTid */
 
 static void
-mdl_set_error_msg(const char *msg)
+app_set_error_msg(const char *msg)
 {
 }
 
@@ -139,7 +139,7 @@ get_param_info(struct signal_info *si)
     return NULL;
 }
 
-/* Function: mdl_stop ========================================================
+/* Function: app_stop ========================================================
  *
  * Abstact:
  *      Cleanup application to free memory

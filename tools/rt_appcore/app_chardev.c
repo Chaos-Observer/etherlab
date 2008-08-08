@@ -186,9 +186,9 @@ static long rtp_ioctl(
     long rv = 0;
 
     switch (command) {
-        case GET_MDL_PROPERTIES:
+        case GET_APP_PROPERTIES:
             {
-                struct mdl_properties properties;
+                struct app_properties properties;
 
                 properties.signal_count  = rt_app->signal_count;
                 properties.param_count   = rt_app->param_count;
@@ -473,15 +473,15 @@ static struct file_operations rtp_fops = {
  */
 void rtp_data_avail_handler(void)
 {
-    unsigned int model_id;
+    unsigned int app_id;
 
     down(&rt_appcore.lock);
-    while ((model_id = ffs(rt_appcore.data_mask))) {
-        model_id--;
-        clear_bit(model_id, &rt_appcore.data_mask);
-        //pr_debug("TID %u has data for buddy\n", model_id);
+    while ((app_id = ffs(rt_appcore.data_mask))) {
+        app_id--;
+        clear_bit(app_id, &rt_appcore.data_mask);
+        //pr_debug("TID %u has data for buddy\n", app_id);
 
-        wake_up_interruptible( &rt_appcore.application[model_id]->waitq);
+        wake_up_interruptible( &rt_appcore.application[app_id]->waitq);
     }
     up(&rt_appcore.lock);
 }
@@ -521,12 +521,12 @@ void rtp_make_photo(struct app *app)
 
 
 /*#########################################################################*
- * Here is general management code to initialise a new Real-Time Workshop
- * app that is inserted into the Kernel.
+ * Here is general management code to initialise a new application that is
+ * inserted into the AppCore.
  *#########################################################################*/
 
-/* Free file handles of a specific RTW Model */
-void rtp_fio_clear_mdl(struct app *app)
+/* Free file handles of a specific application  */
+void rtp_fio_clear_app(struct app *app)
 {
     pr_debug("Tearing down FIO for app_id %u\n", app->id);
 
@@ -542,8 +542,8 @@ void rtp_fio_clear_mdl(struct app *app)
 
 /** 
  * Here all the file operations for the communication with the buddy 
- * are initialised for the new RTW Model */
-int rtp_fio_init_mdl(struct app *app, struct module *owner)
+ * are initialised for the new application */
+int rtp_fio_init_app(struct app *app, struct module *owner)
 {
     dev_t devno;
     int err = -1;
@@ -593,8 +593,8 @@ out_add_rtp:
 
 
 /*#########################################################################*
- * Here the file operations to control the Real-Time Kernel are defined.
- * The buddy needs this to be able to change things in the Kernel.
+ * Here the file operations to control the RT-AppCore are defined.
+ * The buddy needs this to be able to change things in the AppCore.
  *#########################################################################*/
 static int rtp_main_open(
         struct inode *inode,
@@ -645,31 +645,31 @@ static long rtp_main_ioctl(
 
     down(&rt_appcore.lock);
     switch (command) {
-        case RTK_GET_ACTIVE_MODELS:
+        case RTAC_GET_ACTIVE_APPS:
             rv = put_user(rt_appcore.loaded_apps, (uint32_t *)data);
             break;
 
-        case RTK_MODEL_NAME:
+        case RTAC_APP_NAME:
             {
                 struct rt_app_name *rt_app_name = 
                     (struct rt_app_name *)data;
-                typeof(rt_app_name->number) mdl_number;
+                typeof(rt_app_name->number) app_number;
                 const char *name;
 
-                if ((rv = get_user(mdl_number, &rt_app_name->number)))
+                if ((rv = get_user(app_number, &rt_app_name->number)))
                     break;
-                if (mdl_number >= MAX_MODELS || 
-                        !test_bit(mdl_number, &rt_appcore.loaded_apps)) {
+                if (app_number >= MAX_APPS || 
+                        !test_bit(app_number, &rt_appcore.loaded_apps)) {
                     pr_debug("Requested app number %i does not exist\n", 
-                            mdl_number);
+                            app_number);
                     rv = -ENODEV;
                     break;
                 }
 
-                name = rt_appcore.application[mdl_number]->rt_app->name;
+                name = rt_appcore.application[app_number]->rt_app->name;
 
-                // Model name length was checked to be less than 
-                // MAX_MODEL_NAME_LEN when it was registered
+                // Application name length was checked to be less than 
+                // MAX_APP_NAME_LEN when it was registered
                 rv = copy_to_user(rt_app_name->name, name, strlen(name)+1);
                 break;
             }
@@ -683,7 +683,7 @@ static long rtp_main_ioctl(
     return rv;
 }
 
-static struct file_operations kernel_fops = {
+static struct file_operations appcore_fops = {
     .unlocked_ioctl = rtp_main_ioctl,
     .poll           = rtp_main_poll,
     .open           = rtp_main_open,
@@ -694,10 +694,10 @@ static struct file_operations kernel_fops = {
 
 /*#########################################################################*
  * Here is general management code to initialise file handles for the 
- * Real-Time Kernel.
+ * AppCore.
  *#########################################################################*/
 
-/* Clear the Real-Time Kernel file handles */
+/* Clear the AppCore file handles */
 void rtp_fio_clear(void)
 {
     pr_debug("Tearing down FIO for rt_appcore\n");
@@ -708,7 +708,7 @@ void rtp_fio_clear(void)
     class_destroy(rt_appcore.sysfs_class);
 }
 
-/* Set up the Real-Time Kernel file handles. This is called once when
+/* Set up the AppCore file handles. This is called once when
  * the rt_appcore is loaded, and opens up the char device for 
  * communication between buddy and rt_appcore */
 int rtp_fio_init(void)
@@ -728,7 +728,7 @@ int rtp_fio_init(void)
 
     /* Create character devices for this process. Each RT app needs 1
      * char device, and rt_appcore needs 1 */
-    rt_appcore.chrdev_cnt = MAX_MODELS+1;
+    rt_appcore.chrdev_cnt = MAX_APPS+1;
     if ((err = alloc_chrdev_region(&rt_appcore.dev, 0, 
                     rt_appcore.chrdev_cnt, "rt_appcore"))) {
         printk("Could not allocate character device\n");
@@ -737,7 +737,7 @@ int rtp_fio_init(void)
     pr_debug("Reserved char dev for rt_appcore, major %u, minor start %u\n",
             MAJOR(rt_appcore.dev), MINOR(rt_appcore.dev));
 
-    cdev_init(&rt_appcore.buddy_dev, &kernel_fops);
+    cdev_init(&rt_appcore.buddy_dev, &appcore_fops);
     rt_appcore.buddy_dev.owner = THIS_MODULE;
     if ((err = cdev_add(&rt_appcore.buddy_dev, rt_appcore.dev, 1))) {
         printk("Could not add Process IO FOPS to cdev\n");

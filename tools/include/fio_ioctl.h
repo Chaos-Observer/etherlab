@@ -14,14 +14,14 @@ extern "C" {
 
 #include "etl_data_info.h"
 
-/* The maximum number of models that can be handled. The limit is due
- * to the data type that the bit operators (set_bit, clear_bit) can handle
+/* The maximum number of applications that can be handled. The limit is due to
+ * the data type that the bit operators (set_bit, clear_bit) can handle
  */
-#define MAX_MODELS sizeof(unsigned long)*8
+#define MAX_APPS sizeof(unsigned long)*8
 
 /* Arbitrary value */
-#define MAX_MODEL_NAME_LEN 256
-#define MAX_MODEL_VER_LEN  100
+#define MAX_APP_NAME_LEN 256
+#define MAX_APP_VER_LEN  100
 
 /* Here are the ioctl() commands to control the Process IO data stream 
  * between the Real-Time Process and the user space Buddy */
@@ -55,16 +55,16 @@ struct data_p {
 /* Pass a whole new parameter set to the real time process. */
 #define NEW_PARAM             _IOW(FIO_MAGIC, 10, void *)
 
-/* This command compares the version string of the model symbol file
- * with that of the running model. Only if these version strings match
+/* This command compares the version string of the application symbol file
+ * with that of the running application. Only if these version strings match
  * are parameter changes allowed. */
 //#define CHECK_VER_STR         _IOW(FIO_MAGIC, 13, char *)
 
-/* Write the models current parameter set to the data pointer */
+/* Write the application's current parameter set to the data pointer */
 #define GET_PARAM             _IOR(FIO_MAGIC, 14, void *)
 
-/* The following structure is used by the CHANGE_PARAM ioctl to change the 
- * models parameter set by the buddy selectively */
+/* The following structure is used by the CHANGE_PARAM ioctl to change the
+ * application's parameter set by the buddy selectively */
 #define CHANGE_PARAM          _IOW(FIO_MAGIC, 16, struct param_change *)
 struct param_change {
     void *rtP;                  // Pointer from where the data is copied
@@ -82,53 +82,52 @@ struct param_change {
     } changes[];
 };
 
-/* Get the model symbol file from the kernel */
+/* Get the application symbol file from the appcore. */
 #define GET_SIGNAL_INFO       _IOR(FIO_MAGIC, 15, struct signal_info *)
 #define GET_PARAM_INFO        _IOR(FIO_MAGIC, 16, struct signal_info *)
 // struct signal_info is defined in etl_data_info.h
 
 /* This ioctl is used to return all the properties about the real time
  * process that the buddy needs. Pass it the address of a local 
- * struct mdl_properties */
-#define GET_MDL_PROPERTIES    _IOR(FIO_MAGIC, 19, struct mdl_properties)
-struct mdl_properties {
-    size_t rtB_count;           // Total count of block_io structs in kernel
+ * struct app_properties */
+#define GET_APP_PROPERTIES    _IOR(FIO_MAGIC, 19, struct app_properties)
+struct app_properties {
+    size_t rtB_count;           // Total count of block_io structs in appcore
     size_t rtB_size;            // Size of block IO structure
     size_t rtP_size;            // Size of parameter structure
     unsigned int num_st;        // Number of sample times
     unsigned int num_tasks;     // Number of tasks
-    unsigned long sample_period;// Model's signal sampling period
+    unsigned long sample_period;// Application's signal sampling period
                                 // in microseconds
 
     size_t param_count;         // Number of parameters
     size_t signal_count;        // Number of signals
     size_t variable_path_len;   // Memory requirements to store variable
                                 // path and alias, including \0
-    char name[MAX_MODEL_NAME_LEN+1];
-    char version[MAX_MODEL_VER_LEN+1];
+    char name[MAX_APP_NAME_LEN+1];
+    char version[MAX_APP_VER_LEN+1];
 };
 
-#define GET_MDL_SAMPLETIMES   _IOR(FIO_MAGIC, 20, struct rtcom_ioctldata)
+#define GET_APP_SAMPLETIMES   _IOR(FIO_MAGIC, 20, struct rtcom_ioctldata)
 #define GET_PARAM_DIMS        _IOR(FIO_MAGIC, 21, struct rtcom_ioctldata)
 #define GET_SIGNAL_DIMS       _IOR(FIO_MAGIC, 22, struct rtcom_ioctldata)
 
 /***************************************************
- * The following ioctl commands are used by the 
- * rt_kernel itself.
+ * The following ioctl commands are used by the rt_appcore itself.
  ***************************************************/
-#define RTK_MAGIC       'K'
-/* Return a bit mask in a uint32_t indicating which models are active */
-#define RTK_GET_ACTIVE_MODELS   _IOR(RTK_MAGIC, 0, unsigned long *)
+#define RTAC_MAGIC       'K'
+/* Return a bit mask in a uint32_t indicating which applications are active */
+#define RTAC_GET_ACTIVE_APPS   _IOR(RTAC_MAGIC, 0, unsigned long *)
 
-/* Pass the model number to the rt_kernel, and it replies with the model
- * name */
+/* Pass the application number to the rt_appcore, and it replies with the
+ * application name */
 struct rt_app_name {
     unsigned int number;
-    char name[MAX_MODEL_NAME_LEN+1];
+    char name[MAX_APP_NAME_LEN+1];
 };
-#define RTK_MODEL_NAME          _IOR(RTK_MAGIC, 2, struct rtp_app_name *)
+#define RTAC_APP_NAME          _IOR(RTAC_MAGIC, 2, struct rtp_app_name *)
 
-#define SET_PRIV_DATA           _IOW(RTK_MAGIC, 3, struct rtcom_ioctldata)
+#define SET_PRIV_DATA           _IOW(RTAC_MAGIC, 3, struct rtcom_ioctldata)
 struct rtcom_ioctldata {
     struct app *app_id;
     void *data;
@@ -146,14 +145,14 @@ struct app_event {
     size_t len;
 };
 
-#define GET_RTK_PROPERTIES      _IOR(RTK_MAGIC, 4, struct rt_kernel_prop *)
-struct rt_kernel_prop {
+#define GET_RTAC_PROPERTIES      _IOR(RTAC_MAGIC, 4, struct rt_appcore_prop *)
+struct rt_appcore_prop {
     size_t iomem_len;
     size_t eventq_len;
 };
 
-#define SELECT_KERNEL           _IO(RTK_MAGIC, 5)
-#define SELECT_MODEL            _IOW(RTK_MAGIC, 6, char[MAX_MODEL_NAME_LEN])
+#define SELECT_APPCORE  _IO(RTAC_MAGIC, 5)
+#define SELECT_APP     _IOW(RTAC_MAGIC, 6, char[MAX_APP_NAME_LEN])
 #if defined __cplusplus
 }
 #endif

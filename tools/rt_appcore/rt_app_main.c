@@ -129,13 +129,13 @@ mod_init(void)
     memcpy(rt_app.pend_rtP, rt_app.app_rtP, rt_app.rtP_size);
 
     /* Having finished all the application initialisation, it is now time to 
-     * register this RTW Model with the Real-Time Kernel to be scheduled */
+     * register this RT Application with the RT AppCore to be scheduled */
     if ((rt_app.app_id = start_rt_app(&rt_app,
                     sizeof(rt_app), REVISION, THIS_MODULE)) < 0) {
         printk("Could not register application with RT-AppCore; rc = %i\n",
                 rt_app.app_id);
         err = rt_app.app_id;
-        goto out_register_mdl;
+        goto out_register_app;
     }
 
     pr_info("Successfully registered application \"%s\" with RT-AppCore.\n",
@@ -143,7 +143,7 @@ mod_init(void)
 
     return 0;
 
-out_register_mdl:
+out_register_app:
     kfree(rt_app.pend_rtP);
 out_kmalloc:
     app_stop();
@@ -154,7 +154,7 @@ out:
 
 
 MODULE_LICENSE("GPL v2");
-MODULE_DESCRIPTION("Real Time Workshop kernel module");
+MODULE_DESCRIPTION("RT-Application kernel module");
 MODULE_AUTHOR("Richard Hacker");
 
 module_init(mod_init);

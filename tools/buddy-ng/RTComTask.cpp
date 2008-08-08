@@ -28,7 +28,7 @@
 #include "SocketExcept.h"
 #include "ConfigFile.h"
 #include "RT-Task.h"
-#include "RT-Model.h"
+#include "RT-App.h"
 #include "RTVariable.h"
 
 #include <iostream>
@@ -49,7 +49,7 @@ RTComTask::RTComTask(Task* parent, int _fd, RTTask* _rtTask):
     auth("AUTH\\s+(\\w+)\n(.*)"),
     length("{\\d+}"),
     empty("\\s*\n$"),
-    listModels("MODELS\n$"),
+    listApps("APPS\n$"),
     listSignals("LIST (.+)\n$")
 //************************************************************************
 {
@@ -159,7 +159,7 @@ int RTComTask::read(int)
 {
     int n;
     const char *in = inBuf;
-    std::string model;
+    std::string app;
     bool finished = false;
     size_t left;
 
@@ -189,15 +189,15 @@ int RTComTask::read(int)
                     }
                     in += 4;
 
-                    // Send the list of currently running models
-                    const RTTask::ModelMap& modelMap = rtTask->getModelMap();
+                    // Send the list of currently running apps
+                    const RTTask::AppMap& appMap = rtTask->getAppMap();
 
-                    for( RTTask::ModelMap::const_iterator it = modelMap.begin();
-                            it != modelMap.end(); it++) {
+                    for( RTTask::AppMap::const_iterator it = appMap.begin();
+                            it != appMap.end(); it++) {
                         std::string s("M");
                         s.append(it->first).push_back(0);
                         sb.send(s);
-                        std::cout << "Sendign model " << s << std::endl;
+                        std::cout << "Sending app " << s << std::endl;
                     }
 
                     parserState = Idle;
@@ -213,10 +213,10 @@ int RTComTask::read(int)
                         finished = true;
                     }
 
-                    std::string modelName(in+12, nameLen);
+                    std::string appName(in+12, nameLen);
                     in += 12 + (nameLen/4+1)*4;
 
-                    std::cout << "REply model query " << modelName << std::endl;
+                    std::cout << "Reply app query " << appName << std::endl;
                 }
                 else {
                     in = inBufPtr;
@@ -233,14 +233,14 @@ int RTComTask::read(int)
 
     return n;
 } 
-//            else if (listSignals.FullMatch(inBuf, &model)) {
+//            else if (listSignals.FullMatch(inBuf, &app)) {
 //                unsigned int idx = 0;
 //                std::ostringstream oss;
 //                std::ostream_iterator<size_t> oo(oss, " ");
-//                const RTTask::ModelMap& modelMap = rtTask->getModelMap();
-//                RTTask::ModelMap::const_iterator it = modelMap.find(model);
-//                if (it == modelMap.end()) {
-//                    os.stdErr("Model unknown");
+//                const RTTask::AppMap& appMap = rtTask->getApp();
+//                RTTask::App::const_iterator it = app.find(app);
+//                if (it == app.end()) {
+//                    os.stdErr("Application unknown");
 //                    break;
 //                }
 //                const std::vector<RTVariable*>& variableList =
@@ -444,15 +444,15 @@ void RTComTask::kill(Task*, int)
 }
 
 //************************************************************************
-void RTComTask::newModel(const std::string& name)
+void RTComTask::newApplication(const std::string& name)
 //************************************************************************
 {
-//    os.eventStream(std::string("new model: ").append(name));
+//    os.eventStream(std::string("new application: ").append(name));
 }
 
 //************************************************************************
-void RTComTask::delModel(const std::string& name)
+void RTComTask::delApplication(const std::string& name)
 //************************************************************************
 {
-//    os.eventStream(std::string("del model: ").append(name));
+//    os.eventStream(std::string("del application: ").append(name));
 }

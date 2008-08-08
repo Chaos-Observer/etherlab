@@ -2,7 +2,7 @@
  *
  * $Id$
  *
- * This is the header file for the public interface to rt_kernel.
+ * This is the header file for the public interface to rt_appcore.
  * 
  * Copyright (C) 2008  Richard Hacker
  * 
@@ -34,9 +34,9 @@
 
 #include "rt_app.h"
 
-/* Called to register a new application with the rt_kernel */
+/* Called to register a new application with the rt_appcore */
 int start_rt_app(const struct rt_app *rt_app, size_t struct_len,
         const char *revision_str, struct module *owner);
 
-/* Called when a Real-Time Model should be removed */
+/* Called when an application should be removed */
 void stop_rt_app(int tid);

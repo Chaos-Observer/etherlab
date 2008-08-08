@@ -54,7 +54,7 @@ RTW_LIB_DIR = $(MATLAB_ROOT)/rtw/c/libsrc
 SRCS := $(wildcard $(RTW_LIB_DIR)/*.c)
 OBJS := $(patsubst %.c,%.o,$(notdir $(SRCS)))
 
-include @top_builddir@/tools/rt_kernel/kflags.mk
+include @top_builddir@/tools/rt_appcore/kflags.mk
 KERNEL_CFLAGS = $(filter-out -Wundef, $(KERNEL_OPTS))
 
 $(TGT): $(OBJS)

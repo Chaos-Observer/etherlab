@@ -3,7 +3,7 @@
  * $Id: application_defines.h.xsl 263 2008-04-10 19:17:09Z ha $
  *
  * This file is used by an XSLT processor to generate a header file
- * containing many defines describing the model.
+ * containing many defines describing the application.
  * 
  * Copyright (C) 2008  Richard Hacker
  * 
@@ -36,7 +36,8 @@
 /* 
  * This is a generated file. Do not edit.
  * 
- * This generated file contains #defines extracted from the model .xml file
+ * This generated file contains #defines extracted from the application .xml
+ * file
  *
  */
     </xsl:text>

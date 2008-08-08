@@ -3,7 +3,7 @@
  * $Id$
  *
  * Here structures are defined that are used to register a Real-Time Task
- * with rt_kernel;
+ * with rt_appcore;
  *
  * Copyright (C) 2008  Richard Hacker
  * 
@@ -27,7 +27,7 @@
 
 struct signal_info;
 
-/** Structure describing the Real-Time Model
+/** Structure describing the Real-Time Application
  */
 struct rt_app {
     /* Name and version information of the application */
@@ -63,7 +63,7 @@ struct rt_app {
 
     int app_id;
 
-    /* Variables used to pass model symbol to the buddy */
+    /* Variables used to pass application symbol to the buddy */
     const struct payload_files *payload_files;
 
     unsigned int signal_count;

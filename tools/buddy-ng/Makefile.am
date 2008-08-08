@@ -17,12 +17,19 @@ lib_LIBRARIES = liblayer.a libtask.a libconfig.a
 liblayer_a_HDRS = Layer.h IOBuffer.h PacketLayer.h \
         RTComVocab.h DebugLayer.h
 liblayer_a_SOURCES = \
-        $(liblayer_a_HDRS) \
-        Layer.cpp Layer.h \
-        IOBuffer.cpp IOBuffer.h \
-        RTComProtocolServer.cpp RTComProtocolServer.h \
-        DebugLayer.cpp DebugLayer.h \
-        PacketLayer.cpp PacketLayer.h
+		$(liblayer_a_HDRS) \
+		Layer.cpp Layer.h \
+		IOBuffer.cpp IOBuffer.h \
+		RTComProtocolServer.cpp RTComProtocolServer.h \
+		DebugLayer.cpp DebugLayer.h \
+		PacketLayer.cpp PacketLayer.h \
+        RTAppClient.cpp RTAppClient.h \
+        RT-Task.cpp RT-Task.h \
+        RT-App.cpp RT-App.h \
+        RTVariable.cpp RTVariable.h \
+		FileDevice.cpp FileDevice.h \
+        RTSignal.cpp RTSignal.h \
+        RTParameter.cpp RTParameter.h
 
 libtask_a_HDRS = Task.h Dispatcher.h \
         SocketServerTask.h TCPServerTask.h
@@ -45,15 +52,9 @@ etherlab_buddy_SOURCES = \
         main.cpp \
         AppCtlTask.cpp AppCtlTask.h
 
-#        RTAppClient.cpp RTAppClient.h \
 #        SocketLayer.cpp SocketLayer.h \
 #        RTComServer.cpp RTComServer.h \
 #        RTComSocket.cpp RTComSocket.h \
-#        RT-Task.cpp RT-Task.h \
-#        RTSignal.cpp RTSignal.h \
-#        RTVariable.cpp RTVariable.h \
-#        RT-Model.cpp RT-Model.h \
-#        RTParameter.cpp RTParameter.h \
 #        HTTPTask.cpp HTTPTask.h
 etherlab_buddy_LDADD = $(lib_LIBRARIES)  \
         /usr/lib/libevent.la /usr/lib/libsasl2.la libiniparser.a
@@ -66,3 +67,6 @@ libiniparser.a iniparser.h dictionary.h: iniparser-2.17.tar.gz
           && make \
           && cp libiniparser.a src/iniparser.h src/dictionary.h .. )
 	rm -rf iniparser-2.17
+
+EXTRA_DIST = iniparser-2.17.tar.gz
+

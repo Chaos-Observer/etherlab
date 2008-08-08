@@ -27,7 +27,7 @@
 #include "RTComProtocolServer.h"
 #include "IOBuffer.h"
 #include "RT-Task.h"
-#include "RT-Model.h"
+#include "RT-App.h"
 #include "RTVariable.h"
 
 #include "RTComVocab.h"
@@ -46,8 +46,8 @@ RTComProtocolServer::RTComProtocolServer(Layer *below, RTTask *_rtTask):
 {
     std::cerr << "XXXXXXXXXXXXX 2 " << __func__ << std::endl;
 
-    RTTask::ModelMap mm = rtTask->getModelMap();
-    for (RTTask::ModelMap::iterator m = mm.begin(); m != mm.end(); m++) {
+    RTTask::AppMap mm = rtTask->getAppMap();
+    for (RTTask::AppMap::iterator m = mm.begin(); m != mm.end(); m++) {
         newApplication(m->second);
     }
 }
@@ -59,7 +59,7 @@ RTComProtocolServer::~RTComProtocolServer()
 }
 
 //************************************************************************
-void RTComProtocolServer::newApplication(const RTModel* app)
+void RTComProtocolServer::newApplication(const RTApp* app)
 //************************************************************************
 {
     LayerStack::IOBuffer *buf = new LayerStack::IOBuffer(this);
@@ -71,7 +71,7 @@ void RTComProtocolServer::newApplication(const RTModel* app)
 }
 
 //************************************************************************
-void RTComProtocolServer::delApplication(const RTModel* app)
+void RTComProtocolServer::delApplication(const RTApp* app)
 //************************************************************************
 {
     LayerStack::IOBuffer *buf = new LayerStack::IOBuffer(this);
@@ -106,9 +106,9 @@ size_t RTComProtocolServer::receive(const char* buf, size_t data_len)
         case APPLICATION_INFO:
             {
                 uint32_t appId = ntohl(*(uint32_t*)buf);
-                const RTModel *app = rtTask->getApplication(appId);
-                const RTModel::StList st = app->getSampleTimes();
-                const RTModel::VariableList vl = app->getVariableList();
+                const RTApp *app = rtTask->getApplication(appId);
+                const RTApp::StList st = app->getSampleTimes();
+                const RTApp::VariableList vl = app->getVariableList();
             std::cerr << "Sending App info for " << appId << std::endl;
 
                 reply->appendInt(0); // Command channel

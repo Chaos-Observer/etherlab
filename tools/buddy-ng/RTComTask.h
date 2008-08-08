@@ -43,8 +43,8 @@ class RTComTask: public Task {
 
         int read(int fd);
 
-        void newModel(const std::string& model);
-        void delModel(const std::string& model);
+        void newApplication(const std::string& app);
+        void delApplication(const std::string& app);
 
     private:
         const int fd;
@@ -84,7 +84,7 @@ class RTComTask: public Task {
         const pcrecpp::RE auth;
         const pcrecpp::RE length;
         const pcrecpp::RE empty;
-        const pcrecpp::RE listModels;
+        const pcrecpp::RE listApplications;
         const pcrecpp::RE listSignals;
 };
 

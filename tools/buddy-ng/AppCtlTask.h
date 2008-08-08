@@ -2,8 +2,8 @@
  *
  * $Id$
  *
- * This defines the class used to interact with the real-time kernel. Only
- * one instance of this class exists. This class keeps track of all real-time
+ * This defines the class used to interact with the RT-AppCore. Only one
+ * instance of this class exists. This class keeps track of all real-time
  * applications that are running, as well as all network clients that are
  * being served with data.
  * 

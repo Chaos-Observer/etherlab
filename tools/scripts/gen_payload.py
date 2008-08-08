@@ -31,7 +31,7 @@ where: <dest file> is the name of the generated file
 out = sys.stdout
 
 out.write("""\
-/* Model payload file
+/* application payload file
  *
  * The strings below contain packed versions of miscellaneous files that 
  * are included in the kernel module

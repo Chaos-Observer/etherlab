@@ -1,9 +1,9 @@
 /********************************************************************
  * $Id$
  *
- * Header file for the model data.
+ * Header file for the application data.
  * Here are the includes and function prototypes needed for the main 
- * model file. This file must be included in the model file.
+ * application file. This file must be included in the application file.
  * 
  * Copyright (C) 2008  Richard Hacker
  * 

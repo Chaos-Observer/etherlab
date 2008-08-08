@@ -1,13 +1,11 @@
 These files are used to generate hand coded C that you can use to build
-your own models.
+your own applications.
 
 Copy the files ... to your directory
 
 Edit the files:
-* Makefile.mdl
-* mdl.c
-* mdl_rtb.h
-* mdl_rtp.h
+* Makefile
+* app_main.c
 
 To generate
-# make -f Makefile.mdl
+# make

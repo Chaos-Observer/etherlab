@@ -29,10 +29,10 @@ int rtcom_new_app(struct app *app);
 /* Called when a app is removed */
 void rtcom_del_app(struct app *app);
 
-/* Clear the Real-Time Kernel file handles */
+/* Clear the Real-Time AppCore file handles */
 void rtcom_fio_clear(void);
 
-/* Set up the Real-Time Kernel file handles. This is called once when
- * the rt_kernel is loaded, and opens up the char device for 
- * communication between buddy and rt_kernel */
+/* Set up the Real-Time AppCore file handles. This is called once when
+ * the rt_appcore is loaded, and opens up the char device for 
+ * communication between buddy and rt_appcore. */
 int rtcom_fio_init(void);

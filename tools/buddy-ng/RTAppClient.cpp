@@ -46,13 +46,13 @@ RTAppClient::~RTAppClient()
 }
 
 //************************************************************************
-void RTAppClient::newApplication(const RTModel*)
+void RTAppClient::newApplication(const RTApp*)
 //************************************************************************
 {
 }
 
 //************************************************************************
-void RTAppClient::delApplication(const RTModel*)
+void RTAppClient::delApplication(const RTApp*)
 //************************************************************************
 {
 }

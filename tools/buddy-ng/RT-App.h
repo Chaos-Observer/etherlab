@@ -3,7 +3,7 @@
  *
  * $Id$
  *
- * This defines the class used to interact with the real-time kernel
+ * This defines the class used to interact with the RT-AppCore.
  * 
  * Copyright (C) 2008  Richard Hacker
  * 
@@ -21,8 +21,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * **********************************************************************/
 
-#ifndef RTMODEL_H
-#define RTMODEL_H
+#ifndef RTAPP_H
+#define RTAPP_H
 
 #include "include/fio_ioctl.h"
 #include "RT-Task.h"
@@ -35,10 +35,10 @@ class RTVariable;
 class RTSignal;
 class RTParameter;
 
-class RTModel: public Task {
+class RTApp: public Task {
     public:
-        RTModel(RTTask* parent, unsigned int id);
-        ~RTModel();
+        RTApp(RTTask* parent, unsigned int id);
+        ~RTApp();
 
         unsigned int getId() const { return id; }
         const std::string& getName() const { return name; }
@@ -63,7 +63,7 @@ class RTModel: public Task {
         char *rtP;
         void *io_mem;
 
-        struct rt_kernel_prop rt_properties;
+        struct rt_appcore_prop rt_properties;
 
         VariableList variableList;
         StList sampleTime;
@@ -74,4 +74,4 @@ class RTModel: public Task {
         // Reimplemented from class Task
         int read(int fd);
 };
-#endif // RTMODEL_H
+#endif // RTAPP_H

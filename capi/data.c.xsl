@@ -5,7 +5,7 @@
  * This file is used by an XSLT processor to generate the parameter source 
  * file. Parameters are values that are used during the calculation 
  * involving the current value table. Parameters can be changed by the
- * user through the rt_kernel.
+ * user through the rt_appcore.
  * 
  * Copyright (C) 2008  Richard Hacker
  * 

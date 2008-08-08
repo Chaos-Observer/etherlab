@@ -3,7 +3,7 @@
  * $Id$
  *
  * Here is the main file for the RT-AppCore. It prepares the environment in
- * which Real-Time Models can run in.
+ * which Real-Time applications can run in.
  * 
  * Copyright (C) 2008  Richard Hacker
  * 
@@ -57,8 +57,9 @@ struct rt_appcore rt_appcore;
 
 unsigned long basetick = 0;        /**< Basic tick in microseconds; 
                                     * default 1000us
-                                    * All RT Models must have a tick rate 
-                                    * that is an integer multiple of this. */
+									* All RT Applications must have a tick
+									* rate that is an integer multiple of
+									* this. */
 module_param(basetick,ulong,S_IRUGO);
 
 /*
@@ -216,13 +217,13 @@ void update_time(void)
     rt_sem_signal(&rt_appcore.time.lock);
 }
 
-/** Function: mdl_main_thread
+/** Function: app_main_thread
  * arguments: long priv_data: Pointer to the rt_task
  *
- * This is the fastest task of the app. It differs from mdl_sec_thread
+ * This is the fastest task of the app. It differs from app_sec_thread
  * in that it has to take care of parameter transfer and world time.
  */
-static void mdl_main_thread(long priv_data)
+static void app_main_thread(long priv_data)
 {
     struct rt_task *rt_task = (struct rt_task *)priv_data;
     struct app *app = rt_task->app;
@@ -324,17 +325,17 @@ static void mdl_main_thread(long priv_data)
     }
 }
 
-/** Function: mdl_sec_thread
+/** Function: app_sec_thread
  * arguments: long app_id: RT-AppCore Task Id for this task
  *
  * This calls secondary app threads running more slowly than the main
  * task.
  */
-static void mdl_sec_thread(long priv_data)
+static void app_sec_thread(long priv_data)
 {
     struct rt_task *rt_task = (struct rt_task *)priv_data;
     struct app *app = rt_task->app;
-    unsigned int mdl_tid = rt_task->mdl_tid;
+    unsigned int app_tid = rt_task->app_tid;
     const struct rt_app *rt_app = app->rt_app;
     unsigned int overrun = 0;
     unsigned long counter = 0;
@@ -351,7 +352,7 @@ static void mdl_sec_thread(long priv_data)
         rt_sem_wait(&rt_appcore.time.lock);
         rt_task->stats->time = rt_appcore.time.tv;
         rt_sem_signal(&rt_appcore.time.lock);
-        if ((errmsg = rt_app->rt_OneStepTid(mdl_tid))) 
+        if ((errmsg = rt_app->rt_OneStepTid(app_tid))) 
             break;
 
         /* Calculate and report execution statistics */
@@ -367,10 +368,10 @@ static void mdl_sec_thread(long priv_data)
         if (rt_task_wait_period()) {
             pr_info("Task overrun on tid %i ... "
                     "tick %lu took %luus, allowed are %uus\n",
-                    mdl_tid,
+                    app_tid,
                     counter,
                     (unsigned long)(get_cycles() - rt_start)/(cpu_khz/1000),
-                    rt_app->task_period[mdl_tid]);
+                    rt_app->task_period[app_tid]);
             if (++overrun == rt_app->max_overrun) {
                 errmsg = "Too many overruns";
                 rt_app->set_error_msg("Abort");
@@ -382,7 +383,7 @@ static void mdl_sec_thread(long priv_data)
         }
     }
     rt_printk("Application %s tid %u aborted. Error message:\n\t%s\n", 
-            rt_app->name, mdl_tid, errmsg);
+            rt_app->name, app_tid, errmsg);
 }
 
 void stop_rt_app(int app_id)
@@ -401,7 +402,7 @@ void stop_rt_app(int app_id)
     }
 
     clear_bit(app_id, &rt_appcore.loaded_apps);
-    rtp_fio_clear_mdl(app);
+    rtp_fio_clear_app(app);
     rtcom_del_app(app);
 
     if (!rt_appcore.loaded_apps) {
@@ -454,8 +455,8 @@ int start_rt_app(const struct rt_app *rt_app,
             rt_app->name);
 
     /* Make sure the app name is within range */
-    if (strlen(rt_app->name) > MAX_MODEL_NAME_LEN-1) {
-        pr_info("Error: app name exceeds %i bytes\n", MAX_MODEL_NAME_LEN-1);
+    if (strlen(rt_app->name) > MAX_APP_NAME_LEN-1) {
+        pr_info("Error: app name exceeds %i bytes\n", MAX_APP_NAME_LEN-1);
         err = -E2BIG;
         goto out;
     }
@@ -486,7 +487,7 @@ int start_rt_app(const struct rt_app *rt_app,
 
     /* Make sure there is one free slot */
     if (rt_appcore.loaded_apps == ~0UL) {
-        printk("Exceeded maximum number of tasks (%i)\n", MAX_MODELS);
+        printk("Exceeded maximum number of tasks (%i)\n", MAX_APPS);
         err = -ENOMEM;
         goto out_check_full;
     }
@@ -502,15 +503,15 @@ int start_rt_app(const struct rt_app *rt_app,
 
     for (tid = 0; tid < rt_app->num_tasks; tid++) {
         struct rt_task *task = &app->task[tid];
-        task->mdl_tid = tid;
+        task->app_tid = tid;
         task->app = app;
         task->stats = &rt_app->task_stats[tid];
 
         /* Initialise RTAI task structure */
         if ((err = rt_task_init(
                         &task->rtai_thread, /* RT_TASK 	*/
-                        (tid ? mdl_sec_thread 
-                         : mdl_main_thread),      /* Task function 	*/
+                        (tid ? app_sec_thread 
+                         : app_main_thread),      /* Task function 	*/
                         (long)task, /* Private data passed to 
                                                    * task */
                         rt_app->stack_size,   /* Stack size 	*/
@@ -557,7 +558,7 @@ int start_rt_app(const struct rt_app *rt_app,
      * that the process is available to the user, i.e. live), because 
      * all the setup has been completed. 
      * Create character devices for this process */
-    if ((err = rtp_fio_init_mdl(app, owner))) {
+    if ((err = rtp_fio_init_app(app, owner))) {
         printk("Could not initialise file io\n");
         goto out_fio_init;
     }
@@ -589,7 +590,7 @@ int start_rt_app(const struct rt_app *rt_app,
 out_make_periodic:
     rtcom_del_app(app);
 out_rtcom_init_fail:
-    rtp_fio_clear_mdl(app);
+    rtp_fio_clear_app(app);
 out_fio_init:
 out_incompatible_ticks:
     while (tid--) {
@@ -631,11 +632,11 @@ static void test_thread_func(long priv_data)
         rt_end = get_cycles();
 
         if (counter++ % 1000 == 0)
-            printk("Model %li\n", priv_data);
+            printk("Application %li\n", priv_data);
 
         /* Wait until next call */
         if (rt_task_wait_period()) {
-            pr_info("Model overrun ... tick %lu took %luns, app run %luns\n",
+            pr_info("Application overrun ... tick %lu took %luns, app run %luns\n",
                     counter,
                     (unsigned long)((get_cycles() - rt_start)*1000)/(cpu_khz/1000),
                     (unsigned long)((rt_end - rt_start)*1000)/(cpu_khz/1000));

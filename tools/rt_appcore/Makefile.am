@@ -4,7 +4,7 @@
 #
 #-----------------------------------------------------------------------------
 
-RT_APPCORE_SRCS = rt_main.c mdl_chardev.c rt_vars.c rtcom_chardev.c
+RT_APPCORE_SRCS = rt_main.c app_chardev.c rt_vars.c rtcom_chardev.c
 RT_APPCORE_HEADER = rt_main.h rtcom_chardev.h
 
 EXTRA_DIST = $(RT_APPCORE_SRCS) $(RT_APPCORE_HEADER) test_vars.c Kbuild

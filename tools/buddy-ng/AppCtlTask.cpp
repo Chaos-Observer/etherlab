@@ -2,7 +2,7 @@
  *
  * $Id$
  *
- * This defines the class used to interact with the real-time kernel
+ * This defines the class used to interact with the real-time appcore.
  * 
  * Copyright (C) 2008  Richard Hacker
  * 
@@ -46,7 +46,7 @@ AppCtlTask::AppCtlTask()
     }
     std::cout << "opened " << device << std::endl;
 
-    if (::ioctl(etl_fd, SELECT_KERNEL)) {
+    if (::ioctl(etl_fd, SELECT_APPCORE)) {
         throw IoctlException();
     }
 
@@ -74,12 +74,12 @@ int AppCtlTask::read(int)
     std::cout << "read " << n << "bytes." << std::endl;
     switch (event.type) {
         case rtcom_event::new_app:
-            std::cout << "new RTModel " << event.id << std::endl;
+            std::cout << "new RT-App " << event.id << std::endl;
 
             break;
 
         case rtcom_event::del_app:
-            std::cout << "delete RTModel " << event.id 
+            std::cout << "delete RT-App " << event.id 
                 << std::endl;
 
             break;

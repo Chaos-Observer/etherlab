@@ -12,7 +12,7 @@
 
 #include "include/defines.h"
 #include "capi.h"
-#include "rtmodel.h"
+#include "rtapp.h"
 
 #define CHECK_ERR(condition, position, msg) { \
     if (condition) { \
@@ -57,7 +57,7 @@ void dump_rtBlockSignals(xmlNodePtr root_node, unsigned int *maxSampTimeIndex)
     char buf[10];
     unsigned sigIdx;
     xmlNodePtr signals_node, signal_node, path_node, name_node;
-    rtwCAPI_ModelMappingInfo* mmi = &(rtmGetDataMapInfo(rtM).mmi);
+    rtwCAPI_AppMappingInfo* mmi = &(rtmGetDataMapInfo(rtM).mmi);
     const rtwCAPI_Signals* bio = rtwCAPI_GetSignals(mmi);
     xmlChar *utf8name;
 
@@ -158,7 +158,7 @@ void dump_rtBlockParameters(xmlNodePtr root_node)
     char buf[10];
     unsigned paramIdx;
     xmlNodePtr parameters_node;
-    rtwCAPI_ModelMappingInfo* mmi = &(rtmGetDataMapInfo(rtM).mmi);
+    rtwCAPI_AppMappingInfo* mmi = &(rtmGetDataMapInfo(rtM).mmi);
     char *path = NULL;
 
     parameters_node = xmlNewChild(root_node, NULL, BAD_CAST "parameters", NULL);
@@ -240,7 +240,7 @@ void dump_dataTypeMap(xmlNodePtr root_node)
     unsigned idx;
     xmlNodePtr dataTypeMaps_node, dataTypeMap_node;
 
-    rtwCAPI_ModelMappingInfo* mmi = &(rtmGetDataMapInfo(rtM).mmi);
+    rtwCAPI_AppMappingInfo* mmi = &(rtmGetDataMapInfo(rtM).mmi);
     const rtwCAPI_DataTypeMap* dTypeMap = rtwCAPI_GetDataTypeMap(mmi);
 
     dataTypeMaps_node = xmlNewChild(root_node, NULL, BAD_CAST "datatypes", NULL);
@@ -312,7 +312,7 @@ void dump_dimensionMap(xmlNodePtr root_node)
     unsigned idx;
     xmlNodePtr dimensionMaps_node, dimensionMap_node, dimension_node;
 
-    rtwCAPI_ModelMappingInfo* mmi = &(rtmGetDataMapInfo(rtM).mmi);
+    rtwCAPI_AppMappingInfo* mmi = &(rtmGetDataMapInfo(rtM).mmi);
     const rtwCAPI_DimensionMap* dimMap = rtwCAPI_GetDimensionMap(mmi);
     const uint_T *dimensionArray = rtwCAPI_GetDimensionArray(mmi);
 
@@ -382,7 +382,7 @@ void dump_sampleTime(xmlNodePtr root_node, unsigned int maxSampTimeIndex)
     unsigned idx;
     xmlNodePtr sampletimes_node, sampletime_node;
 
-    rtwCAPI_ModelMappingInfo* mmi = &(rtmGetDataMapInfo(rtM).mmi);
+    rtwCAPI_AppMappingInfo* mmi = &(rtmGetDataMapInfo(rtM).mmi);
     const rtwCAPI_SampleTimeMap* sampleTimeMap = rtwCAPI_GetSampleTimeMap(mmi);
 
     sampletimes_node = xmlNewChild(root_node, NULL, 
@@ -451,12 +451,12 @@ int main(int argc, char **argv)
     doc = xmlNewDoc(BAD_CAST "1.0");
     CHECK_ERR( !doc, "xmlNewDoc", err_no_mem);
 
-    root_node = xmlNewNode(NULL, BAD_CAST "modeldescription");
+    root_node = xmlNewNode(NULL, BAD_CAST "applicationdescription");
     CHECK_ERR( !root_node, "xmlNewNode", err_no_mem);
 
     xmlDocSetRootElement(doc, root_node);
     CHECK_ERR(
-            !xmlNewProp(root_node, BAD_CAST "modelname", BAD_CAST STR(MODEL)),
+            !xmlNewProp(root_node, BAD_CAST "applicationname", BAD_CAST STR(APP)),
             "xmlNewProp", err_no_mem);
 
     dump_rtBlockSignals(root_node, &maxSampTimeIndex);

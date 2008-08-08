@@ -2,7 +2,7 @@
  *
  * $Id$
  *
- * This defines the class used to interact with the real-time kernel
+ * This defines the class used to interact with the RT-AppCore.
  * 
  * Copyright (C) 2008  Richard Hacker
  * 
@@ -20,7 +20,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * **********************************************************************/
 
-#include "RT-Model.h"
+#include "RT-App.h"
 #include "ConfigFile.h"
 #include "Exception.h"
 #include "RTSignal.h"
@@ -31,37 +31,37 @@
 #include <iostream>
 #include <memory>
 
-RTModel::RTModel(RTTask *parent, unsigned int _id):
+RTApp::RTApp(RTTask *parent, unsigned int _id):
     Task(parent), id(_id), fd(parent->getDevice())
 {
     struct signal_info si;
-    struct mdl_properties mdl_properties;
+    struct app_properties app_properties;
 
-    // First choose the model we're dealing with
-    fd.ioctl(SELECT_MODEL, id, "SELECT_MODEL");
+    // First choose the application we're dealing with
+    fd.ioctl(SELECT_APP, id, "SELECT_APP");
 
     std::cout << "rt_properties = " << (void*)&rt_properties << std::endl;
-    fd.ioctl(GET_RTK_PROPERTIES, (long)&rt_properties, "GET_RTK_PROPERTIES");
+    fd.ioctl(GET_RTAC_PROPERTIES, (long)&rt_properties, "GET_RTAC_PROPERTIES");
 
     io_mem = fd.mmap(rt_properties.iomem_len);
 
-    // First of all get the model properties
-    fd.ioctl(GET_MDL_PROPERTIES, (long)&mdl_properties, "GET_MDL_PROPERTIES");
-    version = mdl_properties.version;
-    name = mdl_properties.name;
+    // First of all get the application properties
+    fd.ioctl(GET_APP_PROPERTIES, (long)&app_properties, "GET_APP_PROPERTIES");
+    version = app_properties.version;
+    name = app_properties.name;
 
     // Now that the number of sample times is known, get them and copy to
     // sampleTime
-    uint32_t st[mdl_properties.num_st];
-    fd.ioctl(GET_MDL_SAMPLETIMES, (long)st, "GET_MDL_SAMPLETIMES");
-    sampleTime.resize(mdl_properties.num_st);
-    std::copy(st, st+mdl_properties.num_st, sampleTime.begin());
+    uint32_t st[app_properties.num_st];
+    fd.ioctl(GET_APP_SAMPLETIMES, (long)st, "GET_APP_SAMPLETIMES");
+    sampleTime.resize(app_properties.num_st);
+    std::copy(st, st+app_properties.num_st, sampleTime.begin());
 
     std::ostream_iterator<uint32_t> oo(std::cout, " ");
-    std::cout << "model properties " 
-        << mdl_properties.variable_path_len << " " 
-        << mdl_properties.signal_count << " " 
-        << mdl_properties.param_count << " " 
+    std::cout << "application properties " 
+        << app_properties.variable_path_len << " " 
+        << app_properties.signal_count << " " 
+        << app_properties.param_count << " " 
         << name << " " 
         << version << " ";
     copy(sampleTime.begin(), sampleTime.end(), oo);
@@ -69,17 +69,17 @@ RTModel::RTModel(RTTask *parent, unsigned int _id):
 
     // Knowing the number of signals and parameters, as well as the length
     // of the longest path name, a structure can be allocated so that the
-    // information can be fetched from the kernel
-    si.path = new char[mdl_properties.variable_path_len + 1];
-    si.path_buf_len = mdl_properties.variable_path_len + 1;
+    // information can be fetched from the appcore
+    si.path = new char[app_properties.variable_path_len + 1];
+    si.path_buf_len = app_properties.variable_path_len + 1;
     std::auto_ptr<char> signal_path(si.path);
 
     std::vector<size_t> dims;
     unsigned int varIdx = 0;
 
-    variableList.resize(mdl_properties.signal_count 
-            + mdl_properties.param_count);
-    for (si.index = 0; si.index < mdl_properties.signal_count; 
+    variableList.resize(app_properties.signal_count 
+            + app_properties.param_count);
+    for (si.index = 0; si.index < app_properties.signal_count; 
             si.index++) {
         fd.ioctl(GET_SIGNAL_INFO, (long)&si, "GET_SIGNAL_INFO");
         getDims(dims, &si, GET_SIGNAL_DIMS);
@@ -87,7 +87,7 @@ RTModel::RTModel(RTTask *parent, unsigned int _id):
                 si.data_type, dims, sampleTime.at(si.st_index));
     }
 
-    for (si.index = 0; si.index < mdl_properties.param_count; si.index++) {
+    for (si.index = 0; si.index < app_properties.param_count; si.index++) {
         fd.ioctl(GET_PARAM_INFO, (long)&si, "GET_PARAM_INFO");
         getDims(dims, &si, GET_PARAM_DIMS);
         variableList[varIdx++] = new RTParameter( si.path, si.name, si.alias,
@@ -97,7 +97,7 @@ RTModel::RTModel(RTTask *parent, unsigned int _id):
     enableRead(fd.getFileNo());
 }
 
-RTModel::~RTModel()
+RTApp::~RTApp()
 {
     for (std::vector<RTVariable*>::iterator it = variableList.begin();
             it != variableList.end(); it++)
@@ -114,7 +114,7 @@ RTModel::~RTModel()
  *                                  is coded in dims[1]. Have to fetch dims
  *                                  in a second step
  */
-void RTModel::getDims(std::vector<size_t>& dims, const struct signal_info *si,
+void RTApp::getDims(std::vector<size_t>& dims, const struct signal_info *si,
         unsigned int dim_type)
 {
     if (!si->dim[0]) {
@@ -136,7 +136,7 @@ void RTModel::getDims(std::vector<size_t>& dims, const struct signal_info *si,
     }
 }
 
-int RTModel::read(int)
+int RTApp::read(int)
 {
     int total = 0;
     return total;

@@ -2,12 +2,12 @@
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
 
 <!--
-This is the main structure of a model. It consists of 5 main elements:
- * description  : Description of the model. (string)
+This is the main structure of an application. It consists of 5 main elements:
+ * description  : Description of the application. (string)
  * version      : Version information (string)
- * parameters   : Various model parameter settings
+ * parameters   : Various application parameter settings
  * task         : Information about call rates and subtasks
- * data         : Model signals and variables
+ * data         : Application signals and variables
 
 The name attribute is required.
 -->
@@ -35,7 +35,7 @@ The name attribute is required.
 <xs:element name="version" type="xs:string"/>
 
 <!-- 
-The parameters element defines various properties of the model. It can
+The parameters element defines various properties of the application. It can
 define the following attributes:
   attribute           default Description
   ====================================================================
@@ -103,11 +103,11 @@ define the following attributes:
 </xs:element>
 
 <!--
-The data element describes the model's signals and parameters in a tree
+The data element describes the application's signals and parameters in a tree
 like structure.
 It can consist of any number of the following elements:
  * signal       : a signal
- * parameter    : a model parameter
+ * parameter    : an application parameter
  * subsystem    : builds a hierarchy into the variable structure
 
 For the purposes of this schema, signals and parameters are grouped together

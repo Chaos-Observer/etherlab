@@ -4,7 +4,7 @@
  *
  * This file is used by an XSLT processor to generate the application
  * description file (mdf) as C-code. The mdf is used later when the 
- * application gets registered with the rt_kernel.
+ * application gets registered with the rt_appcore.
  * 
  * Copyright (C) 2008  Richard Hacker
  * 
@@ -39,7 +39,7 @@
  * This is a generated file. Do not edit.
  *
  * This file contains a list of signal and parameter descriptions that
- * is used when registering the application with rt_kernel.
+ * is used when registering the application with rt_appcore.
  *
  ************************************************************************/
 

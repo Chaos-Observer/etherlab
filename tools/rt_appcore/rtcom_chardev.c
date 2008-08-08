@@ -65,19 +65,19 @@ struct app_dev {
     wait_queue_head_t waitq;
 };
 
-static int select_kernel(void);
+static int select_appcore(void);
 struct app_dev* select_app(unsigned int id);
 static struct page * vma_nopage(struct vm_area_struct *vma, 
         unsigned long address, int *type);
-static int fop_release_kernel( struct inode *inode, struct file *filp);
+static int fop_release_appcore( struct inode *inode, struct file *filp);
 static int fop_release_app( struct inode *inode, struct file *filp);
-static unsigned int fop_poll_kernel( struct file *filp, poll_table *wait);
+static unsigned int fop_poll_appcore( struct file *filp, poll_table *wait);
 static unsigned int fop_poll_app( struct file *filp, poll_table *wait);
 static long fop_ioctl( struct file *filp, unsigned int command, 
         unsigned long data);
 static long fop_ioctl_app( struct file *filp, unsigned int command, 
         unsigned long data);
-static ssize_t fop_read_kernel( struct file * filp, char *buffer, 
+static ssize_t fop_read_appcore( struct file * filp, char *buffer, 
         size_t bufLen, loff_t * offset);
 static ssize_t fop_read_app( struct file * filp, char *buffer, 
         size_t bufLen, loff_t * offset);
@@ -87,7 +87,7 @@ static int fop_mmap_app(struct file *filp, struct vm_area_struct *vma);
 static DECLARE_WAIT_QUEUE_HEAD(event_q);
 
 // This semaphore ensures that there is only one file opened to the
-// main kernel chardev
+// main appcore chardev
 static unsigned int rtcom_lock = 0;
 
 static LIST_HEAD(app_list);
@@ -99,7 +99,7 @@ static struct rtcom_event *event_list, *event_list_end,
 /*#########################################################################*
  * The chardev that is provided by rtcom has very little capabilities.
  * Opening the chardev is allways possible. The only operation allowed
- * is ioctl, thereby either selecting the handle to the kernel or
+ * is ioctl, thereby either selecting the handle to the AppCore or
  * app.
  *#########################################################################*/
 static struct file_operations rtcom_fops = {
@@ -107,11 +107,11 @@ static struct file_operations rtcom_fops = {
     .owner          = THIS_MODULE,
 };
 
-/* File operations used for kernel */
-static struct file_operations kernel_fops = {
-    .poll           = fop_poll_kernel,
-    .read           = fop_read_kernel,
-    .release        = fop_release_kernel,
+/* File operations used for AppCore */
+static struct file_operations appcore_fops = {
+    .poll           = fop_poll_appcore,
+    .read           = fop_read_appcore,
+    .release        = fop_release_appcore,
     .owner          = THIS_MODULE,
 };
 
@@ -132,20 +132,20 @@ fop_ioctl( struct file *filp, unsigned int command, unsigned long data)
 
     down(&rt_appcore.lock);
     switch (command) {
-        // Try to gain access to main rtcom kernel
-        case SELECT_KERNEL:
+        // Try to gain access to main appcore
+        case SELECT_APPCORE:
             {
-                rv = select_kernel();
+                rv = select_appcore();
                 if (!rv) {
                     /* Put new file operations in place. 
-                     * These now operate on the kernel */
-                    filp->f_op = &kernel_fops;
+                     * These now operate on the appcore */
+                    filp->f_op = &appcore_fops;
                 }
             }
             break;
 
         // Try to gain access to a running app
-        case SELECT_MODEL:
+        case SELECT_APP:
             {
                 struct app_dev* app_dev;
                 unsigned int id = data;
@@ -174,8 +174,8 @@ fop_ioctl( struct file *filp, unsigned int command, unsigned long data)
 }
 
 /*#########################################################################*
- * Here the file operations to control the Real-Time Kernel are defined.
- * The buddy needs this to be able to change things in the Kernel.
+ * Here the file operations to control the AppCore are defined.
+ * The buddy needs this to be able to change things in the AppCore.
  *#########################################################################*/
 void signal_new_app(struct app_dev *app_dev)
 {
@@ -195,12 +195,12 @@ void signal_new_app(struct app_dev *app_dev)
 }
 
 static int 
-select_kernel(void)
+select_appcore(void)
 {
     int err = 0;
     struct app_dev *app_dev;
 
-    // Make sure there is only one file handle to the rtcom kernel
+    // Make sure there is only one file handle to the AppCore
     if (rtcom_lock) {
         err = -EBUSY;
         goto out_trylock;
@@ -235,7 +235,7 @@ out_trylock:
 }
 
 static unsigned int 
-fop_poll_kernel( struct file *filp, poll_table *wait) 
+fop_poll_appcore( struct file *filp, poll_table *wait) 
 {
     unsigned int mask = 0;
 
@@ -253,7 +253,7 @@ fop_poll_kernel( struct file *filp, poll_table *wait)
 
 /* RTCom buddy reads the current event list */
 static ssize_t 
-fop_read_kernel( struct file * filp, char *buffer, 
+fop_read_appcore( struct file * filp, char *buffer, 
         size_t bufLen, loff_t * offset)
 {
     struct rtcom_event *curr_wp = event_wp;
@@ -295,7 +295,7 @@ fop_read_kernel( struct file * filp, char *buffer,
 }
 
 static int 
-fop_release_kernel( struct inode *inode, struct file *filp) 
+fop_release_appcore( struct inode *inode, struct file *filp) 
 {
     kfree(event_list);
     rtcom_lock = 0;
@@ -304,7 +304,7 @@ fop_release_kernel( struct inode *inode, struct file *filp)
 
 /*#########################################################################*
  * Here the file operations to control interact with the app are defined.
- * The buddy needs this to be able to change things in the Kernel.
+ * The buddy needs this to be able to change things in the AppCore.
  *#########################################################################*/
 struct app_dev*
 select_app(unsigned int id) 
@@ -359,7 +359,7 @@ select_app(unsigned int id)
 
     pr_debug("Opened rtcom app file to %s\n", app->rt_app->name);
 
-    /* Put new file operations in place. These now operate on the kernel */
+    /* Put new file operations in place. These now operate on the AppCore */
     init_waitqueue_head(&app_dev->waitq);
 
     /* Setting the write pointers is an indication that the memory has
@@ -381,7 +381,7 @@ out_vmalloc:
 out_trylock:
     printk("Buddy already active for app %s\n", rt_app->name);
 out_no_app:
-    printk("Model with id %u not found\n", id);
+    printk("Application with id %u not found\n", id);
     return ERR_PTR(err);
 }
 
@@ -390,7 +390,7 @@ fop_release_app( struct inode *inode, struct file *filp)
 {
     struct app_dev *app_dev = filp->private_data;
 
-    /* Make sure that the kernel does not write to the buffer any more */
+    /* Make sure that the AppCore does not write to the buffer any more */
     rt_sem_wait(&app_dev->rt_lock);
     app_dev->wp = NULL;
     rt_sem_signal(&app_dev->rt_lock);
@@ -449,13 +449,13 @@ fop_ioctl_app( struct file *filp, unsigned int command, unsigned long data)
 
     rt_app = app->rt_app;
     switch (command) {
-        case GET_RTK_PROPERTIES:
+        case GET_RTAC_PROPERTIES:
             {
-                struct rt_kernel_prop p;
+                struct rt_appcore_prop p;
                 p.iomem_len = app_dev->io_len;
                 p.eventq_len = 
                     (caddr_t)app_dev->event_list_end - (caddr_t)app_dev->event_list;
-                printk("In GET_RTK_PROPERTIES\n");
+                printk("In GET_RTAC_PROPERTIES\n");
 
                 if (copy_to_user((void*)data, &p, sizeof(p))) {
                     rv = -EFAULT;
@@ -464,9 +464,9 @@ fop_ioctl_app( struct file *filp, unsigned int command, unsigned long data)
             }
             break;
 
-        case GET_MDL_SAMPLETIMES:
+        case GET_APP_SAMPLETIMES:
             {
-                printk("In GET_MDL_SAMPLETIMES\n");
+                printk("In GET_APP_SAMPLETIMES\n");
 
                 if (copy_to_user((void*)data, rt_app->task_period, 
                             rt_app->num_st*sizeof(*rt_app->task_period))) {
@@ -534,10 +534,10 @@ fop_ioctl_app( struct file *filp, unsigned int command, unsigned long data)
             }
             break;
 
-        case GET_MDL_PROPERTIES:
+        case GET_APP_PROPERTIES:
             {
-                struct mdl_properties p;
-                printk("In GET_MDL_PROPERTIES\n");
+                struct app_properties p;
+                printk("In GET_APP_PROPERTIES\n");
 
                 p.signal_count  = rt_app->signal_count;
                 p.param_count   = rt_app->param_count;
@@ -547,11 +547,11 @@ fop_ioctl_app( struct file *filp, unsigned int command, unsigned long data)
 
                 // No buffer overflow here, the array is defined as
                 // name[MAX+1]
-                strncpy(p.name, rt_app->name, MAX_MODEL_NAME_LEN);
+                strncpy(p.name, rt_app->name, MAX_APP_NAME_LEN);
                 strncpy(p.version, rt_app->version, 
-                        MAX_MODEL_VER_LEN);
-                p.name[MAX_MODEL_NAME_LEN] = '\0';
-                p.version[MAX_MODEL_VER_LEN] = '\0';
+                        MAX_APP_VER_LEN);
+                p.name[MAX_APP_NAME_LEN] = '\0';
+                p.version[MAX_APP_VER_LEN] = '\0';
 
                 if ( copy_to_user((void*)data, &p, sizeof(p))) {
                     rv = -EFAULT;

@@ -22,12 +22,12 @@
 
 
 #include "include/rtw_defines.h"
-#include "rtmodel.h"
+#include "rtapp.h"
 
 #include "include/rt_app.h"
 
-RT_MODEL  rtM_;
-RT_MODEL  *rtM = &rtM_;
+RT_APP  rtApp_;
+RT_APP  *rtApp = &rtApp_;
 
 BlockIO rtB;
 /*Parameters rtP;*/
@@ -35,7 +35,7 @@ BlockIO rtB;
 struct rt_app* get_app_info(void)
 {
     capi_init();
-    return app_info_init(rtM) ? NULL : &rt_app;
+    return app_info_init(rtApp) ? NULL : &rt_app;
 }
 
 int main(void) 

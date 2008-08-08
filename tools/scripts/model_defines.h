@@ -1,1 +1,0 @@
-/* Insert any global model defines in this file */

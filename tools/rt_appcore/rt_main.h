@@ -2,7 +2,7 @@
  *
  * $Id$
  *
- * Here structures are defined that are used within rt_kernel and associated
+ * Here structures are defined that are used within rt_appcore and associated
  * files.
  *
  * Copyright (C) 2008  Richard Hacker
@@ -41,9 +41,9 @@
 #include <linux/wait.h>
 #include <rtai_sem.h>
 
-#include "fio_ioctl.h"          /* MAX_MODELS */
+#include "fio_ioctl.h"          /* MAX_APPS */
 
-/* The calling frequency of the kernel helper */
+/* The calling frequency of the appcore helper */
 #define HELPER_CALL_RATE 10
 
 /* Every application can have more than one task - one of this structure is 
@@ -56,14 +56,14 @@ struct rt_task {
                                  * helper_thread */
 
     struct app *app;      /** Reference to the app */
-    unsigned int mdl_tid;       /** The app's task id */
+    unsigned int app_tid;       /** The app's task id */
 
     struct task_stats *stats;
 };
 
 struct app {
     int id;                     /** The app index in the array 
-                                 * \ref rt_appcore.rt_mdl assigned by 
+                                 * \ref rt_appcore.rt_app assigned by 
                                  * rt_appcore for this app. */
     const struct rt_app *rt_app; /** Data structure for the RTW app. 
                                   * This gets passed to us when the app
@@ -120,7 +120,7 @@ struct rt_appcore {
 
     struct semaphore lock;      /* Protect manipulation of above vars */
 
-    struct app *application[MAX_MODELS];
+    struct app *application[MAX_APPS];
 
     /* The following variables are used to manage the communication between
      * the main buddy process and the rt_appcore */
@@ -157,8 +157,8 @@ extern struct rt_appcore rt_appcore;
 /* Copies the current Process Image to the internal buffer */
 void rtp_make_photo(struct app *);
 
-int rtp_fio_init_mdl(struct app *, struct module *owner);
-void rtp_fio_clear_mdl(struct app *);
+int rtp_fio_init_app(struct app *, struct module *owner);
+void rtp_fio_clear_app(struct app *);
 int rtp_fio_init(void);
 void rtp_fio_clear(void);
 void rtp_data_avail_handler(void);

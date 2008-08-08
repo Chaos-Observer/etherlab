@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <application>
      xmlns:xinclude="http://www.w3.org/2003/XInclude">
-  <description>My HandCoded C Model</description>
+  <description>My HandCoded C Application</description>
   <version>11</version>
   <parameters max_overruns="5" stacksize="2048" photo_decimation="1" buffer_time="10"/>
 

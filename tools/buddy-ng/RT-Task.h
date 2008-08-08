@@ -2,8 +2,8 @@
  *
  * $Id$
  *
- * This defines the class used to interact with the real-time kernel. Only
- * one instance of this class exists. This class keeps track of all real-time
+ * This defines the class used to interact with the RT-AppCore. Only one
+ * instance of this class exists. This class keeps track of all real-time
  * applications that are running, as well as all network clients that are
  * being served with data.
  * 
@@ -33,22 +33,22 @@
 #include <map>
 #include "include/fio_ioctl.h"
 
-class RTModel;
+class RTApp;
 class RTAppClient;
 
 class RTTask: public Task {
     public:
-        typedef std::map<unsigned int,RTModel*> ModelMap;
+        typedef std::map<unsigned int,RTApp*> AppMap;
 
         RTTask();
         ~RTTask();
 
-        const ModelMap& getModelMap() const {
-            return modelMap;
+        const AppMap& getAppMap() const {
+            return appMap;
         }
         const std::string& getDevice() const { return device; }
 
-        const RTModel* getApplication(unsigned int id);
+        const RTApp* getApplication(unsigned int id);
 
         void regAppClient(RTAppClient* rtComTask);
         void deregAppClient(RTAppClient* rtComTask);
@@ -59,7 +59,7 @@ class RTTask: public Task {
 
         std::list<RTAppClient*> rtComTaskList;
 
-        ModelMap modelMap;
+        AppMap appMap;
         std::map<Task*,unsigned int> taskMap;
 
         // Reimplemented from class Task

@@ -11,8 +11,8 @@
 
 #
 # Enter the name of your application here. This will be the file name of the
-# kernel object that is created. This is also the name of the Model Description
-# File .xml file.
+# kernel object that is created. This is also the name of the Application
+# Description File .xml file.
 #
 # Requirement: Mandatory
 #

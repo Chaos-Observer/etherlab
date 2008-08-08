@@ -22,10 +22,10 @@
 
 
 #include "include/defines.h"
-#include "rtmodel.h"
+#include "rtapp.h"
 
-RT_MODEL  rtM_;
-RT_MODEL  *rtM = &rtM_;
+RT_APP  rtM_;
+RT_APP  *rtM = &rtM_;
 
 BlockIO rtB;
 /*Parameters rtP;*/

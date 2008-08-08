@@ -342,7 +342,7 @@ void init_modules(void)
 void 
 printhelp(const char *name)
 {
-    printf("%s: This is the user-space helper for the RT Kernel\n"
+    printf("%s: This is the user-space helper for the RT-Appcore\n"
             "The main program accepts the following options:\n"
             "    -f, --foreground\n"
             "\tDon't fork; stay in foreground\n"
@@ -430,7 +430,7 @@ int main(int ac, char **av)
         setlogmask(LOG_UPTO(debug+LOG_ERR));
 
         /* Remember the directory we were started in. This is one of the
-         * directories searched for the model description files */
+         * directories searched for the application description files */
         opterr = 0;
         if (!(cwd = getcwd(NULL, 0))) {
             perror("getcwd()");

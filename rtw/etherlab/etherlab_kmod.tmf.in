@@ -363,12 +363,12 @@ endif
 ###################
 # Level 1 targets
 ###################
-$(RUN): $(ETHERLAB_DIR)/tools/rt_kernel/$(notdir $(RUN))
+$(RUN): $(ETHERLAB_DIR)/tools/rt_appcore/$(notdir $(RUN))
 	@$(CP) $< $@
 	@chmod 755 $@
 
 $(RUNINFO)::
-	@echo "$(MODEL):up+sem:push rt_kernel;push $(KERNEL_MODULE:.ko=);:" > $@
+	@echo "$(MODEL):up+sem:push rt_appcore;push $(KERNEL_MODULE:.ko=);:" > $@
 
 .INTERMEDIATE: $(KERNEL_MODULE)
 $(RELATIVE_PATH_TO_ANCHOR)/$(KERNEL_MODULE): $(KERNEL_MODULE)
