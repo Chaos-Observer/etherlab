@@ -260,6 +260,7 @@ AC_PATH_PROG(AR, ar)
 AC_PATH_PROG(MV, mv)
 AC_PATH_PROG(XSLTPROC, xsltproc)
 AC_PATH_PROG(INDENT, indent)
+AC_PATH_PROG(CP, cp)
 
 # Checks for header files
 AC_HEADER_STDC

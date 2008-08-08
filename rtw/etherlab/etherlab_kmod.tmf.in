@@ -111,7 +111,7 @@ RTAI_DIR             := $(STAGING_DIR)/@RTAI_DIR@
 #ED                   := @ED@
 GREP                 := @GREP@
 AR                   := @AR@
-CP                   := cp
+CP                   := @CP@
 
 ifeq ($(KERNELRELEASE),)
 MODELVERSION 	     = $(shell $(GREP) -m1 "Model Version" $(MODEL).h)
