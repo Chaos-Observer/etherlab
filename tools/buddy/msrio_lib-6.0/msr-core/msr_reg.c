@@ -424,11 +424,11 @@ void num_free(struct msr_param_list *self) {
 }
 
 
-int msr_cfi_reg_param(char *bez,char *einh,void *adr,int rnum, int cnum,int orientation,enum enum_var_typ typ,
-		      char *info,
-		      unsigned int flags,                                      //mit Flags 
-		      void (*write)(struct msr_param_list *self),              //und Callbacks
-		      void (*read)(struct msr_param_list *self)) {
+int msr_cfi_reg_param2(char *bez,char *indexstr,char *einh,void *adr,int rnum, int cnum,int orientation,enum enum_var_typ typ,
+		       char *info,
+		       unsigned int flags,                                      //mit Flags 
+		       void (*write)(struct msr_param_list *self),              //und Callbacks
+		       void (*read)(struct msr_param_list *self)) {
 
     struct msr_param_list *element = NULL, *prev = NULL;                                                 
     char *initbuf;												   
@@ -531,6 +531,29 @@ int msr_cfi_reg_param(char *bez,char *einh,void *adr,int rnum, int cnum,int orie
 
 }
 
+/*
+***************************************************************************************************
+*
+* Function: msr_unique_param_name
+*
+* Beschreibung: erzeugt einen eindeutigen Parameternamen
+*                      
+* Parameter: Namensvorschlag
+*            
+*
+* Rückgabe:  Zeiger auf neuen Namen (dieser muß wieder freigegeben werden)
+*               
+* Status: exp
+*
+***************************************************************************************************
+*/
+
+char *msr_unique_param_name(char *bez){
+    char *rbuf;
+    MSR_UNIQUENAME(bez,rbuf,msr_param_head,msr_param_list); 
+    return(rbuf);
+
+}
 
 
 /*
@@ -558,6 +581,12 @@ void msr_clean_param_list(void)
 
 	if(element->p_bez) 
 	    freemem(element->p_bez);
+
+	if(element->p_rbez) 
+	    freemem(element->p_rbez);
+
+	if(element->p_ibuf) 
+	    freemem(element->p_ibuf);
 
 	if(element->p_einh) 
 	    freemem(element->p_einh);
@@ -687,7 +716,9 @@ int msr_print_param_list(char *buf,char *aname,char *id,int shrt,int mode)
 
     /* Element in der Liste suchen */
     FOR_THE_LIST(element,msr_param_head) {
-        if (element &&  ((aname == NULL) || strcmp(aname,element->p_bez) == 0)){
+	if (element &&  ((aname == NULL) || strcmp(aname,element->p_bez) == 0)){
+
+	                                    //(strstr(element->p_bez,aname) == element->p_bez))){  //suche alle Parameter, die mit aname anfangen 
 
 	    if(element->p_read !=NULL) /* erst die Aktualisierungsfunktion aufrufen */
 		element->p_read(element);
@@ -956,15 +987,26 @@ int msr_reg_kanal(char *bez,char *einh,void *adr,enum enum_var_typ typ)
 
 
 
-
 int msr_reg_kanal2(char *bez,void *alias,char *einh,void *adr,enum enum_var_typ typ,int red) {
     return msr_reg_kanal3(bez,alias,einh,adr,typ,"",red);
 }
 
-int msr_reg_kanal3(char *bez,void *alias,char *einh,void *adr,enum enum_var_typ typ,char *info,int red)
+//check for uniqueness
+int msr_reg_kanal3(char *bez,void *alias,char *einh,void *adr,enum enum_var_typ typ,char *info,int red) {
+    char *upath;
+    upath = msr_unique_channel_name(bez);
+    return msr_reg_kanal4(upath,"",alias,einh,adr,typ,info,red);
+    freemem(upath);
+}
+
+//leave the check vor uniqueness to the user ...
+int msr_reg_kanal4(char *bez,char *indexstr,void *alias,char *einh,void *adr,enum enum_var_typ typ,char *info,int red)
 {
     struct msr_kanal_list *element = NULL, *prev = NULL;                                                 
 
+#if 0
+    printf("Reg-Kanal: %s|%s\n",bez,indexstr);
+#endif
     MSR_INIT_LIST_HEADER(msr_kanal_head,msr_kanal_list); //psize wird später zugewiesen
  
     element->p_var_typ = typ;                                           
@@ -1017,10 +1059,36 @@ int msr_reg_kanal3(char *bez,void *alias,char *einh,void *adr,enum enum_var_typ 
 	strcpy(element->alias,alias);
 
     return (int)element;
+    //FIXME wer sagt eigentlich, das der Zeiger (element) nicht negativ wird? negative Zahlen sind Fehlermeldungen (sieh z.B. -ENOMEM) ????
 
 
 }
 
+
+
+/*
+***************************************************************************************************
+*
+* Function: msr_unique_channel_name
+*
+* Beschreibung: erzeugt einen eindeutigen Kanalnamen
+*                      
+* Parameter: Namensvorschlag
+*            
+*
+* Rückgabe:  Zeiger auf neuen Namen (dieser muß wieder freigegeben werden)
+*               
+* Status: exp
+*
+***************************************************************************************************
+*/
+
+char *msr_unique_channel_name(char *bez)
+{
+    char *rbuf;
+    MSR_UNIQUENAME(bez,rbuf,msr_kanal_head,msr_kanal_list); 
+    return(rbuf);
+}
 
 
 void msr_clean_kanal_list(void)
@@ -1040,6 +1108,12 @@ void msr_clean_kanal_list(void)
 
 	    if(element->p_einh) 
 		freemem(element->p_einh);
+
+	    if(element->p_rbez) 
+		freemem(element->p_rbez);
+
+	    if(element->p_ibuf) 
+		freemem(element->p_ibuf);
 
 	    if(element->info) 
 		freemem(element->info);
@@ -1220,6 +1294,7 @@ int printChVal(struct msr_char_buf *buf,struct msr_kanal_list *kanal,int index)
 	  struct timeval tmp_value;
 	  tmp_value = (*(struct timeval *)(k_base + index * k_blocksize + (int)kanal->p_adr));
 	  cnt=msr_buf_printf(buf,"%u.%.6u",(unsigned int)tmp_value.tv_sec,(unsigned int)tmp_value.tv_usec);
+	  break;
        }
 	case TFLT: {
 	    float tmp_value;
@@ -1728,6 +1803,7 @@ int msr_reg_rtw_param( const char *model_name,
 		       unsigned int dataSize){
     char *buf;
     char *rbuf,*info;
+    char *upath;        //unique name
     char *value;
     int result=1;
     int dohide = 0;
@@ -1737,7 +1813,7 @@ int msr_reg_rtw_param( const char *model_name,
     struct talist *alist = NULL;
 
 
-    if(DBG > 0) printk("reg_rtw_param_ %s,%s\n",path,name);
+    if(DBG > 0) printf("reg_rtw_param:%s|%s|%s, rnum: %i, cnum: %i\n",model_name,path,name,rnum,cnum);
 
     //Hilfspuffer
 
@@ -1748,9 +1824,10 @@ int msr_reg_rtw_param( const char *model_name,
     //erstmal den Namen zusammensetzten zum einem gültigen Pfad
     if (strlen(path))
         sprintf(buf, "/%s/%s/%s", model_name, path, name);
-    else
+    else {
         sprintf(buf, "/%s/%s", model_name, name);
-
+	if (DBG >0) printf("xxxxxxxxxxxxxxxxx\n");
+    }
     //jetzt alle Ausdrücke, die im Pfad in <> stehen extrahieren und interpretieren
     rbuf = extractalist(&alist,buf);
 
@@ -1775,34 +1852,35 @@ int msr_reg_rtw_param( const char *model_name,
     else 
 	pflag = MSR_R | MSR_W;
 
+    upath = msr_unique_channel_name(rbuf);
 
     if(!dohide) {
 	if(hasattribute(alist,"isstring") && (ETL_to_MSR(dataType) == TUCHAR || ETL_to_MSR(dataType) == TCHAR)) {
-	    result = msr_cfi_reg_param(rbuf,"",data,rnum,cnum,orientation,TSTR,info,pflag,NULL,NULL);
+	    result = msr_cfi_reg_param2(upath,"","",data,rnum,cnum,orientation,TSTR,info,pflag,NULL,NULL);
 	    isstring = 1;
 	}
 	else
-	    result = msr_cfi_reg_param(rbuf,"",data,rnum,cnum,orientation,ETL_to_MSR(dataType),info,pflag,NULL,NULL);
+	    result = msr_cfi_reg_param2(upath,"","",data,rnum,cnum,orientation,ETL_to_MSR(dataType),info,pflag,NULL,NULL);
 
-	    //jetzt noch die einzelnen Elemente registrieren 
-	    if (!hasattribute(alist,"hideelements") && isstring == 0) {
+	    //jetzt noch zusätzlich die einzelnen Elemente registrieren, da das MSR-Protokoll das so haben will... 
+	if (!hasattribute(alist,"hideelements") && isstring == 0) {
 		if(rnum+cnum > 2) { 
 		    int r,c;
 		    void *p;
-		    char *buf2 = (char *)getmem(strlen(rbuf)+2+100); //warum 100 ??
+		    char *ibuf = (char *)getmem(40+3); //warum 40+3 ?? 2 Indizes a max 64bit in dezimal sind 20 Stelle je, dann 2 mal / und die 0
 		    for (r = 0; r < rnum; r++) {
 			for (c = 0; c < cnum; c++) {
 			    MSR_CALC_ADR((void *)data,dataSize,orientation,rnum,cnum);
 			    //neuen Namen
 			    if (rnum == 1 || cnum == 1)  //Vektor
-				sprintf(buf2,"%s/%i",rbuf,r+c);
+				sprintf(ibuf,"/%i",r+c);
 			    else                         //Matrize
-				sprintf(buf2,"%s/%i,%i",rbuf,r,c);
+				sprintf(ibuf,"/%i/%i",r,c);
 			    //p wird in MSR_CALC_ADR berechnet !!!!!!!!!!!
-			    result = msr_cfi_reg_param(buf2,"",p,1,1,orientation,ETL_to_MSR(dataType),info,pflag | MSR_DEP,NULL,NULL);
+			    result = msr_cfi_reg_param2(upath,ibuf,"",p,1,1,orientation,ETL_to_MSR(dataType),info,pflag | MSR_DEP,NULL,NULL);
 			}
 		    }
-		    freemem(buf2);
+		    freemem(ibuf);
 		}
 	    }
 
@@ -1810,13 +1888,13 @@ int msr_reg_rtw_param( const char *model_name,
     freemem(info);
     freemem(rbuf);
     freemem(buf);
-
+    freemem(upath);
     freealist(&alist);
     return result;
 
 }
 
-int msr_reg_time(void *time)
+int msr_reg_time(void *time)     //FIXME, hier wird die Zeit im falschen Format übergeben
 {
     msr_reg_kanal3("/Time","s","",
             time,TTIMEVAL,"",default_sampling_red);
@@ -1888,6 +1966,7 @@ int msr_reg_rtw_signal( const char* model_name,
 
     char *buf;
     char *rbuf,*info;
+    char *upath;          //unique Pathname
     char *value;
     int result = 1,r,c;
     int dohide = 0;
@@ -1898,6 +1977,8 @@ int msr_reg_rtw_signal( const char* model_name,
 
 //    printf("Kanaloffset: %d\n",(unsigned int)offset);
     //Hilfspuffer
+
+    if(DBG > 0) printf("reg_rtw_signal:%s|%s|%s, rnum: %i, cnum: %i\n",model_name,path,name,rnum,cnum);
 
     buf = (char *)getmem(
             strlen(model_name) + strlen(path) + strlen(name) + 4
@@ -1931,26 +2012,28 @@ int msr_reg_rtw_signal( const char* model_name,
 	}
     }
 
+    upath = msr_unique_channel_name(rbuf);
+    //    if (strcmp(upath,rbuf) != 0) printf("%s->%s\n",rbuf,upath);   
 
     if(!dohide) {
 	if(rnum+cnum > 2) {
-	    char *buf2 = (char *)getmem(strlen(rbuf)+2+100); 
+	    char *ibuf = (char *)getmem(40+3); //warum 40+3 ?? 2 Indizes a max 64bit in dezimal sind 20 Stelle je, dann 2 mal / und die 0
 	    for (r = 0; r < rnum; r++) {
 		for (c = 0; c < cnum; c++) {
 		    MSR_CALC_ADR((void *)offset,dataSize,orientation,rnum,cnum);
 		    //neuen Namen
 		    if (rnum == 1 || cnum == 1)  //Vektor
-			sprintf(buf2,"%s/%i",rbuf,r+c);
+			sprintf(ibuf,"/%i",r+c);
 		    else                         //Matrize
-			sprintf(buf2,"%s/%i/%i",rbuf,r,c);
+			sprintf(ibuf,"/%i/%i",r,c);
 		    //p wird in MSR_CALC_ADR berechnet !!!!!!!!!!!
-		    result |= msr_reg_kanal3(buf2,(char *)alias,"",p,ETL_to_MSR(dataType),info,default_sampling_red);
+		    result |= msr_reg_kanal4(upath,ibuf,(char *)alias,"",p,ETL_to_MSR(dataType),info,default_sampling_red);
 		}
 	    }
-	    freemem(buf2);
+	    freemem(ibuf);
 	}
 	else {  //ein Sklarer Kanal
-	    result |= msr_reg_kanal3(rbuf,(char *)alias,"",(void *)offset,ETL_to_MSR(dataType),info,default_sampling_red);
+	    result |= msr_reg_kanal4(upath,"",(char *)alias,"",(void *)offset,ETL_to_MSR(dataType),info,default_sampling_red);
 	}
 
     }
@@ -1958,13 +2041,12 @@ int msr_reg_rtw_signal( const char* model_name,
     freemem(info);
     freemem(rbuf);
     freemem(buf);
+    freemem(upath);
     freealist(&alist);
 
     return result;
 
 }
-
-
 
 
 

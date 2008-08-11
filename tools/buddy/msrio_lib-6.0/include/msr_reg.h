@@ -113,7 +113,9 @@ do {                                     \
 #define MSR_CODEHEX 2       //Hexadecimale Codierung
 
 #define MSR_LIST_HEADER\
-    char *p_bez;                 /* Bezeichnung */                                         \
+    char *p_rbez;                /* Bezeichnung (ohne Indexerweiterung des Namens, Vektoren, Matrizen) */ \
+    char *p_bez;                 /* Bezeichnung (mit Indexerweiterung)*/                                         \
+    char *p_ibuf;                /* Indexstring: p_bez = strcat(p_rbez,p_ibuf) */          \
     char *p_einh;                /* Einheit */                                             \
     void *p_adr;                 /* Voidpointer zur Adresse der Variablen*/	           \
     char *info;                /*Setzen von weiteren flexiblen Parametern wie z.B. init oder limits */ \
@@ -124,6 +126,8 @@ do {                                     \
 
 
 /* erzeugt einen Eindeutigen Namen, falls es die Bezeichnung schon einmal in Kanal, oder Parameterliste gibt */
+/* erweitert 2008.08.05 .... */
+
 
 #define  MSR_UNIQUENAME(src,dest,head,list)                                                \
 do {                                                                                       \
@@ -133,11 +137,17 @@ do {                                                                            
     int found = 0;                                                                         \
     FOR_THE_LIST(_element,head) {                                                          \
      if(_element) {                                                                        \
-       if(strcmp(_element->p_bez,src) == 0) /* der erste Durchgang */ {                    \
-           /* printk("Uniquename found: %s\n",src); */                                           \
-	   freemem(_element->p_bez);  /*den alten Namen mit Index 01 versehen	*/	   \
-	   sprintf(buf,"%s/00",src);							   \
-	   _element->p_bez = strdup(buf);						   \
+       if(strcmp(_element->p_rbez,src) == 0) /* der erste Durchgang */ {                    \
+           /* printf("Uniquename found: %s\n",src); */                                            \
+	   freemem(_element->p_rbez);  /*den alten Namen mit Index 0 versehen	*/	   \
+	   sprintf(buf,"%s/0",src);							   \
+	   _element->p_rbez = strdup(buf);						   \
+           /* jetzt den neuen Namen des alten wieder zusammensetzen */                     \
+           freemem(_element->p_bez);                                                       \
+           _element->p_bez = (char *)getmem(strlen(_element->p_rbez)+strlen(_element->p_ibuf)+1);   \
+           if (_element->p_bez)                                                           \
+             sprintf(_element->p_bez,"%s%s",_element->p_rbez,_element->p_ibuf);           \
+          /* nicht herausspringen, sondern alle gefundenen ändern  */                         \
        }										   \
      }											   \
     }											   \
@@ -145,9 +155,9 @@ do {                                                                            
     /* jetzt zweiten Durchlauf */							   \
     for(;;) {             								   \
 	found = 0;									   \
-	sprintf(buf,"%s/%.2d",src,count); 	                                           \
+	sprintf(buf,"%s/%d",src,count); 	                                           \
 	FOR_THE_LIST(_element,head) {                                                      \
-         if(_element && (strcmp(_element->p_bez,buf) == 0)) {				   \
+         if(_element && (strcmp(_element->p_rbez,buf) == 0)) {				   \
 	    count++;									   \
 	    found = 1;									   \
 	    break;									   \
@@ -156,15 +166,15 @@ do {                                                                            
 	if(found == 0) break;								   \
     }											   \
  if(count > 0) {									   \
-     /* printk("Uniquename created: %s\n",buf); */                                               \
+     /* printf("Uniquename created: %s\n",buf); */                                          \
      dest = strdup(buf);								   \
  }											   \
  else	{										   \
-     /* printk("Uniquename used: %s\n",src); */                                                  \
+     /* printf("Uniquename used: %s\n",src);  */                                                 \
      dest = strdup(src);								   \
-     /* printk("Uniquename used: %s done...\n",src); */                                          \
  }                                                                                         \
  /* printk("Uniquename freemem buf\n"); */                                                       \
+                                                                                           \
  freemem(buf);                                                                             \
 } while(0) 										    
 											    
@@ -185,15 +195,20 @@ do {                                                                            
     element_size = sizeof(struct list);                   \
     element = (struct list *)  getmem(element_size);                                             \
     if (!element) {                                                                              \
-        printk("Registering %s failed !!\n",element->p_bez);                                     \
+        printk("Registering %s failed !!\n",bez);                                     \
         return -ENOMEM;                                                                          \
     }                                                                                            \
     memset(element, 0, sizeof(struct list));                                                     \
                                                                                                  \
                                                                                                  \
    /* und die Strings kopieren */                                                                \
-    MSR_UNIQUENAME(bez,element->p_bez,head,list);                                                 \
-/*    element->p_bez=strdup(bez);  */                                                               \
+/*    MSR_UNIQUENAME(bez,element->p_rbez,head,list); nicht mehr hier ...*/                                                 \
+    element->p_rbez=strdup(bez);                                                                 \
+    element->p_ibuf = strdup(indexstr);  /*Index auch merken.... */                              \
+    element->p_bez = (char *)getmem(strlen(element->p_rbez)+strlen(indexstr)+1); /* Namen zusammensetzen */ \
+    if (!element->p_bez)                                                                         \
+      return -ENOMEM;                                                                            \
+    sprintf(element->p_bez,"%s%s",element->p_rbez,indexstr);                                     \
     element->p_einh=strdup(einh);                                                                \
     element->info=strdup(info);                                                                  \
     element->p_adr = (void *)adr;                                                                \
@@ -344,12 +359,16 @@ struct msr_meta_list
 #define msr_f_reg_param(bez,einh,adr,typ,flags) \
         msr_cfi_reg_param(bez,einh,adr,1,1,si_scalar,typ,"",flags,NULL,NULL)         //mit Flags
 
-int msr_cfi_reg_param(char *bez,char *einh,void *adr,int rnum, int cnum,int orientation,enum enum_var_typ typ,
+
+#define msr_cfi_reg_param(bez,einh,adr,rnum,cnum,orientation,typ,info,flags,w,r) \
+        msr_cfi_reg_param2(bez,"",einh,adr,rnum,cnum,orientation,typ,info,flags,w,r)
+
+
+int msr_cfi_reg_param2(char *bez,char *indexstr,char *einh,void *adr,int rnum, int cnum,int orientation,enum enum_var_typ typ,
 		      char *info,
 		      unsigned int flags,                                      //mit Flags 
 		      void (*write)(struct msr_param_list *self),              //und Callbacks
 		      void (*read)(struct msr_param_list *self));
-
 
 //die alten Definitionen---------------------------------------------------------------------------
 
@@ -424,6 +443,25 @@ int msr_cfi_reg_param(char *bez,char *einh,void *adr,int rnum, int cnum,int orie
      freemem(info);                                            \
     } while (0)
 
+
+/*
+***************************************************************************************************
+*
+* Function: msr_unique_param_name
+*
+* Beschreibung: erzeugt einen eindeutigen Parameternamen
+*                      
+* Parameter: Namensvorschlag
+*            
+*
+* Rückgabe:  Zeiger auf neuen Namen (dieser muß wieder freigegeben werden)
+*               
+* Status: exp
+*
+***************************************************************************************************
+*/
+
+char *msr_unique_param_name(char *bez);
 
 /*
 ***************************************************************************************************
@@ -547,9 +585,29 @@ void msr_init_kanal_params(unsigned int _base_rate,void *_base,unsigned int _blo
 ***************************************************************************************************
 */
 int msr_reg_kanal (char *bez,            char *einh,void *adr,enum enum_var_typ typ);
-int msr_reg_kanal2(char *bez,void *alias,char *einh,void *adr,enum enum_var_typ typ,int red);
-int msr_reg_kanal3(char *bez,void *alias,char *einh,void *adr,enum enum_var_typ typ,char *info,int red);
+int msr_reg_kanal2(char *bez,               void *alias,char *einh,void *adr,enum enum_var_typ typ,int red);
+int msr_reg_kanal3(char *bez,               void *alias,char *einh,void *adr,enum enum_var_typ typ,char *info,int red);
+int msr_reg_kanal4(char *bez,char *indexstr,void *alias,char *einh,void *adr,enum enum_var_typ typ,char *info,int red);
 
+
+/*
+***************************************************************************************************
+*
+* Function: msr_unique_channel_name
+*
+* Beschreibung: erzeugt einen eindeutigen Kanalnamen
+*                      
+* Parameter: Namensvorschlag
+*            
+*
+* Rückgabe:  Zeiger auf neuen Namen (dieser muß wieder freigegeben werden)
+*               
+* Status: exp
+*
+***************************************************************************************************
+*/
+
+char *msr_unique_channel_name(char *bez);
 
 
 void msr_clean_kanal_list(void);
