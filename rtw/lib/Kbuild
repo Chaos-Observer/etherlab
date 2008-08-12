@@ -1,5 +1,5 @@
 EXTRA_CFLAGS := $(DEFS) -I$(M)/../.. -I$(M)/../../tools/include \
-	-I$(PREFIX)/include
+	-I$(STAGING_DIR)/$(PREFIX)/include
 
 EXTRA_CFLAGS += $(shell \
         DESTDIR=$(STAGING_DIR) $(STAGING_DIR)/$(RTAI_DIR)/bin/rtai-config \
@@ -7,6 +7,6 @@ EXTRA_CFLAGS += $(shell \
 
 obj-m   := raise_catch.o
 
-ifneq ($(wildcard $(PREFIX)/include/ecrt.h),)
+ifneq ($(wildcard $(STAGING_DIR)/$(PREFIX)/include/ecrt.h),)
 obj-m   +=  ecrt_support.o
 endif
