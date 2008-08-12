@@ -98,8 +98,8 @@ struct rt_app rt_app = {
 
     .payload_files = payload_files,
 
-    .appVersion = STR(MODELVERSION),
-    .appName = STR(MODEL),
+    .version = STR(MODELVERSION),
+    .name = STR(MODEL),
 };
 
 const char*
