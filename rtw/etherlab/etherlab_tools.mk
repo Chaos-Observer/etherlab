@@ -18,7 +18,8 @@ CC               = gcc
 LD               = ld
 LDFLAGS		 =
 INSTRUMENT_LIBS  = $(RTW_DIR)/lib/libetherlab.a
-USER_INCLUDES    = -I$(ETHERLAB_DIR)/include -I$(RTW_DIR)/include
+USER_INCLUDES    = -I$(ETHERLAB_DIR)/include -I$(RTW_DIR)/include \
+        -I$(ETHERLAB_DIR)/capi
 
 # These definitions are used by targets that have the WARN_ON_GLNX option
 GCC_WARN_OPTS     := -pedantic -Wall -Wwrite-strings \

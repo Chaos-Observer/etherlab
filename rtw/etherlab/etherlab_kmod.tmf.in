@@ -220,11 +220,13 @@ LIBS =
 PRECOMP_RTW_LIB := $(wildcard $(RTW_DIR)/lib/|>EXPAND_LIBRARY_NAME<|.a)
 
 ifeq ($(OPT_OPTS),$(DEFAULT_OPT_OPTS))
-LIBS += |>EXPAND_LIBRARY_LOCATION<|/|>EXPAND_LIBRARY_NAME<|_std.a
-else ifneq ($(PRECOMP_RTW_LIB),)
-LIBS += $(PRECOMP_RTW_LIB)
+  LIBS += |>EXPAND_LIBRARY_LOCATION<|/|>EXPAND_LIBRARY_NAME<|_std.a
 else
-LIBS += |>EXPAND_LIBRARY_NAME<|.a
+  ifneq ($(PRECOMP_RTW_LIB),)
+    LIBS += $(PRECOMP_RTW_LIB)
+  else
+    LIBS += |>EXPAND_LIBRARY_NAME<|.a
+  endif
 endif
 |>END_PRECOMP_LIBRARIES<| |>START_EXPAND_LIBRARIES<|
 LIBS += |>EXPAND_LIBRARY_NAME<|.a |>END_EXPAND_LIBRARIES<|
@@ -382,7 +384,7 @@ $(KERNEL_MODULE): $(MODULE_MAIN_SRC) $(SHIPPED_MODEL) Makefile module_payload.c
 # Level 2 targets
 ###################
 # Copy $(MODULE_MAIN_SRC) to local dir. KBuild needs it there
-$(MODULE_MAIN_SRC): $(ETHERLAB_DIR)/src/$(MODULE_MAIN_SRC)
+$(MODULE_MAIN_SRC): $(ETHERLAB_DIR)/capi/$(MODULE_MAIN_SRC)
 	@$(CP) $< $@
 
 # Create <model>.o_shipped object for use in KBuild
@@ -462,7 +464,7 @@ $(MODEL).so: $(SYMBOL_SRCS) module_payload.c capi_init.c capi.h \
 	@$(GCC_TEST_CMD) $< $(GCC_TEST_OUT)
 	$(cc) $(DEP) -c $(LOCAL_CFLAGS) $(MODULE_CFLAGS) $(GCC_WALL_FLAG) $<
 
-%.o : $(ETHERLAB_DIR)/src/%.c
+%.o : $(ETHERLAB_DIR)/capi/%.c
 	@$(GCC_TEST_CMD) $(LOCAL_CFLAGS) $(MODULE_CFLAGS) $< $(GCC_TEST_OUT)
 	$(cc) $(DEP) -c $(LOCAL_CFLAGS) $(MODULE_CFLAGS) $(GCC_WALL_FLAG_MAX) $<
 
