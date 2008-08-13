@@ -27,8 +27,13 @@
 #include "Dispatcher.h"
 #include "Task.h"
 
+#undef DEBUG
+#define DEBUG 0
+
+#if DEBUG
 #include <iostream>
 using namespace std;
+#endif
 
 Dispatcher dispatcher;
 
@@ -43,7 +48,7 @@ Dispatcher::Dispatcher()
 Dispatcher::~Dispatcher()
 //************************************************************************
 {
-    for (list<Event*>::iterator it = events.begin();
+    for (std::list<Event*>::iterator it = events.begin();
             it != events.end(); it++)
         event_del(&(*it)->ev);
 }
@@ -67,7 +72,9 @@ void* Dispatcher::setWriteable(Task* task, int fd)
 //************************************************************************
 {
     Event* event = new Event;
+#if DEBUG
     std::cerr << ">>>>> write event " << event << std::endl;
+#endif
 
     event->task = task;
 
@@ -82,7 +89,9 @@ void* Dispatcher::setReadable(Task *task, int fd)
 //************************************************************************
 {
     Event* event = new Event;
+#if DEBUG
     std::cerr << ">>>>> read event " << event << std::endl;
+#endif
 
     event->task = task;
 
@@ -97,7 +106,9 @@ void* Dispatcher::setTimer(Task *task, struct timeval& tv)
 //************************************************************************
 {
     Event* event = new Event;
+#if DEBUG
     std::cerr << ">>>>> timer event " << event << std::endl;
+#endif
 
     event->tv = tv;
     event->task = task;
@@ -126,7 +137,9 @@ void Dispatcher::remove(void* p, Task* task)
     event_del(&event->ev);
     dispatcher.events.remove(event);
     delete event;
+#if DEBUG
     std::cerr << "<<<<< delete event " << event << std::endl;
+#endif
 }
 
 //************************************************************************
@@ -137,14 +150,18 @@ void Dispatcher::readCallbackFunc(int fd, short event, void *priv_data)
     int rv;
 
     rv = task->read(fd);
+#if DEBUG
     cerr << "Returnval from read: " << rv << endl;
+#endif
     if (rv  <= 0) {
         Task* parent = task->getParent();
+#if DEBUG
         cerr << "dispatcher read callling kill " << parent << endl;
+#endif
         if (parent)
             parent->kill(task, rv);
         else
-            delete task;
+            task->disableRead();
     }
 }
 
@@ -156,14 +173,18 @@ void Dispatcher::writeCallbackFunc(int fd, short event, void *priv_data)
     int rv;
 
     rv = task->write(fd);
+#if DEBUG
     cerr << "Returnval from write: " << rv << endl;
+#endif
     if (rv <= 0) {
         Task* parent = task->getParent();
+#if DEBUG
         cerr << "dispatcher write callling kill " << parent << endl;
+#endif
         if (parent)
             parent->kill(task, rv);
         else
-            delete task;
+            task->disableWrite();
     }
 }
 
@@ -182,14 +203,18 @@ void Dispatcher::timerCallbackFunc(int fd, short _event, void *priv_data)
     event->task = 0;
 
     rv = task->timeout();
+#if DEBUG
     cerr << "Returnval from timeout: " << rv << endl;
+#endif
     if (rv <= 0) {
         Task* parent = task->getParent();
+#if DEBUG
         cerr << "dispatcher timer callling kill " << parent << endl;
+#endif
         if (parent)
             parent->kill(task, rv);
         else 
-            delete task;
+            task->disableTimer();
     }
 
     if (event->task) {
