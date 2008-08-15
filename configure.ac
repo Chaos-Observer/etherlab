@@ -34,6 +34,7 @@ AC_ARG_ENABLE([simulink],
       esac],
     [ simulink=1 ]
 )
+
 AM_CONDITIONAL(SIMULINK, test x$simulink = x1)
 AC_SUBST(SIMULINK,${simulink})
 
@@ -75,13 +76,15 @@ AC_ARG_WITH([staging-dir],
         [Host staging directory for cross compile]),
     [ staging_dir=${withval} ],
     [ staging_dir= ]
-    )
+)
 
 AC_SUBST(STAGING_DIR,[$staging_dir])
 
 #-----------------------------------------------------------------------------
 # RTAI directory
 #-----------------------------------------------------------------------------
+
+if test "x$appcore" = "x1"; then
 
 dnl Path to RTAI installation
 AC_ARG_WITH([rtai-dir], 
@@ -98,8 +101,6 @@ AC_ARG_WITH([rtai-dir],
         fi
     ])
 
-if test "x$appcore" = "x1"; then
-
 AC_SUBST(RTAI_DIR,[$rtai_dir])
 
 AC_MSG_CHECKING(RTAI path)
@@ -114,6 +115,8 @@ fi # appcore
 # Linux directory
 #-----------------------------------------------------------------------------
 
+if test "x$appcore" = "x1"; then
+
 dnl Make sure rtai-config reports correct kernel
 dnl and that IPIPE is configured for the kernel
 
@@ -125,8 +128,6 @@ AC_ARG_WITH([linux-dir],
     [
         linux_dir=$($staging_dir/${RTAI_DIR}/bin/rtai-config --linux-dir)
     ])
-
-if test "x$appcore" = "x1"; then
 
 AC_SUBST(LINUX_DIR,$linux_dir)
 
