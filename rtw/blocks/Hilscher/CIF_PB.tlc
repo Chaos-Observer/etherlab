@@ -22,7 +22,7 @@
                 }
 
     %% CIF PB header
-    %<LibAddToCommonIncludes("cif_pb.h")>
+    %<LibAddToCommonIncludes("cif_kernel.h")>
   %endif
 %endfunction
 
