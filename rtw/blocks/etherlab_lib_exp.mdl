@@ -1,6 +1,6 @@
 Library {
   Name			  "etherlab_lib_exp"
-  Version		  6.4
+  Version		  6.5
   MdlSubVersion		  0
   SavedCharacterEncoding  "ISO-8859-1"
   LibraryType		  "BlockLibrary"
@@ -32,10 +32,10 @@ Library {
   Creator		  "rich"
   UpdateHistory		  "UpdateHistoryNever"
   ModifiedByFormat	  "%<Auto>"
-  LastModifiedBy	  "rich"
+  LastModifiedBy	  "ml"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Mon Jul 14 15:07:04 2008"
-  ModelVersionFormat	  "1.%<AutoIncrement:662>"
+  LastModifiedDate	  "Mon Aug 18 11:29:34 2008"
+  ModelVersionFormat	  "1.%<AutoIncrement:663>"
   ConfigurationManager	  "rcs"
   LinearizationMsg	  "none"
   Profile		  off
@@ -156,7 +156,7 @@ Library {
   }
   System {
     Name		    "etherlab_lib_exp"
-    Location		    [782, 601, 1377, 994]
+    Location		    [433, 468, 1028, 861]
     Open		    on
     ModelBrowserVisibility  off
     ModelBrowserWidth	    200
@@ -413,7 +413,7 @@ Library {
 	  MaskVisibilityString	  "on,on,on,on,on,on,on"
 	  MaskToolTipString	  "on,on,on,on,on,on,on"
 	  MaskVarAliasString	  ",,,,,,"
-	  MaskVariables		  "device=&1;addr=@2;ip_type=@3;width=@4;swap="
+	  MaskVariables		  "device=@1;addr=@2;ip_type=@3;width=@4;swap="
 "@5;op_type=@6;tsample=@7;"
 	  MaskInitialization	  "device = test_var(device);"
 	  MaskDisplay		  "fprintf('CIF-80PB\\nPCI: %s\\nAddr:%i',\nde"
@@ -450,7 +450,7 @@ Library {
 	  MaskVisibilityString	  "on,on,on,on,on"
 	  MaskToolTipString	  "on,on,on,on,on"
 	  MaskVarAliasString	  ",,,,"
-	  MaskVariables		  "device=&1;addr=@2;op_type=@3;swap=@4;tsampl"
+	  MaskVariables		  "device=@1;addr=@2;op_type=@3;swap=@4;tsampl"
 "e=@5;"
 	  MaskInitialization	  "device = test_var(device);"
 	  MaskDisplay		  "fprintf('CIF-80PB\\nPCI: %s\\nAddr:%i',\nde"
