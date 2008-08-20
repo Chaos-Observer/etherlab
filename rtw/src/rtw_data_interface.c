@@ -347,8 +347,9 @@ const char* rtw_capi_init(
         unsigned int *max_path_len
         )
 {
-    unsigned int i;
+    unsigned int i, st;
     size_t path_len;
+    unsigned int max_st_idx = 0;
 
     model_name_len = rtw_strlen(STR(MODEL));
 
@@ -385,6 +386,8 @@ const char* rtw_capi_init(
         if (*max_path_len < path_len) {
             *max_path_len = path_len;
         }
+        st = rtwCAPI_GetSignalSampleTimeIdx(signals, i);
+        max_st_idx = max_st_idx > st ? max_st_idx : st;
     }
 #ifdef rtP
     for (i = 0; i < maxParameterIdx; i++) {
@@ -397,14 +400,15 @@ const char* rtw_capi_init(
 #endif
 
     sampleTimeMap = rtwCAPI_GetSampleTimeMap(mmi);
-    for (i = 0; i < NUMST; i++) {
+    for (i = 0; i <= max_st_idx; i++) {
         real_T *samplePeriodPtr = 
             (real_T*)rtwCAPI_GetSamplePeriodPtr(sampleTimeMap, i);
         unsigned int tid = rtwCAPI_GetSampleTimeTID(sampleTimeMap, i);
 #if TID01EQ
-        if (!tid)
+        if (tid)
+            tid -= 1;
+        if (!*samplePeriodPtr)
             continue;
-        tid -= 1;
 #endif
         task_period[tid] = *samplePeriodPtr * 1.0e6 + 0.5;
     }
