@@ -572,7 +572,7 @@ int start_rt_app(const struct rt_app *rt_app,
     for (tid = 0; tid < rt_app->num_tasks; tid++) {
         pr_info("Application tid %i running at %uus\n", 
                 tid, rt_app->task_period[tid]);
-        decimation = rt_app->task_period[tid] / rt_app->task_period[0];
+        decimation = rt_app->task_period[tid] / rt_appcore.base_period;
         if ((err = rt_task_make_periodic(
                         &app->task[tid].rtai_thread, 
                         now + nano2count(1e7), //rt_appcore.tick_period,
