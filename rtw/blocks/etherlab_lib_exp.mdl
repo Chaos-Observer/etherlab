@@ -1,6 +1,6 @@
 Library {
   Name			  "etherlab_lib_exp"
-  Version		  6.5
+  Version		  6.6
   MdlSubVersion		  0
   SavedCharacterEncoding  "ISO-8859-1"
   LibraryType		  "BlockLibrary"
@@ -34,12 +34,14 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "ml"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Mon Aug 18 11:29:34 2008"
-  ModelVersionFormat	  "1.%<AutoIncrement:663>"
+  LastModifiedDate	  "Thu Aug 21 15:06:06 2008"
+  ModelVersionFormat	  "1.%<AutoIncrement:668>"
   ConfigurationManager	  "rcs"
+  SimulationMode	  "normal"
   LinearizationMsg	  "none"
   Profile		  off
   ParamWorkspaceSource	  "MATLABWorkspace"
+  AccelVerboseBuild	  off
   CovSaveName		  "covdata"
   CovMetricSettings	  "dw"
   CovNameIncrementing	  off
@@ -110,7 +112,7 @@ Library {
     }
     Block {
       BlockType		      SubSystem
-      ShowPortLabels	      on
+      ShowPortLabels	      "FromPortIcon"
       Permissions	      "ReadWrite"
       PermitHierarchicalResolution "All"
       TreatAsAtomicUnit	      off
@@ -147,6 +149,7 @@ Library {
     FontSize		    10
     FontWeight		    "normal"
     FontAngle		    "normal"
+    UseDisplayTextAsClickCallback off
   }
   LineDefaults {
     FontName		    "Bitstream Charter"
@@ -156,7 +159,7 @@ Library {
   }
   System {
     Name		    "etherlab_lib_exp"
-    Location		    [433, 468, 1028, 861]
+    Location		    [433, 468, 1028, 738]
     Open		    on
     ModelBrowserVisibility  off
     ModelBrowserWidth	    200
@@ -174,7 +177,7 @@ Library {
       BlockType		      SubSystem
       Name		      "AddiData"
       Ports		      []
-      Position		      [295, 134, 366, 195]
+      Position		      [290, 24, 361, 85]
       MinAlgLoopOccurrences   off
       RTWSystemCode	      "Auto"
       FunctionWithSeparateData off
@@ -336,7 +339,7 @@ Library {
       BlockType		      "S-Function"
       Name		      "Catch"
       Ports		      [0, 1]
-      Position		      [70, 240, 130, 270]
+      Position		      [65, 130, 125, 160]
       BackgroundColor	      "orange"
       InitFcn		      "catch_check(gcb,'CheckIds');"
       FunctionName	      "catch"
@@ -365,14 +368,14 @@ Library {
       BlockType		      SubSystem
       Name		      "Hilscher"
       Ports		      []
-      Position		      [295, 229, 366, 290]
+      Position		      [290, 119, 361, 180]
       MinAlgLoopOccurrences   off
       RTWSystemCode	      "Auto"
       FunctionWithSeparateData off
       MaskHideContents	      off
       System {
 	Name			"Hilscher"
-	Location		[20, 469, 368, 718]
+	Location		[418, 539, 935, 660]
 	Open			off
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
@@ -389,11 +392,11 @@ Library {
 	  BlockType		  "S-Function"
 	  Name			  "PD_In"
 	  Ports			  [0, 1]
-	  Position		  [45, 25, 115, 65]
+	  Position		  [280, 25, 350, 75]
 	  BackgroundColor	  "yellow"
 	  FunctionName		  "cif_pd_in"
 	  Parameters		  "device,addr,ip_type,width,swap,op_type,tsam"
-"ple"
+"ple,sim"
 	  MaskType		  "Profibus Input"
 	  MaskDescription	  "Hilscher CIF-80PB Profibus Input"
 	  MaskHelp		  "This block provides an interface to the Pro"
@@ -401,38 +404,38 @@ Library {
 " following information:<br>\n<b>PCI Device</b>: Either supply the address in "
 "PCI-Addressing format <em>bus:slot</em> (hexadecimal format), or the (decimal"
 ") position as cards are detected "
-	  MaskPromptString	  "PCI Device|Address|Sensor Data Type|Vector "
-"Length|Swap Input Bytes|Output Data Format|Sample Time (-1 inherited)"
-	  MaskStyleString	  "edit,edit,popup(Bit0|Bit1|Bit2|Bit3|Bit4|Bi"
-"t5|Bit6 |Bit7|int8_T|uint8_T|int16_T|uint16_T|int32_T|uint32_T),edit,checkbox"
-",popup(int8|uint8|int16|uint16|int32|uint32|boolean|double|single|Inherited v"
-"ia back propagation),edit"
-	  MaskTunableValueString  "off,off,off,off,off,off,off"
-	  MaskCallbackString	  "||||||"
-	  MaskEnableString	  "on,on,on,on,on,on,on"
-	  MaskVisibilityString	  "on,on,on,on,on,on,on"
-	  MaskToolTipString	  "on,on,on,on,on,on,on"
-	  MaskVarAliasString	  ",,,,,,"
-	  MaskVariables		  "device=@1;addr=@2;ip_type=@3;width=@4;swap="
-"@5;op_type=@6;tsample=@7;"
-	  MaskInitialization	  "device = test_var(device);"
-	  MaskDisplay		  "fprintf('CIF-80PB\\nPCI: %s\\nAddr:%i',\nde"
-"vice,addr);"
+	  MaskPromptString	  "PCI Device|Address|Simulation|Sensor Data T"
+"ype|Vector Length|Swap Input Bytes|Output Data Format|Sample Time (-1 inherit"
+"ed)"
+	  MaskStyleString	  "edit,edit,checkbox,popup(Bit0|Bit1|Bit2|Bit"
+"3|Bit4|Bit5|Bit6 |Bit7|int8_T|uint8_T|int16_T|uint16_T|int32_T|uint32_T),edit"
+",checkbox,popup(int8|uint8|int16|uint16|int32|uint32|boolean|double|single|In"
+"herited via back propagation),edit"
+	  MaskTunableValueString  "off,off,off,off,off,off,off,off"
+	  MaskCallbackString	  "|||||||"
+	  MaskEnableString	  "on,on,on,on,on,on,on,on"
+	  MaskVisibilityString	  "on,on,on,on,on,on,on,on"
+	  MaskToolTipString	  "on,on,on,on,on,on,on,on"
+	  MaskVarAliasString	  ",,,,,,,"
+	  MaskVariables		  "device=@1;addr=@2;sim=@3;ip_type=@4;width=@"
+"5;swap=@6;op_type=@7;tsample=@8;"
+	  MaskDisplay		  "fprintf('CIF-80PB\\nPCI: %s\\nAddr: %u',\nd"
+"evice,addr);"
 	  MaskIconFrame		  on
 	  MaskIconOpaque	  on
 	  MaskIconRotate	  "none"
 	  MaskIconUnits		  "autoscale"
-	  MaskValueString	  "01:0E|120|int8_T|8|off|int8|0"
-	  MaskTabNameString	  ",,,,,,"
+	  MaskValueString	  "'ff:ff'|0|off|int8_T|1|off|int8|0"
+	  MaskTabNameString	  ",,,,,,,"
 	}
 	Block {
 	  BlockType		  "S-Function"
 	  Name			  "PD_Out"
 	  Ports			  [1]
-	  Position		  [40, 100, 110, 140]
+	  Position		  [185, 25, 255, 75]
 	  BackgroundColor	  "yellow"
 	  FunctionName		  "cif_pd_out"
-	  Parameters		  "device,addr,op_type,swap,tsample"
+	  Parameters		  "device,addr,op_type,swap,tsample,sim"
 	  MaskType		  "Profibus Input"
 	  MaskDescription	  "Hilscher CIF-80PB Profibus Output"
 	  MaskHelp		  "This block provides an interface to the Pro"
@@ -440,27 +443,27 @@ Library {
 " following information:<br>\n<b>PCI Device</b>: Either supply the address in "
 "PCI-Addressing format <em>bus:slot</em> (hexadecimal format), or the (decimal"
 ") position as cards are detected "
-	  MaskPromptString	  "PCI Device|Address|Actuator Data Type|Swap "
-"Input Bytes|Sample Time (-1 inherited)"
-	  MaskStyleString	  "edit,edit,popup(Bit0|Bit1|Bit2|Bit3|Bit4|Bi"
-"t5|Bit6 |Bit7|int8_T|uint8_T|int16_T|uint16_T|int32_T|uint32_T),checkbox,edit"
-	  MaskTunableValueString  "off,off,off,off,off"
-	  MaskCallbackString	  "||||"
-	  MaskEnableString	  "on,on,on,on,on"
-	  MaskVisibilityString	  "on,on,on,on,on"
-	  MaskToolTipString	  "on,on,on,on,on"
-	  MaskVarAliasString	  ",,,,"
-	  MaskVariables		  "device=@1;addr=@2;op_type=@3;swap=@4;tsampl"
-"e=@5;"
-	  MaskInitialization	  "device = test_var(device);"
-	  MaskDisplay		  "fprintf('CIF-80PB\\nPCI: %s\\nAddr:%i',\nde"
-"vice,addr);"
+	  MaskPromptString	  "PCI Device|Address|Simulation|Actuator Data"
+" Type|Swap Input Bytes|Sample Time (-1 inherited)"
+	  MaskStyleString	  "edit,edit,checkbox,popup(Bit0|Bit1|Bit2|Bit"
+"3|Bit4|Bit5|Bit6 |Bit7|int8_T|uint8_T|int16_T|uint16_T|int32_T|uint32_T),chec"
+"kbox,edit"
+	  MaskTunableValueString  "off,off,off,off,off,off"
+	  MaskCallbackString	  "|||||"
+	  MaskEnableString	  "on,on,on,on,on,on"
+	  MaskVisibilityString	  "on,on,on,on,on,on"
+	  MaskToolTipString	  "on,on,on,on,on,on"
+	  MaskVarAliasString	  ",,,,,"
+	  MaskVariables		  "device=@1;addr=@2;sim=@3;op_type=@4;swap=@5"
+";tsample=@6;"
+	  MaskDisplay		  "fprintf('CIF-80PB\\nPCI: %s\\nAddr: %u',\nd"
+"evice,addr);"
 	  MaskIconFrame		  on
 	  MaskIconOpaque	  on
 	  MaskIconRotate	  "none"
 	  MaskIconUnits		  "autoscale"
-	  MaskValueString	  "01:0E|120|int8_T|off|-1"
-	  MaskTabNameString	  ",,,,"
+	  MaskValueString	  "'ff:ff'|0|off|int8_T|off|-1"
+	  MaskTabNameString	  ",,,,,"
 	}
       }
     }
@@ -468,7 +471,7 @@ Library {
       BlockType		      "S-Function"
       Name		      "In"
       Ports		      [0, 1]
-      Position		      [445, 210, 525, 250]
+      Position		      [440, 100, 520, 140]
       BackgroundColor	      "yellow"
       FunctionName	      "etherlab_in"
       Parameters	      "varname,src_dtype,len,scale,offset,out_dtype,ts"
@@ -499,7 +502,7 @@ Library {
       BlockType		      "S-Function"
       Name		      "Out"
       Ports		      [1]
-      Position		      [445, 145, 525, 185]
+      Position		      [440, 35, 520, 75]
       BackgroundColor	      "yellow"
       FunctionName	      "etherlab_out"
       Parameters	      "varname,dtype,tsample"
@@ -527,7 +530,7 @@ Library {
       BlockType		      SubSystem
       Name		      "Printf"
       Ports		      [2]
-      Position		      [115, 154, 215, 196]
+      Position		      [110, 44, 210, 86]
       MinAlgLoopOccurrences   off
       RTWSystemCode	      "Auto"
       FunctionWithSeparateData off
@@ -646,7 +649,7 @@ Library {
       BlockType		      "S-Function"
       Name		      "Raise"
       Ports		      [1]
-      Position		      [170, 235, 230, 265]
+      Position		      [165, 125, 225, 155]
       BackgroundColor	      "red"
       CopyFcn		      "raise_check(gcb,'CheckCopy');"
       FunctionName	      "raise"
@@ -674,7 +677,7 @@ Library {
       BlockType		      "S-Function"
       Name		      "Raise\nSummary"
       Ports		      []
-      Position		      [175, 290, 235, 320]
+      Position		      [170, 180, 230, 210]
       BackgroundColor	      "red"
       CopyFcn		      "raise_summary_check(gcb,'CheckCopy');"
       FunctionName	      "raise_summary"
@@ -701,7 +704,7 @@ Library {
       BlockType		      SubSystem
       Name		      "cbdb"
       Ports		      []
-      Position		      [75, 300, 126, 330]
+      Position		      [70, 190, 121, 220]
       CopyFcn		      "if ~strcmp(gcs,'rtai_lib')\ndisplay('CopyFcn');"
 "       \nend                       "
       DeleteFcn		      "if ~strcmp(gcs,'rtai_lib')\ndisplay('DeleteFcn'"

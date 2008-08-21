@@ -9,14 +9,12 @@
  * License: GPL
  */
 
-
 #define S_FUNCTION_NAME  cif_pd_in
 #define S_FUNCTION_LEVEL 2
 
 #include "simstruc.h"
 #include "../get_string.h"
 
-#define PARAM_COUNT 7
 #define DEVICE                       (ssGetSFcnParam(S,0))
 #define ADDR     ((uint_T)mxGetScalar(ssGetSFcnParam(S,1)))
 #define IP_TYPE  ((uint_T)mxGetScalar(ssGetSFcnParam(S,2)))
@@ -24,6 +22,8 @@
 #define SWAP     ((uint_T)mxGetScalar(ssGetSFcnParam(S,4)))
 #define OP_TYPE  ((uint_T)mxGetScalar(ssGetSFcnParam(S,5)))
 #define TSAMPLE          (mxGetScalar(ssGetSFcnParam(S,6)))
+#define SIM      ((uint_T)mxGetScalar(ssGetSFcnParam(S,7)))
+#define PARAM_COUNT                                    8
 
 /*====================*
  * S-function methods *
@@ -118,17 +118,9 @@ static void mdlTerminate(SimStruct *S)
 #define MDL_RTW
 static void mdlRTW(SimStruct *S)
 {
-    /*
-#define DEVICE                       (ssGetSFcnParam(S,0))
-#define ADDR     ((uint_T)mxGetScalar(ssGetSFcnParam(S,1)))
-#define IP_TYPE  ((uint_T)mxGetScalar(ssGetSFcnParam(S,2)))
-#define WIDTH    ((uint_T)mxGetScalar(ssGetSFcnParam(S,3)))
-#define SWAP     ((uint_T)mxGetScalar(ssGetSFcnParam(S,4)))
-#define OP_TYPE  ((uint_T)mxGetScalar(ssGetSFcnParam(S,5)))
-#define TSAMPLE          (mxGetScalar(ssGetSFcnParam(S,6)))
-     */
     const char *device = getString(S,DEVICE);
     int32_T addr    = ADDR;
+    int32_T sim     = SIM;
     int32_T ip_type = IP_TYPE;
     int32_T width   = WIDTH;
     int32_T swap    = SWAP;
@@ -137,6 +129,8 @@ static void mdlRTW(SimStruct *S)
     if (!ssWriteRTWStrParam(S, "CIF_CardId", device))
         return;
     if (!ssWriteRTWScalarParam(S, "Addr", &addr, SS_INT32))
+        return;
+    if (!ssWriteRTWScalarParam(S, "Sim", &sim, SS_INT32))
         return;
     if (!ssWriteRTWScalarParam(S, "InputDataFormat", &ip_type, SS_INT32))
         return;
@@ -148,10 +142,7 @@ static void mdlRTW(SimStruct *S)
         return;
     if (!ssWriteRTWWorkVect(S, "PWork", 1, "InputAddr", 1))
         return;
-
 }
-
-
 
 /*======================================================*
  * See sfuntmpl_doc.c for the optional S-function methods *

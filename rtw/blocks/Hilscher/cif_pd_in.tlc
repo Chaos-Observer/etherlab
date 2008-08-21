@@ -63,13 +63,23 @@
     %break
     %%
   %endswitch
-  if ( !(%<LibBlockPWork(InputAddr,"","",0)> = 
-           cif_register_recv_addr( ... 
-           %<system.CIF_PB.Card[block.CIF_CardIdx].CIF_CardStruct>, ...
-           %<Addr>, %<bytes>))) {
-        %<LibSetRTModelErrorStatus("\"EtherCAT slave register failed\"")>;
-        return;
-  }
+  %if Sim == 0
+    if ( !(%<LibBlockPWork(InputAddr,"","",0)> = 
+             cif_register_recv_addr( ... 
+             %<system.CIF_PB.Card[block.CIF_CardIdx].CIF_CardStruct>, ...
+             %<Addr>, %<bytes>))) {
+          %<LibSetRTModelErrorStatus("\"CIF register failed\"")>;
+          return;
+    }
+  %else
+    if ( !(%<LibBlockPWork(InputAddr,"","",0)> = 
+             cif_register_send_addr( ... 
+             %<system.CIF_PB.Card[block.CIF_CardIdx].CIF_CardStruct>, ...
+             %<Addr>, %<bytes>))) {
+          %<LibSetRTModelErrorStatus("\"CIF register failed\"")>;
+          return;
+    }
+  %endif
 %endfunction
 
 

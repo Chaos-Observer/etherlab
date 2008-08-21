@@ -9,19 +9,19 @@
  * License: GPL
  */
 
-
 #define S_FUNCTION_NAME  cif_pd_out
 #define S_FUNCTION_LEVEL 2
 
 #include "simstruc.h"
 #include "../get_string.h"
 
-#define PARAM_COUNT 5
 #define DEVICE                       (ssGetSFcnParam(S,0))
 #define ADDR     ((uint_T)mxGetScalar(ssGetSFcnParam(S,1)))
 #define OP_TYPE  ((uint_T)mxGetScalar(ssGetSFcnParam(S,2)))
 #define SWAP     ((uint_T)mxGetScalar(ssGetSFcnParam(S,3)))
 #define TSAMPLE          (mxGetScalar(ssGetSFcnParam(S,4)))
+#define SIM      ((uint_T)mxGetScalar(ssGetSFcnParam(S,5)))
+#define PARAM_COUNT                                    6
 
 /*====================*
  * S-function methods *
@@ -81,7 +81,6 @@ static void mdlInitializeSizes(SimStruct *S)
             SS_OPTION_WORKS_WITH_CODE_REUSE | 
             /* SS_OPTION_PLACE_ASAP | */
             SS_OPTION_RUNTIME_EXCEPTION_FREE_CODE);
-
 }
 
 /* Function: mdlInitializeSampleTimes =========================================
@@ -122,6 +121,7 @@ static void mdlRTW(SimStruct *S)
     int32_T addr    = ADDR;
     int32_T op_type = OP_TYPE;
     int32_T swap    = SWAP;
+    int32_T sim     = SIM;
 
     if (!ssWriteRTWStrParam(S, "CIF_CardId", device))
         return;
@@ -131,12 +131,11 @@ static void mdlRTW(SimStruct *S)
         return;
     if (!ssWriteRTWScalarParam(S, "Swap", &swap, SS_INT32))
         return;
+    if (!ssWriteRTWScalarParam(S, "Sim", &sim, SS_INT32))
+        return;
     if (!ssWriteRTWWorkVect(S, "PWork", 1, "OutputAddr", 1))
         return;
-
 }
-
-
 
 /*======================================================*
  * See sfuntmpl_doc.c for the optional S-function methods *
