@@ -10,8 +10,10 @@ dist_ethercat_DATA = \
         moog_msd.c moog_msd_callback.m moog_msd.tlc moog.png \
         ethercat_ss_funcs.h \
         el31xx_check.m \
+        el320x_check.m \
         el5001_check.m \
         el5101_check.m \
+        mtsrseries_check.m \
         fromHexString.m \
         getEtherCATAddress.m \
         ec_slave2.c ec_slave2.tlc \
