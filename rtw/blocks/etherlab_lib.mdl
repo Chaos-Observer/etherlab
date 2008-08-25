@@ -34,8 +34,8 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "rich"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Wed Aug 20 11:25:50 2008"
-  ModelVersionFormat	  "1.%<AutoIncrement:674>"
+  LastModifiedDate	  "Mon Aug 25 23:31:02 2008"
+  ModelVersionFormat	  "1.%<AutoIncrement:675>"
   ConfigurationManager	  "rcs"
   LinearizationMsg	  "none"
   Profile		  off
@@ -129,7 +129,7 @@ Library {
   }
   System {
     Name		    "etherlab_lib"
-    Location		    [786, 475, 1381, 868]
+    Location		    [790, 495, 1385, 888]
     Open		    on
     ModelBrowserVisibility  off
     ModelBrowserWidth	    200
@@ -154,7 +154,7 @@ Library {
       MaskHideContents	      off
       System {
 	Name			"EtherCAT"
-	Location		[899, 627, 1396, 995]
+	Location		[898, 626, 1395, 994]
 	Open			on
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
@@ -474,8 +474,8 @@ Library {
 	  MaskPromptString	  "Master|Slave Index|Device Model |Output Typ"
 "e|Sample Time|Deug Level"
 	  MaskStyleString	  "edit,edit,popup(EL1004v2|EL1008|EL1014v2|EL"
-"1018|-- Obsolete|EL1004|EL1014),popup(Vector Output|Separate Outputs),edit,ed"
-"it"
+"1018|EL1034|-- Obsolete|EL1004|EL1014),popup(Vector Output|Separate Outputs),"
+"edit,edit"
 	  MaskTunableValueString  "off,off,off,off,off,off"
 	  MaskCallbackString	  "|||||"
 	  MaskEnableString	  "on,on,on,on,on,on"
@@ -492,26 +492,27 @@ Library {
 "[hex2dec('03f03052')     hex2dec('00100000')], ...\n    'EL1014v2',[hex2dec('"
 "03f63052')     hex2dec('00100000')], ...  \n    'EL1014'  ,[hex2dec('03f63052"
 "')     hex2dec('00000000')], ...  \n    'EL1018'  ,[hex2dec('03fa3052')     h"
-"ex2dec('00100000')]  ...\n    );\n\nif isfield(models,model)\n    selection ="
-" models.(model);\nelse\n    errordlg([gcb ': Slave model \"' model '\" is not"
-" implemented'])\nend\n\nEtherCATInfoFile = 'EtherCATInfo_el1xxx';\ntry \n    "
-"load(EtherCATInfoFile);\ncatch\n    errordlg([gcb ': Could not load EtherCATI"
-"nfo MAT file '...\n        'EtherCATInfo_el1xxx']);\n    % Regenerate with: "
-"\n    %  EtherCATInfo_el1xxx = getEtherCATInfo('Beckhoff EL1xxx.xml')\n    % "
-" save EtherCATInfo_el1xxx\nend\n\nLayoutVersion = 0;\n\nIOSpec = [];\n\ndevic"
-"e = EtherCATInfo_el1xxx(selection(1),selection(2));\nif isempty(device)\n    "
-"errordlg(sprintf(...\n        ['%s: Could not find device with\\n'...\n      "
-"  'ProductCode \\t#x%08X\\n'...\n        'RevisionNo \\t#x%08X\\n'...\n      "
-"  'in file %s.'],...\n        gcs, selection(1), selection(2), EtherCATInfoFi"
-"le));\nelse\n    \n    SlaveConfig = genSlaveConfig(device);\n    \n    if st"
-"rcmp(output_type, 'Vector Output')\n        % Only one output, with all rows "
-"of pdo_map\n        PdoEntryMap = getEntries(device, 'GroupType', 'All');\n  "
-"      IOSpec.Port = cell2struct(PdoEntryMap,'PdoEntry',1);\n\n    elseif strc"
-"mp(output_type, 'Separate Outputs')\n        % Have (channel) number of outpu"
-"ts, each containing one row of pdo_map\n        PdoEntryMap = getEntries(devi"
-"ce);\n        IOSpec.Port = cell2struct(PdoEntryMap,'PdoEntry',1);\n    else"
-"\n        errordlg([gcb ': unknown output type: ' output_type]);\n        IOS"
-"pec = [];\n    end\nend"
+"ex2dec('00100000')], ...\n    'EL1034'  ,[hex2dec('040a3052')     hex2dec('00"
+"100000')]  ...\n    );\n\nif isfield(models,model)\n    selection = models.(m"
+"odel);\nelse\n    errordlg([gcb ': Slave model \"' model '\" is not implement"
+"ed'])\nend\n\nEtherCATInfoFile = 'EtherCATInfo_el1xxx';\ntry \n    load(Ether"
+"CATInfoFile);\ncatch\n    errordlg([gcb ': Could not load EtherCATInfo MAT fi"
+"le '...\n        'EtherCATInfo_el1xxx']);\n    % Regenerate with: \n    %  Et"
+"herCATInfo_el1xxx = getEtherCATInfo('Beckhoff EL1xxx.xml')\n    %  save Ether"
+"CATInfo_el1xxx\nend\n\nLayoutVersion = 0;\n\nIOSpec = [];\n\ndevice = EtherCA"
+"TInfo_el1xxx(selection(1),selection(2));\nif isempty(device)\n    errordlg(sp"
+"rintf(...\n        ['%s: Could not find device with\\n'...\n        'ProductC"
+"ode \\t#x%08X\\n'...\n        'RevisionNo \\t#x%08X\\n'...\n        'in file "
+"%s.'],...\n        gcs, selection(1), selection(2), EtherCATInfoFile));\nelse"
+"\n    \n    SlaveConfig = genSlaveConfig(device);\n    \n    if strcmp(output"
+"_type, 'Vector Output')\n        % Only one output, with all rows of pdo_map"
+"\n        PdoEntryMap = getEntries(device, 'GroupType', 'All');\n        IOSp"
+"ec.Port = cell2struct(PdoEntryMap,'PdoEntry',1);\n\n    elseif strcmp(output_"
+"type, 'Separate Outputs')\n        % Have (channel) number of outputs, each c"
+"ontaining one row of pdo_map\n        PdoEntryMap = getEntries(device);\n    "
+"    IOSpec.Port = cell2struct(PdoEntryMap,'PdoEntry',1);\n    else\n        e"
+"rrordlg([gcb ': unknown output type: ' output_type]);\n        IOSpec = [];\n"
+"    end\nend"
 	  MaskDisplay		  "fprintf('%s\\nM:%s Idx:%s',...\n    model,m"
 "asterStr,positionStr)\n\n"
 	  MaskIconFrame		  on
