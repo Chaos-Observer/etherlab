@@ -407,10 +407,10 @@ const char* rtw_capi_init(
 #if TID01EQ
         if (tid)
             tid -= 1;
-        if (!*samplePeriodPtr)
+        if (!samplePeriodPtr || !*samplePeriodPtr)
             continue;
 #endif
-        task_period[tid] = *samplePeriodPtr * 1.0e6 + 0.5;
+//        task_period[tid] = *samplePeriodPtr * 1.0e6 + 0.5;
     }
 
     return NULL;
