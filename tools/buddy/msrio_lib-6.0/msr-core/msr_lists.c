@@ -83,8 +83,6 @@ extern struct msr_dev *msr_dev_head;  //Liste aller Verbindungen
 
 
 
-struct msr_char_buf *msr_in_int_charbuffer = NULL;  /* in diesen Puffer darf aus Interruptroutinen
-						       hereingeschrieben werden */
 
 struct msr_char_buf *msr_user_charbuffer = NULL;    /* in diesen Puffer wird aus Userroutinen read,write,...
 						       geschrieben */
@@ -113,15 +111,9 @@ struct msr_char_buf *msr_user_charbuffer = NULL;    /* in diesen Puffer wird aus
 
 int msr_lists_init()
 {
-    msr_in_int_charbuffer = msr_create_charbuf(MSR_CHAR_INT_BUF_SIZE);
-    if(!msr_in_int_charbuffer){
-	printk(KERN_WARNING "msr_modul: kein Speicher fuer Interrupt-Ringpuffer.\n");
-	return -ENOMEM;
-    }
-    msr_user_charbuffer = msr_create_charbuf(MSR_CHAR_INT_BUF_SIZE);
+    msr_user_charbuffer = msr_create_charbuf(MSR_CHAR_BUF_SIZE);
     if(!msr_user_charbuffer){
 	printk(KERN_WARNING "msr_modul: kein Speicher fuer Userspace-Ringpuffer.\n");
-	msr_free_charbuf(&msr_in_int_charbuffer);
 	return -ENOMEM;
     }
     return 0;
@@ -130,7 +122,6 @@ int msr_lists_init()
 
 void msr_lists_cleanup()
 {
-    msr_free_charbuf(&msr_in_int_charbuffer); 
     msr_free_charbuf(&msr_user_charbuffer); 
 }
 
@@ -156,20 +147,9 @@ void msr_dev_printf(const char *format, ...)
     int len;
     va_list argptr;
     char *buf;
-    /* 2.6. Kernel hier muß gelockt werden !!!!!!! */
-    /* FIXME, hier muß noch gelockt werden, damit ein userprint nicht durch einen in_interruptprint unterbrochen
-       werden kann ???? oder doch nicht ??!!??, wie ist das mit der Reentrance von va_list?? HM*/
-
     if(format != NULL) {
 	va_start(argptr,format);
-/*	if(rt_in_interrupt) {
-	    if(msr_in_int_charbuffer != NULL) {
-		buf = msr_getb(msr_in_int_charbuffer);
-		len = vsprintf(buf, format, argptr);
-		msr_incb(len,msr_in_int_charbuffer);
-	    }
-	}
-	else */ {
+	{
 	    if(msr_user_charbuffer != NULL) {
 		buf = msr_getb(msr_user_charbuffer);
 		len = vsprintf(buf, format, argptr);
@@ -179,10 +159,6 @@ void msr_dev_printf(const char *format, ...)
 
 	}
 	va_end(argptr);
-#ifdef __KERNEL__
-        /* und die read_waitqueue wieder aktivieren */
-	wake_up_interruptible(&msr_read_waitqueue);
-#endif
     }
 
 }
@@ -381,10 +357,6 @@ unsigned int msr_dev_read_data(struct msr_dev *dev, unsigned int count)
     //Reihenfolge getauscht, damit der Update der Parameter in der richtigen Reihenfolge funktioniert
     //2005.06.15 
 
-    /* erst die Meldungen aus der Interruptroutine */
-    while(msr_read_block_char_buffer(msr_in_int_charbuffer,dev,&dev->intr_read_pointer) && 
-	  msr_charbuf_lev(dev->rp_read_pointer,dev->read_buffer));
-
     /* Wichtig: Parameter und Kanallisten werden direkt aus der Devicewritefunktion bearbeitet */
 
     /* jetzt testen wir mal den Datenstrom (die Kanaele...) */
@@ -473,8 +445,6 @@ void *msr_open(int client_rfd, int client_wfd)
 
     /* jetzt den kanal_lese_zeiger auf den aktuellen kanal_write_pointer setzten */
     dev->msr_kanal_read_pointer = msr_kanal_write_pointer;
-    /* den Lesezeiger in dem characterringpuffer der Interruptroutine setzten */
-    dev->intr_read_pointer = msr_in_int_charbuffer->write_pointer; 
     /* den Lesezeiger des Userringpuffers setzen */
     dev->user_read_pointer = msr_user_charbuffer->write_pointer; 
 

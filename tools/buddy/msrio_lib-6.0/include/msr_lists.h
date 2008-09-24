@@ -158,7 +158,6 @@
 /*--defines--------------------------------------------------------------------------------------*/
 
 #define MSR_CHAR_BUF_SIZE 1000000     /* Groesse des Char-Ringpuffers für die Kanäle */
-#define MSR_CHAR_INT_BUF_SIZE 50000 /* Groesse des Puffers für Interrupthandler */
 #define MSR_BLOCK_BUF_ELEMENTS 1024 /* max. Puffergröße für Datenkompression und Übertragung*/
 #define MSR_PRINT_LIMIT (MSR_CHAR_BUF_SIZE-128) /* don't print any more after this size in the proc*/
 
