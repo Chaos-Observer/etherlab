@@ -20,9 +20,9 @@ dist_blocks_DATA = \
         world_time.c world_time.tlc \
         etherlab_in.c etherlab_in.tlc \
         EtherLAB_IO.tlc \
-        etherlab_out.c etherlab_out.tlc
+        etherlab_out.c etherlab_out.tlc \
+        setup.m
 
-blocks_DATA = setup.m
 if EXPERIMENTAL
-blocks_DATA += etherlab_lib_exp.mdl
+dist_blocks_DATA += etherlab_lib_exp.mdl
 endif
