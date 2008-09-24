@@ -2,6 +2,8 @@
 #
 # $Id$
 #
+# vim: noexpandtab
+#
 #-----------------------------------------------------------------------------
 
 SUBDIRS = tools capi
@@ -29,11 +31,16 @@ install-data-hook:
 	@echo as well as adding directories to its search path.
 	@echo
 	@echo
+	@echo Important changes:
 	@echo
-	@echo         ! ! ! ! C A U T I O N ! ! ! ! 
-	@echo The scaling of all analog input terminals except EL310x has
-	@echo changed to eliminate a bug. Please check these carefully!
-	@echo
+	@echo Since 1.2: The scaling of the Beckhoff analog output terminals
+	@echo            (EL4xxx) has changed: Unipolar terminals accept
+	@echo            input values from 0..1, bipolar ones from -1..1.
+	@echo            The input values are scalable via the 'Input Scale'
+	@echo            parameter.
+	@echo Since 1.1-rc7: The scaling of all analog input terminals except
+	@echo                EL310x has changed to eliminate a bug. Please
+	@echo                check these carefully!
 	@echo
 	@echo '##############################################################'
 	@echo
