@@ -15,6 +15,7 @@ dist_blocks_DATA = \
         get_string.h \
         raise.c raise.tlc \
         taskinfo.c taskinfo.tlc \
+        event.c event.tlc \
         test_var.m \
         etherlab_lib.mdl \
         world_time.c world_time.tlc \
