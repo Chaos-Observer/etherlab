@@ -34,7 +34,7 @@ install-data-hook:
 	@echo Important changes:
 	@echo
 	@echo Since 1.2: The scaling of the Beckhoff analog output terminals
-	@echo            (EL4xxx) has changed: Unipolar terminals accept
+	@echo            \(EL4xxx\) has changed: Unipolar terminals accept
 	@echo            input values from 0..1, bipolar ones from -1..1.
 	@echo            The input values are scalable via the 'Input Scale'
 	@echo            parameter.

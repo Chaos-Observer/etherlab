@@ -32,10 +32,10 @@ Library {
   Creator		  "rich"
   UpdateHistory		  "UpdateHistoryNever"
   ModifiedByFormat	  "%<Auto>"
-  LastModifiedBy	  "ml"
+  LastModifiedBy	  "rich"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Wed Sep 24 15:51:23 2008"
-  ModelVersionFormat	  "1.%<AutoIncrement:681>"
+  LastModifiedDate	  "Sat Oct 11 00:30:24 2008"
+  ModelVersionFormat	  "1.%<AutoIncrement:690>"
   ConfigurationManager	  "rcs"
   SimulationMode	  "normal"
   LinearizationMsg	  "none"
@@ -132,7 +132,7 @@ Library {
   }
   System {
     Name		    "etherlab_lib"
-    Location		    [790, 495, 1271, 655]
+    Location		    [871, 705, 1352, 927]
     Open		    on
     ModelBrowserVisibility  off
     ModelBrowserWidth	    200
@@ -157,8 +157,8 @@ Library {
       MaskHideContents	      off
       System {
 	Name			"EtherCAT"
-	Location		[598, 430, 1095, 904]
-	Open			off
+	Location		[602, 450, 1099, 924]
+	Open			on
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
 	ScreenColor		"white"
@@ -1419,6 +1419,53 @@ Library {
 	  MaskTabNameString	  ",,,,,,,,,,,,,,,,,,"
 	}
       }
+    }
+    Block {
+      BlockType		      "S-Function"
+      Name		      "Event"
+      Ports		      [0, 1]
+      Position		      [55, 120, 135, 160]
+      BackgroundColor	      "yellow"
+      FunctionName	      "event"
+      Parameters	      "width,singleshot,dtype,tsample"
+      MaskType		      "Trigger Events"
+      MaskDescription	      "This block is used to generate an events on its"
+" output.\n\nChecking the \"One Shot\" option will generate only one event, ot"
+"herwise a whole chain of events is generated for every count that the paramet"
+"er value was incremented.\n"
+      MaskHelp		      "A typical problem with interactive constants, e"
+".g. those that are connected to push buttons on the desktop, is that the even"
+"ts get lost due to it being reset too quickly. \n\nThis typically happens wit"
+"h push buttons acting on a constant. Sometimes the user presses and releases "
+"the push button so quickly that these separate events are send to the Real Ti"
+"me Application together as a single operation. The constant is then set and r"
+"eset without the Application realising that there even was an event.\n\nThis "
+"block is overcomes this limitation by keeping an internal counter synchronise"
+"d to a parameter value. If these two values are unequal. \n\nIf the \"Single "
+"Shot\" option is checked, only one event pulse is generated and the internal "
+"counter is set to the parameter value. Without this option, the internal coun"
+"ter is incremented until it equals the parameter value, generating one event "
+"pulse for every increment.\n"
+      MaskPromptString	      "Width|Single shot|Data Type|Sample Time"
+      MaskStyleString	      "edit,checkbox,popup(Boolean|Unsigned Integer),e"
+"dit"
+      MaskTunableValueString  "off,off,off,off"
+      MaskCallbackString      "|||"
+      MaskEnableString	      "on,on,on,on"
+      MaskVisibilityString    "on,on,on,on"
+      MaskToolTipString	      "on,on,on,on"
+      MaskVarAliasString      ",,,"
+      MaskVariables	      "width=@1;singleshot=@2;dtype_str=&3;tsample=@4;"
+      MaskInitialization      "switch dtype_str\n    case 'Unsigned Integer'\n"
+"        dtype = 32;\n    case 'Boolean'\n        dtype = 1;\n    otherwise\n "
+"       dtype = 1;\nend\n"
+      MaskDisplay	      "disp('Event')\n"
+      MaskIconFrame	      on
+      MaskIconOpaque	      on
+      MaskIconRotate	      "none"
+      MaskIconUnits	      "autoscale"
+      MaskValueString	      "1|off|Boolean|0"
+      MaskTabNameString	      ",,,"
     }
     Block {
       BlockType		      SubSystem
