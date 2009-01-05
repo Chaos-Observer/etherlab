@@ -175,7 +175,6 @@ static int start_app(const char *app_name, unsigned int app_num)
     struct application *app;
     struct task_stats *task_stats;
     unsigned int st;
-    enum si_orientation_t orientation;
     char *path_buf;
     unsigned int idx;
 
@@ -256,17 +255,10 @@ static int start_app(const char *app_name, unsigned int app_num)
             syslog(LOG_NOTICE, "msr cannot handle multidimensional arrays.");
             continue;
         }
-        else if (si.dim[1]) {
-            orientation = si_matrix;
-        }
-        else {
-            orientation = si.dim[0] > 1 ? si_vector : si_scalar;
-            si.dim[1] = 1;
-        }
-        CHECK_ERR (!msr_reg_rtw_signal( app->properties.name,
+	CHECK_ERR (!msr_reg_rtw_signal( app->properties.name,
                     si.path, si.name, si.alias,
                     "", si.offset, 
-                    si.dim[0], si.dim[1], si.data_type, orientation,
+                    si.dim[0], si.dim[1], si.data_type, si.orientation,
                     si_data_width[si.data_type]), 
                 -1, out_reg_signal, "MSR Error: could not register signal");
 
@@ -286,17 +278,10 @@ static int start_app(const char *app_name, unsigned int app_num)
             syslog(LOG_NOTICE, "msr cannot handle multidimensional arrays.");
             continue;
         }
-        else if (si.dim[1]) {
-            orientation = si_matrix;
-        }
-        else {
-            orientation = si.dim[0] > 1 ? si_vector : si_scalar;
-            si.dim[1] = 1;
-        }
-        CHECK_ERR (!msr_reg_rtw_param( app->properties.name,
+	CHECK_ERR (!msr_reg_rtw_param( app->properties.name,
                     si.path, si.name, si.alias, "", 
                     app->rtP + si.offset, 
-                    si.dim[0], si.dim[1], si.data_type, orientation,
+                    si.dim[0], si.dim[1], si.data_type, si.orientation,
                     si_data_width[si.data_type]), 
                 -1, out_reg_param, "MSR Error: could not register parameter");
     }

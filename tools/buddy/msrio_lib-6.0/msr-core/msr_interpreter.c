@@ -28,186 +28,6 @@
 *           E-mail: hm@igh-essen.com
 *
 *
-*           $RCSfile: msr_interpreter.c,v $
-*           $Revision: 1.9 $
-*           $Author: hm $
-*           $Date: 2006/05/12 12:40:05 $
-*           $State: Exp $
-*
-*
-*           $Log: msr_interpreter.c,v $
-*           Revision 1.9  2006/05/12 12:40:05  hm
-*           *** empty log message ***
-*
-*           Revision 1.8  2006/03/01 22:12:56  hm
-*           *** empty log message ***
-*
-*           Revision 1.7  2006/02/08 19:41:22  hm
-*           *** empty log message ***
-*
-*           Revision 1.6  2006/01/19 10:35:15  hm
-*           *** empty log message ***
-*
-*           Revision 1.5  2006/01/04 11:31:04  hm
-*           *** empty log message ***
-*
-*           Revision 1.4  2006/01/02 10:39:15  hm
-*           *** empty log message ***
-*
-*           Revision 1.3  2005/12/12 17:22:07  hm
-*           *** empty log message ***
-*
-*           Revision 1.2  2005/09/01 16:03:28  hm
-*           *** empty log message ***
-*
-*           Revision 1.1  2005/06/14 12:34:23  hm
-*           Initial revision
-*
-*           Revision 1.7  2004/12/09 09:52:55  hm
-*           *** empty log message ***
-*
-*           Revision 1.6  2004/11/29 18:05:44  hm
-*           *** empty log message ***
-*
-*           Revision 1.5  2004/11/03 14:45:54  hm
-*           *** empty log message ***
-*
-*           Revision 1.4  2004/10/14 16:22:42  hm
-*           *** empty log message ***
-*
-*           Revision 1.3  2004/10/05 11:52:55  hm
-*           *** empty log message ***
-*
-*           Revision 1.2  2004/10/04 10:14:38  hm
-*           *** empty log message ***
-*
-*           Revision 1.1  2004/09/14 10:15:49  hm
-*           Initial revision
-*
-*           Revision 1.20  2004/09/02 15:56:46  hm
-*           *** empty log message ***
-*
-*           Revision 1.19  2004/08/24 19:50:02  hm
-*           *** empty log message ***
-*
-*           Revision 1.18  2004/08/20 10:17:17  hm
-*           *** empty log message ***
-*
-*           Revision 1.17  2004/06/15 16:48:12  hm
-*           *** empty log message ***
-*
-*           Revision 1.16  2004/06/03 19:06:25  hm
-*           *** empty log message ***
-*
-*           Revision 1.15  2004/06/03 09:20:34  hm
-*           *** empty log message ***
-*
-*           Revision 1.14  2004/06/02 21:31:05  hm
-*           *** empty log message ***
-*
-*           Revision 1.13  2004/06/02 20:37:36  hm
-*           *** empty log message ***
-*
-*           Revision 1.12  2004/06/01 14:53:42  hm
-*           *** empty log message ***
-*
-*           Revision 1.11  2004/06/01 10:35:59  hm
-*           Escapemoeglichkeit fuer strings vorgesehen
-*
-*           Revision 1.10  2004/06/01 08:08:04  hm
-*           *** empty log message ***
-*
-*           Revision 1.9  2004/05/13 13:28:46  hm
-*           *** empty log message ***
-*
-*           Revision 1.8  2004/02/24 16:34:32  hm
-*           *** empty log message ***
-*
-*           Revision 1.7  2004/02/03 15:31:18  hm
-*           *** empty log message ***
-*
-*           Revision 1.6  2003/12/30 16:41:23  hm
-*           *** empty log message ***
-*
-*           Revision 1.5  2003/12/18 21:50:59  hm
-*           *** empty log message ***
-*
-*           Revision 1.4  2003/11/06 14:10:34  hm
-*           \ns angehaengt
-*
-*           Revision 1.3  2003/07/18 17:34:29  hm
-*           *** empty log message ***
-*
-*           Revision 1.2  2003/07/17 16:29:40  hm
-*           *** empty log message ***
-*
-*           Revision 1.1  2003/07/17 09:21:11  hm
-*           Initial revision
-*
-*           Revision 1.2  2003/05/21 07:40:45  hm
-*           echoing
-*
-*           Revision 1.1  2003/01/22 10:27:40  hm
-*           Initial revision
-*
-*           Revision 1.8  2002/10/29 08:11:41  hm
-*           strings koennen die laenge 0 haben
-*
-*           Revision 1.7  2002/10/21 13:36:02  hm
-*           readkanaele fehler behoben
-*
-*           Revision 1.6  2002/10/03 13:09:02  hm
-*           broadcast einfach, interpreter korrekt
-*
-*           Revision 1.5  2002/09/05 09:29:58  hm
-*           in msr_buf_printf(dev->read_buffer,"<%s %s
-*           command=\"%s\">",MSR_WARN,MSR_UC,open_ind+1); +1 angefuegt
-*
-*           Revision 1.4  2002/08/16 08:26:05  hm
-*           *** empty log message ***
-*
-*           Revision 1.3  2002/08/15 15:23:53  hm
-*           *** empty log message ***
-*
-*           Revision 1.2  2002/08/15 08:15:59  hm
-*           *** empty log message ***
-*
-*           Revision 1.1  2002/07/09 09:11:08  spMatlab
-*           Initial revision
-*
-*           Revision 1.8  2002/04/26 23:12:44  hm
-*           *** empty log message ***
-*
-*           Revision 1.7  2002/04/26 20:54:11  hm
-*           *** empty log message ***
-*
-*           Revision 1.6  2002/04/26 11:55:07  hm
-*           *** empty log message ***
-*
-*           Revision 1.5  2002/04/17 19:30:09  hm
-*           *** empty log message ***
-*
-*           Revision 1.4  2002/04/10 07:36:13  hm
-*           *** empty log message ***
-*
-*           Revision 1.3  2002/04/09 18:30:15  hm
-*           *** empty log message ***
-*
-*           Revision 1.2  2002/03/22 15:04:08  hm
-*           *** empty log message ***
-*
-*           Revision 1.1  2002/03/22 14:19:55  hm
-*           Initial revision
-*
-*           Revision 1.3  2002/01/28 12:13:04  hm
-*           *** empty log message ***
-*
-*           Revision 1.2  2002/01/27 17:41:43  hm
-*           *** empty log message ***
-*
-*           Revision 1.1  2002/01/25 13:53:45  hm
-*           Initial revision
-*
 *
 *
 *
@@ -233,9 +53,6 @@
 #include <msr_messages.h>
 #include <msr_utils.h>
 
-#include <msr_rcsinfo.h>
-
-RCS_ID("$Header: /vol/projekte/msr_messen_steuern_regeln/linux/kernel_space/msrio_lib-0.9/msr-core/RCS/msr_interpreter.c,v 1.9 2006/05/12 12:40:05 hm Exp hm $");
 
 /*--defines--------------------------------------------------------------------------------------*/
 
@@ -357,8 +174,7 @@ static void msr_com_read_parameter(struct msr_dev *dev,char *params)
 
     if(namebuf) {
 	MSR_INTERPR_PRINT("msr_module: interpreter: parameter=name wert=%s \n",retbuf);
-	len = msr_print_param_list(msr_getb(dev->read_buffer),namebuf,idbuf,shrt,mode);
-	msr_incb(len,dev->read_buffer);
+	len = msr_print_param_list(dev->read_buffer,namebuf,idbuf,shrt,mode);
 	freemem(namebuf); /* und den Speicher wieder freigeben, der in msr_get_attrib belegt wurde */
 	if(indexbuf)
 	    freemem(indexbuf);  //könnte ja beides geschickt worden sein, dann gewinnt namebuf
@@ -369,8 +185,7 @@ static void msr_com_read_parameter(struct msr_dev *dev,char *params)
 	    index = simple_strtol(indexbuf,NULL,10);
 	    FOR_THE_LIST(element,msr_param_head) {
 		if (element->index == index) {
-		    len = msr_print_param_list(msr_getb(dev->read_buffer),element->p_bez,idbuf,shrt,mode);
-		    msr_incb(len,dev->read_buffer);
+		    len = msr_print_param_list(dev->read_buffer,element->p_bez,idbuf,shrt,mode);
 		    break;
 		}
 	    }
@@ -378,9 +193,7 @@ static void msr_com_read_parameter(struct msr_dev *dev,char *params)
 	}
 	else {/* ansonsten alle lesen */
 	    msr_buf_printf(dev->read_buffer,"<parameters>\n");
-	    len = msr_print_param_list(msr_getb(dev->read_buffer),NULL,idbuf,shrt,mode);
-
-	    msr_incb(len,dev->read_buffer);
+	    len = msr_print_param_list(dev->read_buffer,NULL,idbuf,shrt,mode);
 	    /* wenn alle gelesen werden, folgt ein Abschluss */
 	    msr_buf_printf(dev->read_buffer,"</parameters>\n");
 	}
@@ -407,7 +220,7 @@ static void msr_com_read_parameter_values(struct msr_dev *dev,char *params)
 	freemem(modebuf);
     }
 
-    len = msr_print_param_valuelist(msr_getb(dev->read_buffer),mode);
+    len = msr_print_param_valuelist(dev->read_buffer,mode);
     msr_incb(len,dev->read_buffer);
 }
 
@@ -504,14 +317,12 @@ static void msr_com_read_kanaele(struct msr_dev *dev,char *params)
 
     if(retbuf) {
 	MSR_INTERPR_PRINT("msr_module: interpreter: kanal=name wert=%s \n",retbuf);
-	len = msr_print_kanal_list(msr_getb(dev->read_buffer),retbuf,0);
-	msr_incb(len,dev->read_buffer);
+	len = msr_print_kanal_list(dev->read_buffer,retbuf,shortinfo);
 	freemem(retbuf); /* und den Speicher wieder freigeben, der in msr_get_attrib belegt wurde */
     }
     else {/* ansonsten alle lesen */
 	msr_buf_printf(dev->read_buffer,"<channels>\n");
-	len = msr_print_kanal_list(msr_getb(dev->read_buffer),NULL,shortinfo);
-	msr_incb(len,dev->read_buffer);
+	len = msr_print_kanal_list(dev->read_buffer,NULL,shortinfo);
         /* wenn alle gelesen werden, folgt ein Abschluss */
 	msr_buf_printf(dev->read_buffer,"</channels>\n");
     }
@@ -729,15 +540,19 @@ static void msr_com_startdata2(struct msr_dev *dev,char *params)
 	bs = simple_strtol(bs_buf,NULL,10); 
 	if (bs == 0) bs = 1;
 
-	if (bs>MSR_BLOCK_BUF_ELEMENTS) { //mehr dürfen in einen Block nicht rein
-	    bs = MSR_BLOCK_BUF_ELEMENTS;
-	    msr_buf_printf(dev->read_buffer,"<warn text=\"xsad: Blocksize to big\">");
-	}
-
 	freemem(bs_buf);
     }
     else 
 	bs = (int)msr_sample_freq; //FIXME HZ ist 100 Hz .... nicht MSR_HZ
+
+    bs = MIN(bs,MSR_BLOCK_BUF_ELEMENTS);  //mehr dürfen in einen Block nicht rein
+
+/*
+    if (bs>MSR_BLOCK_BUF_ELEMENTS) {
+	bs = MSR_BLOCK_BUF_ELEMENTS;
+	msr_buf_printf(dev->read_buffer,"<warn text=\"xsad: Blocksize to big\">");
+    }
+*/
 
     if(codmode_buf) {
 	if(strcmp(codmode_buf,"Base64") == 0)
@@ -791,7 +606,7 @@ static void msr_com_startdata2(struct msr_dev *dev,char *params)
 		    if(reduction*kelement->sampling_red*bs*2 > k_buflen) {
 			msr_buf_printf(dev->read_buffer,"<warn text=\"command xsad: blocksize*reduction exceed limits at channel : %s\"/>\n",kelement->p_bez);
 			if(reduction > 0) /* auf den maximal möglichen Wert setzten */
-			    celement->bs = k_buflen/(2*reduction*kelement->sampling_red);
+			    celement->bs = MIN(k_buflen/(2*reduction*kelement->sampling_red),MSR_BLOCK_BUF_ELEMENTS);
 			/* wenn das nicht möglich, muß der Kanal vom Senden gesperrt werden */
 			if(celement->bs == 0)
 			    celement->reduction = 0;
@@ -822,7 +637,7 @@ static void msr_com_startdata2(struct msr_dev *dev,char *params)
 			    if(reduction*kelement->sampling_red*bs*2 > k_buflen) {
 				msr_buf_printf(dev->read_buffer,"<warn text=\"command xsad: blocksize*reduction exceed limits at channel : %s\"/>\n",kelement->p_bez);
 				if(reduction > 0) /* auf den maximal möglichen Wert setzten */
-				    celement->bs = k_buflen/(2*reduction*kelement->sampling_red);
+				    celement->bs = MIN(k_buflen/(2*reduction*kelement->sampling_red),MSR_BLOCK_BUF_ELEMENTS);
 				/* wenn das nicht möglich, muß der Kanal vom Senden gesperrt werden */
 				if(celement->bs == 0)
 				    celement->reduction = 0;
@@ -968,11 +783,13 @@ static void msr_host_access(struct msr_dev *dev,char *params)
 		    msr_print_info("Adminmode filp: %u",dev->filp);
 	    }
 	}
+/* kann über <rs> abgefragt werden
 	    printk("msr_modul: access: %s\n",access); 
 	    if(namebuf)
 		msr_print_info("write access for: %s filp: %u",namebuf,dev->filp);
 	    else
 		msr_print_info("write access for unknown client! filp: %u",dev->filp);
+*/
 	}
     }
 
@@ -1028,7 +845,7 @@ static void msr_read_statistics(struct msr_dev *dev,char *params)
 		       dev_element->connection_time.tv_usec);
     } 
 
-    msr_buf_printf(dev->read_buffer,"<clients/>\n");
+    msr_buf_printf(dev->read_buffer,"</clients>\n");
 
 }
 

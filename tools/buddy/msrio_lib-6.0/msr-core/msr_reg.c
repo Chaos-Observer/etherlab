@@ -15,21 +15,14 @@
 *           E-mail: hm@igh-essen.com
 *
 *
-*           $RCSfile: msr_reg.c,v $
-*           $Revision: 1.34 $
-*           $Author: hm $
-*           $Date: 2006/08/09 12:40:52 $
-*           $State: Exp $
-*
 *
 *           TODO: MDCT-Kompression, 
-*                 Alias im Kanalnamen
-*                 Floatformatierung auf ffloat() umbauen
 *
 *           Floats werden mit %.16g formatiert, damit die Epochenzeit noch auf eine usec reinpasst!
 *           Strings funktionieren wieder
 *
 *           2007.05.24: beim Überschreiten von Parameterlimits werden die Werte ignoriert
+*           2008.12.16: Message funktionieren wieder, wie bei der msrlib Version 5.0.1 (für den Kernel)
 *
 *
 *
@@ -87,7 +80,9 @@ char *enum_var_str[] = {ENUM_VAR_STR};
 
 struct msr_param_list *msr_param_head = NULL; /* Parameterliste */
 struct msr_kanal_list *msr_kanal_head = NULL; /* Kanalliste */
+struct msr_mkanal_list *msr_mkanal_head = NULL;
 struct msr_meta_list *msr_meta_head = NULL;
+struct msr_kanal_list *timechannel = NULL;
 
 volatile unsigned int msr_kanal_write_pointer = 0; /* Schreibzeiger auf den Kanalringpuffer */
 volatile int msr_kanal_wrap = 0;                   /* wird = 1 gesetzt, wenn der Kanalringpuffer zum ersten Mal überläuft */
@@ -95,21 +90,26 @@ volatile int msr_kanal_wrap = 0;                   /* wird = 1 gesetzt, wenn der
 
 extern struct timeval msr_loading_time;  //in msr_proc.c
 
-extern struct msr_char_buf *msr_in_int_charbuffer;  /* in diesen Puffer darf aus Interruptroutinen
-                                                       hereingeschrieben werden */
-
-extern struct msr_char_buf *msr_user_charbuffer;    /* in diesen Puffer wird aus Userroutinen read,write,... */
-
 extern void *prtp;
 extern int (*newparamflag)(void*, void*, size_t);  //Funktion, die aufgerufen werden muß, wenn ein Parameter beschrieben wurde
 
 
 #define MSR_CALC_ADR(_START,_DATASIZE,_ORIENTATION,_RNUM,_CNUM)   \
 do {                                                              \
-if (_ORIENTATION == si_matrix)		          \
-    p = _START + (_CNUM * r + c)*_DATASIZE;	                  \
-else								  \
-    p = _START + (r + c)*_DATASIZE;  			          \
+switch(_ORIENTATION) {                                            \
+    case si_vector:                                               \
+	p = _START + (r + c)*_DATASIZE;  		          \
+        break;                                                    \
+    case si_matrix_col_major:                                     \
+	p = _START + (r + c * _RNUM)*_DATASIZE;	                  \
+	break;                                                    \
+    case si_matrix_row_major:                                     \
+	p = _START + (_CNUM * r + c)*_DATASIZE;	                  \
+	break;                                                    \
+    default:                                                      \
+        p = _START;                                               \
+	break;                                                    \
+}                                                                 \
 } while (0)							  \
 
 
@@ -605,7 +605,6 @@ void msr_clean_param_list(void)
 * Function: msr_check_param_list
 *
 * Beschreibung: Testet, ob sich Parameter geändert haben und macht Meldung an alle Clients 
-*               Vorsicht, diese Funktion darf nicht im Interrupt aufgerufen werden !!!!!!!!!
 *
  * Parameter: 
 *
@@ -707,12 +706,14 @@ char *toxml(char *from)
     return str;
 }
 
-int msr_print_param_list(char *buf,char *aname,char *id,int shrt,int mode)
+int msr_print_param_list(struct msr_char_buf *abuf,char *aname,char *id,int shrt,int mode)
 {
     struct msr_param_list *element;
     unsigned int len = 0;
     char *or_str[] = {ENUM_OR_STR};
     char *xml_name = NULL;
+
+    char *buf = msr_getb(abuf);
 
     /* Element in der Liste suchen */
     FOR_THE_LIST(element,msr_param_head) {
@@ -764,7 +765,7 @@ int msr_print_param_list(char *buf,char *aname,char *id,int shrt,int mode)
 
 	    //Id
 	    if(id)
-		len+=sprintf(buf+len," id=\"%s\"",id);   //FIXME, noch notwendig ???
+		len+=sprintf(buf+len," id=\"%s\"",id);   //FIXME, noch notwendig; ja für Rückwärtskompatibilität
 
 	    //FIXME, was noch fehlt ist num= bei Listen FIXME
 
@@ -784,6 +785,9 @@ int msr_print_param_list(char *buf,char *aname,char *id,int shrt,int mode)
 	    if(DBG > 0) printk("%s\n",buf);
 	}
     }
+    
+    msr_incb(len,abuf);  //schreibzeiger weiterschieben
+
     return len;
 }
 
@@ -806,10 +810,12 @@ int msr_print_param_list(char *buf,char *aname,char *id,int shrt,int mode)
 ***************************************************************************************************
 */
 
-int msr_print_param_valuelist(char *buf,int mode)
+int msr_print_param_valuelist(struct msr_char_buf *abuf,int mode)
 {
     struct msr_param_list *element;
     unsigned int len = 0;
+
+    char *buf = msr_getb(abuf);
 
     if(mode == MSR_CODEHEX)
 	len+=sprintf(buf+len,"<param_values hexvalue=\"");
@@ -835,8 +841,9 @@ int msr_print_param_valuelist(char *buf,int mode)
 		len+=sprintf(buf+len,"\"/>\n");  /* war wohl das Ende der Parameter */
 
 	}
-	 if (len > MSR_PRINT_LIMIT) return len;
     }
+    msr_incb(len,abuf);  //schreibzeiger weiterschieben
+
     return len;
 }
 
@@ -1050,7 +1057,7 @@ int msr_reg_kanal4(char *bez,char *indexstr,void *alias,char *einh,void *adr,enu
 
 
 
-    //und noch den alias FIXME, hier noch eine Überprüfung
+    //und noch den alias
     element->alias = (char *)getmem(strlen(alias)+1);
     if(!element->alias) {
 	printk("Out of Memory for Channel allokation: %s\n",bez);
@@ -1091,9 +1098,21 @@ char *msr_unique_channel_name(char *bez)
 }
 
 
+int msr_reg_mkanal(struct msr_kanal_list *channel,char *messagetyp,char *messagetext)
+{
+    struct msr_mkanal_list *element = NULL, *prev = NULL;                                                 
+    MSR_ADD_LIST(msr_mkanal_head,msr_mkanal_list);
+    element->kelement = channel;
+    element->mtyp = strdup(messagetyp);
+    element->mtext = strdup(messagetext);
+    element->prevvalue = NULL;
+    return (int)element;
+}
+
 void msr_clean_kanal_list(void)
 {
     struct msr_kanal_list *element;
+    struct msr_mkanal_list *melement;
     //den Speicherplatz der Kanalbuffer wieder frei geben
     FOR_THE_LIST(element,msr_kanal_head) {
 	if(element) {
@@ -1123,6 +1142,19 @@ void msr_clean_kanal_list(void)
 	}
     }
     MSR_CLEAN_LIST(msr_kanal_head,msr_kanal_list);
+
+    //Messagelist
+    FOR_THE_LIST(melement,msr_mkanal_head) {
+	if(melement) {
+	    if(melement->mtyp)
+		freemem(melement->mtyp);
+	    if(melement->mtext)
+		freemem(melement->mtext);
+	}
+    }
+
+    MSR_CLEAN_LIST(msr_mkanal_head,msr_mkanal_list); //Messages
+
 }
 
 
@@ -1144,13 +1176,15 @@ void msr_clean_kanal_list(void)
 */
 
 
-int msr_print_kanal_list(char *buf,char *aname,int mode)
+int msr_print_kanal_list(struct msr_char_buf *abuf,char *aname,int mode)
 {
     struct msr_kanal_list *element;
     unsigned int len = 0;
     int index = 0;
     int wp = msr_kanal_write_pointer;  //aktuellen Schreibzeiger merken 
     char *xml_name = NULL;
+
+    char *buf = msr_getb(abuf);
 
     //und den Vorgänger bestimmen
 
@@ -1233,6 +1267,8 @@ int msr_print_kanal_list(char *buf,char *aname,int mode)
 	}
 	index++;
     }
+
+    msr_incb(len,abuf);
 
     return len;
 }
@@ -1345,7 +1381,7 @@ void msr_write_kanaele_to_char_buffer(struct msr_dev *dev)
     struct msr_send_ch_list *element = NULL;
 
     int cnt = 0;
-
+    int len = 0;
     /* prüfen ob schon gesendet werden soll */
     if(dev->msr_kanal_read_pointer % dev->reduction == 0) {
 	
@@ -1356,11 +1392,15 @@ void msr_write_kanaele_to_char_buffer(struct msr_dev *dev)
 	    case MSR_CODEASCII:
 		FOR_THE_LIST(element,dev->send_ch_head) {
 		    if ((element) && (element->kanal)){
-			printChVal(kp,element->kanal,dev->msr_kanal_read_pointer/element->kanal->sampling_red); 
+			len+=printChVal(kp,element->kanal,dev->msr_kanal_read_pointer/element->kanal->sampling_red); 
 			if(element->next) 
 			    msr_buf_printf(kp,",");
 			else 
 			    msr_buf_printf(kp,"\"/>\n");  /* war wohl das Ende der Kanäle */
+			//Test, ob noch genug Platz im Puffer ist
+			if(len > kp->bufsize) 
+			    msr_charbuf_realloc(kp,(kp->bufsize*3)/2); //um 50% größer 
+			
 		    }
 		}
 		break;
@@ -1383,12 +1423,17 @@ void msr_write_kanaele_to_char_buffer(struct msr_dev *dev)
 		if(cnt > 0) {
 		    //direkt in den Characterpuffer drucken
 		    if (dev->codmode == MSR_CODEBASE64)
-			cnt=gsasl_base64_encode ((char const *)dev->cinbuf,cnt, msr_getb(kp), MSR_CHAR_BUF_SIZE);
+			cnt = gsasl_base64_encode ((char const *)dev->cinbuf,cnt, msr_getb(kp), MSR_CHAR_BUF_SIZE);
 		    else
 			cnt = bin_to_hex((unsigned char const *)dev->cinbuf,msr_getb(kp),cnt,MSR_CHAR_BUF_SIZE);
 		    //und den Schreibzeiger weiterschrieben
 		    msr_incb(cnt,kp); 
+		    len+=cnt;
 		    msr_buf_printf(kp,"\"/>\n");
+		    //Test, ob noch genug Platz im Puffer ist
+		    if(len > kp->bufsize) 
+			msr_charbuf_realloc(kp,(kp->bufsize*3)/2); //um 50% größer
+		    
 		}
 		break;
 	}
@@ -1468,9 +1513,10 @@ void msr_comp_grad(void *vbuf,int cnt,enum enum_var_typ p_var_typ) {
 }
 
 
-void msr_value_printf(struct msr_char_buf *buf,int cnt,enum enum_var_typ p_var_typ,void *vbuf,unsigned int prec)
+int msr_value_printf(struct msr_char_buf *buf,int cnt,enum enum_var_typ p_var_typ,void *vbuf,unsigned int prec)
 {
     int i;
+    int len = 0;
 
 #define CPPF(VTYP,FI)                                 \
  do {                                                 \
@@ -1506,9 +1552,9 @@ void msr_value_printf(struct msr_char_buf *buf,int cnt,enum enum_var_typ p_var_t
             struct timeval tmp_value;
 	    for(i=0;i<cnt;i++) {
 	      tmp_value = ((struct timeval *)vbuf)[i];
-	      msr_buf_printf(buf,"%u.%.6u",(unsigned int)tmp_value.tv_sec,(unsigned int)tmp_value.tv_usec);
+	      len+=msr_buf_printf(buf,"%u.%.6u",(unsigned int)tmp_value.tv_sec,(unsigned int)tmp_value.tv_usec);
 	      if(i != cnt-1)
-		msr_buf_printf(buf,",");
+		len+=msr_buf_printf(buf,",");
 	    }
 	}
 	    break;
@@ -1521,13 +1567,14 @@ void msr_value_printf(struct msr_char_buf *buf,int cnt,enum enum_var_typ p_var_t
 	    break;
 	default: break;
     }
+    return len;
 }
 #undef CPPF
 
-void msr_value_printf_base64(struct msr_char_buf *buf,int cnt,enum enum_var_typ p_var_typ,void *vbuf)
+int msr_value_printf_base64(struct msr_char_buf *buf,int cnt,enum enum_var_typ p_var_typ,void *vbuf)
 {
     int lin;  //Länge des zu konvertierenden Puffers in byte
-    int lout;
+    int lout=0;
 
     switch(p_var_typ)
     {
@@ -1572,6 +1619,7 @@ void msr_value_printf_base64(struct msr_char_buf *buf,int cnt,enum enum_var_typ 
 	//und den Schreibzeiger weiterschrieben
 	msr_incb(lout,buf); 
     }
+    return lout;
 }
 
 int channel_data_change(struct msr_kanal_list *kanal,unsigned int index) { //vergleicht, ob sich der Wert eines Kanal zwischen zwei Abtastschritten geändert hat
@@ -1604,7 +1652,7 @@ int channel_data_change(struct msr_kanal_list *kanal,unsigned int index) { //ver
 * Parameter: struct msr_dev *dev : Device
 *            
 *
-* Rückgabe:  
+* Rückgabe:  Länge des Strings
 *               
 * Status: exp
 *
@@ -1621,6 +1669,7 @@ void msr_write_kanaele_to_char_buffer2(struct msr_dev *dev)
     int incr; 
     int cnt;
     int dohead = 0;
+    int len = 0;
     enum enum_var_typ p_var_typ;
 
 #define LEV_RP ((k_buflen + msr_kanal_write_pointer - dev-> msr_kanal_read_pointer) % k_buflen)
@@ -1634,12 +1683,12 @@ void msr_write_kanaele_to_char_buffer2(struct msr_dev *dev)
 	       || ((element->event) && channel_data_change(element->kanal,dev->msr_kanal_read_pointer))) {  //eventkanal und Trigger durch Änderung des Wertes
 		if(dohead == 0) {
 		    if(dev->timechannel) {
-			msr_buf_printf(kp,"<data level=\"%d\" time=\"",(LEV_RP*100)/k_buflen);
+			len+=msr_buf_printf(kp,"<data level=\"%d\" time=\"",(LEV_RP*100)/k_buflen);
 			printChVal(kp,dev->timechannel,dev->msr_kanal_read_pointer/dev->timechannel->sampling_red); // der Lesezeiger steht immer vor dem letzten Wert siehe msr_lists.c
-			msr_buf_printf(kp,"\">\n");
+			len+=msr_buf_printf(kp,"\">\n");
 		    }
 		    else
-			msr_buf_printf(kp,"<data>\n");
+			len+=msr_buf_printf(kp,"<data>\n");
 
 		    dohead = 1;
 		}
@@ -1682,31 +1731,104 @@ void msr_write_kanaele_to_char_buffer2(struct msr_dev *dev)
 		}
 
 		if(element->event)
-		    msr_buf_printf(kp,"<E c=\"%d\" d=\"",element->kanal->index);
+		    len+=msr_buf_printf(kp,"<E c=\"%d\" d=\"",element->kanal->index);
 		else
-		    msr_buf_printf(kp,"<F c=\"%d\" d=\"",element->kanal->index);
+		    len+=msr_buf_printf(kp,"<F c=\"%d\" d=\"",element->kanal->index);
 		// jetzt die Codierung
 
 		switch(element->codmode) {
 		    case MSR_CODEASCII:
 
-			msr_value_printf(kp,cnt,p_var_typ,dev->cinbuf,element->prec);
+			len+=msr_value_printf(kp,cnt,p_var_typ,dev->cinbuf,element->prec);
 			break;
 		    case MSR_CODEBASE64:
 
-			msr_value_printf_base64(kp,cnt,p_var_typ,dev->cinbuf);
+			len+=msr_value_printf_base64(kp,cnt,p_var_typ,dev->cinbuf);
 			break;
 		}
-		msr_buf_printf(kp,"\"/>\n");  /* war wohl das Ende der Kanäle */
+		len+=msr_buf_printf(kp,"\"/>\n");  /* war wohl das Ende der Kanäle */
 	    }
 	}
+	//Test, ob noch genug Platz im Puffer ist
+	if(len > kp->bufsize) 
+	    msr_charbuf_realloc(kp,(kp->bufsize*3)/2); //um 50% größer
     }
 	if(dohead == 1)
-	    msr_buf_printf(kp,"</data>\n");
+	    len+=msr_buf_printf(kp,"</data>\n");
 	dev->triggereventchannels = 0;
 #undef LEV_RP	
 }
 
+
+/*
+***************************************************************************************************
+*
+* Function: msr_write_messages_to_buffer
+*
+* Beschreibung: Überprüft Messagekanäle auf Änderung an der Position "index" im Kanalringpuffer und schreibt auf alle devices
+*                
+*                      
+* Parameter: index:Position in Kanalring zum Test auf Änderung von 0 auf irgend einen anderen Wert
+*            
+*
+* Rückgabe:  
+*               
+* Status: exp
+*
+***************************************************************************************************
+*/
+
+void msr_write_messages_to_buffer(unsigned int index)
+{
+    struct msr_mkanal_list *melement = NULL;
+    struct msr_kanal_list *kanal = NULL;                                        
+    struct timeval tv;                                   
+
+    char *p1;
+    char *p2;
+
+    int j;
+    int isNull;
+    int hasChanged;
+
+    FOR_THE_LIST(melement,msr_mkanal_head) {           
+	kanal = melement->kelement;
+	isNull = 1;
+	hasChanged = 0;
+	p1 = (char *)(k_base + index * k_blocksize + (int)kanal->p_adr);  //Startadresse des aktuellen Wertes
+	if (melement->prevvalue == NULL) //nur beim ersten Durchgang .... 
+	    melement->prevvalue = p1;
+
+	p2 = melement->prevvalue;
+
+	for(j=0;j<kanal->dataSize;j++) {
+	    if(p1[j] != p2[j]) 
+		hasChanged = 1;
+	    if(p1[j] != 0) 
+		isNull = 0;
+	}
+	melement->prevvalue = p1;
+
+	if(hasChanged && !isNull) {
+	    if(timechannel) {
+		//Timechannel ist struct timeval FIXME, hier noch abfrage auf typ rein
+		struct timeval tmp_value;
+		tmp_value = (*(struct timeval *)(k_base + index * k_blocksize + (int)timechannel->p_adr));
+		msr_dev_printf("<%s time=\"%u.%.6u\" text=\"%s\"/>\n",melement->mtyp,(unsigned int)tmp_value.tv_sec,(unsigned int)tmp_value.tv_usec,melement->mtext);       
+
+/*
+		msr_dev_printf("<%s time=\"%.16g\" text=\"%s\"/>\n",melement->mtyp,
+			       (*(double *)(k_base + index * k_blocksize + (int)timechannel->p_adr)),  //Zeitkanal ist immer double ?? HM
+		       melement->mtext);       
+*/
+	    }
+	    else { //lokale Zeit nehmen
+		do_gettimeofday(&tv);                                                                    
+		msr_dev_printf("<%s time=\"%u.%.6u\" text=\"%s\"/>\n",melement->mtyp,(unsigned int)tv.tv_sec,(unsigned int)tv.tv_usec,melement->mtext);       
+	    }
+	}
+    }
+}
 
 int msr_anz_kanal(void)
 { 
@@ -1863,6 +1985,8 @@ int msr_reg_rtw_param( const char *model_name,
 	    result = msr_cfi_reg_param2(upath,"","",data,rnum,cnum,orientation,ETL_to_MSR(dataType),info,pflag,NULL,NULL);
 
 	    //jetzt noch zusätzlich die einzelnen Elemente registrieren, da das MSR-Protokoll das so haben will... 
+	    //FIXME, hier eventuell noch die Registrierung einzelner Elemente großer Matrizen unterbinden, falls nicht 
+	    //explizit per "forceelements" freigeben? Hm, 2008.12.16
 	if (!hasattribute(alist,"hideelements") && isstring == 0) {
 		if(rnum+cnum > 2) { 
 		    int r,c;
@@ -1894,9 +2018,9 @@ int msr_reg_rtw_param( const char *model_name,
 
 }
 
-int msr_reg_time(void *time)     //FIXME, hier wird die Zeit im falschen Format übergeben
+int msr_reg_time(void *time)     //FIXME, hier wird die Zeit im falschen Format übergeben 2008.11.18 typ stimmt, siehe tools/include/app_taskstats.h
 {
-    msr_reg_kanal3("/Time","s","",
+  timechannel =  (struct msr_kanal_list *)msr_reg_kanal3("/Time","s","",
             time,TTIMEVAL,"",default_sampling_red);
     return 0;
 }
@@ -1973,6 +2097,8 @@ int msr_reg_rtw_signal( const char* model_name,
 
     void *p;
 
+    struct msr_kanal_list *channel;
+
     struct talist *alist = NULL;
 
 //    printf("Kanaloffset: %d\n",(unsigned int)offset);
@@ -2027,13 +2153,21 @@ int msr_reg_rtw_signal( const char* model_name,
 		    else                         //Matrize
 			sprintf(ibuf,"/%i/%i",r,c);
 		    //p wird in MSR_CALC_ADR berechnet !!!!!!!!!!!
-		    result |= msr_reg_kanal4(upath,ibuf,(char *)alias,"",p,ETL_to_MSR(dataType),info,default_sampling_red);
+		    channel = (struct msr_kanal_list *)msr_reg_kanal4(upath,ibuf,(char *)alias,"",p,ETL_to_MSR(dataType),info,default_sampling_red);
+		    //ist der Kanal ein Messagekanal, dann in die Liste eintragen
+		    if(hasattribute(alist,"messagetyp")) 
+			msr_reg_mkanal(channel,getattribute(alist,"messagetyp"),getattribute(alist,"text"));
+		    result |= (int)channel;
+
 		}
 	    }
 	    freemem(ibuf);
 	}
 	else {  //ein Sklarer Kanal
-	    result |= msr_reg_kanal4(upath,"",(char *)alias,"",(void *)offset,ETL_to_MSR(dataType),info,default_sampling_red);
+	    channel= (struct msr_kanal_list *)msr_reg_kanal4(upath,"",(char *)alias,"",(void *)offset,ETL_to_MSR(dataType),info,default_sampling_red);
+	    if(hasattribute(alist,"messagetyp")) 
+		msr_reg_mkanal(channel,getattribute(alist,"messagetyp"),getattribute(alist,"text"));
+	    result |= (int)channel;
 	}
 
     }

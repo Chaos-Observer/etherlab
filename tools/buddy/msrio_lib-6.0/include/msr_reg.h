@@ -88,14 +88,6 @@ do {                                     \
 }  while(0)                              \
 
 
-/* Formatierung von Floats, da sprintf im Kernel keine floats unterstützt */
-#define sgn(x) ((x) < (0) ? ("-") : (""))
-#define FIXED_DIGITS 1000000
-
-/* #define F_FLOAT(x) sgn(x), abs((int)(x)), abs((((long int)((x)*FIXED_DIGITS)) % FIXED_DIGITS)) */
-#define F_FLOAT(x) sgn(x), abs((int)(x)), abs((int)(((x)-((int)(x))) * FIXED_DIGITS)) 
-
-
 
 /* Defines für Filterfunktionen, beim Datentransfer */
 
@@ -222,6 +214,32 @@ do {                                                                            
 } while(0)
 
 
+#define MSR_ADD_LIST(head,list)                                                          \
+do {                                                                                             \
+    int element_size;                                                                            \
+    int count = 0;                                                                               \
+    /* letztes Element in der Liste suchen */                                                    \
+                                                                                                 \
+    FOR_THE_LIST(element,head) {                                                                 \
+        count++;                                                                                 \
+	prev = element;                                                                          \
+     }                                                                         \
+    /* Speicherplatz anfordern */                                                                \
+    element_size = sizeof(struct list);                   \
+    element = (struct list *)  getmem(element_size);                                             \
+    if (!element) {                                                                              \
+        printk("Registering %s failed !!\n",element->p_bez);                                     \
+        return -ENOMEM;                                                                          \
+    }                                                                                            \
+    memset(element, 0, sizeof(struct list));                                                     \
+                                                                                                 \
+                                                                                                 \
+    element->next = NULL;  /* eigentlich nicht mehr nötig, siehe memset */                       \
+     /* place it in the list */                                                                  \
+    if (prev)  prev->next = element;                                                             \
+    else head = element;    /* erstes Element */                  \
+} while(0)
+
 
 #define MSR_CLEAN_LIST(head,list)                                                                \
 do {                                                                                             \
@@ -269,7 +287,8 @@ enum enum_var_typ{
 #define ENUM_VAR_STR "TCHAR","TUCHAR","TSHORT","TUSHORT","TINT","TUINT","TLINT","TULINT","TDBL","TFLT","TDBL","TENUM","TSTR","TFCALL"
 
 /* und der passende String */
-#define ENUM_OR_STR "SCALAR","VECTOR","MATRIX_ROW_MAJOR","MATRIX_COL_MAJOR","MATRIX_COL_MAJOR_ND"
+#define ENUM_OR_STR "UNKNOWN","SCALAR","VECTOR","MATRIX_ROW_MAJOR","MATRIX_COL_MAJOR"
+//#define ENUM_OR_STR "UNKNOWN","SCALAR","VECTOR","MATRIX","MATRIX_ND"
 
 /* Parameterstruktur-----------------------------------------------------------------------------*/
 
@@ -321,6 +340,17 @@ struct msr_kanal_list
 
     struct msr_kanal_list *next;              /* wie oben */
 };
+
+//Kanäle, die für die Generierung von Messages überwacht werden
+struct msr_mkanal_list
+{
+    struct msr_kanal_list *kelement;  //Zeiger auf den Kanal
+    char *mtyp;
+    char *mtext;                      //Meldung
+    char *prevvalue;                  //Adresse des vorherigen Wertes //char* da die Werte byte für byte getestet werden
+    struct msr_mkanal_list *next;
+};
+
 
 struct msr_meta_list
 {
@@ -519,8 +549,8 @@ void msr_check_param_list(struct msr_param_list *p);
 */
 
 
-int msr_print_param_list(char *buf,char *aname,char *id,int shrt,int mode);
-int msr_print_param_valuelist(char *buf,int mode);
+int msr_print_param_list(struct msr_char_buf *abuf,char *aname,char *id,int shrt,int mode);
+int msr_print_param_valuelist(struct msr_char_buf *abuf,int mode);
 
 /*
 ***************************************************************************************************
@@ -584,7 +614,7 @@ void msr_init_kanal_params(unsigned int _base_rate,void *_base,unsigned int _blo
 *
 ***************************************************************************************************
 */
-int msr_reg_kanal (char *bez,            char *einh,void *adr,enum enum_var_typ typ);
+int msr_reg_kanal (char *bez,                           char *einh,void *adr,enum enum_var_typ typ);
 int msr_reg_kanal2(char *bez,               void *alias,char *einh,void *adr,enum enum_var_typ typ,int red);
 int msr_reg_kanal3(char *bez,               void *alias,char *einh,void *adr,enum enum_var_typ typ,char *info,int red);
 int msr_reg_kanal4(char *bez,char *indexstr,void *alias,char *einh,void *adr,enum enum_var_typ typ,char *info,int red);
@@ -631,6 +661,7 @@ void msr_clean_kanal_list(void);
 
 void msr_write_kanaele_to_char_buffer(struct msr_dev *dev);
 void msr_write_kanaele_to_char_buffer2(struct msr_dev *dev);
+void msr_write_messages_to_buffer(unsigned int index);
 
 
 /*
@@ -651,7 +682,7 @@ void msr_write_kanaele_to_char_buffer2(struct msr_dev *dev);
 ***************************************************************************************************
 */
 
-int msr_print_kanal_list(char *buf,char *aname,int mode);
+int msr_print_kanal_list(struct msr_char_buf *abuf,char *aname,int mode);
 
 /*
 ***************************************************************************************************
@@ -731,8 +762,8 @@ int msr_reg_rtw_param( const char *model_name,
                    const char *path, const char *name, const char *alias,
                    const char *cTypeName,
                    void *data,
-                   unsigned int rnum, unsigned int cnum,
-                   unsigned int dataType, unsigned int orientation,
+                   unsigned int dim0, unsigned int dim1,
+                   unsigned int dataType, enum si_orientation_t orientation,
                    unsigned int dataSize);
 
 
@@ -766,8 +797,8 @@ int msr_reg_rtw_signal( const char *model_name,
                     const char *path, const char *name, const char *alias,
                     const char *cTypeName,
                     unsigned long offset,                                              // !!!
-                    unsigned int rnum, unsigned int cnum,
-                    unsigned int dataType, unsigned int orientation,
+                    unsigned int dim0, unsigned int dim1,
+                    unsigned int dataType, enum si_orientation_t orientation,
                     unsigned int dataSize);
 
 

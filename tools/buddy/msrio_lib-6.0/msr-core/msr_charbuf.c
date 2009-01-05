@@ -15,58 +15,6 @@
 *           E-mail: hm@igh-essen.com
 *
 *
-*           $RCSfile: msr_charbuf.c,v $
-*           $Revision: 1.5 $
-*           $Author: hm $
-*           $Date: 2006/01/04 11:31:04 $
-*           $State: Exp $
-*
-*
-*           $Log: msr_charbuf.c,v $
-*           Revision 1.5  2006/01/04 11:31:04  hm
-*           *** empty log message ***
-*
-*           Revision 1.4  2005/09/19 16:45:57  hm
-*           *** empty log message ***
-*
-*           Revision 1.3  2005/08/24 16:50:02  hm
-*           *** empty log message ***
-*
-*           Revision 1.2  2005/06/21 15:17:11  hm
-*           *** empty log message ***
-*
-*           Revision 1.1  2005/06/14 12:34:23  hm
-*           Initial revision
-*
-*           Revision 1.3  2004/12/09 09:52:55  hm
-*           *** empty log message ***
-*
-*           Revision 1.2  2004/11/03 21:06:06  hm
-*           *** empty log message ***
-*
-*           Revision 1.1  2004/09/14 10:15:49  hm
-*           Initial revision
-*
-*           Revision 1.2  2004/02/16 11:27:53  hm
-*           *** empty log message ***
-*
-*           Revision 1.1  2003/07/17 09:21:11  hm
-*           Initial revision
-*
-*           Revision 1.1  2003/01/22 10:27:40  hm
-*           Initial revision
-*
-*           Revision 1.1  2002/07/09 09:11:08  sp
-*           Initial revision
-*
-*           Revision 1.1  2002/03/28 10:34:49  hm
-*           Initial revision
-*
-*           Revision 1.1  2002/01/25 13:53:45  hm
-*           Initial revision
-*
-*
-*
 *
 *
 **************************************************************************************************/
@@ -144,7 +92,48 @@ struct msr_char_buf *msr_create_charbuf(unsigned int size)
     abuffer->bufsize = size;
     abuffer->write_pointer = 0;
     memset(abuffer->buf,0,size);
+    printf("Charbuffer allocated: %i\n",abuffer->bufsize);
     return abuffer;
+}
+
+unsigned int msr_charbuf_realloc(struct msr_char_buf *abuffer,unsigned int nsize)
+{
+
+    //FIXME FIXME Funktion wird noch nicht genutzt (erst in V6.0.11) dann die nächste Zeile löschen
+#if 0
+    void *nb;
+    unsigned int osize;
+
+    if(abuffer == NULL)
+	return 0;
+
+
+    if (nsize < abuffer->bufsize)  //verkleinern geht nicht, fertig
+	return abuffer->bufsize;
+
+    printf("Growing Charbuffer, avail len: %i,req len: %i\n",abuffer->bufsize,nsize); 
+
+    osize = abuffer->bufsize; //alte Größe merken
+
+    nb = realloc(abuffer->buf,nsize*2); //100% mehr, siehe oben 
+    if(nb) { //ok, allozierung war erfolgreich
+	abuffer->buf = (char *)nb;
+	abuffer->bufsize = nsize;
+
+
+	//jetzt muss noch das Stück von 0 .. min(wp,nsize-osize) hinten angehängt werden
+	if((nsize-osize) < abuffer->write_pointer) {
+	    memcpy(abuffer->buf + osize,abuffer->buf,nsize-osize);
+	    //und falls noch was übrig gebrieben ist bis wp, das nach vorne schieben
+	    memmove(abuffer->buf,abuffer->buf+(nsize-osize),abuffer->write_pointer - (nsize-osize));
+	}
+	else {
+	    memcpy(abuffer->buf + osize,abuffer->buf,abuffer->write_pointer);
+	}
+
+    }
+#endif
+    return abuffer->bufsize;
 }
 
 /*
@@ -194,8 +183,8 @@ void msr_free_charbuf(struct msr_char_buf **abuffer)
 */
 void msr_write_charbuf(char *instr,unsigned int len,struct msr_char_buf *abuffer)
 {
-    memcpy(abuffer->buf+abuffer->write_pointer,instr,len); /* strlen(instr)); */
-    msr_incb(len /*strlen(instr)*/ ,abuffer);
+    memcpy(abuffer->buf+abuffer->write_pointer,instr,len); 
+    msr_incb(len,abuffer);
 }
 
 
@@ -230,7 +219,7 @@ char *msr_getb(struct msr_char_buf *abuffer)
 * Beschreibung: Schiebt die Position des Schreibzeigers um pos weiter und
 *               sorgt automatisch für den Überlauf
 *
-* Parameter: pos: um wieviel der Schreibzeiger weitergeschoben werden soll
+* Parameter: cnt: um wieviel der Schreibzeiger weitergeschoben werden soll
 *
 *
 * Rückgabe: 
@@ -239,9 +228,9 @@ char *msr_getb(struct msr_char_buf *abuffer)
 *
 ***************************************************************************************************
 */
-int msr_incb(unsigned int pos,struct msr_char_buf *abuffer)
+int msr_incb(unsigned int cnt,struct msr_char_buf *abuffer)
 {
-    unsigned int nwp = pos+abuffer->write_pointer;
+    unsigned int nwp = cnt + abuffer->write_pointer;
 /* jetzt überprüfen, ob der Schreibzeiger über bufsize herausgelaufen ist.
    Er befindet sich dann in dem Bereich:
    oberhalb von bufsize
@@ -252,13 +241,13 @@ int msr_incb(unsigned int pos,struct msr_char_buf *abuffer)
 
     if (nwp >= abuffer->bufsize)
     {
-	memcpy(abuffer->buf,abuffer->buf+abuffer->bufsize,nwp-abuffer->bufsize); 
+	memcpy(abuffer->buf,abuffer->buf + abuffer->bufsize,nwp - abuffer->bufsize); 
 	/* das byte, wo nwp hinzeigt wird nicht mit kopiert !! */
         /* und den Schreibzeiger wieder richtig setzen */
 	nwp%= abuffer->bufsize;
     }
     abuffer->write_pointer = nwp;
-    return pos;
+    return cnt;
 }
 
 /*
@@ -281,7 +270,7 @@ int msr_incb(unsigned int pos,struct msr_char_buf *abuffer)
 
 unsigned int msr_charbuf_lev(unsigned int read_pointer,struct msr_char_buf *abuffer)
 {
-return (abuffer->bufsize+abuffer->write_pointer-read_pointer) % abuffer->bufsize;
+return (abuffer->bufsize + abuffer->write_pointer - read_pointer) % abuffer->bufsize;
 }
 /*
 ***************************************************************************************************
@@ -311,23 +300,14 @@ int msr_read_charbuf(struct msr_char_buf *abuffer,char *outbuf,unsigned int len,
     /* Berechnung der maximal zu lesenden Anzahl Bytes */
     unsigned int max_len = MIN(abst_r_w,len);
 
-
-/*
-#ifndef __KERNEL__
-    printf("max_len %i\n",max_len);
-    printf("abst_r_w %i\n",abst_r_w);
-    printf("read %i\n",*read_pointer);
-    printf("write %i\n",write_pointer);
-#endif
-*/
     /* ist überhaupt was zu lesen ?*/
     if(max_len == 0)
 	return 0;
 
-    if (max_len <= abuffer->bufsize-*read_pointer) 
+    if (max_len <= abuffer->bufsize - *read_pointer) 
     /* nur eine Kopie erforderlich */
     {
-	memcpy(outbuf,abuffer->buf+*read_pointer,max_len);
+	memcpy(outbuf,abuffer->buf + *read_pointer,max_len);
     }
     else  /* Lesezeiger steht hinter Schreibzeiger und es muß sowohl vom hinteren Teil als auch des
 	     vorderen Teils von inbuf gelesen werden*/

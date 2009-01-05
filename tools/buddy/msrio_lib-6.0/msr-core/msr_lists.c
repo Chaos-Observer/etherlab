@@ -16,12 +16,6 @@
 *           E-mail: hm@igh-essen.com
 *
 *
-*           $RCSfile: msr_lists.c,v $
-*           $Revision: 1.15 $
-*           $Author: hm $
-*           $Date: 2006/05/12 12:40:05 $
-*           $State: Exp $
-*
 *
 *
 *
@@ -53,14 +47,12 @@
 #include <msr_version.h>
 #include <msr_main.h>
 
-#include <msr_rcsinfo.h>
 
 //für Userspace Applikation RTW
 #ifdef RTW_BUDDY
 #include "buddy_main.h"
 #endif
 
-RCS_ID("$Header: /vol/projekte/msr_messen_steuern_regeln/linux/kernel_space/msrio_lib-0.9/msr-core/RCS/msr_lists.c,v 1.15 2006/05/12 12:40:05 hm Exp hm $");
 
 /* Füllstand des Kanal-Ringpuffers */
 #define LEV_RP ((k_buflen + msr_kanal_write_pointer - dev-> msr_kanal_read_pointer) % k_buflen)
@@ -77,53 +69,11 @@ extern struct new_utsname system_utsname;  //für Maschinenname
 extern struct msr_kanal_list *msr_kanal_head; /* Kanalliste */
 extern int k_buflen; /* in msr_reg.c */
 extern struct msr_dev *msr_dev_head;  //Liste aller Verbindungen
-
+extern struct msr_kanal_list *timechannel;
 
 /*--public data----------------------------------------------------------------------------------*/
 
 
-
-
-struct msr_char_buf *msr_user_charbuffer = NULL;    /* in diesen Puffer wird aus Userroutinen read,write,...
-						       geschrieben */
-
-/* Schreibzeiger für einen Charringpuffer */
-//volatile unsigned int msr_write_char_pointer = 0;
-
-//volatile unsigned int msr_read_char_pointer = 0;  /* zum Test Hm */
-
-
-/*
-***************************************************************************************************
-*
-* Function: msr_lists_init / cleanup
-*           Reserviert Speicher für die Characterringspeicher für Meldungen aus Interruptroutinen und
-*           aus Meldungen, die in Kernelteilen, die im Rahmen eines Usercontextes laufen
-*
-* Parameter:
-*
-* Rückgabe: 
-*
-* Status: exp
-*
-***************************************************************************************************
-*/
-
-int msr_lists_init()
-{
-    msr_user_charbuffer = msr_create_charbuf(MSR_CHAR_BUF_SIZE);
-    if(!msr_user_charbuffer){
-	printk(KERN_WARNING "msr_modul: kein Speicher fuer Userspace-Ringpuffer.\n");
-	return -ENOMEM;
-    }
-    return 0;
-
-}
-
-void msr_lists_cleanup()
-{
-    msr_free_charbuf(&msr_user_charbuffer); 
-}
 
 
 
@@ -144,17 +94,16 @@ void msr_lists_cleanup()
 
 void msr_dev_printf(const char *format, ...) 
 {
+    struct msr_dev *dev_element = NULL;
     int len;
     va_list argptr;
-    char *buf;
+
     if(format != NULL) {
 	va_start(argptr,format);
 	{
-	    if(msr_user_charbuffer != NULL) {
-		buf = msr_getb(msr_user_charbuffer);
-		len = vsprintf(buf, format, argptr);
-		msr_incb(len,msr_user_charbuffer);
-
+	    FOR_THE_LIST(dev_element,msr_dev_head) {
+		len = vsnprintf(msr_getb(dev_element->read_buffer),dev_element->read_buffer->bufsize, format, argptr);
+		msr_incb(len,dev_element->read_buffer);
 	    }
 
 	}
@@ -266,6 +215,25 @@ void rm_channel_list_item(struct msr_send_ch_list **head,struct msr_kanal_list *
    }
 
 }
+
+
+//Funktion ist nicht reentrant
+//Testet die Messagekanäle und erzeugt Meldungen in alle angeschlossenen Devices
+
+void update_messages_to_dev(void)
+{
+    static int rp = 0;
+#define LEVRPUB ((k_buflen + msr_kanal_write_pointer - rp) % k_buflen)
+
+    while(LEVRPUB > 0)
+    {
+	msr_write_messages_to_buffer(rp);
+	rp+=default_sampling_red; 
+	rp%=k_buflen;//MSR_KANAL_BUF_SIZE;
+    }
+#undef LEVRPUB
+}
+
 /*
 ***************************************************************************************************
 *   character device functions
@@ -275,46 +243,6 @@ void rm_channel_list_item(struct msr_send_ch_list **head,struct msr_kanal_list *
 /* dev msr kann zum Lesen und Schreiben von mehreren Prozessen gleichzeitig geöffnet werden 
    jeder "file" verwaltet seinen eigenen Lese- und Schreibpuffer */
 
-/*
-***************************************************************************************************
-*
-* Function: msr_read_block_char_buffer
-*           Liest Informationen aus einem Characterringpuffer. 
-*           Diese Funktion sorgt dafür, das immer ein <...> Klammernpaar kopiert wird.
-*           Wird z.B. für den Ringpuffer der Interruptroutine benötigt
-*
-* Parameter:
-*
-* Rückgabe: aktueller Füllstand des Ringpuffers
-*
-* Status: exp
-*
-***************************************************************************************************
-*/
-int msr_read_block_char_buffer(struct msr_char_buf *charbuf,struct msr_dev *dev,unsigned int *read_pointer)
-{
-    char *open_ind; /* "<" */
-    char *close_ind; /* ">" */
-    int result = 0;
-
-    msr_charbuf_lin(charbuf,*read_pointer); /* Besser für Stringoperationen siehe msr_charbuf.c */
-
-    /* jetzt einen Bereich rausschneiden, der in "<...>" steht */
-    open_ind = strchr(charbuf->buf+*read_pointer,'<');
-    if (open_ind) {
-	close_ind = strchr(open_ind,'>'); /* ab da weitersuchen */
-	/* jetzt Verifikation */
-	if(close_ind) {   /* geschlossenen Klammer gefunden */
-	    *read_pointer = (close_ind-charbuf->buf) % charbuf->bufsize; 
-	    result = 1;
-            /* den Bereich in den Lesepuffer des devices kopieren */
-	    msr_write_charbuf(open_ind,close_ind-open_ind+1,dev->read_buffer);
-	    /*noch ein LF einfügen (für Torsten :-) */
-	    msr_write_charbuf("\n",1,dev->read_buffer);
-	}
-    }
-    return result;
-}
 
 /*
 ***************************************************************************************************
@@ -335,27 +263,10 @@ int msr_read_block_char_buffer(struct msr_char_buf *charbuf,struct msr_dev *dev,
 unsigned int msr_dev_read_data(struct msr_dev *dev, unsigned int count)
 {
     
-#ifdef __KERNEL__
-    extern unsigned long volatile jiffies;
-    static unsigned long volatile old_jiffies = 0;
-#endif
 
     /* ist vielleicht schon genug im read_puffer (weil noch nicht alles gelesen wurde)?? */
     unsigned int lev_read_puffer = msr_charbuf_lev(dev->rp_read_pointer,dev->read_buffer);
     if (lev_read_puffer > count) return lev_read_puffer;
-
-
-    /* MSR_PRINT("msr_module:dev_read_data: LEV_RP: %d\n",LEV_RP);
-       MSR_PRINT("msr_module:dev_read_data: LEV_read_buffer: %d\n",lev_read_puffer); */
-
-    /* scheinbar doch nicht, dann... */
-
-    /* dann die Meldung aus dem Userringpuffer */
-    while(msr_read_block_char_buffer(msr_user_charbuffer,dev,&dev->user_read_pointer) && 
-      msr_charbuf_lev(dev->rp_read_pointer,dev->read_buffer)); 
-
-    //Reihenfolge getauscht, damit der Update der Parameter in der richtigen Reihenfolge funktioniert
-    //2005.06.15 
 
     /* Wichtig: Parameter und Kanallisten werden direkt aus der Devicewritefunktion bearbeitet */
 
@@ -368,23 +279,16 @@ unsigned int msr_dev_read_data(struct msr_dev *dev, unsigned int count)
 	{
 	    if(dev->datamode == 0)  //alle Kanäle zusammen senden
 		msr_write_kanaele_to_char_buffer(dev);
-	    if(dev->datamode == 1) //individuelle Kanäle senden
+	    if(dev->datamode == 1) //individuelle Kanäle senden 
 		msr_write_kanaele_to_char_buffer2(dev);
-
-	    //Meldung bei anstehendem Overflow
-/*	    if( (k = (LEV_RP*100/MSR_KANAL_BUF_SIZE)) > 90)
-	    printk("MSR_MODULE: Kanalringpuffer Overflow... Value: %u \n",k);  */
 
 	    /* und Lesezeiger der Kanalliste erhöhen */
 	    dev->msr_kanal_read_pointer+=default_sampling_red;    //FIXME von 1 auf default_sampling_red geändert Hm 3.11.2004 ist das der Grund, warum die Laufzeit seit Änderung auf DMA-Kanäle von msrd angewachsen ist ????
 	    if(default_sampling_red == k_buflen) printf("k_Wrap\n");
-	    dev->msr_kanal_read_pointer%=k_buflen;//MSR_KANAL_BUF_SIZE;
+	    dev->msr_kanal_read_pointer%=k_buflen;
 	    
 	    /* Pegel des read_puffers bestimmen */
 	    lev_read_puffer = msr_charbuf_lev(dev->rp_read_pointer,dev->read_buffer);
-
-/*	    if ((k=(lev_read_puffer*100/MSR_CHAR_BUF_SIZE)) > 90)
-	    printk("MSR_MODULE: Charringpuffer Overflow..., Value: %u \n",k); */
 
 	    if (lev_read_puffer > count)
 		return lev_read_puffer;
@@ -445,8 +349,6 @@ void *msr_open(int client_rfd, int client_wfd)
 
     /* jetzt den kanal_lese_zeiger auf den aktuellen kanal_write_pointer setzten */
     dev->msr_kanal_read_pointer = msr_kanal_write_pointer;
-    /* den Lesezeiger des Userringpuffers setzen */
-    dev->user_read_pointer = msr_user_charbuffer->write_pointer; 
 
     dev->wp_read_pointer = 0;
     dev->rp_read_pointer = 0;
@@ -474,7 +376,7 @@ void *msr_open(int client_rfd, int client_wfd)
     dev->next = NULL;  
 
     dev->ap_name = strdup("unknown");  //Name des verbundenen Programmes (dies muß das Programm selber mitteilen)
-    dev->hostname=strdup("unknown");
+    dev->hostname = strdup("unknown");
     dev->count_in = 0;                 //Anzahl bytes von Applikation zum Echtzeitprozess seit Verbindungsaufbau
     dev->count_out = 0;                //Anzahl bytes vom Echtzeitprozess zur Applikation
     do_gettimeofday(&dev->connection_time);          //Zeit, wann die Verbindung geöffnet wurde (UTC)
@@ -492,11 +394,13 @@ void *msr_open(int client_rfd, int client_wfd)
 	msr_dev_head = dev;    /* erstes Element */
 
     /*jetzt noch den Kanal für die Zeit suchen (dieser muß /Time/StructTimeval heißen) */
-    dev->timechannel = NULL;            /* Kein Zeitkanal */
+    dev->timechannel = timechannel;            /* Schon zugewiesen ? */
 
-    FOR_THE_LIST(element,msr_kanal_head) {
-	if ((element) && strcmp(element->p_bez,"/TimeStructTimeval") == 0)
-	    dev->timechannel = element;
+    if(!dev->timechannel) {
+	FOR_THE_LIST(element,msr_kanal_head) {
+	    if ((element) && strcmp(element->p_bez,"/TimeStructTimeval") == 0)
+		dev->timechannel = element;
+	}
     }
 
     //wenn Struct Timeval nicht gefunden wurde nochmal nach Time suchen
@@ -516,13 +420,6 @@ void *msr_open(int client_rfd, int client_wfd)
 		   MSR_VERSION,
 		   MSR_FEATURES,   //steht auch in msr_version.h !!
 		   dev->write_buffer->bufsize);
-
-
-
-
-    /* und zum Test mal an alle raushauen */
-    msr_print_info("new connection");
-
 
     return (void *)dev;          /* success */
 }
@@ -570,16 +467,6 @@ int msr_close(void *p)
 }
 
 
-//FIXME wieder raus !!!!!!!!!!!!!!!!!!
-/*
-void set_wfd(int x) {
-}
-
-void clr_wfd(int x) {
-}
-*/
-
-
 /* Data has arrived from client. read() it and process. If data has to be
  * sent back to client, store it in an internal queue, and call set_wfd() to
  * indicate to Dispatcher that there is data for the client. When parameters
@@ -625,13 +512,11 @@ void msr_read(int fd, void *p)
 /* Dispatcher indicated that data channel to client is ready for write(). 
  * When output buffer is empty, tell dispatcher by calling clr_wfd() */
 
-/* FIXME, diese Funktion muß noch überarbeitet werden, sollte ohne temporären Speicher auskommen */
+
 void msr_write(int fd, void *p)
 {
     struct msr_dev *dev = (struct msr_dev *)p;
     ssize_t count = 0;
-    char *tmp_c;           //Temporärer Puffer
-    unsigned int oldrp;   //alter Lesezeiger
 
     ssize_t max_len;
 
@@ -646,7 +531,7 @@ void msr_write(int fd, void *p)
 
     max_len = msr_len_rb(dev,1024); //soviel bei einem Lesebefehl maximal gelesen
 
-    /* ist überhaupt was zu lesen ? Darf eingentlich nicht sein....*/
+    /* ist überhaupt was zu lesen? Darf eigentlich nicht nicht sein....*/
     if(max_len == 0) 
     {      
 	/* If output buffer is empty */
@@ -656,34 +541,17 @@ void msr_write(int fd, void *p)
 	return;
     }
     
-    //es sind Daten im Puffer also schreiben
-    oldrp = dev->rp_read_pointer; //Lesezeiger merken (falls das Schreiben daneben geht, muß die aktuelle Position angepasst werden) 
+    if(dev->read_buffer->write_pointer > dev->rp_read_pointer) //der Schreibzeiger steht hinter dem Lesezeiger, dann von dort bis zum Schreibzeiger lesen
+	count = write(dev->client_wfd,dev->read_buffer->buf + dev->rp_read_pointer,dev->read_buffer->write_pointer - dev->rp_read_pointer);
+    else  // write_pointer < read_pointer dann vom lesezeiger bis zum Ende lesen. beim nächsten Lesen ist dann der Lesezeiger wieder kleiner als der Schreibzeiger
+	count = write(dev->client_wfd,dev->read_buffer->buf + dev->rp_read_pointer,dev->read_buffer->bufsize - dev->rp_read_pointer);
 
-    /* Speicher anfordern für temporären Zwischenspeicher für die Daten */
-    tmp_c = (char *)getmem(max_len);
-    if (!tmp_c) {
-        msr_close(p);
-        clr_fd(fd);
-        close(fd);
-        return;   //Fehler
-    }
-    /* Daten lesen */
-    max_len = msr_read_charbuf(dev->read_buffer,tmp_c,max_len,&dev->rp_read_pointer);
-    // und schreiben
-    count = write(dev->client_wfd, tmp_c,max_len);
+    //und den Lesezeiger nachführen
+    dev->rp_read_pointer+=count;
+    dev->rp_read_pointer%=dev->read_buffer->bufsize;
 
     dev->count_out+=count;  //statistics
 
-    freemem(tmp_c);
-    //überprüfen, ob es geklappt hat
-    if(count != max_len) {
-	//nicht alles geschrieben worden Lesezeiger nur um den Betrag weiterschieben, wie geschrieben wurde
-	if(count > 0) { //nur, wenn überhaupt was geschrieben wurde .....
-	    dev->rp_read_pointer = oldrp+count;
-	    dev->rp_read_pointer%=dev->read_buffer->bufsize;
-	}
-    }
-    
     //nachsehen, ob noch Daten im Puffer sind
 #ifdef RTW_BUDDY
     if(msr_len_rb(dev,1024) == 0)

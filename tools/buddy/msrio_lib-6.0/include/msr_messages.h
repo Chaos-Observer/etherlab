@@ -15,42 +15,6 @@
 *           E-mail: hm@igh-essen.com
 *
 *
-*           $RCSfile: msr_messages.h,v $
-*           $Revision: 1.1 $
-*           $Author: hm $
-*           $Date: 2005/06/14 12:34:59 $
-*           $State: Exp $
-*
-*
-*           $Log: msr_messages.h,v $
-*           Revision 1.1  2005/06/14 12:34:59  hm
-*           Initial revision
-*
-*           Revision 1.1  2004/09/14 10:15:49  hm
-*           Initial revision
-*
-*           Revision 1.2  2004/05/13 13:28:31  hm
-*           makro msr_warn in warn geaendert
-*
-*           Revision 1.1  2003/07/17 09:21:11  hm
-*           Initial revision
-*
-*           Revision 1.1  2003/01/22 10:27:40  hm
-*           Initial revision
-*
-*           Revision 1.1  2002/07/09 09:11:08  sp
-*           Initial revision
-*
-*           Revision 1.1  2002/03/28 10:34:49  hm
-*           Initial revision
-*
-*           Revision 1.2  2002/01/28 12:13:11  hm
-*           *** empty log message ***
-*
-*           Revision 1.1  2002/01/25 13:53:54  hm
-*           Initial revision
-*
-*
 *
 *
 **************************************************************************************************/

@@ -148,21 +148,23 @@ const char* get_signal_info(struct signal_info *si)
     // dimArray[dimArrayIdx+1] = numbol or columns
 
     si->dim[0] = si->dim[1] = 0;
+    si->orientation = si_scalar;
+
     if (min(dimArray[dimArrayIdx],dimArray[dimArrayIdx+1]) == 1) {
         si->dim[0] = max(dimArray[dimArrayIdx],dimArray[dimArrayIdx+1]);
+	si->dim[1] = 1;
+	si->orientation = si_vector;
+
     }
     else {
+	si->dim[0] = dimArray[dimArrayIdx];
+	si->dim[1] = dimArray[dimArrayIdx+1];
         switch (rtwCAPI_GetOrientation(dimMap, dimIdx)) {
             case rtwCAPI_MATRIX_COL_MAJOR:
-                if (min(dimArray[dimArrayIdx],dimArray[dimArrayIdx+1]) == 1) {
-                } else {
-                    si->dim[0] = dimArray[dimArrayIdx];
-                    si->dim[1] = dimArray[dimArrayIdx+1];
-                }
+		si->orientation = si_matrix_col_major;
                 break;
             case rtwCAPI_MATRIX_ROW_MAJOR:
-                si->dim[0] = dimArray[dimArrayIdx+1];
-                si->dim[1] = dimArray[dimArrayIdx];
+		si->orientation = si_matrix_row_major;
                 break;
             default:
                 return "Unknown RTW data orientation encountered.";
@@ -266,21 +268,22 @@ const char* get_param_info(struct signal_info* si)
     dimArrayIdx = rtwCAPI_GetDimArrayIndex(dimMap, dimIdx);
 
     si->dim[0] = si->dim[1] = 0;
+    si->orientation = si_scalar;
+
     if (min(dimArray[dimArrayIdx],dimArray[dimArrayIdx+1]) == 1) {
         si->dim[0] = max(dimArray[dimArrayIdx],dimArray[dimArrayIdx+1]);
+	si->dim[1] = 1;
+	si->orientation = si_vector;
     }
     else {
+	si->dim[0] = dimArray[dimArrayIdx];
+	si->dim[1] = dimArray[dimArrayIdx+1];
         switch (rtwCAPI_GetOrientation(dimMap, dimIdx)) {
             case rtwCAPI_MATRIX_COL_MAJOR:
-                if (min(dimArray[dimArrayIdx],dimArray[dimArrayIdx+1]) == 1) {
-                } else {
-                    si->dim[0] = dimArray[dimArrayIdx];
-                    si->dim[1] = dimArray[dimArrayIdx+1];
-                }
+		si->orientation = si_matrix_col_major;
                 break;
             case rtwCAPI_MATRIX_ROW_MAJOR:
-                si->dim[0] = dimArray[dimArrayIdx+1];
-                si->dim[1] = dimArray[dimArrayIdx];
+		si->orientation = si_matrix_row_major;
                 break;
             default:
                 return "Unknown RTW data orientation encountered.";

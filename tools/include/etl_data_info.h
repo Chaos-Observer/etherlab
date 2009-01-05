@@ -32,8 +32,8 @@
 #endif
 
 // Data organisation
-enum si_orientation_t {si_scalar = 1, si_vector, si_matrix, 
-    si_matrix_nd};
+enum si_orientation_t {si_scalar = 1, si_vector, si_matrix_row_major, 
+    si_matrix_col_major};
 
 // Data type definitions. 
 // Let the enumeration start at 1 so that an unset data type could
@@ -56,7 +56,8 @@ struct signal_info {
     size_t dim[2];              // Values of first 2 dimensions. If dim[0] == 0,
                                 // the number of dimensions is transported in
                                 // dim[1]. The actual dimensions has to be 
-                                // fetched in a second step.
+                                // fetched in a second step. 
+    enum si_orientation_t orientation;
     enum si_datatype_t data_type;      // Data Type
     char alias[256];            // Signal alias
     char name[256];             // Signal name

@@ -15,66 +15,6 @@
 *           E-mail: hm@igh-essen.com
 *
 *
-*           $RCSfile: msr_main.c,v $
-*           $Revision: 1.17 $
-*           $Author: hm $
-*           $Date: 2006/05/12 12:40:05 $
-*           $State: Exp $
-*
-*
-*           $Log: msr_main.c,v $
-*           Revision 1.17  2006/05/12 12:40:05  hm
-*           *** empty log message ***
-*
-*           Revision 1.16  2006/04/19 09:19:29  hm
-*           *** empty log message ***
-*
-*           Revision 1.15  2006/03/29 13:58:00  hm
-*           *** empty log message ***
-*
-*           Revision 1.14  2006/01/20 16:30:17  hm
-*           *** empty log message ***
-*
-*           Revision 1.13  2006/01/19 10:35:15  hm
-*           *** empty log message ***
-*
-*           Revision 1.12  2006/01/12 13:40:50  hm
-*           *** empty log message ***
-*
-*           Revision 1.11  2006/01/04 11:31:04  hm
-*           *** empty log message ***
-*
-*           Revision 1.10  2006/01/02 10:39:15  hm
-*           *** empty log message ***
-*
-*           Revision 1.9  2005/12/23 14:51:08  hm
-*           *** empty log message ***
-*
-*           Revision 1.8  2005/12/12 17:22:25  hm
-*           *** empty log message ***
-*
-*           Revision 1.7  2005/09/19 16:45:57  hm
-*           *** empty log message ***
-*
-*           Revision 1.6  2005/08/24 16:50:02  hm
-*           *** empty log message ***
-*
-*           Revision 1.5  2005/08/24 08:05:50  ab
-*           *** empty log message ***
-*
-*           Revision 1.4  2005/07/26 08:43:08  ab
-*           *** empty log message ***
-*
-*           Revision 1.3  2005/07/12 13:50:44  ab
-*           *** empty log message ***
-*
-*           Revision 1.2  2005/07/01 16:09:36  hm
-*           *** empty log message ***
-*
-*           Revision 1.1  2005/06/17 11:35:20  hm
-*           Initial revision
-*
-*
 *
 *
 **************************************************************************************************/
@@ -131,10 +71,6 @@ void msr_rtlib_cleanup(void)
 //    msr_clean_error_list();
     msr_print_info("msr_control: cleanup lists...");
 
-    //und die Listen lÅˆschen
-    msr_lists_cleanup();    
-    msr_print_info("msr_control: cleanup parameters, channels, errors done.");
-
 }
  
 #ifndef __KERNEL__
@@ -171,7 +107,6 @@ void msr_rtlib_cleanup(void)
 
 int msr_init(void *_rtp, int (*_newparamflag)(void*,void*,size_t),unsigned long _base_rate,void *_base,unsigned int _blocksize,unsigned int _buflen){
 
-    int result = 0;
     /* Save data for real time communications client */
     prtp = _rtp;
     newparamflag = _newparamflag;
@@ -181,11 +116,7 @@ int msr_init(void *_rtp, int (*_newparamflag)(void*,void*,size_t),unsigned long 
 
     msr_print_info("msr_modul: init of rt_lib...");
 
-    result = msr_lists_init();
-    if (result < 0) {
-        msr_print_warn("msr_modul: can't initialize Lists!");
-        return result;
-    }
+
 
     msr_init_kanal_params(_base_rate,_base,_blocksize,_buflen);
 
@@ -256,6 +187,12 @@ void msr_cleanup(void){
 
 /* A new image has arrived from the real time process. If there is new data
  * for a client, tell dispatcher by calling set_wfd(client_privdata) */
+
+//hm, FIXME, the first time set_wfd ist called after opening the device is in msr_update
+//           it should be called in msr_open because there already is data in the readbuffer
+//if due to a model error msr_update does not get called the connected tag is not transmittet automatically
+
+
 int msr_update(unsigned int wp){
 
     struct msr_dev *element = NULL;
@@ -263,12 +200,12 @@ int msr_update(unsigned int wp){
     static int counter = 0;
 
     msr_kanal_write_pointer = wp;
-//    printf("msriolib:wp:%d\n",wp);
-//    msr_write_kanal_list();  //Kanallisten beschreiben
+
 
     //im 20 Hz-(Echtzeit)Takt alle Listen durchlaufen und testen, ob Daten angefallen sind
     if(++counter >= (unsigned int)(msr_sample_freq/20)) { 
 	counter = 0;
+	update_messages_to_dev(); //Meldungen erzeugen
 	FOR_THE_LIST(element,msr_dev_head) {
 #ifdef RTW_BUDDY
 	    if(msr_len_rb(element,2) > 0)

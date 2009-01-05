@@ -116,6 +116,9 @@ struct msr_char_buf
 
 struct msr_char_buf *msr_create_charbuf(unsigned int size);
 
+
+unsigned int msr_charbuf_realloc(struct msr_char_buf *abuffer,unsigned int nsize);
+
 /*
 ***************************************************************************************************
 *
@@ -190,7 +193,7 @@ char *msr_getb(struct msr_char_buf *abuffer);
 *
 ***************************************************************************************************
 */
-int msr_incb(unsigned int pos,struct msr_char_buf *abuffer);
+int msr_incb(unsigned int cnt,struct msr_char_buf *abuffer);
 
 /*
 ***************************************************************************************************
