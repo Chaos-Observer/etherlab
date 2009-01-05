@@ -35,7 +35,7 @@
 
 /*--defines--------------------------------------------------------------------------------------*/
 
-#define MSR_CHAR_BUF_SIZE 1000000     /* Groesse des Char-Ringpuffers für die Kommunikation */
+#define MSR_CHAR_BUF_SIZE 10000000     /* Groesse des Char-Ringpuffers für die Kommunikation */
 #define MSR_BLOCK_BUF_ELEMENTS 1024  /* dies ist die maximal mögliche Anzahl Werte pro Data-Tag pro Kanal */
 
 

@@ -621,17 +621,17 @@ void msr_check_param_list(struct msr_param_list *p)
     struct msr_param_list *element;
 
     if(p == NULL) {
-	FOR_THE_LIST(element,msr_param_head) {
-	    if(element->p_chk) 
-		if(element->p_chk(element) == 1) 
-		    msr_dev_printf("<pu index=\"%i\"/>",element->index);  //Atomarer Aufruf
-	}
+        FOR_THE_LIST(element,msr_param_head) {
+            if(element->p_chk) 
+                if(element->p_chk(element) == 1) 
+                    msr_dev_printf("<pu index=\"%i\"/>\n",element->index);
+        }
     }
     else {
-	element = p;
-	if(element->p_chk) 
-	    if(element->p_chk(element) == 1) 
-		msr_dev_printf("<pu index=\"%i\"/>",element->index);  //Atomarer Aufruf
+        element = p;
+        if(element->p_chk) 
+            if(element->p_chk(element) == 1) 
+                msr_dev_printf("<pu index=\"%i\"/>\n",element->index);
     }
 }
 
@@ -1812,21 +1812,15 @@ void msr_write_messages_to_buffer(unsigned int index)
 
 	if(hasChanged && !isNull) {
 	    if(timechannel) {
-		//Timechannel ist struct timeval FIXME, hier noch abfrage auf typ rein
-		struct timeval tmp_value;
-		tmp_value = (*(struct timeval *)(k_base + index * k_blocksize + (int)timechannel->p_adr));
-		msr_dev_printf("<%s time=\"%u.%.6u\" text=\"%s\"/>\n",melement->mtyp,(unsigned int)tmp_value.tv_sec,(unsigned int)tmp_value.tv_usec,melement->mtext);       
-
-/*
-		msr_dev_printf("<%s time=\"%.16g\" text=\"%s\"/>\n",melement->mtyp,
-			       (*(double *)(k_base + index * k_blocksize + (int)timechannel->p_adr)),  //Zeitkanal ist immer double ?? HM
-		       melement->mtext);       
-*/
+            //Timechannel ist struct timeval FIXME, hier noch abfrage auf typ rein
+            tv = (*(struct timeval *)(k_base + index * k_blocksize + (int)timechannel->p_adr));
 	    }
 	    else { //lokale Zeit nehmen
-		do_gettimeofday(&tv);                                                                    
-		msr_dev_printf("<%s time=\"%u.%.6u\" text=\"%s\"/>\n",melement->mtyp,(unsigned int)tv.tv_sec,(unsigned int)tv.tv_usec,melement->mtext);       
+            do_gettimeofday(&tv);                                                                    
 	    }
+        msr_dev_printf("<%s time=\"%u.%.6u\" text=\"%s (%s)\"/>\n",
+                melement->mtyp,(unsigned int)tv.tv_sec,
+                (unsigned int)tv.tv_usec,melement->mtext,kanal->p_bez);       
 	}
     }
 }
