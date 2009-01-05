@@ -24,7 +24,6 @@
 #include <sys/mman.h>	// mmap()
 #include <syslog.h>	// syslog()
 #include <errno.h>	// errno
-#include <zlib.h>
 
 //#include "defines.h"
 #include "fio_ioctl.h"
@@ -231,7 +230,8 @@ static int start_app(const char *app_name, unsigned int app_num)
      *======================================================================*/
     CHECK_ERR (msr_init(app, param_change, 
                 app->properties.sample_period, app->blockio_start, 
-                app->properties.rtB_size, app->properties.rtB_count),
+                app->properties.rtB_size, app->properties.rtB_count, 
+                debug ? MSR_ALL_VARIABLES : 0),
             -1, out_msr_init, "Could not initialise msr software");
 
     /* Initialise the application with the pointer obtained from the shared

@@ -49,6 +49,7 @@ struct msr_dev *msr_dev_head = NULL;
 void *prtp,*krtp;
 
 int (*newparamflag)(void*, void*, size_t) = NULL;
+unsigned int msr_flag;
 
 
 extern struct msr_char_buf *msr_kanal_puffer;
@@ -105,11 +106,12 @@ void msr_rtlib_cleanup(void)
 */
 
 
-int msr_init(void *_rtp, int (*_newparamflag)(void*,void*,size_t),unsigned long _base_rate,void *_base,unsigned int _blocksize,unsigned int _buflen){
+int msr_init(void *_rtp, int (*_newparamflag)(void*,void*,size_t),unsigned long _base_rate,void *_base,unsigned int _blocksize,unsigned int _buflen,unsigned int _flags){
 
     /* Save data for real time communications client */
     prtp = _rtp;
     newparamflag = _newparamflag;
+    msr_flag = _flags;
 
     
     msr_sample_freq = 1.0e6/(double)_base_rate;

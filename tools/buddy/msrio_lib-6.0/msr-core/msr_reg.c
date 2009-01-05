@@ -44,6 +44,7 @@
 #include <linux/errno.h>  /* error codes */
 
 //#include <math.h> 
+#include <msr_main.h>
 #include <msr_lists.h>
 #include <msr_utils.h>
 #include <msr_charbuf.h>
@@ -1960,7 +1961,7 @@ int msr_reg_rtw_param( const char *model_name,
     info = alisttostr(alist);
 
     //und registrieren, falls gewünscht
-    if(hasattribute(alist,"hide")) {
+    if(!(msr_flag & MSR_ALL_VARIABLES) && hasattribute(alist,"hide")) {
 	value = getattribute(alist,"hide");
 	if (value[0] == 0 || value [0] == 'p') {
 //	    printf("Hiding Parameter: %s\n",buf);
@@ -2130,7 +2131,7 @@ int msr_reg_rtw_signal( const char* model_name,
 
 
     //und registrieren, falls gewünscht
-    if(hasattribute(alist,"hide")) {
+    if(!(msr_flag & MSR_ALL_VARIABLES) && hasattribute(alist,"hide")) {
 	value = getattribute(alist,"hide");
 	if (value[0] == 0 || value [0] == 's' || value [0] == 'k')  {//signal oder kanal
 //	    printf("Hiding Channel: %s\n",buf);

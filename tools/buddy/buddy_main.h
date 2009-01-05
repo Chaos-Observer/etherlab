@@ -49,6 +49,9 @@ extern int file_max;
 /* Run in foreground */
 extern int foreground;
 
+/* Show more messages */
+extern unsigned int debug;
+
 /* Directory from where buddy was started */
 extern char *cwd;
 

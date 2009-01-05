@@ -70,10 +70,13 @@
 #ifndef _MSR_MAIN_H_
 #define _MSR_MAIN_H_
 
+#define MSR_ALL_VARIABLES 1
+
 
 #include <stdlib.h>
 
 
+extern unsigned int msr_flag;
 							       
 /*							       
 ***************************************************************************************************
@@ -131,7 +134,7 @@ void msr_rtlib_cleanup(void);
 *******************************************************************************
 */
 
-int msr_init(void *_rtp, int (*_newparamflag)(void*,void*,size_t),unsigned long _base_rate,void *_base,unsigned int _blocksize,unsigned int _buflen);
+int msr_init(void *_rtp, int (*_newparamflag)(void*,void*,size_t),unsigned long _base_rate,void *_base,unsigned int _blocksize,unsigned int _buflen,unsigned int _flags);
 
 
 int msr_reg_time(void *time);
