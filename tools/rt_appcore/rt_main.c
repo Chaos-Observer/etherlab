@@ -52,6 +52,7 @@
 #include "rt_appcore.h"          /* Public functions exported by manager */
 #include "rt_main.h"            /* Private to AppCore. */
 #include "rtcom_chardev.h"
+#include "rt_vars.h"
 
 struct rt_appcore rt_appcore;
 
@@ -258,8 +259,10 @@ static void app_main_thread(long priv_data)
         rt_sem_wait(&rt_appcore.time.lock);
         rt_task->stats->time = rt_appcore.time.tv;
         rt_sem_signal(&rt_appcore.time.lock);
+        copy_input_variables(app->rt_vars, 0);
         if ((errmsg = rt_app->rt_OneStepMain()))
             break;
+        copy_output_buffer(app->rt_vars, 0);
 
         /* Send a copy of rtB to the buddy process */
         if (!--app->photo_sample) {
@@ -352,8 +355,10 @@ static void app_sec_thread(long priv_data)
         rt_sem_wait(&rt_appcore.time.lock);
         rt_task->stats->time = rt_appcore.time.tv;
         rt_sem_signal(&rt_appcore.time.lock);
+        copy_input_variables(app->rt_vars, app_tid);
         if ((errmsg = rt_app->rt_OneStepTid(app_tid))) 
             break;
+        copy_output_buffer(app->rt_vars, app_tid);
 
         /* Calculate and report execution statistics */
         rt_end = get_cycles();
@@ -400,6 +405,8 @@ void stop_rt_app(int app_id)
 
         rt_task_delete(&app->task[i].rtai_thread);
     }
+
+    rt_var_end(app);
 
     clear_bit(app_id, &rt_appcore.loaded_apps);
     rtp_fio_clear_app(app);
@@ -501,6 +508,10 @@ int start_rt_app(const struct rt_app *rt_app,
     app->rt_app = rt_app;
     app->task_stats_len = rt_app->num_tasks * sizeof(struct task_stats);
 
+    if ((err = rt_var_start(app))) {
+        goto out_var_start;
+    }
+
     for (tid = 0; tid < rt_app->num_tasks; tid++) {
         struct rt_task *task = &app->task[tid];
         task->app_tid = tid;
@@ -598,6 +609,8 @@ out_incompatible_ticks:
         rt_task_delete(&app->task[tid].rtai_thread);
     }
 out_task_init:
+out_var_start:
+    rt_var_end(app);
     clear_bit(app_id, &rt_appcore.loaded_apps);
     if (!rt_appcore.loaded_apps) {
         rt_appcore.base_period = 0;

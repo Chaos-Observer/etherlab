@@ -1,4 +1,4 @@
-SUBDIRS = scripts include buddy
+SUBDIRS = scripts include lib buddy
 
 if APPCORE
 SUBDIRS += rt_appcore

@@ -206,7 +206,7 @@ void Dispatcher::timerCallbackFunc(int fd, short _event, void *priv_data)
 #if DEBUG
     cerr << "Returnval from timeout: " << rv << endl;
 #endif
-    if (rv <= 0) {
+    if (rv < 0) {
         Task* parent = task->getParent();
 #if DEBUG
         cerr << "dispatcher timer callling kill " << parent << endl;

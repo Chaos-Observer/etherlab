@@ -34,8 +34,8 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "rich"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Sat Oct 11 00:30:24 2008"
-  ModelVersionFormat	  "1.%<AutoIncrement:690>"
+  LastModifiedDate	  "Sun Oct 26 15:21:10 2008"
+  ModelVersionFormat	  "1.%<AutoIncrement:694>"
   ConfigurationManager	  "rcs"
   SimulationMode	  "normal"
   LinearizationMsg	  "none"
@@ -132,7 +132,7 @@ Library {
   }
   System {
     Name		    "etherlab_lib"
-    Location		    [871, 705, 1352, 927]
+    Location		    [883, 765, 1364, 987]
     Open		    on
     ModelBrowserVisibility  off
     ModelBrowserWidth	    200
@@ -157,7 +157,7 @@ Library {
       MaskHideContents	      off
       System {
 	Name			"EtherCAT"
-	Location		[602, 450, 1099, 924]
+	Location		[615, 520, 1112, 994]
 	Open			on
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
@@ -1509,6 +1509,46 @@ Library {
     }
     Block {
       BlockType		      "S-Function"
+      Name		      "Persist"
+      Ports		      [1, 1]
+      Position		      [210, 130, 290, 170]
+      BackgroundColor	      "yellow"
+      FunctionName	      "persist"
+      Parameters	      "tsample"
+      MaskType		      "Trigger Events"
+      MaskDescription	      "This block is used to generate an events on its"
+" output.\n\nChecking the \"One Shot\" option will generate only one event, ot"
+"herwise a whole chain of events is generated for every count that the paramet"
+"er value was incremented.\n"
+      MaskHelp		      "A typical problem with interactive constants, e"
+".g. those that are connected to push buttons on the desktop, is that the even"
+"ts get lost due to it being reset too quickly. \n\nThis typically happens wit"
+"h push buttons acting on a constant. Sometimes the user presses and releases "
+"the push button so quickly that these separate events are send to the Real Ti"
+"me Application together as a single operation. The constant is then set and r"
+"eset without the Application realising that there even was an event.\n\nThis "
+"block is overcomes this limitation by keeping an internal counter synchronise"
+"d to a parameter value. If these two values are unequal. \n\nIf the \"Single "
+"Shot\" option is checked, only one event pulse is generated and the internal "
+"counter is set to the parameter value. Without this option, the internal coun"
+"ter is incremented until it equals the parameter value, generating one event "
+"pulse for every increment.\n"
+      MaskPromptString	      "Sample Time"
+      MaskStyleString	      "edit"
+      MaskTunableValueString  "off"
+      MaskEnableString	      "on"
+      MaskVisibilityString    "on"
+      MaskToolTipString	      "on"
+      MaskVariables	      "tsample=@1;"
+      MaskDisplay	      "disp('Persistent\\nStorage')\n"
+      MaskIconFrame	      on
+      MaskIconOpaque	      on
+      MaskIconRotate	      "none"
+      MaskIconUnits	      "autoscale"
+      MaskValueString	      "-1"
+    }
+    Block {
+      BlockType		      "S-Function"
       Name		      "World Time"
       Ports		      [0, 1]
       Position		      [350, 49, 420, 81]
@@ -1532,6 +1572,12 @@ Library {
       MaskIconRotate	      "none"
       MaskIconUnits	      "autoscale"
       MaskValueString	      "0"
+    }
+    Annotation {
+      Name		      "$Id: etherlab_lib.mdl 486 2008-10-26 14:19:12Z "
+"ha $"
+      Position		      [56, 201]
+      HorizontalAlignment     "left"
     }
   }
 }

@@ -22,10 +22,14 @@
  *
  *****************************************************************************/ 
 
+#ifndef RT_APP_H
+#define RT_APP_H
+
 #include <app_taskstats.h>      // struct task_stats
 #include "app_payload.h"
 
 struct signal_info;
+struct rt_vars;
 
 /** Structure describing the Real-Time Application
  */
@@ -72,6 +76,8 @@ struct rt_app {
 
     struct task_stats *task_stats;
 
+    struct rt_vars *rt_vars;
+
     const char *(*rt_OneStepMain)(void);
     const char *(*rt_OneStepTid)(unsigned int);
     void        (*set_error_msg)(const char *);
@@ -90,3 +96,5 @@ extern unsigned int task_period[];
 const char *app_start(void);
 const char *app_info_init(void* priv_data);
 void app_stop(void);
+
+#endif //RT_APP_H

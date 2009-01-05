@@ -12,6 +12,7 @@ mex raise.c
 mex etherlab_in.c
 mex etherlab_out.c
 mex event.c
+mex persist.c
 
 run EtherCAT/setup.m
 

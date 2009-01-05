@@ -32,7 +32,7 @@ raise_catch.o: raise_catch.c raise_catch.h Kbuild
 		V="$(VERBOSE)" DEFS="$(DEFS)" \
 		RTAI_DIR=$(RTAI_DIR) \
                 STAGING_DIR=$(STAGING_DIR) \
-		PREFIX=@prefix@ \
+		PREFIX=@prefix@ TGT=$@ \
 		"_module_@abs_builddir@"
 
 ecrt_support.o: ecrt_support.h ecrt_support.c Kbuild
@@ -40,7 +40,7 @@ ecrt_support.o: ecrt_support.h ecrt_support.c Kbuild
 		V="$(VERBOSE)" DEFS="$(DEFS)" \
 		RTAI_DIR=$(RTAI_DIR) \
                 STAGING_DIR=$(STAGING_DIR) \
-		PREFIX=@prefix@ \
+		PREFIX=@prefix@ TGT=$@ \
 		"_module_@abs_builddir@"
 
 clean-local: Kbuild

@@ -26,7 +26,7 @@
 #ifndef RTTASK_H
 #define RTTASK_H
 
-#include "Task.h"
+#include "lib/Task.h"
 #include "FileDevice.h"
 
 #include <string>

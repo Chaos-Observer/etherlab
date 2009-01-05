@@ -42,6 +42,8 @@
 #include <linux/autoconf.h>
 #include <rt_appcore.h>
 
+#include <rt_vars.h>
+
 extern struct rt_app rt_app;
 
 char *app_name;
@@ -74,6 +76,7 @@ mod_cleanup(void)
     stop_rt_app(rt_app.app_id);
     kfree(rt_app.pend_rtP);
     app_stop();
+    rt_var_exit(&rt_app);
     pr_info("Removed application \"%s\".\n", rt_app.name);
 }
 

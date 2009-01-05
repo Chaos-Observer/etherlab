@@ -5,8 +5,4 @@ EXTRA_CFLAGS += $(shell \
         DESTDIR=$(STAGING_DIR) $(STAGING_DIR)/$(RTAI_DIR)/bin/rtai-config \
                 --module-cflags)
 
-obj-m   := raise_catch.o
-
-ifneq ($(wildcard $(STAGING_DIR)/$(PREFIX)/include/ecrt.h),)
-obj-m   +=  ecrt_support.o
-endif
+obj-m   := $(TGT)

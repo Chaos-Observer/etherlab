@@ -26,7 +26,7 @@
 #ifndef APPCTLTASK_H
 #define APPCTLTASK_H
 
-#include "Task.h"
+#include "lib/Task.h"
 
 #include <map>
 

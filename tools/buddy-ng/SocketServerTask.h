@@ -27,7 +27,7 @@
 #ifndef SOCKETSERVERTASK_H
 #define SOCKETSERVERTASK_H
 
-#include "Task.h"
+#include "lib/Task.h"
 #include "SocketExcept.h"
 
 #include <string>

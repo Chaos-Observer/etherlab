@@ -49,18 +49,11 @@ static void mdlInitializeSizes(SimStruct *S)
     ssSetInputPortWidth(S, 0, DYNAMICALLY_SIZED);
     ssSetInputPortDataType(S, 0, DYNAMICALLY_TYPED);
     ssSetInputPortDirectFeedThrough(S, 0, 1);
-    ssSetInputPortRequiredContiguous(S,0,0);
 
     if (!ssSetNumOutputPorts(S, 0)) return;
 
     ssSetNumSampleTimes(S, 1);
-    ssSetNumContStates(S, 0);
-    ssSetNumDiscStates(S, 0);
-    ssSetNumRWork(S, 0);
-    ssSetNumIWork(S, 0);
     ssSetNumPWork(S, 1);
-    ssSetNumModes(S, 0);
-    ssSetNumNonsampledZCs(S, 0);
 
     ssSetOptions(S, 
             SS_OPTION_WORKS_WITH_CODE_REUSE | 
@@ -102,58 +95,10 @@ static void mdlTerminate(SimStruct *S)
 static void mdlRTW(SimStruct *S)
 {
     const char *id      = getString(S,ID);
-    uint32_T dtype = DTYPE;
-    char *ctype_name[] = { "doesnt exist",
-        "default",
-        "boolean_T",
-        "int8_T" , "uint8_T",
-        "int16_T", "uint16_T",
-        "int32_T", "uint32_T",
-        "sint64_T", "uint64_T",
-        "real32_T", "real_T",
-    };
-    DTypeId default_type = ssGetInputPortDataType(S,0);
-
-    if (dtype == 1) {
-        switch (default_type) {
-            case SS_DOUBLE:
-                dtype = 12;
-                break;
-            case SS_SINGLE:
-                dtype = 11;
-                break;
-            case SS_INT8:
-                dtype = 3;
-                break;
-            case SS_UINT8:
-                dtype = 4;
-                break;
-            case SS_INT16:
-                dtype = 5;
-                break;
-            case SS_UINT16:
-                dtype = 6;
-                break;
-            case SS_INT32:
-                dtype = 7;
-                break;
-            case SS_UINT32:
-                dtype = 8;
-                break;
-            case SS_BOOLEAN:
-                dtype = 2;
-                break;
-            default:
-                ssSetErrorStatus(S, "Unknown data type");
-                return;
-        }
-    }
 
     if (!ssWriteRTWStrParam(S, "VarName", id))
         return;
-    if (!ssWriteRTWStrParam(S, "CTypeName", ctype_name[dtype]))
-        return;
-    if (!ssWriteRTWWorkVect(S, "PWork", 1, "Addr", 1))
+    if (!ssWriteRTWWorkVect(S, "PWork", 1, "DstAddr", 1))
         return;
 }
 

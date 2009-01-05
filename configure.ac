@@ -223,6 +223,9 @@ AC_ARG_ENABLE([buddy-ng],
     [ enableval= ]
 )
 AM_CONDITIONAL(BUDDY_NG, test x$enableval != x)
+AC_CHECK_LIB(event,event_init,[:],
+  [AC_MSG_ERROR(libevent is required for buddy-ng)]
+)
 
 #-----------------------------------------------------------------------------
 # Debug
@@ -313,6 +316,7 @@ AC_CONFIG_FILES([
         capi/Kbuild.makefile
         capi/Makefile
         tools/Makefile
+        tools/lib/Makefile
         tools/buddy-ng/Makefile
         tools/buddy/Makefile
         tools/include/Makefile

@@ -70,6 +70,8 @@ struct app {
                                   * is registered */
     struct class_device *sysfs_dev;
 
+    struct rt_vars *rt_vars;
+
     struct buddy_fio *buddy_fio; 
 
     struct cdev rtp_dev;        /* Device for Process IO */

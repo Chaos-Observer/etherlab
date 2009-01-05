@@ -7,9 +7,9 @@ EXTRA_CFLAGS += $(shell \
 
 EXTRA_SYMBOLS := $(RTAI_DIR)/include/Module.symvers
 
-obj-m        := rt_appcore.o rt_test.o
+obj-m        := rt_appcore.o # rt_test.o
 rt_appcore-y  := $(RT_APPCORE_SRCS:.c=.o)
-rt_test-y    := test_vars.o
+#rt_test-y    := test_vars.o
 
 clean-files := $(obj)/kernel-cflags.c
 

@@ -27,7 +27,10 @@
 #include "Task.h"
 #include "Dispatcher.h"
 
-#include <iostream>
+#undef DEBUG
+#define DEBUG 0
+
+//#include <iostream>
 
 using namespace std;
 
@@ -39,7 +42,9 @@ Task::Task(Task* parent): parent(parent)
         parent->adopt(this);
     }
 
+#if DEBUG
     cerr << "Born task " << this << endl;
+#endif
 
     readRef = writeRef = timerRef = NULL;
 }
@@ -48,7 +53,9 @@ Task::Task(Task* parent): parent(parent)
 Task::~Task()
 //************************************************************************
 {
+#if DEBUG
     cerr << "Deleting Task" << this << endl;
+#endif
 
     disableRead();
     disableWrite();
@@ -68,7 +75,9 @@ Task::~Task()
 Task* Task::getParent() const 
 //************************************************************************
 { 
+#if DEBUG
     cerr << "returning " << parent << endl;
+#endif
     return parent; 
 }
 
@@ -76,7 +85,9 @@ Task* Task::getParent() const
 void Task::kill(Task* child, int rv)
 //************************************************************************
 { 
+#if DEBUG
     cerr << "killing " << child << endl;
+#endif
     delete child;
 }
 

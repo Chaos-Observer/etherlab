@@ -58,7 +58,7 @@ The central dispatcher then calls the function that was registered when
 
 #include "ConfigFile.h"
 #include "AppCtlTask.h"
-#include "Dispatcher.h"
+#include "lib/Dispatcher.h"
 
 #include <iostream>
 

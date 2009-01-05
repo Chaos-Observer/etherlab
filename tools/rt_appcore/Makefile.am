@@ -4,13 +4,14 @@
 #
 #-----------------------------------------------------------------------------
 
-RT_APPCORE_SRCS = rt_main.c app_chardev.c rt_vars.c rtcom_chardev.c
+RT_APPCORE_SRCS = rt_main.c app_chardev.c rt_vars.c rtcom_chardev.c \
+    etl_data_types.c
 RT_APPCORE_HEADER = rt_main.h rtcom_chardev.h
 
 EXTRA_DIST = $(RT_APPCORE_SRCS) $(RT_APPCORE_HEADER) test_vars.c Kbuild
 
 moduledir = $(prefix)/modules
-module_DATA = rt_appcore.ko rt_test.ko
+module_DATA = rt_appcore.ko # rt_test.ko
 
 # Files needed to build an Application
 capidir = $(prefix)/capi
@@ -26,6 +27,9 @@ $(module_DATA) kernel-cflags: $(RT_APPCORE_SRCS) $(RT_APPCORE_HEADER) Kbuild
 		RTAI_DIR="$(RTAI_DIR)" \
                 STAGING_DIR="$(STAGING_DIR)" \
                 RT_APPCORE_SRCS="$(RT_APPCORE_SRCS)"
+
+etl_data_types.c: $(top_srcdir)/tools/buddy/etl_data_types.c
+	cp $^ $@
 
 clean-local: Kbuild
 	make -C "$(LINUX_DIR)" M="@abs_builddir@" \

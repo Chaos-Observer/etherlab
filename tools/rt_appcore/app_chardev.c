@@ -52,6 +52,7 @@
  * that the Real-Time process makes
  *#########################################################################*/
 
+#ifdef USE_NOPAGE
 /* .nopage method for the mmap() functionality. If the buddy accesses a 
  * page that has not been mapped, this method gets called */
 static struct page *rtp_vma_nopage(struct vm_area_struct *vma,
@@ -84,6 +85,7 @@ static struct page *rtp_vma_nopage(struct vm_area_struct *vma,
 struct vm_operations_struct rtp_vm_ops = {
     .nopage =   rtp_vma_nopage,
 };
+#endif
 
 /* mmap() method for Process IO */
 static int rtp_mmap(
@@ -91,12 +93,28 @@ static int rtp_mmap(
         struct vm_area_struct *vma
         ) {
     struct app *app = filp->private_data;
+    size_t buf_len = app->rtB_cnt * app->rtB_len;
 
+    /* Writing to buffer not allowed */
+    if (vma->vm_flags & VM_WRITE) {
+        return -EPERM;
+    }
+
+    /* Make sure the correct number of pages are mapped */
+    if ((vma->vm_end - vma->vm_start) >> PAGE_SHIFT >
+            (buf_len + (PAGE_SIZE - 1)) >> PAGE_SHIFT) {
+        return -EFAULT;
+    }
+
+#ifdef USE_NOPAGE
     vma->vm_ops = &rtp_vm_ops;
-    vma->vm_flags |= VM_RESERVED;       /* Pages will not be swapped out */
-
-    /* Store app in private data */
     vma->vm_private_data = app;
+#else
+    if (remap_vmalloc_range(vma, app->rtb_buf, 0))
+        return -EINVAL;
+#endif
+
+    vma->vm_flags |= VM_RESERVED;       /* Pages will not be swapped out */
 
     return 0;
 }
@@ -121,7 +139,7 @@ static int rtp_open(
         ? rt_app->buffer_time/rt_app->sample_period : 1;
     app->rtB_len = rt_app->rtB_size + app->task_stats_len;
     buf_len = app->rtB_cnt * app->rtB_len;
-    app->rtb_buf = vmalloc(buf_len);
+    app->rtb_buf = vmalloc_user(buf_len);
     if (!app->rtb_buf) {
         printk("Could not vmalloc buffer length %u*%u "
                 "for Process IO\n", app->rtB_cnt, app->rtB_len);

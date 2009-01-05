@@ -67,8 +67,6 @@ struct app_dev {
 
 static int select_appcore(void);
 struct app_dev* select_app(unsigned int id);
-static struct page * vma_nopage(struct vm_area_struct *vma, 
-        unsigned long address, int *type);
 static int fop_release_appcore( struct inode *inode, struct file *filp);
 static int fop_release_app( struct inode *inode, struct file *filp);
 static unsigned int fop_poll_appcore( struct file *filp, poll_table *wait);
@@ -618,42 +616,28 @@ fop_read_app( struct file * filp, char *buffer,
     return len;
 }
 
-static struct page *
-vma_nopage(struct vm_area_struct *vma, unsigned long address, int *type)
-{
-    unsigned long offset;
-    struct page *page = NOPAGE_SIGBUS;
-    struct app_dev* app_dev = (struct app_dev*)vma->vm_private_data;
-
-    offset = (address - vma->vm_start) + (vma->vm_pgoff << PAGE_SHIFT);
-
-    /* Check that buddy did not want to access memory out of range */
-    if (offset >= app_dev->app->rtB_cnt * app_dev->app->rtB_len)
-        return NOPAGE_SIGBUS;
-
-    page = vmalloc_to_page(app_dev->rtb_buf + offset);
-
-//    pr_debug("Nopage fault vma, address = %#lx, offset = %#lx, page = %p\n", 
-//            address, offset, page);
-
-    /* got it, now increment the count */
-    get_page(page);
-    if (type)
-        *type = VM_FAULT_MINOR;
-    
-    return page;
-}
-
-static struct vm_operations_struct vm_ops = {
-    .nopage = vma_nopage,
-};
-
 static int
 fop_mmap_app(struct file *filp, struct vm_area_struct *vma)
 {
-    vma->vm_ops = &vm_ops;
+    struct app *app = filp->private_data;
+    size_t buf_len = app->rtB_cnt * app->rtB_len;
+
+    /* Writing to buffer not allowed */
+    if (vma->vm_flags & VM_WRITE) {
+        return -EPERM;
+    }
+
+    /* Make sure the correct number of pages are mapped */
+    if ((vma->vm_end - vma->vm_start) >> PAGE_SHIFT >
+            (buf_len + (PAGE_SIZE - 1)) >> PAGE_SHIFT) {
+        return -EFAULT;
+    }
+
+    if (remap_vmalloc_range(vma, app->rtb_buf, 0))
+        return -EINVAL;
+
     vma->vm_flags |= VM_RESERVED;       /* Pages will not be swapped out */
-    vma->vm_private_data = filp->private_data;
+
     return 0;
 }
 

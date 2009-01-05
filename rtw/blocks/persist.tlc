@@ -1,0 +1,28 @@
+%%
+%% This implements the event block
+%%
+%% Copyright (C) 2008
+%% Richard Hacker
+%% IgH Essen GmbH
+%% 
+%% License: GPL
+
+%implements "persist" "C"
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function Outputs( block, system ) Output
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  /* %<Type> Block: %<Name>
+   */
+  %assign RollVars = ["Y", "U", "P"]
+  %roll sigIdx = RollRegions, lcv = RollThreshold, block, ...
+      "Roller", RollVars
+    %%
+    %assign y = LibBlockOutputSignal(0,"",lcv,sigIdx)
+    %assign u = LibBlockInputSignal(0,"",lcv,sigIdx)
+    %assign k = LibBlockParameter(InitialValue, "", lcv, sigIdx)
+    %%
+    %<y> = %<u> + %<k>;
+  %endroll
+%endfunction
