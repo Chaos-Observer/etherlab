@@ -1196,10 +1196,10 @@ int msr_print_kanal_list(struct msr_char_buf *abuf,char *aname,int mode)
 	if (element && ((aname == NULL) || (strcmp(aname,element->p_bez) == 0))) {
             xml_name = toxml(element->p_bez);
 	    if(mode == 1) {
-		len+=sprintf(buf+len,"<channel index=\"%.3i\" name=\"%s\"/>\n",
+		len+=sprintf(buf+len,"<channel index=\"%.3i\" name=\"%s\"",
 			     index,
 			     xml_name);
-	    }
+	    } 
 	    else {
 		len+=sprintf(buf+len,"<channel name=\"%s\" alias=\"%s\" index=\"%i\" typ=\"%s\" datasize=\"%i\" bufsize=\"%i\" HZ=\"%.16g\"",
 			     xml_name,
@@ -1222,55 +1222,55 @@ int msr_print_kanal_list(struct msr_char_buf *abuf,char *aname,int mode)
 		//Infostring
 		if(element->info && strlen(element->info) > 0) //info ist schon im Format name="value"
 		    len+=sprintf(buf+len," %s",element->info);
-
-		len+=sprintf(buf+len," value=\"");
-
-		switch(element->p_var_typ)
-		{
-		    case TINT:
-			len+=sprintf(buf+len,"%i\"/>\n",(*(int*)(k_base + wp * k_blocksize + (int)element->p_adr)));
-			break;
-		    case TLINT:
-			len+=sprintf(buf+len,"%li\"/>\n",(*(long int*)(k_base + wp * k_blocksize + (int)element->p_adr)));
-			break;
-		    case TCHAR:
-			len+=sprintf(buf+len,"%i\"/>\n",(*(char*)(k_base + wp * k_blocksize + (int)element->p_adr)));
-			break;
-		    case TUCHAR:
-			len+=sprintf(buf+len,"%u\"/>\n",(*(unsigned char*)(k_base + wp * k_blocksize + (int)element->p_adr)));
-			break;
-		    case TSHORT:
-			len+=sprintf(buf+len,"%i\"/>\n",(*(short int*)(k_base + wp * k_blocksize + (int)element->p_adr)));
-			break;
-		    case TUSHORT:
-			len+=sprintf(buf+len,"%u\"/>\n",(*(unsigned short int*)(k_base + wp * k_blocksize + (int)element->p_adr)));
-			break;
-		    case TUINT:
-			len+=sprintf(buf+len,"%u\"/>\n",(*(unsigned int*)(k_base + wp * k_blocksize + (int)element->p_adr)));
-			break;
-		    case TULINT:
-			len+=sprintf(buf+len,"%lu\"/>\n",(*(unsigned long int*)(k_base + wp * k_blocksize + (int)element->p_adr)));
-			break;
-		    case TFLT:
-			len+=sprintf(buf+len,"%.16g\"/>\n",(*(float*)(k_base + wp * k_blocksize + (int)element->p_adr)));  
-			break;
-		    case TDBL:
-			len+=sprintf(buf+len,"%.16g\"/>\n",(*(double*)(k_base + wp * k_blocksize + (int)element->p_adr))); 
-			break;
- 		    case TTIMEVAL:
-			len+=sprintf(buf+len,"%u.%.6u\"/>\n",(unsigned int)(*(struct timeval*)(k_base + wp * k_blocksize + (int)element->p_adr)).tv_sec,
-				                             (unsigned int)(*(struct timeval*)(k_base + wp * k_blocksize + (int)element->p_adr)).tv_usec);
-			break;
-		    default: break;
-		}
 	    }
-            free(xml_name);
+
+	    len+=sprintf(buf+len," value=\"");
+
+	    switch(element->p_var_typ)
+	    {
+		case TINT:
+		    len+=sprintf(buf+len,"%i\"/>\n",(*(int*)(k_base + wp * k_blocksize + (int)element->p_adr)));
+		    break;
+		case TLINT:
+		    len+=sprintf(buf+len,"%li\"/>\n",(*(long int*)(k_base + wp * k_blocksize + (int)element->p_adr)));
+		    break;
+		case TCHAR:
+		    len+=sprintf(buf+len,"%i\"/>\n",(*(char*)(k_base + wp * k_blocksize + (int)element->p_adr)));
+		    break;
+		case TUCHAR:
+		    len+=sprintf(buf+len,"%u\"/>\n",(*(unsigned char*)(k_base + wp * k_blocksize + (int)element->p_adr)));
+		    break;
+		case TSHORT:
+		    len+=sprintf(buf+len,"%i\"/>\n",(*(short int*)(k_base + wp * k_blocksize + (int)element->p_adr)));
+		    break;
+		case TUSHORT:
+		    len+=sprintf(buf+len,"%u\"/>\n",(*(unsigned short int*)(k_base + wp * k_blocksize + (int)element->p_adr)));
+		    break;
+		case TUINT:
+		    len+=sprintf(buf+len,"%u\"/>\n",(*(unsigned int*)(k_base + wp * k_blocksize + (int)element->p_adr)));
+		    break;
+		case TULINT:
+		    len+=sprintf(buf+len,"%lu\"/>\n",(*(unsigned long int*)(k_base + wp * k_blocksize + (int)element->p_adr)));
+		    break;
+		case TFLT:
+		    len+=sprintf(buf+len,"%.16g\"/>\n",(*(float*)(k_base + wp * k_blocksize + (int)element->p_adr)));  
+		    break;
+		case TDBL:
+		    len+=sprintf(buf+len,"%.16g\"/>\n",(*(double*)(k_base + wp * k_blocksize + (int)element->p_adr))); 
+		    break;
+		case TTIMEVAL:
+		    len+=sprintf(buf+len,"%u.%.6u\"/>\n",(unsigned int)(*(struct timeval*)(k_base + wp * k_blocksize + (int)element->p_adr)).tv_sec,
+				 (unsigned int)(*(struct timeval*)(k_base + wp * k_blocksize + (int)element->p_adr)).tv_usec);
+		    break;
+		default: break;
+	    }
+	    free(xml_name);
 	}
 	index++;
     }
 
     msr_incb(len,abuf);
-
+    
     return len;
 }
 

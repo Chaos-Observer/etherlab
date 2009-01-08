@@ -306,7 +306,7 @@ static void msr_com_read_kanaele(struct msr_dev *dev,char *params)
        <read_kanaele name="kanalname">
     */
     char *retbuf = msr_get_attrib(params,"name");
-    char *shortbuf = msr_get_attrib(params,"short");  //nur Index und Name
+    char *shortbuf = msr_get_attrib(params,"short");  //nur Index, Name und Wert
     int len;
     int shortinfo = 0;
 
