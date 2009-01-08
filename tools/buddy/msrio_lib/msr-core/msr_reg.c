@@ -1789,12 +1789,12 @@ void msr_write_messages_to_buffer(unsigned int index)
     char *p2;
 
     int j;
-    int isNull;
+    int previsNull;
     int hasChanged;
 
     FOR_THE_LIST(melement,msr_mkanal_head) {           
 	kanal = melement->kelement;
-	isNull = 1;
+	previsNull = 1;
 	hasChanged = 0;
 	p1 = (char *)(k_base + index * k_blocksize + (int)kanal->p_adr);  //Startadresse des aktuellen Wertes
 	if (melement->prevvalue == NULL) //nur beim ersten Durchgang .... 
@@ -1805,22 +1805,22 @@ void msr_write_messages_to_buffer(unsigned int index)
 	for(j=0;j<kanal->dataSize;j++) {
 	    if(p1[j] != p2[j]) 
 		hasChanged = 1;
-	    if(p1[j] != 0) 
-		isNull = 0;
+	    if(p2[j] != 0) 
+		previsNull = 0;
 	}
 	melement->prevvalue = p1;
 
-	if(hasChanged && !isNull) {
+	if(hasChanged && previsNull) {
 	    if(timechannel) {
-            //Timechannel ist struct timeval FIXME, hier noch abfrage auf typ rein
-            tv = (*(struct timeval *)(k_base + index * k_blocksize + (int)timechannel->p_adr));
+		//Timechannel ist struct timeval FIXME, hier noch abfrage auf typ rein
+		tv = (*(struct timeval *)(k_base + index * k_blocksize + (int)timechannel->p_adr));
 	    }
 	    else { //lokale Zeit nehmen
-            do_gettimeofday(&tv);                                                                    
+		do_gettimeofday(&tv);                                                                    
 	    }
-        msr_dev_printf("<%s time=\"%u.%.6u\" text=\"%s (%s)\"/>\n",
-                melement->mtyp,(unsigned int)tv.tv_sec,
-                (unsigned int)tv.tv_usec,melement->mtext,kanal->p_bez);       
+	    msr_dev_printf("<%s time=\"%u.%.6u\" text=\"%s (%s)\"/>\n",
+			   melement->mtyp,(unsigned int)tv.tv_sec,
+			   (unsigned int)tv.tv_usec,melement->mtext,kanal->p_bez);       
 	}
     }
 }
