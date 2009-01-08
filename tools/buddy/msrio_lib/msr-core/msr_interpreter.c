@@ -65,7 +65,6 @@ static void msr_com_read_parameter_values(struct msr_dev *dev,char *params);
 static void msr_com_write_parameter(struct msr_dev *dev,char *params);
 static void msr_com_read_kanaele(struct msr_dev *dev,char *params);
 static void msr_com_ping(struct msr_dev *dev,char *params);
-static void msr_dec_mod_use_count(struct msr_dev *dev,char *params);
 static void msr_com_stopdata(struct msr_dev *dev,char *params);
 static void msr_com_startdata(struct msr_dev *dev,char *params);
 static void msr_com_stopdata2(struct msr_dev *dev,char *params);
@@ -100,6 +99,7 @@ const struct msr_command msr_command_array[] =
  {"wp",&msr_com_write_parameter},
  {"read_kanaele",&msr_com_read_kanaele},
  {"rk",&msr_com_read_kanaele},
+ {"rc",&msr_com_read_kanaele}, //added because "kanaele" is not englisch rc = read_cannel
  {"start_data",&msr_com_startdata},
  {"sad",&msr_com_startdata},
  {"xsad",&msr_com_startdata2},
@@ -108,7 +108,6 @@ const struct msr_command msr_command_array[] =
  {"sod",&msr_com_stopdata},
  {"xsod",&msr_com_stopdata2},
  {"ping",&msr_com_ping},
- {"decmodusecnt",msr_dec_mod_use_count},
  {"remote_host", &msr_host_access},
  {"broadcast",&msr_broadcast},
  {"echo",&msr_echo},
@@ -343,16 +342,6 @@ static void msr_com_ping(struct msr_dev *dev,char *params)
 
 }
 
-/*-----------------------------------------------------------------------------*/
-static void msr_dec_mod_use_count(struct msr_dev *dev,char *params)
-{
-#ifdef __KERNEL__
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)          
-    MOD_DEC_USE_COUNT;
-    //FIXME hier noch Meldung, beim 2.6 Kernel
-#endif
-#endif
-}
 
 /*-----------------------------------------------------------------------------*/
 
@@ -603,7 +592,7 @@ static void msr_com_startdata2(struct msr_dev *dev,char *params)
 		    celement->reduction = reduction;
 		    celement->prec = prec;
 		    //Blocksize und Reduktion anpassen
-		    if(reduction*kelement->sampling_red*bs*2 > k_buflen) {
+		    if((reduction*bs*2 > kelement->bufsize) && (event == 0)) {
 			msr_buf_printf(dev->read_buffer,"<warn text=\"command xsad: blocksize*reduction exceed limits at channel : %s\"/>\n",kelement->p_bez);
 			if(reduction > 0) /* auf den maximal möglichen Wert setzten */
 			    celement->bs = MIN(k_buflen/(2*reduction*kelement->sampling_red),MSR_BLOCK_BUF_ELEMENTS);
@@ -614,8 +603,6 @@ static void msr_com_startdata2(struct msr_dev *dev,char *params)
 		    celement->cmode = cmode;
 		    celement->codmode = codmode;
 		    celement->event = event;
-		    //celement->counter = offs;
-		    //msr_print_info("Reg Kanal: %d, red: %d, bs; %d",kelement->index,celement->reduction,celement->bs);
 		}
 	    }
 	}
@@ -634,7 +621,7 @@ static void msr_com_startdata2(struct msr_dev *dev,char *params)
 			    celement->reduction = reduction;
 			    celement->prec = prec;
 			    //Blocksize und Reduktion anpassen
-			    if(reduction*kelement->sampling_red*bs*2 > k_buflen) {
+			    if((reduction*bs*2 > kelement->bufsize) && ( event == 0)) {
 				msr_buf_printf(dev->read_buffer,"<warn text=\"command xsad: blocksize*reduction exceed limits at channel : %s\"/>\n",kelement->p_bez);
 				if(reduction > 0) /* auf den maximal möglichen Wert setzten */
 				    celement->bs = MIN(k_buflen/(2*reduction*kelement->sampling_red),MSR_BLOCK_BUF_ELEMENTS);
@@ -645,8 +632,6 @@ static void msr_com_startdata2(struct msr_dev *dev,char *params)
 			    celement->cmode = cmode;
 			    celement->codmode = codmode;
 			    celement->event = event;
-			    //celement->counter = offs;
-			    //msr_print_info("Reg Kanal: %d, red: %d, bs; %d",kelement->index,celement->reduction,celement->bs);
 			}
 			break;
 		    }
