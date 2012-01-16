@@ -15,8 +15,4 @@ mex findidx.c
 
 run EtherCAT/setup.m
 
-if @EXPERIMENTAL@
-  run AddiData/setup.m
-end
-
 return

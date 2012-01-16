@@ -105,15 +105,14 @@ ADDITIONAL_LDFLAGS   = |>ADDITIONAL_LDFLAGS<|
 # set DEBUG_BUILD = 1
 DEBUG_BUILD          = 0
 
-OVERRUNMAX	     := |>OVERRUNMAX<|
-BUFFER_TIME	     := |>BUFFER_TIME<|
-STACKSIZE            := |>STACKSIZE<|
-VERBOSE              := |>VERBOSE_BUILD<|
-MODULE_PAYLOAD       := |>MODULE_PAYLOAD<|
-STAGING_DIR          := |>STAGING_DIR<|
+OVERRUNMAX	     = |>OVERRUNMAX<|
+BUFFER_TIME	     = |>BUFFER_TIME<|
+STACKSIZE            = |>STACKSIZE<|
+VERBOSE              = |>VERBOSE_BUILD<|
+ETHERLAB_DIR         = |>ETHERLAB_DIR<|
+MODULE_PAYLOAD       = |>MODULE_PAYLOAD<|
 OPT_OPTS             = -O2
 
-ETHERLAB_DIR         := $(STAGING_DIR)@CMAKE_INSTALL_DIR@
 
 META                 = $(MODEL)_meta.txt
 PROPERTIES           = $(MODEL)_properties.c
