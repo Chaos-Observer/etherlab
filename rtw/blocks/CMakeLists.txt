@@ -1,34 +1,42 @@
-# vim: expandtab
+#############################################################################
+#
+#  $Id$
+#
+#  Copyright 2012 Richard Hacker (lerichi at gmx dot net)
+#
+#  This file is part of the pdserv package.
+#
+#  pdserv is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  pdserv is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with pdserv. See COPYING. If not, see
+#  <http://www.gnu.org/licenses/>.
+#
+#############################################################################
 
-SUBDIRS = EtherCAT
 
-if EXPERIMENTAL
-SUBDIRS += AddiData
-endif
 
-blocksdir = $(prefix)/$(subdir)
-dist_blocks_DATA = \
-        ethercat_mini.png \
-        tools.png \
-        ETL.tlc \
-        EtherLAB_IO.tlc \
-        RaiseCatch.tlc \
-        etherlab_in.c etherlab_in.tlc \
-        etherlab_lib.mdl \
-        etherlab_out.c etherlab_out.tlc \
-        event.c event.tlc \
-        findidx.c findidx.tlc \
-        get_string.h \
-        raise.c raise.tlc \
-        test_var.m \
-        world_time.c world_time.tlc
-blocks_DATA = setup.m
+INSTALL (FILES
+    ethercat_mini.png tools.png 
+    ETL.tlc EtherLAB_IO.tlc 
+    RaiseCatch.tlc 
+    etherlab_in.c etherlab_in.tlc 
+    etherlab_out.c etherlab_out.tlc 
+    world_time.c world_time.tlc
+    findidx.c findidx.tlc 
+    event.c event.tlc 
+    raise.c raise.tlc 
+    etherlab_lib.mdl 
+    get_string.h 
+    test_var.m setup.m 
+    DESTINATION rtw/blocks)
 
-if EXPERIMENTAL
-dist_blocks_DATA += etherlab_lib_exp.mdl
-endif
-
-WINDOWS_FILES = $(dist_blocks_DATA) $(blocks_DATA)
-WINDOWS_DIRS = $(DIST_SUBDIRS)
-
-include $(top_srcdir)/Makefile.windows
+ADD_SUBDIRECTORY (EtherCAT)

@@ -23,15 +23,15 @@
 #############################################################################
 
 
+CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/Contents.m.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/Contents.m")
 
 INSTALL (FILES
-    Beckhoff_EtherCAT_XML.zip 
-    MTS.xml 
-    BaumerThalheim_ECAT_Encoders512Bytes_02.05.04.xml 
-    ESD-ethercat-can.xml 
-    Murrelektronik_IMPACT67.xml 
-    EL4132-mod.xml 
-    EL4102-mod.xml 
-    setup.m
-    Beckhoff_EtherCAT_XML.zip
-    DESTINATION rtw/blocks/EtherCAT/xml)
+    etherlab_tools.mk
+    get_meta_tag.m 
+    "${CMAKE_CURRENT_BINARY_DIR}/Contents.m"
+    etherlab_config.m 
+    etherlab_postprocess.m 
+    postprocess_rtw.pl 
+    etherlab.tlc
+    DESTINATION rtw/etherlab)

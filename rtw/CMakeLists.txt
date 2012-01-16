@@ -23,15 +23,14 @@
 #############################################################################
 
 
+INSTALL (FILES setup_etherlab.m
+    DESTINATION rtw)
 
-INSTALL (FILES
-    Beckhoff_EtherCAT_XML.zip 
-    MTS.xml 
-    BaumerThalheim_ECAT_Encoders512Bytes_02.05.04.xml 
-    ESD-ethercat-can.xml 
-    Murrelektronik_IMPACT67.xml 
-    EL4132-mod.xml 
-    EL4102-mod.xml 
-    setup.m
-    Beckhoff_EtherCAT_XML.zip
-    DESTINATION rtw/blocks/EtherCAT/xml)
+ADD_SUBDIRECTORY (bin)
+ADD_SUBDIRECTORY (blocks)
+ADD_SUBDIRECTORY (etherlab)
+#ADD_SUBDIRECTORY (lib)
+INSTALL (DIRECTORY src
+    DESTINATION rtw
+    PATTERN "*.c"
+    PATTERN "*.h")
