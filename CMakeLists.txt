@@ -15,27 +15,27 @@
 #       -DCMAKE_BUILD_TYPE=Debug|Release|RelWithDebInfo|MinSizeRel
 #  option
 #
-#  This file is part of the pdserv package.
+#  This file is part of the PdServ-MATLAB package.
 #
-#  pdserv is free software: you can redistribute it and/or modify
+#  PdServ-MATLAB is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
 #  the Free Software Foundation, either version 3 of the License, or
 #  (at your option) any later version.
 #
-#  pdserv is distributed in the hope that it will be useful,
+#  PdServ-MATLAB is distributed in the hope that it will be useful,
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #  GNU General Public License for more details.
 #
 #  You should have received a copy of the GNU General Public License
-#  along with pdserv. See COPYING. If not, see
+#  along with PdServ-MATLAB. See COPYING. If not, see
 #  <http://www.gnu.org/licenses/>.
 #
 #############################################################################
 
 
 CMAKE_MINIMUM_REQUIRED (VERSION 2.6)
-PROJECT (pdserv-rtw)
+PROJECT (pdserv-matlab)
 SET (CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS TRUE)
 
 SET (MAJOR_VERSION 0)
@@ -65,3 +65,40 @@ ENDIF ()
 #FIND_PACKAGE (Matlab)
 
 ADD_SUBDIRECTORY (rtw)
+
+SET (CPACK_PACKAGE_DESCRIPTION_SUMMARY
+    "Simulink Coder target using pdserv library")
+SET (CPACK_PACKAGE_VENDOR "Richard Hacker")
+SET (CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/README.txt")
+SET (CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/COPYING")
+SET (CPACK_PACKAGE_VERSION_MAJOR ${MAJOR_VERSION})
+SET (CPACK_PACKAGE_VERSION_MINOR ${MINOR_VERSION})
+SET (CPACK_PACKAGE_VERSION_PATCH ${PATCH_LEVEL})
+SET (CPACK_PACKAGE_INSTALL_DIRECTORY
+    "CMake ${CMake_VERSION_MAJOR}.${CMake_VERSION_MINOR}")
+SET (CPACK_SOURCE_GENERATOR "TBZ2")
+SET (CPACK_SOURCE_PACKAGE_FILE_NAME
+      "${PROJECT_NAME}-${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
+SET (CPACK_GENERATOR "TGZ")
+SET (CPACK_GENERATOR "DEB")
+SET (CPACK_DEBIAN_PACKAGE_MAINTAINER "Richard Hacker") #required
+SET (CPACK_SOURCE_IGNORE_FILES
+    "/CMakeCache.txt"
+    "/CMakeFiles/"
+    "/Makefile$"
+    "/\\\\.hg"
+    "/build.*"
+    "/config.h$"
+    "/pdserv-.*\\\\.tar\\\\."
+    "/test/config$"
+    "/test/parser$"
+    "/test/test1$"
+    "\\\\.so"
+    "\\\\.sw.$"
+    "~$"
+    "${CPACK_SOURCE_IGNORE_FILES}"
+    )
+
+INCLUDE (CPack)
+ADD_CUSTOM_TARGET (dist COMMAND ${CMAKE_MAKE_PROGRAM} package_source)
+
