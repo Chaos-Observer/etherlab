@@ -151,3 +151,15 @@ installation instructions.
     <model>_etl_hrt/<model>.mk and remove references to drive letters (e.g.
     C:\...) that Simulink Coder inserts automatically. GNU make chokes on
     these lines, so you are required to edit the file unfortunately.
+
+* REMOVING PdServ:
+=================
+    Installation using:
+        - package manager: remove pdserv-matlab
+        - source files: rm -rf /opt/etherlab/rtw
+
+    From Matlab:
+    >> pathtool
+    remove references to /opt/etherlab/rtw. Save path.
+
+    Finished
