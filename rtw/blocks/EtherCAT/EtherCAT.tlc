@@ -47,7 +47,6 @@
 
     %% EtherCAT header
     %<LibAddToCommonIncludes("ecrt_support.h")>
-    %<LibAddToCommonIncludes("pdserv/pdserv.h")>
   
     %openfile buf
     /* Zero terminated list of sample times for EtherCAT */

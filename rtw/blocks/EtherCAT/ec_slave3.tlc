@@ -95,8 +95,7 @@
   %% the PDO Map
   %assign SdoConfiguration = GetSdoConfig()
   %assign SoeConfiguration = GetSoeConfig()
-  %assign OutputPdoMap = GetOutputPdoMap(block)
-  %assign InputPdoMap  = GetInputPdoMap(block)
+  %assign PdoMap = GetPdoMap(block)
 
   /* %<Type> Block: %<Name> 
    * Registering EtherCAT block %<ProductName> with Driver
@@ -115,9 +114,8 @@
            %<GetSyncManagerConfigId(block)>,
            /* Distributed Clock Configuration */
            %<GetDcOpModeConfigId(block)>,
-           /* Input/Output Configuration */
-           %<InputPdoMap.count>, %<InputPdoMap.id>,
-           %<OutputPdoMap.count>, %<OutputPdoMap.id>))) {
+           /* Input and Output Pdo count Configuration */
+           %<PdoMap.InputCount>, %<PdoMap.OutputCount>, %<PdoMap.id>))) {
         snprintf(%<ETL.ErrMsg>, sizeof(%<ETL.ErrMsg>), 
            "EtherCAT slave %<LibGetFormattedBlockPath(block)> register "
            "failed: %s", %<ETL.ErrStr>);
@@ -567,7 +565,7 @@
       %foreach j = SIZE(soe.OctetString,1)
         %assign s = SPRINTF("%s\\x%02x", s, soe.OctetString[j])
       %endforeach
-      { %<soe.Index>, "%<s>", %<SIZE(soe.OctetString, 1)> },
+      { %<soe.Index>, "%<s>", %<SIZE(soe.OctetString, 1)> }, /* */\
     %endforeach
   };
   %closefile buf
@@ -615,13 +613,8 @@
         %assign data_array = "NULL"
       %endif
       %%
-      { \
-      %<datatype>, \
-      %<sdo.Index>, \
-      %<sdo.SubIndex>, \
-      %<value>, \
-      %<data_array> \
-      },
+      { %<datatype>, %<sdo.Index>, %<sdo.SubIndex>, %<value>,
+      %<data_array> }, /* */ \
     %endforeach
   };
   %closefile buf
@@ -633,55 +626,19 @@
 %endfunction
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%function GetOutputPdoMap(block)
+%function GetPdoMap(block)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-  %createrecord pdo_map {count SIZE(OutputPortIdx,1) id "NULL"}
+  %createrecord pdo_map {...
+        InputCount SIZE(InputPortIdx,1) ...
+        OutputCount SIZE(OutputPortIdx,1) ...
+        id "NULL"}
 
-  %if !pdo_map.count
+  %if !pdo_map.InputCount && !pdo_map.OutputCount
     %return pdo_map
   %endif
 
-  %assign pdo_map.id = "pdo_output_map_%<EtherCATSlaveId>"
-
-  %openfile buf
-
-  /* %<Type> Block: %<Name> 
-   * Mapped Pdos for block %<ProductName>
-   */
-  static struct pdo_map %<pdo_map.id>[] = {
-    %foreach i = SIZE(OutputPortIdx,1)
-      %assign port = SFcnParamSettings[OutputPortIdx[i]]
-      %foreach j = LibBlockOutputSignalWidth(i)
-        %%
-        %assign addr = port.DWorkIndex ...
-                ? LibBlockDWorkAddr(DWork[port.DWorkIndex-1], "", "", j) ...
-                : LibBlockOutputSignalAddr(i, "", "", j)
-        %%
-        %<SPRINTF("{ 0x%04X, %u, %u, %u, %s }, ", ...
-                port.Pdo[0][j], port.Pdo[1][j], ...
-                port.PdoDataTypeId, ...
-                port.Pdo[2][j], addr)>
-      %endforeach
-    %endforeach
-  };
-  %closefile buf
-  %<LibSetSourceFileSection(CompiledModel.EtherCAT.model_c, \
-        "Definitions", buf)>
-  %return pdo_map
-%endfunction
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%function GetInputPdoMap(block)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-  %createrecord pdo_map {count SIZE(InputPortIdx,1) id "NULL"}
-
-  %if !pdo_map.count
-    %return pdo_map
-  %endif
-
-  %assign pdo_map.id = "pdo_input_map_%<EtherCATSlaveId>"
+  %assign pdo_map.id = "pdo_map_%<EtherCATSlaveId>"
 
   %openfile buf
 
@@ -697,10 +654,24 @@
                 ? LibBlockDWorkAddr(DWork[port.DWorkIndex-1], "", "", j) ...
                 : LibBlockInputSignalAddr(i, "", "", j)
         %%
-        %<SPRINTF("{ 0x%04X, %u, %u, %u, %s }, ", ...
+        %<SPRINTF("{ 0x%04X, %u, %u, %u, %s }, /* In%u[%u] */", ...
                 port.Pdo[0][j], port.Pdo[1][j], ...
                 port.PdoDataTypeId, ...
-                port.Pdo[2][j], addr)>
+                port.Pdo[2][j], addr, i+1, j)> \
+      %endforeach
+    %endforeach
+    %foreach i = SIZE(OutputPortIdx,1)
+      %assign port = SFcnParamSettings[OutputPortIdx[i]]
+      %foreach j = LibBlockOutputSignalWidth(i)
+        %%
+        %assign addr = port.DWorkIndex ...
+                ? LibBlockDWorkAddr(DWork[port.DWorkIndex-1], "", "", j) ...
+                : LibBlockOutputSignalAddr(i, "", "", j)
+        %%
+        %<SPRINTF("{ 0x%04X, %u, %u, %u, %s }, /* Out%u[%u] */", ...
+                port.Pdo[0][j], port.Pdo[1][j], ...
+                port.PdoDataTypeId, ...
+                port.Pdo[2][j], addr, i+1, j)> \
       %endforeach
     %endforeach
   };

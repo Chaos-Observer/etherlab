@@ -1,6 +1,5 @@
 #include <stdint.h>
 #include <ecrt.h>
-#include <pdserv/pdserv.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -9,20 +8,16 @@ extern "C" {
 struct pdo_map {
     uint16_t pdo_entry_index;
     uint8_t pdo_entry_subindex;
-    unsigned int vector_len;
-    ec_direction_t dir;
-
-    unsigned int pdo_datatype_size;
-    unsigned int bitlen;
-    void **address;
-    unsigned int *bitoffset;
+    unsigned int datatype;
+    unsigned int idx;
+    void *address;
 };
 
 /* Structure to temporarily store SDO objects prior to registration */
 struct soe_config {
     /* SoE values. Used by EtherCAT functions */
     uint16_t idn;
-    const uint8_t *data;
+    const char *data;
     size_t data_len;
 };
 
@@ -30,13 +25,13 @@ struct soe_config {
 struct sdo_config {
     /* The data type of the sdo: 
      * only si_uin8_t, si_uint16_t, si_uint32_t are allowed */
-    enum pdserv_datatype_t datatype;
+    unsigned int datatype;
 
     /* SDO values. Used by EtherCAT functions */
     uint16_t sdo_index;
     size_t sdo_attribute;   /* Either Subindex, or length of byte_array */
     uint32_t value;
-    uint8_t *byte_array;
+    const char *byte_array;
 };
 
 struct ecat_master;
@@ -77,9 +72,11 @@ ecs_reg_slave(
                                             *
                                             * NULL = no dc */
 
-        unsigned int pdo_count, /**< Number of PDO mapping objects 
+        unsigned int pdo_input_count, /**< Number of RxPDO mapping objects 
                                              passed in \a pdo */
-        const struct pdo_map *pdo /**< PDO mapping objects */
+        unsigned int pdo_output_count, /**< Number of TxPDO mapping objects 
+                                             passed in \a pdo */
+        const struct pdo_map *input_pdo /**< PDO mapping objects */
         );
 
 const char *ecs_setup_master(
