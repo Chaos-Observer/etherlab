@@ -33,5 +33,7 @@ INSTALL (FILES
     etherlab_config.m 
     etherlab_postprocess.m 
     postprocess_rtw.pl 
+    postprocess.tlc
     etherlab.tlc
+    etherlab_hrt.tmf
     DESTINATION rtw/etherlab)
