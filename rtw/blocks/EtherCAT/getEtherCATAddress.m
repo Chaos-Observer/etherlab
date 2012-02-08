@@ -19,7 +19,7 @@ function [Address masterStr positionStr] = ...
 %   alias = 0
 %   position = indexArg(1)
 
-Address = struct('Master',0,'Domain',0,'Alias',0,'Position',0);
+Address = struct('master',0,'domain',0,'alias',0,'position',0);
 
 if ~isnumeric(masterArg) || ~isnumeric(indexArg)
     error([block ': master and index must be numeric']);
@@ -29,29 +29,29 @@ end
 % accept 2 forms for master:
 % Scalar: master = value
 % else Vector: [master domain]
-Address.Master = masterArg(1);
+Address.master = masterArg(1);
 if sum(size(masterArg)) > 2
-    Address.Domain = masterArg(2);
+    Address.domain = masterArg(2);
 end
 
-if Address.Domain
-    masterStr = sprintf('%u.%u', Address.Master, Address.Domain);
+if Address.domain
+    masterStr = sprintf('%u.%u', Address.master, Address.domain);
 else
-    masterStr = sprintf('%u', Address.Master);
+    masterStr = sprintf('%u', Address.master);
 end
 
 % Calculate slave alias and position, and format positionStr for
 % display in the block graphics
 if sum(size(indexArg)) > 2
-    Address.Alias = indexArg(1);
-    Address.Position = indexArg(2);
+    Address.alias = indexArg(1);
+    Address.position = indexArg(2);
 else
-    Address.Position = indexArg(1);
+    Address.position = indexArg(1);
 end
 
-if Address.Alias
-    positionStr = sprintf('#%u:%u', Address.Alias, Address.Position);
+if Address.alias
+    positionStr = sprintf('#%u:%u', Address.alias, Address.position);
 else
-    positionStr = num2str(Address.Position);
+    positionStr = num2str(Address.position);
 end
 

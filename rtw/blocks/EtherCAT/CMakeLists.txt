@@ -34,7 +34,6 @@ INSTALL (FILES
     master_state.c master_state.tlc 
     domain_state.c domain_state.tlc 
     moog_msd.c moog_msd_callback.m moog_msd.tlc moog.png 
-    ethercat_ss_funcs.h 
     el31xx_check.m 
     el320x_check.m 
     el5001_check.m 
@@ -54,7 +53,7 @@ INSTALL (FILES
     getEtherCATAddress.m 
     SoeConfig.m 
     strjoin.m 
-    ec_slave2.c ec_slave2.tlc 
+    ec_slave3.c ec_slave3.tlc 
     setup.m
     DESTINATION rtw/blocks/EtherCAT)
 

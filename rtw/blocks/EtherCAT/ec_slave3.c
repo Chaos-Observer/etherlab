@@ -18,13 +18,13 @@
  *      domain:
  *      alias:
  *      position:
- *      vendor:
- *      revision:
- *      product:
- *      description: (optional)
  *
  * Slave configuration:
  * This is a structure with the fields:
+ *      vendor: Vendor Id
+ *      product: Product Code
+ *      description: (optional) Description string
+ *
  *      sdo: SDO configuration; OPTIONAL; CellArray{n,4}
  *          { Index, SubIndex, BitLen, Value;...
  *            Index, SubIndex,      0, 'string' }; ...
@@ -45,13 +45,6 @@
  *                   CycleTimeSync0, ShiftTimeSync0, ...
  *                   CycleTimeSync1, ShiftTimeSync1]
  *
- *      voe: TODO
- *
- *      sm: SyncManager configuration; OPTIONAL; Matrix [n,2]
- *              First column: SyncManager index
- *          e.g.  [ 3, 0;...    % Sm 1, output
- *                  2, 1 ]      % Sm 2, input
- *
  *      pdo: Optional slave pdo definition. This definition has 3 level of
  *           indirections Sm <- Pdos <- Entries
  *
@@ -62,9 +55,8 @@
  *                      0 => Output (RxPdo), 1 => Input (TxPdo)
  *
  *          Pdos:       {Pdo*}
- *          Pdo:        {PdoIndex, OSCount, Entries}
+ *          Pdo:        {PdoIndex, Entries}
  *          PdoIndex:   Index of Pdo
- *          OSCount:    Oversampling count
  *
  *          Entries:    [Entry*]        (Nx4 array)
  *          Entry:      [EntryIndex, EntrySubIndex, BitLen, DataType]
@@ -98,17 +90,20 @@
  *
  *
  * PORT_CONFIG:      Vector structure with fields
- *      .input  = {inputspec*}      Block inputs; The number of elements
+ *      .output := outputspec*     Block outputs; The number of elements
  *                                  correspond to the number of ports
- *      .output = {outputspec*}     Block outputs; The number of elements
+ *      .input  := inputspec*      Block inputs; The number of elements
  *                                  correspond to the number of ports
  *
- *      outputspec := {ScaleSpec, OffsetSpec, FilterSpec, {SourceSpec+}}
+ *      outputspec := Structure with the fields
  *          .gain = ParamSpec
  *          .offset = ParamSpec
  *          .filter = ParamSpec
  *          .full_scale = This value is used to normalize an integer to 1.0
- *                        e.g. .full_scale = 32768.0 for int32_T
+ *                        e.g. .full_scale = 32768.0 for int16_T
+ *
+ *                        output = (PDO / full_scale) * gain + offset
+ *
  *          .pdo = PdoSpec
  *          .pdo_data_type = specifies the data type of the PDO.
  *                              The data type specified in the pdo is only a
@@ -123,16 +118,8 @@
  *                   The vector can have none, 1 or the same
  *                   number of elements as there are pdo's
  *
- *      PdoSpecMx := [PdoSpec; PdoSpec*]
  *      PdoSpec   := [SmIdx, PdoIdx, PdoEntryIdx, DataIdx]
  *
- *      outputspec := {ScaleSpec, OffsetSpec, FilterSpec, {SourceSpec+}}
- *      ScaleSpec  := ParamSpec
- *      OffsetSpec := ParamSpec
- *      FilterSpec := ParamSpec
- *
- *      SourceSpec := {SmIdx, PdoIdx, PdoEntryIdx, DataIdx,
- *                          ScaleSpec, OffsetSpec, FilterSpec}
  *      SmIdx, PdoIdx, PdoEntryIdx := Index into the slave configuration
  *      DataIdx := index of the PdoEntry value, e.g. DataIdx = 3
  *                 means take the fourth bit out of the bit vector
@@ -140,8 +127,9 @@
  *                 PdoEntryDataType = boolean
  *                 Note that the data types must match
  *
- *      inputspec := {DestSpec+}
- *      DestSpec  := {SmIdx, PdoIdx, PdoEntryIdx, DataIdx}
+ *      inputspec := same as outputspec, except for filter
+ *                      In this case, 
+ *                      PDO = (input * gain + offset) * full_scale
  */
 
 #define S_FUNCTION_NAME  ec_slave3
@@ -220,7 +208,6 @@ struct ecat_slave {
 
     /* EtherCAT Info */
     uint32_T vendor_id;
-    uint32_T revision_no;
     uint32_T product_code;
     char_T *type;
 
@@ -261,9 +248,6 @@ struct ecat_slave {
             uint16_T index;
 
             struct sync_manager *sm;
-
-            int_T oversampling; /* Oversampling index increment
-                                   -1 -> not specified */
 
             /* PDO Entries */
             struct pdo_entry {
@@ -646,29 +630,9 @@ get_slave_info(struct ecat_slave *slave)
                 0, 1, 0, 0, "position", &val));
     slave->position = val;
 
-    RETURN_ON_ERROR(get_numeric_field(slave, ctxt, __LINE__, address,
-                0, 1, 0, 0, "vendor", &val));
-    slave->vendor_id = val;
-
-    RETURN_ON_ERROR(get_numeric_field(slave, ctxt, __LINE__, address,
-                0, 1, 0, 0, "revision", &val));
-    slave->revision_no = val;
-
-    RETURN_ON_ERROR(get_numeric_field(slave, ctxt, __LINE__, address,
-                0, 1, 0, 0, "product", &val));
-    slave->product_code = val;
-
-    RETURN_ON_ERROR(get_string_field(slave, ctxt, __LINE__, address,
-                0, "description", "Unspecified", &slave->type));
-
     pr_debug(slave, NULL, "", 1,
             "Master %u, Domain %u, Alias %u, Position %u\n",
             slave->master, slave->domain, slave->alias, slave->position);
-    pr_debug(slave, NULL, "", 1,
-            "VendorId %u\n", slave->vendor_id);
-    pr_debug(slave, NULL, "", 1,
-            "ProductCode #x%08X, RevisionNo #x%08X, Type '%s'\n",
-            slave->product_code, slave->revision_no, slave->type);
 
     return 0;
 }
@@ -684,9 +648,9 @@ get_sync_manager_pdo(struct ecat_slave *slave, struct pdo *pdo,
     const real_T *pval;
     real_T val;
 
-    if (!mxIsCell(pdo_def) || mxGetNumberOfElements(pdo_def) != 3) {
+    if (!mxIsCell(pdo_def) || mxGetNumberOfElements(pdo_def) != 2) {
         pr_error(slave, NULL, p_ctxt, __LINE__,
-                "PDO configuration is not a cell array with 3 elements");
+                "PDO configuration is not a cell array with 2 elements");
         return -1;
     }
 
@@ -695,13 +659,8 @@ get_sync_manager_pdo(struct ecat_slave *slave, struct pdo *pdo,
                 0, pdo_def, &val));
     pdo->index = val;
 
-    /* Oversampling count */
-    RETURN_ON_ERROR (get_numeric_scalar(slave, p_ctxt, __LINE__,
-                1, pdo_def, &val));
-    pdo->oversampling = val ? val : 1.0;
-
     /* Pdo Entry */
-    pdo_cell = mxGetCell(pdo_def, 2);
+    pdo_cell = mxGetCell(pdo_def, 1);
     if (!pdo_cell || !(entry_count = mxGetM(pdo_cell)))
         return 0;
 
@@ -709,10 +668,8 @@ get_sync_manager_pdo(struct ecat_slave *slave, struct pdo *pdo,
     if (mxGetN(pdo_cell) != 4
             || !mxIsDouble(pdo_cell) || !(pval = mxGetPr(pdo_cell))) {
         snprintf(ctxt, sizeof(ctxt), "%s{3}", p_ctxt);
-        mexPrintf("%u x%u %f\n", mxGetN(pdo_cell), mxGetScalar(pdo_cell),
-                mxGetPr(pdo_cell));
         pr_error(slave, NULL, ctxt, __LINE__,
-                "Vale is not a Nx4 numeric array");
+                "Value is not a Nx4 numeric array");
         return -1;
     }
 
@@ -813,13 +770,30 @@ get_slave_config(struct ecat_slave *slave)
     const mxArray *slave_config = ssGetSFcnParam(slave->S, SLAVE_CONFIG);
     const mxArray *array;
     const char_T *context = "SLAVE_CONFIG";
-    const real_T *val;
+    real_T val;
     size_t i, m,n;
     uint_T sm_count;
 
     if (!slave_config || !mxIsStruct(slave_config)
             || !mxGetNumberOfElements(slave_config))
         return 0;
+
+    RETURN_ON_ERROR(get_numeric_field(slave, context, __LINE__, slave_config,
+                0, 1, 0, 0, "vendor", &val));
+    slave->vendor_id = val;
+
+    RETURN_ON_ERROR(get_numeric_field(slave, context, __LINE__, slave_config,
+                0, 1, 0, 0, "product", &val));
+    slave->product_code = val;
+
+    RETURN_ON_ERROR(get_string_field(slave, context, __LINE__, slave_config,
+                0, "description", "Unspecified", &slave->type));
+
+    pr_debug(slave, NULL, "", 1,
+            "VendorId %u\n", slave->vendor_id);
+    pr_debug(slave, NULL, "", 1,
+            "ProductCode #x%08X, Type '%s'\n",
+            slave->product_code, slave->type);
 
     /***********************
      * Get SDO
@@ -828,7 +802,6 @@ get_slave_config(struct ecat_slave *slave)
             && mxGetNumberOfElements(array)) {
         const mxArray *cell, *valueCell;
         uint_T j;
-        real_T val;
 
         if (!mxIsCell(array)
                 || !(m = mxGetM(array)) || (n = mxGetN(array)) != 4) {
@@ -1053,6 +1026,7 @@ get_slave_config(struct ecat_slave *slave)
      ***********************/
     if ((array = mxGetField( slave_config, 0, "dc"))
             && mxGetNumberOfElements(array)) {
+        const real_T *val;
 
         if (!mxIsDouble(array)
                 || mxGetNumberOfElements(array) != 5
@@ -1118,9 +1092,8 @@ get_slave_config(struct ecat_slave *slave)
                 struct pdo_entry *entry;
 
                 pr_debug(slave, NULL, "", 3,
-                        "PdoIndex=#x%04X OSCount=%u EntryCount=%u\n",
-                        pdo->index, pdo->oversampling,
-                        pdo->entry_end - pdo->entry);
+                        "PdoIndex=#x%04X EntryCount=%u\n",
+                        pdo->index, pdo->entry_end - pdo->entry);
 
                 for (entry = pdo->entry; entry != pdo->entry_end; entry++) {
                     pr_debug(slave, NULL, "", 4,
@@ -1325,7 +1298,7 @@ get_section_config(struct ecat_slave *slave, const char_T *section,
                 if (sm->direction != dir) {
                     snprintf(element, sizeof(element), "pdo(%zu,1)", j+1);
                     pr_warn(slave, ctxt, element, __LINE__,
-                            "SyncManager direction is incorrect");
+                            "SyncManager direction is incorrect\n");
                 }
 
                 pdo = sm->pdo + (size_t)val[j + width];
@@ -1629,7 +1602,6 @@ static void mdlInitializeSampleTimes(SimStruct *S)
 #define MDL_SET_OUTPUT_PORT_WIDTH
 static void mdlSetOutputPortWidth(SimStruct *S, int_T port, int_T width)
 {
-    mexPrintf("%s(%u)\n", __func__, __LINE__);
     snprintf(errmsg, sizeof(errmsg),
             "Don't know why output port width should be set for port %u.",
             port+1);
@@ -1678,7 +1650,6 @@ static void mdlSetInputPortWidth(SimStruct *S, int_T port, int_T width)
     struct ecat_slave *slave = ssGetUserData(S);
     uint_T max_width = slave->i_port[port].pdo_end - slave->i_port[port].pdo;
 
-    mexPrintf("%s(%u)\n", __func__, __LINE__);
     if (!slave)
         return;
 
@@ -1707,7 +1678,6 @@ static void mdlSetDefaultPortDimensionInfo(SimStruct *S)
     struct io_port *port;
     uint_T i = 0;
 
-    mexPrintf("%s(%u)\n", __func__, __LINE__);
     if (!slave)
         return;
 
@@ -1748,7 +1718,6 @@ static void mdlSetWorkWidths(SimStruct *S)
     struct io_port *port;
     uint_T param_idx = 0;
 
-    mexPrintf("%s(%u)\n", __func__, __LINE__);
     if (!slave)
         return;
 
@@ -1979,8 +1948,6 @@ static void mdlRTW(SimStruct *S)
                 &slave->vendor_id, SS_UINT32))                  return;
     if (!ssWriteRTWScalarParam(S, "ProductCode",
                 &slave->product_code, SS_UINT32))               return;
-    if (!ssWriteRTWScalarParam(S, "RevisionNo",
-                &slave->revision_no, SS_UINT32))                return;
 
     /* Sdo Configuration */
     n = slave->sdo_config_end - slave->sdo_config;
@@ -2035,8 +2002,7 @@ static void mdlRTW(SimStruct *S)
             return;
         config_idx[n] = param_idx++;
     }
-    if (config_idx &&
-            !ssWriteRTWVectParam(S, "SoeConfig", config_idx, SS_INT32, n))
+    if (!ssWriteRTWVectParam(S, "SoeConfig", config_idx, SS_INT32, n))
         return;
     mxFree(config_idx);
 

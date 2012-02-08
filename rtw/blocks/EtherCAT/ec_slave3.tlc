@@ -756,10 +756,9 @@
     %return "NULL"
   %endif
 
-  %assign key = SPRINTF("%x_%08x_%08x", VendorId, ProductCode, RevisionNo)
+  %assign key = SPRINTF("%x_%08x", VendorId, ProductCode)
   %assign vendor   = "Vendor_%<VendorId>"
   %assign product  = SPRINTF("Product_%08x", ProductCode)
-  %assign revision = SPRINTF("Revision_%08x", RevisionNo)
 
   %if !EXISTS(PdoEntryInfo)
     %assign PdoEntryInfo = []
@@ -775,26 +774,21 @@
     %assign vendor = PDO_Map.%<vendor>
 
     %if !ISFIELD(vendor,product)
-      %addtorecord vendor %<product> {}
+      %addtorecord vendor %<product> {MapCount 0}
     %endif
     %assign product = vendor.%<product>
 
-    %if !ISFIELD(product,revision)
-      %addtorecord product %<revision> {MapCount 0}
-    %endif
-    %assign revision = product.%<revision>
-
-    %assign Id = revision.MapCount
+    %assign Id = product.MapCount
     %foreach i = Id
-      %if revision.Map[i].PdoEntryInfo == PdoEntryInfo \
-          && revision.Map[i].PdoInfo == PdoInfo \
-          && revision.Map[i].SyncManager == SyncManager
+      %if product.Map[i].PdoEntryInfo == PdoEntryInfo \
+          && product.Map[i].PdoInfo == PdoInfo \
+          && product.Map[i].SyncManager == SyncManager
         %return "sync_manager_%<key>_%<i>" 
       %endif
     %endforeach
 
-    %assign revision.MapCount = revision.MapCount + 1
-    %addtorecord revision Map { \
+    %assign product.MapCount = product.MapCount + 1
+    %addtorecord product Map { \
                 PdoEntryInfo PdoEntryInfo; \
                 PdoInfo PdoInfo; \
                 SyncManager SyncManager\
@@ -811,7 +805,7 @@
 
     %openfile buf
 
-    /* PDO configuration for %<ProductName> Rev %<SPRINTF("#x%08x",RevisionNo)>
+    /* PDO configuration for %<ProductName>
      */
     static ec_pdo_entry_info_t %<PdoEntryInfoId>[] = {
       %%
