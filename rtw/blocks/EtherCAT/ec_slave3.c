@@ -188,8 +188,8 @@ static struct datatype_info {
 static struct datatype_info *type_uint8_info  = &datatype_info[7];
 static struct datatype_info *type_uint16_info = &datatype_info[8];
 static struct datatype_info *type_uint32_info = &datatype_info[9];
-static struct datatype_info *type_single_info = &datatype_info[19];
-static struct datatype_info *type_double_info = &datatype_info[20];
+/* static struct datatype_info *type_single_info = &datatype_info[19]; */
+/* static struct datatype_info *type_double_info = &datatype_info[20]; */
 
 static char errmsg[256];
 
@@ -848,7 +848,7 @@ get_slave_config(struct ecat_slave *slave)
 
                 slave->sdo_config[i].datatype = type_uint8_info;
 
-                if (!mxGetString(valueCell, slave->sdo_config[i].byte_array,
+                if (!mxGetString(valueCell, (char*)slave->sdo_config[i].byte_array,
                             slave->sdo_config[i].value)) {
                     char_T sdo_ctxt[20];
 
@@ -912,7 +912,7 @@ get_slave_config(struct ecat_slave *slave)
             }
         }
 
-        pr_debug(slave, NULL, "", 1, "SDO count %u\n", m);
+        pr_debug(slave, NULL, "", 1, "SDO count %zu\n", m);
         for (i  = 0; i < m; i++) {
             pr_debug(slave, NULL, "", 2,
                     "Index=#x%04X SubIndex=%u BitLen=%u Value=",
@@ -977,7 +977,7 @@ get_slave_config(struct ecat_slave *slave)
 
             if (mxIsChar(valueCell)) {
                 if (!mxGetString(valueCell,
-                            slave->soe_config[i].octet_string, n)) {
+                            (char*)slave->soe_config[i].octet_string, n)) {
                     char_T ctxt[20];
 
                     snprintf(ctxt, sizeof(ctxt), "soe{%zu,2}", i+1);
@@ -1010,7 +1010,7 @@ get_slave_config(struct ecat_slave *slave)
             }
         }
 
-        pr_debug(slave, NULL, "", 1, "SoE count %u\n", m);
+        pr_debug(slave, NULL, "", 1, "SoE count %zu\n", m);
         for (i  = 0; i < m; i++) {
             pr_debug(slave, NULL, "", 2,
                     "Index=#x%04X Value=", slave->soe_config[i].index);
@@ -1071,7 +1071,7 @@ get_slave_config(struct ecat_slave *slave)
 
         for (i = 0; i < sm_count; i++) {
             char_T ctxt[30];
-            snprintf(ctxt, sizeof(ctxt), "SLAVE_CONFIG.pdo{%u}", i+1);
+            snprintf(ctxt, sizeof(ctxt), "SLAVE_CONFIG.pdo{%zu}", i+1);
             if (get_sync_manager(slave, slave->sync_manager + i,
                         ctxt, mxGetCell(array, i)))
                 return -1;
@@ -1083,7 +1083,7 @@ get_slave_config(struct ecat_slave *slave)
             struct pdo *pdo;
 
             pr_debug(slave, NULL, "", 2,
-                    "SMIndex=%u Dir=%s PdoCount=%i\n",
+                    "SMIndex=%u Dir=%s PdoCount=%zi\n",
                     sm->index,
                     sm->direction == EC_SM_OUTPUT ? "OP (RxPdo)" : "IP (TxPdo)",
                     sm->pdo_end - sm->pdo);
@@ -1092,7 +1092,7 @@ get_slave_config(struct ecat_slave *slave)
                 struct pdo_entry *entry;
 
                 pr_debug(slave, NULL, "", 3,
-                        "PdoIndex=#x%04X EntryCount=%u\n",
+                        "PdoIndex=#x%04X EntryCount=%zu\n",
                         pdo->index, pdo->entry_end - pdo->entry);
 
                 for (entry = pdo->entry; entry != pdo->entry_end; entry++) {
@@ -1241,9 +1241,9 @@ get_section_config(struct ecat_slave *slave, const char_T *section,
             real_T *val, real;
             size_t width, j;
 
-            snprintf(ctxt, sizeof(ctxt), "%s.%s(%u)", param, section, i+1);
+            snprintf(ctxt, sizeof(ctxt), "%s.%s(%zu)", param, section, i+1);
 
-            pr_debug(slave, NULL, "", 2, "Port %u\n", i+1);
+            pr_debug(slave, NULL, "", 2, "Port %zu\n", i+1);
 
             /* Read the PDO data type if specified */
             real = 0;
@@ -1289,7 +1289,7 @@ get_section_config(struct ecat_slave *slave, const char_T *section,
                         || sm >= slave->sync_manager_end) {
                     snprintf(element, sizeof(element), "pdo(%zu,1)", j+1);
                     pr_error(slave, ctxt, element, __LINE__,
-                            "SyncManager row index %i out of range [0,%zu)",
+                            "SyncManager row index %zi out of range [0,%zu)",
                             (ssize_t)val[j],
                             slave->sync_manager_end - slave->sync_manager);
                     return -1;
@@ -1306,7 +1306,7 @@ get_section_config(struct ecat_slave *slave, const char_T *section,
                         || pdo >= sm->pdo_end) {
                     snprintf(element, sizeof(element), "pdo(%zu,2)", j+1);
                     pr_error(slave, ctxt, element, __LINE__,
-                            "Pdo row index %i out of range [0,%zu)",
+                            "Pdo row index %zi out of range [0,%zu)",
                             (ssize_t)val[j + width],
                             sm->pdo_end - sm->pdo);
                     return -1;
@@ -1317,7 +1317,7 @@ get_section_config(struct ecat_slave *slave, const char_T *section,
                         || port->pdo[j].entry >= pdo->entry_end) {
                     snprintf(element, sizeof(element), "pdo(%zu,3)", j+1);
                     pr_error(slave, ctxt, element, __LINE__,
-                            "PdoEntry row index %i out of range [0,%zu)",
+                            "PdoEntry row index %zi out of range [0,%zu)",
                             (ssize_t)val[j + 2*width],
                             pdo->entry_end - pdo->entry);
                     return -1;
@@ -1358,7 +1358,7 @@ get_section_config(struct ecat_slave *slave, const char_T *section,
                             > port->data_type->mant_bits)) {
                     snprintf(element, sizeof(element), "pdo(%zu,4)", j+1);
                     pr_error(slave, ctxt, element, __LINE__,
-                            "Element index %i out of range [0,%zu)",
+                            "Element index %zi out of range [0,%u)",
                             (ssize_t)val[j + 3*width],
                             (port->pdo[j].entry->bitlen
                              / port->pdo[j].entry->data_type->mant_bits));
@@ -1366,7 +1366,7 @@ get_section_config(struct ecat_slave *slave, const char_T *section,
                 }
 
                 pr_debug(slave, NULL, "", 3,
-                        "Pdo Entry #x%04X.%u element %s[%u]\n",
+                        "Pdo Entry #x%04X.%u element %s[%zu]\n",
                         port->pdo[j].entry->index,
                         port->pdo[j].entry->subindex,
                         port->data_type->name,
