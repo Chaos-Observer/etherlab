@@ -21,10 +21,8 @@
 //#error "Don't have config.h"
 #endif
 
-#include <stdio.h>
-#include <pthread.h>
+#include <stdint.h>
 #include "ecrt_support.h"
-#include "list.h"
 
 /* The following message gets repeated quite frequently. */
 char *no_mem_msg = "Could not allocate memory";
@@ -36,7 +34,7 @@ char errbuf[256];
 
 /* Structure to temporarily store PDO objects prior to registration */
 struct ecat_slave {
-    struct list_head list;      /* Linked list of pdo's */
+    /*struct list_head list;*/      /* Linked list of pdo's */
 
     /* Data required for ecrt_master_slave_config() */
     uint16_t alias;
@@ -66,15 +64,17 @@ struct ecat_slave {
 };
 
 struct endian_convert_t {
-    unsigned int pdo_datatype_size;
-    void *data_ptr;
+    void (*read)(void *, const uint8_t *, size_t);
+    void *dst;
+    const uint8_t *src;
+    size_t index;
 };
 
 
 /* Every domain has one of these structures. There can exist exactly one
  * domain for a sample time on an EtherCAT Master. */
 struct ecat_domain {
-    struct list_head list;      /* Linked list of domains. This list
+    /*struct list_head list;*/      /* Linked list of domains. This list
                                  * is only used prior to ecs_start(), where
                                  * it is reworked into an array for faster
                                  * access */
@@ -103,7 +103,8 @@ struct ecat_domain {
 
 /* For every EtherCAT Master, one such structure exists */
 struct ecat_master {
-    struct list_head list;      /* Linked list of masters. This list
+    struct ecat_master *next;
+    /*struct list_head list;*/      /* Linked list of masters. This list
                                  * is only used prior to ecs_start(), where
                                  * it is reworked into an array for faster
                                  * access */
@@ -123,15 +124,15 @@ struct ecat_master {
 
     pthread_mutex_t lock;        /* Lock the ecat master */
 
-    struct list_head slave_list; /* List of all slaves. Only active during
+    /*struct list_head slave_list;*/ /* List of all slaves. Only active during
                                   * initialisation */
 
     /* Temporary storage for domains registered to this master. Every
      * sample time has a read and a write list
      */
     struct {
-        struct list_head input_domain_list;
-        struct list_head output_domain_list;
+        /*struct list_head input_domain_list;*/
+        /*struct list_head output_domain_list;*/
     } st_domain[];
 };
 
@@ -143,7 +144,7 @@ static struct ecat_data {
     /* This list is used to store all masters during the registration
      * process. Thereafter this list is reworked in ecs_start(), moving 
      * the masters and domains into the st[] struct below */
-    struct list_head master_list;
+    /*struct list_head master_list;*/
 
     struct st_data {
         unsigned int master_count;
@@ -162,6 +163,12 @@ static struct ecat_data {
 } *ecat_data;
 
 
+struct ecs_handle {
+    struct ecat_master *master, *master_end;
+    struct ecat_domain *domain, *domain_end;
+    struct endian_convert_t *copy_list;
+};
+
 /////////////////////////////////////////////////
 
 /* Do input processing for a RTW task. It does the following:
@@ -170,48 +177,32 @@ static struct ecat_data {
  *      - calls ecrt_domain_process() for every domain in this task
  */
 void
-ecs_receive(int tid)
+ecs_receive(struct ecs_handle *ecs_handle, size_t tid)
 {
-    struct ecat_master *master = ecat_data->st[tid].master;
-    struct ecat_master * const master_end = 
-        master + ecat_data->st[tid].master_count;
-    struct ecat_domain *domain = ecat_data->st[tid].input_domain;
-    struct ecat_domain * const domain_end = 
-        domain + ecat_data->st[tid].input_domain_count;
+    struct ecat_master *master;
+    struct ecat_domain *domain;
     struct endian_convert_t *conversion_list;
         
-    for ( ; master != master_end; master++) {
-        pthread_mutex_lock (&master->lock);
+    ecs_handle += tid;
+
+    for (master = ecs_handle->master;
+            master != ecs_handle->master_end; master++) {
         ecrt_master_receive(master->handle);
         ecrt_master_state(master->handle, master->state);
-        pthread_mutex_unlock (&master->lock);
     }
 
-    for ( ; domain != domain_end; domain++) {
-        pthread_mutex_lock (&domain->master->lock);
+    for (domain = ecs_handle->domain;
+            domain != ecs_handle->domain_end; domain++) {
+
         ecrt_domain_process(domain->handle);
         ecrt_domain_state(domain->handle, domain->state);
         ecrt_domain_queue(domain->handle);
-        pthread_mutex_unlock (&domain->master->lock);
-        for (conversion_list = domain->endian_convert_list;
-                conversion_list->data_ptr;
-                conversion_list++) {
-            switch (conversion_list->pdo_datatype_size) {
-                case 8:
-                    *(uint64_t*)conversion_list->data_ptr =
-                        le64toh(*(uint64_t*)conversion_list->data_ptr);
-                    break;
-                case 4:
-                    *(uint32_t*)conversion_list->data_ptr =
-                        le32toh(*(uint32_t*)conversion_list->data_ptr);
-                    break;
-                case 2:
-                    *(uint16_t*)conversion_list->data_ptr =
-                        le32toh(*(uint16_t*)conversion_list->data_ptr);
-                    break;
-            }
-        }
     }
+
+    for (conversion_list = ecs_handle->copy_list;
+            conversion_list->read; conversion_list++)
+        conversion_list->read(conversion_list->dst,
+                conversion_list->src, conversion_list->index);
 }
 
 /* Do EtherCAT output processing for a RTW task. It does the following:
@@ -220,48 +211,31 @@ ecs_receive(int tid)
  *      - calls ecrt_master_send() for every domain in this task
  */
 void
-ecs_send(int tid) 
+ecs_send(struct ecs_handle *ecs_handle, size_t tid)
 {
-    struct ecat_master *master = ecat_data->st[tid].master;
-    struct ecat_master * const master_end = 
-        master + ecat_data->st[tid].master_count;
-    struct ecat_domain *domain = ecat_data->st[tid].output_domain;
-    struct ecat_domain * const domain_end = 
-        domain + ecat_data->st[tid].output_domain_count;
+    struct ecat_master *master;
+    struct ecat_domain *domain;
     struct endian_convert_t *conversion_list;
 
-    for ( ; domain != domain_end; domain++) {
-        for (conversion_list = domain->endian_convert_list; 
-                conversion_list->data_ptr;
-                conversion_list++) {
-            switch (conversion_list->pdo_datatype_size) {
-                case 8:
-                    *(uint64_t*)conversion_list->data_ptr =
-                        htole64(*(uint64_t*)conversion_list->data_ptr);
-                    break;
-                case 4:
-                    *(uint32_t*)conversion_list->data_ptr =
-                        htole32(*(uint32_t*)conversion_list->data_ptr);
-                    break;
-                case 2:
-                    *(uint16_t*)conversion_list->data_ptr =
-                        htole16(*(uint16_t*)conversion_list->data_ptr);
-                    break;
-            }
-        }
-        pthread_mutex_lock (&domain->master->lock);
+    ecs_handle += tid;
+
+    for (conversion_list = ecs_handle->copy_list;
+            conversion_list->read; conversion_list++)
+        conversion_list->read(conversion_list->dst,
+                conversion_list->src, conversion_list->index);
+
+    for (domain = ecs_handle->domain;
+            domain != ecs_handle->domain_end; domain++) {
+
         ecrt_domain_process(domain->handle);
         ecrt_domain_state(domain->handle, domain->state);
 
         ecrt_domain_queue(domain->handle);
-        pthread_mutex_unlock (&domain->master->lock);
     }
 
-    for ( ; master != master_end; master++) {
-//        ecrt_master_application_time(master->handle,
-//                task_stats->monotonic_time);
+    for (master = ecs_handle->master;
+            master != ecs_handle->master_end; master++) {
 
-        pthread_mutex_lock (&master->lock);
         if (master->refclk_trigger_init && !--master->refclk_trigger) {
             ecrt_master_sync_reference_clock(master->handle);
             master->refclk_trigger = master->refclk_trigger_init;
@@ -269,41 +243,54 @@ ecs_send(int tid)
 
         ecrt_master_sync_slave_clocks(master->handle);
         ecrt_master_send(master->handle);
-        pthread_mutex_unlock (&master->lock);
     }
 }
 
-// /* This callback is passed to EtherCAT during master initialisation. 
-//  *
-//  * Normally it is not allowable for anyone else to use the master other
-//  * than the owner himself to guarantee hard real-time response. In rare
-//  * cases, however, it may be necessary for EtherCAT to request private usage
-//  * of the master, for example to do EoE.
-//  * Using this function, EtherCAT has the chance to gain temporary exclusive 
-//  * use of the master.
-//  */
-// static void
-// ecs_send_cb(void *p)
-// {
-// #define MASTER ((struct ecat_master *)p)
-//     pthread_mutex_lock (&MASTER->lock);
-//     ecrt_master_send_ext(MASTER->handle);
-//     pthread_mutex_unlock (&MASTER->lock);
-// #undef MASTER
-// }
-// 
-// /* This callback is passed to EtherCAT during master initialisation. 
-//  */
-// static void
-// ecs_receive_cb(void *p)
-// {
-// #define MASTER ((struct ecat_master *)p)
-//     pthread_mutex_lock (&MASTER->lock);
-//     ecrt_master_receive(MASTER->handle);
-//     pthread_mutex_unlock (&MASTER->lock);
-// #undef MASTER
-// }
+/***************************************************************************/
+struct ecat_master *get_master(struct ecs_handle *ecs_handle, size_t nst,
+        unsigned int master, unsigned int tid)
+{
+    size_t i;
+    for (i = 0; i < nst; i++) {
+        struct ecat_master **master_p;
+        for (master_p = &ecs_handle[i].master;
+                *master_p; master_p = &(*master_p)->next);
 
+    }
+}
+
+/***************************************************************************/
+const char *ecs_start( 
+        const struct ec_slave *slave_head,
+        unsigned int *st,       /* List of sample times in nanoseconds */
+        size_t nst,
+        unsigned int single_tasking,    /* Set if the model is single tasking,
+                                         * even though there are more than one
+                                         * sample time */
+        struct ecs_handle **ecs_handle
+        )
+{
+    const struct ec_slave *slave;
+    size_t i;
+
+    *ecs_handle = calloc(nst, sizeof(struct ecs_handle));
+    if (!ecs_handle[i])
+        goto out;
+
+    for (slave = slave_head; slave; slave = slave->next) {
+        struct ecat_master *master =
+            get_master(*ecs_handle, nst, slave->master, slave->tid);
+        if (!master)
+            goto out;
+    }
+
+    return NULL;
+
+out:
+    return errbuf;
+}
+
+#if 0
 /* Initialise all slaves listed in master->slave_list. */
 static const char*
 init_slaves( struct ecat_master *master)
@@ -1183,6 +1170,7 @@ ecs_init(
 
     return NULL;
 }
+#endif
 
 /** Read non-aligned data types.
  *
@@ -1194,62 +1182,187 @@ ecs_init(
  * The data is interpreted as little endian, which is the format
  * used by EtherCAT */
 
-uint32_t ecs_read_uint24(void *byte)
+/*****************************************************************/
+static void
+ecs_read_uint1(void *dst, const uint8_t *src, size_t idx)
 {
-    return 
-        ((uint32_t) *(uint8_t*)(byte+2)) << 16
-        | (uint32_t)*(uint16_t*)byte;
+    *(uint8_t*)dst = (*src >> idx) & 0x01;
 }
 
-uint64_t ecs_read_uint40(void *byte)
+/*****************************************************************/
+static void
+ecs_read_uint2(void *dst, const uint8_t *src, size_t idx)
 {
-    return 
-        ((uint64_t) *(uint8_t*)(byte+4)) << 32
-        | (uint64_t)*(uint32_t*)byte;
+    *(uint8_t*)dst = (*src >> idx) & 0x03;
 }
 
-uint64_t ecs_read_uint48(void *byte)
+/*****************************************************************/
+static void
+ecs_read_uint3(void *dst, const uint8_t *src, size_t idx)
 {
-    return
-        ((uint64_t) *(uint16_t*)(byte+4)) << 40
-        | (uint64_t)*(uint32_t*) byte;
+    *(uint8_t*)dst = (*src >> idx) & 0x07;
 }
 
-uint64_t ecs_read_uint56(void *byte)
+/*****************************************************************/
+static void
+ecs_read_uint4(void *dst, const uint8_t *src, size_t idx)
 {
-    return
-        ((uint64_t)  *(uint8_t *)(byte+6)) << 48
-        | ((uint64_t)*(uint16_t*)(byte+4)) << 40
-        |  (uint64_t)*(uint32_t*) byte;
+    *(uint8_t*)dst = (*src >> idx) & 0x0F;
 }
 
-/** Write non-aligned data types.
- *
- * The following functions are used to write non-aligned data types.
- *
- * The source value is a generic data type that can represent the
- * destination.
- *
- * The data is interpreted as little endian, which is the format
- * used by EtherCAT */
-void ecs_write_uint24(void *byte, uint32_t value)
+/*****************************************************************/
+static void
+ecs_read_uint5(void *dst, const uint8_t *src, size_t idx)
 {
-    *(uint16_t*) byte    =  value;
-    *(uint8_t *)(byte+2) =  value >> 16;
+    *(uint8_t*)dst = (*src >> idx) & 0x1F;
 }
-void ecs_write_uint40(void *byte, uint64_t value)
+
+/*****************************************************************/
+static void
+ecs_read_uint6(void *dst, const uint8_t *src, size_t idx)
 {
-    *(uint32_t*) byte    =  value;
-    *(uint8_t *)(byte+4) =  value >> 32;
+    *(uint8_t*)dst = (*src >> idx) & 0x3F;
 }
-void ecs_write_uint48(void *byte, uint64_t value)
+
+/*****************************************************************/
+static void
+ecs_read_uint7(void *dst, const uint8_t *src, size_t idx)
 {
-    *(uint32_t*) byte    =  value;
-    *(uint16_t*)(byte+4) =  value >> 32;
+    *(uint8_t*)dst = (*src >> idx) & 0x7F;
 }
-void ecs_write_uint56(void *byte, uint64_t value)
+
+/*****************************************************************/
+static void
+ecs_read_uint8(void *dst, const uint8_t *src, size_t idx)
 {
-    *(uint32_t*) byte    =  value;
-    *(uint16_t*)(byte+4) =  value >> 32;
-    *(uint8_t *)(byte+6) =  value >> 48;
+    *(uint8_t*)dst = *src;
+}
+
+/*****************************************************************/
+static void
+ecs_read_le_uint16(void *dst, const uint8_t *src, size_t idx)
+{
+    *(uint16_t*)dst = le16toh(*(uint16_t*)src);
+}
+
+/*****************************************************************/
+static void
+ecs_read_le_uint24(void *dst, const uint8_t *src, size_t idx)
+{
+    *(uint32_t*)dst = ((uint32_t)le16toh(*(uint16_t*)(src+1)) << 8) + *src;
+}
+
+/*****************************************************************/
+static void
+ecs_read_le_uint32(void *dst, const uint8_t *src, size_t idx)
+{
+    *(uint32_t*)dst = le32toh(*(uint32_t*)src);
+}
+
+/*****************************************************************/
+static void
+ecs_read_le_uint40(void *dst, const uint8_t *src, size_t idx)
+{
+    *(double*)dst = ((uint64_t)le32toh(*(uint32_t*)(src+1)) << 8) + *src;
+}
+
+/*****************************************************************/
+static void
+ecs_read_le_uint48(void *dst, const uint8_t *src, size_t idx)
+{
+    *(double*)dst =
+        ((uint64_t)le32toh(*(uint32_t*)(src+2)) << 16)
+        + le16toh(*(uint16_t*)src);
+}
+
+/*****************************************************************/
+static void
+ecs_read_le_uint56(void *dst, const uint8_t *src, size_t idx)
+{
+    *(double*)dst =
+        ((uint64_t)le32toh(*(uint32_t*)(src+3)) << 24)
+        + ((uint64_t)le16toh(*(uint16_t*)(src+1)) <<  8)
+        + *src;
+}
+
+/*****************************************************************/
+static void
+ecs_read_le_uint64(void *dst, const uint8_t *src, size_t idx)
+{
+    *(double*)dst = le64toh(*(uint64_t*)src);
+}
+
+/*****************************************************************/
+static void
+ecs_read_le_double(void *dst, const uint8_t *src, size_t idx)
+{
+    *(uint64_t*)dst = le64toh(*(uint64_t*)src);
+}
+
+/*****************************************************************/
+static void
+ecs_read_be_uint16(void *dst, const uint8_t *src, size_t idx)
+{
+    *(uint16_t*)dst = be16toh(*(uint16_t*)src);
+}
+
+/*****************************************************************/
+static void
+ecs_read_be_uint24(void *dst, const uint8_t *src, size_t idx)
+{
+    *(uint32_t*)dst = ((uint32_t)*src << 16) + be16toh(*(uint16_t*)(src+1));
+}
+
+/*****************************************************************/
+static void
+ecs_read_be_uint32(void *dst, const uint8_t *src, size_t idx)
+{
+    *(uint32_t*)dst = be32toh(*(uint32_t*)src);
+}
+
+/*****************************************************************/
+static void
+ecs_read_be_uint40(void *dst, const uint8_t *src, size_t idx)
+{
+    *(double*)dst = ((uint64_t)*src << 32) + be32toh(*(uint32_t*)(src+1));
+}
+
+/*****************************************************************/
+static void
+ecs_read_be_uint48(void *dst, const uint8_t *src, size_t idx)
+{
+    *(double*)dst =
+        ((uint64_t)be16toh(*(uint16_t*)src) << 32)
+        + be32toh(*(uint32_t*)(src+2));
+}
+
+/*****************************************************************/
+static void
+ecs_read_be_uint56(void *dst, const uint8_t *src, size_t idx)
+{
+    *(double*)dst =
+        ((uint64_t)*src << 48)
+        + ((uint64_t)be16toh(*(uint16_t*)(src+1)) << 32)
+        + be32toh(*(uint32_t*)(src+3));
+}
+
+/*****************************************************************/
+static void
+ecs_read_be_uint64(void *dst, const uint8_t *src, size_t idx)
+{
+    *(double*)dst = be64toh(*(uint64_t*)src);
+}
+
+/*****************************************************************/
+static void
+ecs_read_be_int64(void *dst, const uint8_t *src, size_t idx)
+{
+    *(double*)dst = (int64_t)be64toh(*(uint64_t*)src);
+}
+
+/*****************************************************************/
+static void
+ecs_read_be_double(void *dst, const uint8_t *src, size_t idx)
+{
+    *(uint64_t*)dst = be64toh(*(uint64_t*)src);
 }

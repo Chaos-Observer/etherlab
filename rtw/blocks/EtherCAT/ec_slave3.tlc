@@ -96,32 +96,40 @@
   %assign SdoConfiguration = GetSdoConfig()
   %assign SoeConfiguration = GetSoeConfig()
   %assign PdoMap = GetPdoMap(block)
+  %assign slave_config = "ec_slave_%<EtherCATSlaveId>"
+
+  %openfile buf
 
   /* %<Type> Block: %<Name> 
    * Registering EtherCAT block %<ProductName> with Driver
    */
-  if ((%<ETL.ErrStr> = ecs_reg_slave( \
-           %<EtherCATTid>, /* TID */
-           /* MasterId, DomainId, SlaveAlias, SlavePosition */
-           %<MasterId>, %<DomainId>, %<SlaveAlias>, %<SlavePosition>,
-           /* VendorId, ProductCode */
-           %<VendorId>, %<ProductCode>,
-           /* SdoConfigCount, SdoVar */
-           %<SdoConfiguration.count>, %<SdoConfiguration.id>,
-           /* SoeConfigCount, SoeVar */
-           %<SoeConfiguration.count>, %<SoeConfiguration.id>,
-           /* SyncManager Configuration */
-           %<GetSyncManagerConfigId(block)>,
-           /* Distributed Clock Configuration */
-           %<GetDcOpModeConfigId(block)>,
-           /* Input and Output Pdo count Configuration */
-           %<PdoMap.InputCount>, %<PdoMap.OutputCount>, %<PdoMap.id>))) {
-        snprintf(%<ETL.ErrMsg>, sizeof(%<ETL.ErrMsg>), 
-           "EtherCAT slave %<LibGetFormattedBlockPath(block)> register "
-           "failed: %s", %<ETL.ErrStr>);
-        %<LibSetRTModelErrorStatus( "%<ETL.ErrMsg>")>;
-        return;
-  }
+  static struct ec_slave %<slave_config> = {
+      NULL,             /* Linked list */
+      %<EtherCATTid>, /* TID */ \
+      %<MasterId>, %<DomainId>, %<SlaveAlias>, %<SlavePosition>, \
+      /* MasterId, DomainId, SlaveAlias, SlavePosition */
+      %<VendorId>, %<ProductCode>, \
+      /* VendorId, ProductCode */
+      %<SdoConfiguration.count>, %<SdoConfiguration.id>, \
+      /* SdoConfigCount, SdoVar */
+      %<SoeConfiguration.count>, %<SoeConfiguration.id>, \
+      /* SoeConfigCount, SoeVar */
+      %<GetSyncManagerConfigId(block)>, \
+      /* SyncManager Configuration */
+      %<GetDcOpModeConfigId(block)>, \
+      /* Distributed Clock Configuration */
+      %<PdoMap.InputCount>, %<PdoMap.OutputCount>, %<PdoMap.id> \
+      /* Input and Output Pdo count Configuration */
+  };
+  %closefile buf
+  %<LibSetSourceFileSection(CompiledModel.EtherCAT.model_c, \
+        "Definitions", buf)>
+
+  /* %<Type> Block: %<Name> 
+   * Registering EtherCAT block %<ProductName> with Driver
+   */
+  *slave_list = &%<slave_config>;
+  slave_list = &%<slave_config>.next;
 %endfunction
 
 
@@ -629,12 +637,14 @@
 %function GetPdoMap(block)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+  %assign PdoCount = [%<SIZE(InputPortIdx,1)>, %<SIZE(OutputPortIdx,1)>]
+
   %createrecord pdo_map {...
-        InputCount SIZE(InputPortIdx,1) ...
-        OutputCount SIZE(OutputPortIdx,1) ...
+        InputCount 0 ...
+        OutputCount 0 ...
         id "NULL"}
 
-  %if !pdo_map.InputCount && !pdo_map.OutputCount
+  %if !PdoCount[0] && !PdoCount[1]
     %return pdo_map
   %endif
 
@@ -646,9 +656,11 @@
    * Mapped Pdos for block %<ProductName>
    */
   static struct pdo_map %<pdo_map.id>[] = {
-    %foreach i = SIZE(InputPortIdx,1)
+    %foreach i = PdoCount[0]
       %assign port = SFcnParamSettings[InputPortIdx[i]]
-      %foreach j = LibBlockInputSignalWidth(i)
+      %assign width = LibBlockInputSignalWidth(i)
+      %assign pdo_map.InputCount = pdo_map.InputCount + width
+      %foreach j = width
         %%
         %assign addr = port.DWorkIndex ...
                 ? LibBlockDWorkAddr(DWork[port.DWorkIndex-1], "", "", j) ...
@@ -660,9 +672,11 @@
                 port.Pdo[2][j], addr, i+1, j)> \
       %endforeach
     %endforeach
-    %foreach i = SIZE(OutputPortIdx,1)
+    %foreach i = PdoCount[1]
       %assign port = SFcnParamSettings[OutputPortIdx[i]]
-      %foreach j = LibBlockOutputSignalWidth(i)
+      %assign width = LibBlockOutputSignalWidth(i)
+      %assign pdo_map.OutputCount = pdo_map.OutputCount + width
+      %foreach j = width
         %%
         %assign addr = port.DWorkIndex ...
                 ? LibBlockDWorkAddr(DWork[port.DWorkIndex-1], "", "", j) ...

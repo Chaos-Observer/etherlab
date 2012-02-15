@@ -49,35 +49,30 @@
     %<LibAddToCommonIncludes("ecrt_support.h")>
   
     %openfile buf
+    /* Handles for EtherCAT System */
+    static struct ecs_handle *ecs_handle;
+    %closefile buf
+    %<LibSetSourceFileSection(EtherCAT.model_c, "Definitions", buf)>
+
+    %openfile buf
+    const struct ec_slave *slave_head;
+    const struct ec_slave **slave_list = &slave_head;
     /* Zero terminated list of sample times for EtherCAT */
-    unsigned int ec_st[] = {
+    unsigned int ec_st[%<NumSt>] = {
     %foreach tid = NumSt
         %assign EtherCAT.MasterSampleTime = EtherCAT.MasterSampleTime + 0.0
-        %<CAST("Unsigned", ...
-               LibGetClockTickStepSize(tid + LibGetTID01EQ())*1000000000 + 0.5)>,
+        %assign StepSize = LibGetClockTickStepSize(tid + LibGetTID01EQ())
+        %<CAST("Unsigned", StepSize*1000000000 + 0.5)>,
     %endforeach
-        0U };
+    };
     %closefile buf
     %<LibMdlStartCustomCode(buf, "header")>
 
-    %trace "LibIsSingleTasking %<LibIsSingleTasking()> LibIsSingleRateModel %<LibIsSingleRateModel()> LibGetTID01EQ %<LibGetTID01EQ()>"
-    %openfile buf
-  
-    /* Initialising EtherCAT Support system */
-    if ((%<ETL.ErrStr> = ecs_init( ec_st, %<LibIsSingleTasking()>))) {
-        snprintf(%<ETL.ErrMsg>, sizeof(%<ETL.ErrMsg>),
-                 "Could not initialise EtherCAT Support layer: %s",
-                 %<ETL.ErrStr>);
-        %<LibSetRTModelErrorStatus("%<ETL.ErrMsg>")>;
-        return;
-    }
-    %closefile buf
-    %<LibMdlStartCustomCode(buf, "execution")>
-  
     %openfile buf
   
     /* Starting EtherCAT subsystem */
-    if ((%<ETL.ErrStr> = ecs_start())) {
+    if ((%<ETL.ErrStr> = ecs_start(slave_head, ec_st, %<NumSt>, \
+                %<LibIsSingleTasking()>, &ecs_handle))) {
           snprintf(%<ETL.ErrMsg>, sizeof(%<ETL.ErrMsg>), 
              "Starting EtherCAT subsystem failed: %s", %<ETL.ErrStr>);
           %<LibSetRTModelErrorStatus("%<ETL.ErrMsg>")>;
@@ -89,7 +84,7 @@
     %openfile buf
   
     /* Shutting down EtherCAT subsystem */
-    ecs_end();
+    ecs_end(ecs_handle, %<NumSt>);
     %closefile buf
     %<LibMdlTerminateCustomCode(buf, "execution")>
   
@@ -162,9 +157,9 @@
 
     /* EtherCAT Process for Sample Time [%<Ts>] */
     if (%<SendCondition>) {
-      ecs_receive(%<ETL_tid>);
+      ecs_receive(ecs_handle, %<ETL_tid>);
       #ifdef ASYNC_ECAT
-      ecs_send(%<ETL_tid>);
+      ecs_send(ecs_handle, %<ETL_tid>);
       #endif
     }
     %closefile buf
@@ -175,7 +170,7 @@
     /* EtherCAT Queue for Sample Time [%<Ts>] */
     #ifndef ASYNC_ECAT
     if (%<SendCondition>) {
-      ecs_send(%<ETL_tid>);
+      ecs_send(ecs_handle, %<ETL_tid>);
     }
     #endif
     %closefile buf
