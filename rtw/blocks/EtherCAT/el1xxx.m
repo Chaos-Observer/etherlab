@@ -46,7 +46,7 @@ rv.SlaveConfig.vendor = 2;
 product = models.(model);
 rv.SlaveConfig.product = product(1);
 rv.SlaveConfig.pdo = {...
-        {0, 0, {}} ...  % Only 1 output SyncManager
+        {0, 1, {}} ...  % Only 1 output SyncManager
 };
 
 % Populate the PDO structure
