@@ -15,9 +15,9 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "jn"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Mon Feb 20 11:15:30 2012"
-  RTWModifiedTimeStamp	  251637326
-  ModelVersionFormat	  "1.%<AutoIncrement:834>"
+  LastModifiedDate	  "Mon Feb 20 11:28:53 2012"
+  RTWModifiedTimeStamp	  251638090
+  ModelVersionFormat	  "1.%<AutoIncrement:835>"
   ConfigurationManager	  "rcs"
   SampleTimeColors	  off
   SampleTimeAnnotations	  off
@@ -772,10 +772,10 @@ Library {
 	      BlockType		      "S-Function"
 	      Name		      "AIN_0"
 	      SID		      5
-	      Ports		      [0, 1]
+	      Ports		      [0, 2]
 	      Position		      [195, 55, 275, 95]
 	      BackgroundColor	      "yellow"
-	      LibraryVersion	      "1.833"
+	      LibraryVersion	      "1.834"
 	      FunctionName	      "ec_slave3"
 	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
 	      EnableBusSupport	      off
@@ -819,20 +819,20 @@ Library {
 	      "edit,popup(Raw bits|Double|Double with scale and offset),checkbox,checkbox,edit,edit,edit"
 	      MaskTunableValueString  "off,off,off,off,off,off,off,off,off,off,off,off"
 	      MaskCallbackString      "|||el31xx_check('output_type');\n|||el31xx_check('dtype');||el31xx_check('filter');|||"
-	      MaskEnableString	      "on,on,on,on,off,off,on,on,on,off,on,on"
+	      MaskEnableString	      "on,on,on,on,on,on,on,off,on,off,on,on"
 	      MaskVisibilityString    "on,on,on,on,on,on,on,on,on,on,on,off"
 	      MaskToolTipString	      "on,on,on,on,on,on,on,on,on,on,on,on"
 	      MaskVariables	      "master=@1;index=@2;model=&3;output_type=&4;scale=@5;offset=@6;dtype=&7;status=@8;filter=@9"
 	      ";tau=@10;tsample=@11;debug=@12;"
 	      MaskInitialization      "masterStr = '';\npositionStr = '';\n[Address masterStr positionStr] = getEtherCATAddre"
 	      "ss(gcb,master,index);\n\nrv = el31xx(model,output_type, status, dtype, scale, offset, filter, tau);"
-	      MaskDisplay	      "fprintf('%s\\n%s AIn\\nM:%s Idx:%s',...\n    model,masterStr,positionStr)\n\n"
+	      MaskDisplay	      "fprintf('%s\\n%s AIn\\nM:%s Idx:%s',...\n    model,rv.output_unit, masterStr,positionStr)\n\n"
 	      MaskIconFrame	      on
 	      MaskIconOpaque	      on
 	      MaskIconRotate	      "none"
 	      MaskPortRotate	      "default"
 	      MaskIconUnits	      "autoscale"
-	      MaskValueString	      "0|1|EL3142|Vector Output|1|0|Double|off|off|0.1|0|0"
+	      MaskValueString	      "0|1|EL3162|Separate Outputs|[2 1]|[2 1]|Double with scale and offset|off|off|0.1|0|0"
 	    }
 	    Block {
 	      BlockType		      "S-Function"
