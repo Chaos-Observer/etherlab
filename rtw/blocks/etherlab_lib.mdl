@@ -15,9 +15,9 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "jn"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Thu Feb 16 17:57:57 2012"
-  RTWModifiedTimeStamp	  251312642
-  ModelVersionFormat	  "1.%<AutoIncrement:833>"
+  LastModifiedDate	  "Mon Feb 20 11:15:30 2012"
+  RTWModifiedTimeStamp	  251637326
+  ModelVersionFormat	  "1.%<AutoIncrement:834>"
   ConfigurationManager	  "rcs"
   SampleTimeColors	  off
   SampleTimeAnnotations	  off
@@ -620,7 +620,7 @@ Library {
       MaskIconUnits	      "pixels"
       System {
 	Name			"EtherCAT"
-	Location		[251, 170, 708, 671]
+	Location		[1126, 136, 1583, 637]
 	Open			on
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
@@ -756,7 +756,7 @@ Library {
 	  System {
 	    Name		    "Beckhoff"
 	    Location		    [912, 150, 1904, 705]
-	    Open		    off
+	    Open		    on
 	    ModelBrowserVisibility  off
 	    ModelBrowserWidth	    200
 	    ScreenColor		    "white"
@@ -775,8 +775,9 @@ Library {
 	      Ports		      [0, 1]
 	      Position		      [195, 55, 275, 95]
 	      BackgroundColor	      "yellow"
-	      FunctionName	      "ec_slave2"
-	      Parameters	      "Address,SlaveConfig,SdoConfig,[],output,debug,tsample"
+	      LibraryVersion	      "1.833"
+	      FunctionName	      "ec_slave3"
+	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
 	      EnableBusSupport	      off
 	      MaskType		      "EL31xx"
 	      MaskDescription	      "Beckhoff 2,4,8-Channel 16-Bit Analog Input"
@@ -821,61 +822,17 @@ Library {
 	      MaskEnableString	      "on,on,on,on,off,off,on,on,on,off,on,on"
 	      MaskVisibilityString    "on,on,on,on,on,on,on,on,on,on,on,off"
 	      MaskToolTipString	      "on,on,on,on,on,on,on,on,on,on,on,on"
-	      MaskVariables	      "master=@1;index=@2;model=&3;output_type=@4;scale=@5;offset=@6;dtype=@7;status=@8;filter=@9"
+	      MaskVariables	      "master=@1;index=@2;model=&3;output_type=&4;scale=@5;offset=@6;dtype=&7;status=@8;filter=@9"
 	      ";tau=@10;tsample=@11;debug=@12;"
 	      MaskInitialization      "masterStr = '';\npositionStr = '';\n[Address masterStr positionStr] = getEtherCATAddre"
-	      "ss(gcb,master,index);\n\nSdoConfig = [];\n\n% Find the product code from the available models\nmodels = struct("
-	      "...\n    'EL3102'  ,{{hex2dec('0C1E3052') 0 '-10..10V'}}, ...\n    'EL3142'  ,{{hex2dec('0C463052') 0 '0..20mA'"
-	      "}}, ...\n    'EL3152'  ,{{hex2dec('0C503052') 0 '4..20mA'}}, ...\n    'EL3162'  ,{{hex2dec('0C5A3052') 0 '0-10V"
-	      "'}} ...  \n    );\n\nif isfield(models,model)\n    selection = models.(model);\nelse\n    errordlg([gcb ': Slav"
-	      "e model \"' model '\" is not implemented'])\nend\n\nfunc = selection{3};\n\nEtherCATInfoFile = 'EtherCATInfo_el"
-	      "31xx';\ntry \n    load(EtherCATInfoFile);\ncatch\n    errordlg([gcb ': Could not load EtherCATInfo MAT file '.."
-	      ".\n        EtherCATInfoFile]);\n    % Regenerate with: \n    %  EtherCATInfo_el31xx = getEtherCATInfo('Beckhoff"
-	      " EL31xx.xml')\n    %  save EtherCATInfo_el31xx 'EtherCATInfo_el31xx'\nend\nLayoutVersion = 0;\n\noutput = [];\n"
-	      "\ndevice = EtherCATInfo_el31xx(selection{1},selection{2});\nif isempty(device)\n    errordlg(sprintf(...\n     "
-	      "   ['%s: Could not find device with\\n'...\n        'ProductCode \\t#x%08X\\n'...\n        'RevisionNo \\t#x%08"
-	      "X\\n'...\n        'in file %s.'],...\n        gcs, selection{1}, selection{2}, EtherCATInfoFile));\nelse\n    c"
-	      "hannels = str2double(model(6));\n    if status\n        StatusPdoEntries = [12544 + (1:channels); ones(1,channe"
-	      "ls)]';\n        PdoEntries = [12544 + (1:channels); 1 + ones(1,channels)]';\n    else\n        PdoEntries = [25"
-	      "600 + ones(1,channels); 1:channels]';\n        %% Actually the above line is correct, but because the slaves\n "
-	      "       % are faulty, we are forced to use the Pdo Entry below\n        PdoEntries = [12544 + (1:channels); 1 + "
-	      "ones(1,channels)]';\n    end\n    \n    output.Pdo.Exclude = hex2dec('1A10');\n\n    SlaveConfig = genSlaveConf"
-	      "ig(device);\n    if output_type == 1\n        % Vector output chosen\n\n        output.Port(1).PdoEntry = PdoEn"
-	      "tries;\n\n        if status\n            output.Port(2).PdoEntry = StatusPdoEntries;\n        end\n\n        if"
-	      " dtype ~= 1\n             output.Port(1).PdoFullScale = 2^15;\n\n            if dtype == 3\n                out"
-	      "put.Port(1).Gain = scale;\n                output.Port(1).Offset = offset;\n                output.Port(1).Gain"
-	      "Name = 'FullScale';\n                output.Port(1).OffsetName = 'Offset';\n            end\n            if fil"
-	      "ter\n                if sum(tau == 0)\n                    errordlg([gcb ': Specify a nonzero time constant '.."
-	      ".\n                        'for the output filter.']);\n                end\n                if (tsample)\n    "
-	      "                output.Port(1).Filter = tsample./tau;\n                    output.Port(1).FilterName = 'InputWe"
-	      "ight';\n                else\n                    output.Port(1).Filter = 2*pi./tau;\n                    outpu"
-	      "t.Port(1).FilterName = 'Omega';\n                end\n            end\n        end\n\n    else\n        % Separ"
-	      "ate outputs chosen\n        % Distribute each row of output_pdo_map to output(x).pdo_map\n        output.Port ="
-	      " cell2struct(mat2cell(PdoEntries,ones(1,channels),2),'PdoEntry',2);\n        if status\n            output.Port"
-	      " = [output.Port; ...\n                cell2struct(mat2cell(StatusPdoEntries,ones(1,channels),2),'PdoEntry',2)];"
-	      "\n        end\n\n        if dtype ~= 1\n            for i = 1:channels\n                output.Port(i).PdoFullS"
-	      "cale = 2^15;\n            end\n\n            if dtype == 3\n                if ~isempty(scale)\n               "
-	      "     for i = 1:channels\n                        % Choose scale(1) for every output if scale\n                 "
-	      "       % is a scalar\n                        output.Port(i).Gain = scale(min(i,max(size(scale))));\n          "
-	      "              output.Port(i).GainName = ['FullScale' num2str(i)];\n                    end\n                end"
-	      "\n\n                if ~isempty(offset)\n                    for i = 1:channels\n                        % Choo"
-	      "se offset(1) for every output if offset\n                        % is a scalar\n                        output."
-	      "Port(i).Offset = offset(min(i,max(size(offset))));\n                        output.Port(i).OffsetName = ['Offse"
-	      "t' num2str(i)];\n                    end\n                end\n            end\n\n            if filter && ~ise"
-	      "mpty(tau)\n                if sum(tau == 0)\n                    errordlg([gcb ': Specify a nonzero time consta"
-	      "nt '...\n                        'for the output filter.']);\n                end\n\n                if tsample"
-	      "(1)\n                    k = tsample(1)./tau;\n                    prefix = 'InputWeight';\n                els"
-	      "e\n                    k = 2*pi./tau;\n                    prefix = 'Omega';\n                end\n            "
-	      "    for i = 1:channels\n                    % Choose k(1) for every output if k\n                    % is a sca"
-	      "lar\n                    output.Port(i).Filter = k(min(i,max(size(k))));\n                    output.Port(i).Fi"
-	      "lterName = [prefix num2str(i)];\n                end\n\n            end\n        end\n    end\nend\n\n"
-	      MaskDisplay	      "fprintf('%s\\n%s AIn\\nM:%s Idx:%s',...\n    model,func,masterStr,positionStr)\n\n"
+	      "ss(gcb,master,index);\n\nrv = el31xx(model,output_type, status, dtype, scale, offset, filter, tau);"
+	      MaskDisplay	      "fprintf('%s\\n%s AIn\\nM:%s Idx:%s',...\n    model,masterStr,positionStr)\n\n"
 	      MaskIconFrame	      on
 	      MaskIconOpaque	      on
 	      MaskIconRotate	      "none"
 	      MaskPortRotate	      "default"
 	      MaskIconUnits	      "autoscale"
-	      MaskValueString	      "0|1|EL3162|Vector Output|1|0|Double|off|off|0.1|0|0"
+	      MaskValueString	      "0|1|EL3142|Vector Output|1|0|Double|off|off|0.1|0|0"
 	    }
 	    Block {
 	      BlockType		      "S-Function"

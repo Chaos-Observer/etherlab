@@ -41,11 +41,11 @@ rv.SlaveConfig.pdo = { {3 1 {}} };
 
 % Choose required pdos 
 if  status 
-    pdoindex = product(3):product(4)
+    pdoindex = product(3):product(4);
 else
-    pdoindex = product(5):product(6)
+    pdoindex = product(5):product(6);
 end
-   
+
 % Populate the RxPDO Inputs structure
 rv.SlaveConfig.pdo{1}{3} = arrayfun(...
         @(x) {pdo(x,1), entries(pdo(x,2):pdo(x,3),:)}, ...
@@ -66,12 +66,11 @@ rv.PortConfig.output = struct(...
     );
 
 
-
 % set scale and offset 
 if strcmp(dtype, 'Double with scale and offset')
     % Check vor valiability of variable outputs
     % Set Scales
-    if  strcmp(output_type,'Seperate Outputs') &&...
+    if  strcmp(output_type,'Separate Outputs') &&...
             (isempty(scale) || numel(scale)==1 || numel(scale) == number_elements)
             if numel(scale) == 1
                 rv.PortConfig.output.scale = ...
@@ -86,9 +85,9 @@ if strcmp(dtype, 'Double with scale and offset')
         warning('EtherLAB:Beckhoff:EL31xx:scale', ['The dimension of the'...
        ' scale output does not match to the number of elements of the'...
        ' terminal. Please choose a valid output, or the scale is being ignored'])
-    end
+     end
     % Set Offsets
-    if  strcmp(output_type,'Seperate Outputs') &&...
+    if  strcmp(output_type,'Separate Outputs') &&...
             (isempty(offset) || numel(offset)==1 || numel(offset) == number_elements)
             if numel(offset) == 1
                 rv.PortConfig.output.offset = ...
@@ -112,6 +111,7 @@ if ~strcmp(dtype, 'Raw Bits')
     rv.PortConfig.output.full_scale = scale_int; 
 end
 
+
 % define filter if choosen
 if filter && ~strcmp(dtype, 'Raw bits') 
     if numel(filter) == 1
@@ -130,18 +130,34 @@ end
 
 
 % Populate the block's output port(s)
-r = 0:(product(4) - product(3));
+r = 0:1;
+
 if strcmp(output_type, 'Vector Output')
-    rv.PortConfig.output.pdo = [zeros(numel(r),4)];
-    rv.PortConfig.output.pdo(:,1) = [0];
-    rv.PortConfig.output.pdo(:,2) = [r];
+    if status
+        for k = 0:1
+        rv.PortConfig.output(k+1).pdo = [zeros(numel(r),4)];
+        rv.PortConfig.output(k+1).pdo(:,2) = [r];
+        rv.PortConfig.output(k+1).pdo(:,3) = k;
+        end
+    else
+        rv.PortConfig.output.pdo = [zeros(numel(r),4)];
+        rv.PortConfig.output.pdo(:,3) = [r];
+    end
 else
-    rv.PortConfig.output = arrayfun(@(x) struct('pdo', [0, x, 0, 0]), r);
+    rv.PortConfig.output = arrayfun(@(x) struct('pdo', [0, 0, x, 0]), r);
 end
 
 
 if status && strcmp(output_type, 'Vector Output')
-   rv.PortConfig.output(2).offset = {'Offset', []}
-   rv.PortConfig.output(2).scale = {'Scale', []}
-   rv.PortConfig.output(2).pdo = [zeros(1,4)];
+   if ~isempty(offset)
+       rv.PortConfig.output(2).offset = {'Offset', [0 0]};;
+   end
+   if ~isempty(scale)  
+       rv.PortConfig.output(2).scale = {'Scale', [1 1]};
+   end 
+  rv.PortConfig.output(2).pdo = [zeros(numel(r),4)];
+ 
+  rv.PortConfig.output(2).pdo(:,3) = 1;   
+  rv.PortConfig.output(2).pdo(:,2) = [0;1];
 end
+
