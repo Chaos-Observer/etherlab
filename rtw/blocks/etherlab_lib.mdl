@@ -15,9 +15,9 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "jn"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Mon Feb 20 16:00:38 2012"
-  RTWModifiedTimeStamp	  251654410
-  ModelVersionFormat	  "1.%<AutoIncrement:837>"
+  LastModifiedDate	  "Mon Feb 20 18:43:08 2012"
+  RTWModifiedTimeStamp	  251664186
+  ModelVersionFormat	  "1.%<AutoIncrement:839>"
   ConfigurationManager	  "rcs"
   SampleTimeColors	  off
   SampleTimeAnnotations	  off
@@ -755,7 +755,7 @@ Library {
 	  MaskIconUnits		  "autoscale"
 	  System {
 	    Name		    "Beckhoff"
-	    Location		    [822, 150, 1904, 705]
+	    Location		    [855, 115, 1937, 670]
 	    Open		    on
 	    ModelBrowserVisibility  off
 	    ModelBrowserWidth	    200
@@ -773,7 +773,7 @@ Library {
 	      Name		      "AIN_0"
 	      SID		      5
 	      Ports		      [0, 2]
-	      Position		      [260, 55, 340, 95]
+	      Position		      [220, 55, 300, 95]
 	      BackgroundColor	      "yellow"
 	      LibraryVersion	      "1.834"
 	      FunctionName	      "ec_slave3"
@@ -839,7 +839,7 @@ Library {
 	      Name		      "AIN_EL30xx"
 	      SID		      6
 	      Ports		      [0, 1]
-	      Position		      [395, 52, 485, 98]
+	      Position		      [355, 52, 445, 98]
 	      BackgroundColor	      "yellow"
 	      FunctionName	      "ec_slave2"
 	      Parameters	      "Address,config.SlaveConfig,config.SdoConfig,config.SoeConfig,config.IO,debug,tsample"
@@ -919,7 +919,7 @@ Library {
 	      Name		      "AIN_EP0"
 	      SID		      7
 	      Ports		      [0, 1]
-	      Position		      [235, 185, 360, 235]
+	      Position		      [195, 185, 320, 235]
 	      BackgroundColor	      "yellow"
 	      FunctionName	      "ec_slave2"
 	      Parameters	      "Address,config.SlaveConfig,config.SdoConfig,config.SoeConfig,config.IO,debug,tsample"
@@ -1006,7 +1006,7 @@ Library {
 	      Name		      "AIN_EP1"
 	      SID		      8
 	      Ports		      [1, 1]
-	      Position		      [235, 329, 360, 381]
+	      Position		      [195, 329, 320, 381]
 	      BackgroundColor	      "yellow"
 	      FunctionName	      "ec_slave2"
 	      Parameters	      "Address,config.SlaveConfig,config.SdoConfig,config.SoeConfig,config.IO,debug,tsample"
@@ -1089,7 +1089,7 @@ Library {
 	      Name		      "AOUT_0"
 	      SID		      9
 	      Ports		      [1]
-	      Position		      [265, 117, 340, 163]
+	      Position		      [225, 117, 300, 163]
 	      BackgroundColor	      "yellow"
 	      LibraryVersion	      "1.835"
 	      FunctionName	      "ec_slave3"
@@ -1146,7 +1146,7 @@ Library {
 	      Name		      "AOUT_EP0"
 	      SID		      10
 	      Ports		      [1]
-	      Position		      [235, 254, 360, 306]
+	      Position		      [195, 254, 320, 306]
 	      BackgroundColor	      "yellow"
 	      FunctionName	      "ec_slave2"
 	      Parameters	      "Address,config.SlaveConfig,config.SdoConfig,config.SoeConfig,config.IO,debug,tsample"
@@ -1217,7 +1217,7 @@ Library {
 	      Ports		      [0, 1]
 	      Position		      [20, 255, 140, 305]
 	      BackgroundColor	      "yellow"
-	      LibraryVersion	      "1.836"
+	      LibraryVersion	      "1.837"
 	      FunctionName	      "ec_slave3"
 	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
 	      EnableBusSupport	      off
@@ -1240,9 +1240,9 @@ Library {
 	      "te. If another block can set the sample time, choose -1 for inherited sample time."
 	      MaskPromptString	      "Master|Slave Index|Device Model |Output Type|Sample Time|Deug Level"
 	      MaskStyleString	      "edit,edit,popup(EP10080001_00110001|EP10080002_00110002|EP10180001_00110001|EP10180002_0"
-	      "0110002|EP10980002_00110001|EL18090021_00110015|EL18090022_00110016|EL18190021_00100015|EL18190022_00100016|--O"
-	      "bsolete|EP10080001_00100001|EP10080002_00100002|EP10180001_00100001|EP10180002_00100002|EP10980002_00100001),po"
-	      "pup(Vector Output|Separate Outputs),edit,edit"
+	      "0110002|EP10980002_00110001|EP18090021_00110015|EP18090022_00110016|EP18190021_00100015|EP18190022_00100016|--O"
+	      "bsolete--|EP10080001_00100001|EP10080002_00100002|EP10180001_00100001|EP10180002_00100002|EP10980002_00100001),"
+	      "popup(Vector Output|Separate Output),edit,edit"
 	      MaskTunableValueString  "off,off,off,off,off,off"
 	      MaskCallbackString      "|||||"
 	      MaskEnableString	      "on,on,on,on,on,on"
@@ -1260,45 +1260,105 @@ Library {
 	      MaskValueString	      "0|1|EP10080001_00110001|Vector Output|0|0"
 	    }
 	    Block {
-	      BlockType		      Reference
+	      BlockType		      "S-Function"
 	      Name		      "DIN_1"
 	      SID		      37
 	      Ports		      [0, 1]
-	      Position		      [40, 189, 120, 231]
+	      Position		      [45, 190, 115, 230]
 	      BackgroundColor	      "yellow"
-	      LibraryVersion	      "1.836"
-	      SourceBlock	      "etherlab_lib/EtherCAT/Beckhoff/DIN_0"
-	      SourceType	      "EL1xxx"
-	      master		      "0"
-	      index		      "1"
-	      model		      "EL1004v2"
-	      output_type	      "Vector Output"
-	      tsample		      "0"
-	      debug		      "0"
+	      FunctionName	      "ec_slave3"
+	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
+	      EnableBusSupport	      off
+	      MaskType		      "EL1xxx"
+	      MaskDescription	      "Beckhoff EtherCAT Digital Input\n\nDevices:\n  EL1004,8:	3ms filter\n  EL1014,8:	10us fi"
+	      "lter\n  EL1034           24V floating, 10us filter\n  EL1004v2: Newer version with PDO at 0x6000"
+	      MaskHelp		      "This block implements the Beckhoff's EtherCAT series of Digital Input Terminals.\n<p/>\nChoose"
+	      " or set the following options:\n<h4>Master:</h4>\nSet the EtherCAT Master number that this terminal is connecte"
+	      "d to.\n\n<h4>Slave Index:</h4>\nSet the EtherCAT slave index. Following address formats are allowed:\n<ol>\n<li"
+	      "> Absolute addressing: a scalar number <<b><tt>n</tt></b>> representing the (zero based) absolute position in t"
+	      "he bus.\n<li> SSId addressing: the Secondary Slave (or 'Alias') Addressing has the form <<b><tt>[alias position"
+	      "]</tt></b>> where <b><tt>alias</tt></b> is the Secondary Slave Id of the EtherCAT slave and <b><tt>position</tt"
+	      "></b> is the offset after the slave with the given <b><tt>alias</tt></b>. The SSId has to be preprogrammed into"
+	      " the slave with other service tools (see 'ethercat alias --help').\n</ol>\n\n<h4> Device Model</h4>\nSelect the"
+	      " model that is used. This sets the number of outputs of this block.\n\n<h4>Output Type</h4>\nThe block output t"
+	      "ype corresponding to the terminal inputs can be one of the following:\n<ul>\n<li><b>Vector Output</b>: This set"
+	      "s one output vector with a width equal to the number of digital inputs to the terminal. \n<li><b>Separate Outpu"
+	      "ts</b>: This sets the number of outputs corresponding to the digital inputs to the terminal. \n</ul>\n\n<h4>Sam"
+	      "ple Time</h4>\nSelect the correct sample time. Setting this to 0 makes for a sample time at the model's base ra"
+	      "te. If another block can set the sample time, choose -1 for inherited sample time."
+	      MaskPromptString	      "Master|Slave Index|Device Model |Output Type|Sample Time|Deug Level"
+	      MaskStyleString	      "edit,edit,popup(EL1004v2|EL1014v2|EL1034|EL1008|EL1018|--Obsolete--|EL1004|EL1014),popup"
+	      "(Vector Output|Separate Output),edit,edit"
+	      MaskTunableValueString  "off,off,off,off,off,off"
+	      MaskCallbackString      "|||||"
+	      MaskEnableString	      "on,on,on,on,on,on"
+	      MaskVisibilityString    "on,on,on,on,on,off"
+	      MaskToolTipString	      "on,on,on,on,on,on"
+	      MaskVariables	      "master=@1;index=@2;model=&3;output_type=&4;tsample=@5;debug=@6;"
+	      MaskInitialization      "masterStr = '';\npositionStr = '';\n[Address masterStr positionStr] = getEtherCATAddre"
+	      "ss(gcb,master,index);\n\nrv = el1xxx(model,output_type);\n"
+	      MaskDisplay	      "fprintf('%s\\nM:%s Idx:%s',...\n    model,masterStr,positionStr)\n\n"
+	      MaskIconFrame	      on
+	      MaskIconOpaque	      on
+	      MaskIconRotate	      "none"
+	      MaskPortRotate	      "default"
+	      MaskIconUnits	      "autoscale"
+	      MaskValueString	      "0|1|EL1008|Vector Output|0|0"
 	    }
 	    Block {
-	      BlockType		      Reference
+	      BlockType		      "S-Function"
 	      Name		      "DIN_2"
 	      SID		      39
-	      Ports		      [0, 1]
+	      Ports		      [1]
 	      Position		      [20, 115, 140, 165]
 	      BackgroundColor	      "yellow"
-	      LibraryVersion	      "1.836"
-	      SourceBlock	      "etherlab_lib/EtherCAT/Beckhoff/DIN_0"
-	      SourceType	      "EL1xxx"
-	      master		      "0"
-	      index		      "1"
-	      model		      "EP10080001_00110001"
-	      output_type	      "Vector Output"
-	      tsample		      "0"
-	      debug		      "0"
+	      FunctionName	      "ec_slave3"
+	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
+	      EnableBusSupport	      off
+	      MaskType		      "EL1xxx"
+	      MaskDescription	      "Beckhoff EtherCAT Digital Input\n\nDevices:\n  EL1004,8:	3ms filter\n  EL1014,8:	10us fi"
+	      "lter\n  EL1034           24V floating, 10us filter\n  EL1004v2: Newer version with PDO at 0x6000"
+	      MaskHelp		      "This block implements the Beckhoff's EtherCAT series of Digital Input Terminals.\n<p/>\nChoose"
+	      " or set the following options:\n<h4>Master:</h4>\nSet the EtherCAT Master number that this terminal is connecte"
+	      "d to.\n\n<h4>Slave Index:</h4>\nSet the EtherCAT slave index. Following address formats are allowed:\n<ol>\n<li"
+	      "> Absolute addressing: a scalar number <<b><tt>n</tt></b>> representing the (zero based) absolute position in t"
+	      "he bus.\n<li> SSId addressing: the Secondary Slave (or 'Alias') Addressing has the form <<b><tt>[alias position"
+	      "]</tt></b>> where <b><tt>alias</tt></b> is the Secondary Slave Id of the EtherCAT slave and <b><tt>position</tt"
+	      "></b> is the offset after the slave with the given <b><tt>alias</tt></b>. The SSId has to be preprogrammed into"
+	      " the slave with other service tools (see 'ethercat alias --help').\n</ol>\n\n<h4> Device Model</h4>\nSelect the"
+	      " model that is used. This sets the number of outputs of this block.\n\n<h4>Output Type</h4>\nThe block output t"
+	      "ype corresponding to the terminal inputs can be one of the following:\n<ul>\n<li><b>Vector Output</b>: This set"
+	      "s one output vector with a width equal to the number of digital inputs to the terminal. \n<li><b>Separate Outpu"
+	      "ts</b>: This sets the number of outputs corresponding to the digital inputs to the terminal. \n</ul>\n\n<h4>Sam"
+	      "ple Time</h4>\nSelect the correct sample time. Setting this to 0 makes for a sample time at the model's base ra"
+	      "te. If another block can set the sample time, choose -1 for inherited sample time."
+	      MaskPromptString	      "Master|Slave Index|Device Model |Input Type|Sample Time|Deug Level"
+	      MaskStyleString	      "edit,edit,popup(EP20011000_001103E8|EP20080001_00110001|EP20080002_00110002|EP20280001_0"
+	      "0110001|EP20280002_00110002|EP28090021_00100015|EP28090022_00100016|--Obsolete--|EP20011000_001003E8|EP20080001"
+	      "_00100001|EP20080002_00100002|EP20280001_00100001|EP20280002_00100002),popup(Vector Input|Separate Input),edit,"
+	      "edit"
+	      MaskTunableValueString  "off,off,off,off,off,off"
+	      MaskCallbackString      "|||||"
+	      MaskEnableString	      "on,on,on,on,on,on"
+	      MaskVisibilityString    "on,on,on,on,on,off"
+	      MaskToolTipString	      "on,on,on,on,on,on"
+	      MaskVariables	      "master=@1;index=@2;model=&3;input_type=&4;tsample=@5;debug=@6;"
+	      MaskInitialization      "masterStr = '';\npositionStr = '';\n[Address masterStr positionStr] = getEtherCATAddre"
+	      "ss(gcb,master,index);\n\nrv = ep2xxx(model,input_type);\n"
+	      MaskDisplay	      "fprintf('%s\\nM:%s Idx:%s',...\n    model,masterStr,positionStr)\n\n"
+	      MaskIconFrame	      on
+	      MaskIconOpaque	      on
+	      MaskIconRotate	      "none"
+	      MaskPortRotate	      "default"
+	      MaskIconUnits	      "autoscale"
+	      MaskValueString	      "0|1|EP20080001_00110001|Vector Input|0|0"
 	    }
 	    Block {
 	      BlockType		      "S-Function"
 	      Name		      "DOUT_0"
 	      SID		      12
 	      Ports		      [1]
-	      Position		      [40, 50, 120, 100]
+	      Position		      [40, 55, 120, 95]
 	      BackgroundColor	      "yellow"
 	      FunctionName	      "ec_slave3"
 	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
@@ -1349,7 +1409,7 @@ Library {
 	      Name		      "ENC_0"
 	      SID		      13
 	      Ports		      [0, 1]
-	      Position		      [685, 130, 765, 170]
+	      Position		      [645, 130, 725, 170]
 	      BackgroundColor	      "yellow"
 	      FunctionName	      "ec_slave2"
 	      Parameters	      "Address,SlaveConfig,SdoConfig,[],IOSpec,debug,tsample"
@@ -1446,7 +1506,7 @@ Library {
 	      Name		      "INC_IN1"
 	      SID		      14
 	      Ports		      [5, 9]
-	      Position		      [675, 191, 780, 239]
+	      Position		      [635, 191, 740, 239]
 	      BackgroundColor	      "yellow"
 	      FunctionName	      "ec_slave2"
 	      Parameters	      "Address,config.SlaveConfig,config.SdoConfig,config.SoeConfig,config.IO,debug,tsample"
@@ -1518,7 +1578,7 @@ Library {
 	      Name		      "Infrastructure"
 	      SID		      15
 	      Ports		      []
-	      Position		      [955, 55, 1073, 103]
+	      Position		      [915, 55, 1033, 103]
 	      BackgroundColor	      "yellow"
 	      FunctionName	      "ec_slave2"
 	      Parameters	      "Address,SlaveConfig,SdoConfig,[],output,debug,tsample"
@@ -1565,7 +1625,7 @@ Library {
 	      Name		      "K-Bus"
 	      SID		      16
 	      Ports		      []
-	      Position		      [820, 53, 900, 106]
+	      Position		      [780, 53, 860, 106]
 	      BackgroundColor	      "yellow"
 	      FunctionName	      "ec_slave2"
 	      Parameters	      "Address,SlaveConfig,SdoConfig,[],IOSpec,debug,tsample"
@@ -1620,7 +1680,7 @@ Library {
 	      Name		      "RTD_0"
 	      SID		      17
 	      Ports		      [0, 1]
-	      Position		      [540, 60, 620, 100]
+	      Position		      [500, 60, 580, 100]
 	      BackgroundColor	      "yellow"
 	      FunctionName	      "ec_slave2"
 	      Parameters	      "Address,SlaveConfig,SdoConfig,[],IOSpec,0,tsample"
@@ -1736,7 +1796,7 @@ Library {
 	      Name		      "RTD_1"
 	      SID		      18
 	      Ports		      [0, 1]
-	      Position		      [535, 127, 630, 173]
+	      Position		      [495, 127, 590, 173]
 	      BackgroundColor	      "yellow"
 	      FunctionName	      "ec_slave2"
 	      Parameters	      "Address,config.SlaveConfig,config.SdoConfig,config.SoeConfig,config.IO,debug,tsample"
@@ -1805,7 +1865,7 @@ Library {
 	      Name		      "SSI_0"
 	      SID		      19
 	      Ports		      [0, 1]
-	      Position		      [680, 55, 760, 95]
+	      Position		      [640, 55, 720, 95]
 	      BackgroundColor	      "yellow"
 	      FunctionName	      "ec_slave2"
 	      Parameters	      "Address,SlaveConfig,SdoConfig,[],output,debug,tsample"
@@ -1892,7 +1952,7 @@ Library {
 	    }
 	    Annotation {
 	      Name		      "Analog-IO(16Bit)"
-	      Position		      [296, 34]
+	      Position		      [256, 34]
 	      FontSize		      12
 	    }
 	    Annotation {
@@ -1902,27 +1962,27 @@ Library {
 	    }
 	    Annotation {
 	      Name		      "Analog-IO(12Bit)"
-	      Position		      [441, 34]
+	      Position		      [401, 34]
 	      FontSize		      12
 	    }
 	    Annotation {
 	      Name		      "Special-Analog-IO"
-	      Position		      [581, 34]
+	      Position		      [541, 34]
 	      FontSize		      12
 	    }
 	    Annotation {
 	      Name		      "Special-IO"
-	      Position		      [721, 34]
+	      Position		      [681, 34]
 	      FontSize		      12
 	    }
 	    Annotation {
 	      Name		      "Bus-Coupler"
-	      Position		      [856, 34]
+	      Position		      [816, 34]
 	      FontSize		      12
 	    }
 	    Annotation {
 	      Name		      "EtherCAT \nInfrastructure"
-	      Position		      [1011, 34]
+	      Position		      [971, 34]
 	      FontSize		      12
 	    }
 	  }
