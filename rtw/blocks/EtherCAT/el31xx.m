@@ -77,6 +77,7 @@ rv.SlaveConfig.pdo{1}{3} = arrayfun(...
 
 % set scale for double outputs
 scale_int = 2^15;
+
 number_elements = 2;
 
 
@@ -208,15 +209,3 @@ if strcmp(output_type, 'Vector Output')
 else
     rv.PortConfig.output = arrayfun(@(x) struct('pdo', [0, 0, x, 0]), r);
 end
-
-
-%if status && strcmp(output_type, 'Vector Output')
-%   if ~isempty(offset)
-%       rv.PortConfig.output(2).offset = {'Offset', []};;
-%   end
-%   if ~isempty(scale)  
-%       rv.PortConfig.output(2).gain = {'Scale', []};
-%   end 
-%end
-
-

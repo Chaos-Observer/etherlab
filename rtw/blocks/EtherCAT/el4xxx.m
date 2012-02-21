@@ -101,30 +101,60 @@ scale_int = 2^15;
 % Set scale and for each data type
 rv.PortConfig.input.full_scale = scale_int;
 
-(isempty(scale) || numel(scale)==1 || numel(scale) == number_elements)
-if     strcmp(input_type,'Separate Inputs') &&...
-         (isempty(scale) || numel(scale)==1 || numel(scale) == number_elements)
-           if numel(scale) == 1
-               rv.PortConfig.input.scale = ...
-                 {'Scale', [ones(1,number_elements)]*scale};
-           else
-               rv.PortConfig.input.scale = {'Scale', scale};
-           end
-elseif strcmp(input_type,'Vector Input') &&...
-          (isempty(scale) || numel(scale)==1)
-           rv.PortConfig.input.scale = {'Scale', scale};
-else
-        warning('EtherLAB:Beckhoff:EL4xxx:scale', ['The dimension of the'...
-       ' scale input does not match to the number of elements of the'...
-       ' terminal. Please choose a valid input, or the scale is being ignored'])
-end
-
+%(isempty(scale) || numel(scale)==1 || numel(scale) == number_elements)
+%if     strcmp(input_type,'Separate Inputs') &&...
+%         (isempty(scale) || numel(scale)==1 || numel(scale) == number_elements)
+%           if numel(scale) == 1
+%               rv.PortConfig.input.scale = ...
+%                 {'Scale', [ones(1,number_elements)]*scale};
+%           else
+%               rv.PortConfig.input.scale = {'Scale', scale};
+%           end
+%elseif strcmp(input_type,'Vector Input') &&...
+%          (isempty(scale) || numel(scale)==1)
+%           rv.PortConfig.input.scale = {'Scale', scale};
+%else
+%        warning('EtherLAB:Beckhoff:EL4xxx:scale', ['The dimension of the'...
+%       ' scale input does not match to the number of elements of the'...
+%       ' terminal. Please choose a valid input, or the scale is being ignored'])
+%end
 
 r = 0 : product(4) - product(3)
 if strcmp(input_type, 'Vector Input')
     rv.PortConfig.input.pdo = [zeros(numel(r),4)];
     rv.PortConfig.input.pdo(:,2) = r;
 else
-    rv.PortConfig.input = arrayfun(@(x) struct('pdo', [0, 1, 0, 0]), r);
+    rv.PortConfig.input = arrayfun(@(x) struct('pdo', [0, x, 0, 0]), r);
+end
+
+
+number_elements = (product(4)-product(3)+1);
+
+if (isempty(scale) || numel(scale)==1 || numel(scale) == number_elements)   
+    if strcmp(input_type,'Separate Inputs')        
+        for k = 1:number_elements
+            if numel(scale) == 1
+                rv.PortConfig.input(k).gain = {'Gain', scale};
+            elseif numel(scale) == number_elements 
+                rv.PortConfig.input(k).gain = {'Gain', scale(k)};
+            else
+                rv.PortConfig.input(k).gain = {'Gain', []};
+            end
+         end
+    else
+        rv.PortConfig.input.gain = {'Gain', scale};
+    end
+     % if input is wrong, fill with emptys
+else 
+    if strcmp(input_type,'Separate Inputs')
+        for k = 1:number_elements
+            rv.PortConfig.input(k).gain = [];
+        end
+    else
+        rv.PortConfig.input.gain = {'Gain', scale};
+    end
+    warning('EtherLAB:Beckhoff:EL31xx:scale', ['The dimension of the'...
+    ' scale input does not match to the number of elements of the'...
+    ' terminal. Please choose a valid input, or the scale is being ignored'])
 end
 
