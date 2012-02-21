@@ -15,9 +15,9 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "jn"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Tue Feb 21 18:51:15 2012"
-  RTWModifiedTimeStamp	  251751069
-  ModelVersionFormat	  "1.%<AutoIncrement:842>"
+  LastModifiedDate	  "Tue Feb 21 22:26:07 2012"
+  RTWModifiedTimeStamp	  251763964
+  ModelVersionFormat	  "1.%<AutoIncrement:845>"
   ConfigurationManager	  "rcs"
   SampleTimeColors	  off
   SampleTimeAnnotations	  off
@@ -584,7 +584,7 @@ Library {
   }
   System {
     Name		    "etherlab_lib"
-    Location		    [895, 273, 1376, 495]
+    Location		    [1151, 348, 1632, 570]
     Open		    on
     ModelBrowserVisibility  off
     ModelBrowserWidth	    200
@@ -598,7 +598,7 @@ Library {
     ShowPageBoundaries	    off
     ZoomFactor		    "100"
     ReportName		    "simulink-default.rpt"
-    SIDHighWatermark	    40
+    SIDHighWatermark	    41
     Block {
       BlockType		      SubSystem
       Name		      "EtherCAT"
@@ -620,7 +620,7 @@ Library {
       MaskIconUnits	      "pixels"
       System {
 	Name			"EtherCAT"
-	Location		[1062, 53, 1519, 543]
+	Location		[1252, 232, 1709, 722]
 	Open			on
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
@@ -755,7 +755,7 @@ Library {
 	  MaskIconUnits		  "autoscale"
 	  System {
 	    Name		    "Beckhoff"
-	    Location		    [814, 396, 1896, 951]
+	    Location		    [847, 148, 1929, 703]
 	    Open		    on
 	    ModelBrowserVisibility  off
 	    ModelBrowserWidth	    200
@@ -773,7 +773,7 @@ Library {
 	      Name		      "AIN_0"
 	      SID		      5
 	      Ports		      [0, 1]
-	      Position		      [220, 55, 300, 95]
+	      Position		      [230, 55, 295, 95]
 	      BackgroundColor	      "yellow"
 	      LibraryVersion	      "1.840"
 	      FunctionName	      "ec_slave3"
@@ -919,7 +919,7 @@ Library {
 	      Name		      "AIN_EP1"
 	      SID		      8
 	      Ports		      [1, 1]
-	      Position		      [195, 329, 320, 381]
+	      Position		      [200, 344, 325, 396]
 	      BackgroundColor	      "yellow"
 	      FunctionName	      "ec_slave2"
 	      Parameters	      "Address,config.SlaveConfig,config.SdoConfig,config.SoeConfig,config.IO,debug,tsample"
@@ -977,7 +977,7 @@ Library {
 	      MaskTunableValueString  "off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off"
 	      MaskCallbackString      "|||||||beckhoff_ep4374('dc');|||||beckhoff_ep4374('dtype');|beckhoff_ep4374('filter');"
 	      "|||||"
-	      MaskEnableString	      "on,on,on,on,on,on,on,on,off,on,off,off,on,on,off,on,on,on,off"
+	      MaskEnableString	      "on,on,on,on,on,on,on,on,off,on,on,on,on,on,off,on,on,on,off"
 	      MaskVisibilityString    "on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,off,off"
 	      MaskToolTipString	      "on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on"
 	      MaskVariables	      "master=@1;index=@2;model=&3;type_1=@4;type_2=@5;type_3=@6;type_4=@7;dcmode=@8;dccustomer=@"
@@ -995,14 +995,15 @@ Library {
 	      MaskPortRotate	      "default"
 	      MaskIconUnits	      "autoscale"
 	      MaskValueString	      "0|1|EP43740002r00100002|-10...+10 V|-10...+10 V|-10...+10 V|-10...+10 V|FreeRun/SM-Synch"
-	      "ron|[1 hex2dec('700') 0 0 0 0 0 0 0]|Vector Output|[]|[]|Double|off|0|0.1|-1|0|beckhoff_ep4374"
+	      "ron|[1 hex2dec('700') 0 0 0 0 0 0 0]|Vector Output|1|[]|Double with scale and offset|off|0|0.1|-1|0|beckhoff_ep"
+	      "4374"
 	    }
 	    Block {
 	      BlockType		      "S-Function"
 	      Name		      "AIN_EP2"
 	      SID		      40
 	      Ports		      [0, 1]
-	      Position		      [190, 187, 325, 243]
+	      Position		      [200, 190, 325, 240]
 	      BackgroundColor	      "yellow"
 	      FunctionName	      "ec_slave3"
 	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
@@ -1089,7 +1090,7 @@ Library {
 	      Name		      "AOUT_0"
 	      SID		      9
 	      Ports		      [1]
-	      Position		      [225, 117, 300, 163]
+	      Position		      [225, 120, 300, 160]
 	      BackgroundColor	      "yellow"
 	      LibraryVersion	      "1.835"
 	      FunctionName	      "ec_slave3"
@@ -1144,12 +1145,12 @@ Library {
 	    Block {
 	      BlockType		      "S-Function"
 	      Name		      "AOUT_EP0"
-	      SID		      10
+	      SID		      41
 	      Ports		      [1]
-	      Position		      [195, 259, 320, 311]
+	      Position		      [200, 260, 325, 310]
 	      BackgroundColor	      "yellow"
-	      FunctionName	      "ec_slave2"
-	      Parameters	      "Address,config.SlaveConfig,config.SdoConfig,config.SoeConfig,config.IO,debug,tsample"
+	      FunctionName	      "ec_slave3"
+	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
 	      EnableBusSupport	      off
 	      MaskType		      "EP4xxx"
 	      MaskDescription	      "Beckhoff Analog Output\nFieldbus Box"
@@ -1191,31 +1192,29 @@ Library {
 	      "up(Vector Output|Separate Outputs),edit,edit,edit,edit"
 	      MaskTunableValueString  "off,off,off,off,off,off,off,off,off,off,off,off,off,off"
 	      MaskCallbackString      "||beckhoff_ep4xxx('model');|||||beckhoff_ep4xxx('dc');||||||"
-	      MaskEnableString	      "on,on,on,on,on,on,on,on,off,on,on,on,on,off"
+	      MaskEnableString	      "on,on,on,on,on,on,on,on,on,on,on,on,on,off"
 	      MaskVisibilityString    "on,on,on,on,on,on,on,on,on,on,on,on,off,off"
 	      MaskToolTipString	      "on,on,on,on,on,on,on,on,on,on,on,on,on,on"
 	      MaskVariables	      "master=@1;index=@2;model=&3;type_1=@4;type_2=@5;type_3=@6;type_4=@7;dcmode=@8;dccustom=@9;"
-	      "input_type=@10;scale=@11;tsample=@12;debug=@13;updatefcn=&14;"
+	      "input_type=&10;scale=@11;tsample=@12;debug=@13;updatefcn=&14;"
 	      MaskInitialization      "masterStr = '';\npositionStr = '';\n[Address masterStr positionStr] = getEtherCATAddre"
-	      "ss(gcb,master,index);\n\nselection = beckhoff_ep4xxx('getmodel',model);\nif isempty(selection)\n    return;\nen"
-	      "d\n\nfunc = selection{3};\n\ndevice = beckhoff_ep4xxx('loaddescription',selection);\nif isempty(device)\n   ret"
-	      "urn; \nend\n\n\n%Prepare S-Funtion structure\n\nconfig = beckhoff_ep4xxx('process',selection,device,type_1,type"
-	      "_2,type_3,type_4,dcmode,dccustom,input_type,scale);\n"
-	      MaskDisplay	      "fprintf('%s\\n%s AIn\\nM:%s Idx:%s',...\n    model,func,masterStr,positionStr)\n"
+	      "ss(gcb,master,index);\n\nrv = ep4xxx(model,input_type, scale, type_1,...\n             type_2, type_3, type_4, "
+	      "dcmode, dccustom);"
+	      MaskDisplay	      "fprintf('%s\\n%s AIn\\nM:%s Idx:%s',...\n    model,rv.input_func ,masterStr,positionStr)\n"
 	      MaskIconFrame	      on
 	      MaskIconOpaque	      on
 	      MaskIconRotate	      "none"
 	      MaskPortRotate	      "default"
 	      MaskIconUnits	      "autoscale"
-	      MaskValueString	      "0|1|EP41740002r00100002|0...10 V|0...10 V|0...10 V|0...10 V|FreeRun/SM-Synchron|[1 hex2d"
-	      "ec('320') 0 1 0 0 0 1 0]|Vector Output|[]|-1|0|beckhoff_ep4xxx"
+	      MaskValueString	      "0|1|EP41740002r00110002|-10...+10 V|4...20 mA|0...10 V|0...10 V|DC-Customized|[hex2dec('"
+	      "320') 0 0 1 0]|Vector Output|1|-1|0|beckhoff_ep4xxx"
 	    }
 	    Block {
 	      BlockType		      "S-Function"
 	      Name		      "DIN_0"
 	      SID		      11
 	      Ports		      [0, 1]
-	      Position		      [20, 259, 140, 311]
+	      Position		      [15, 260, 145, 310]
 	      BackgroundColor	      "yellow"
 	      LibraryVersion	      "1.837"
 	      FunctionName	      "ec_slave3"
@@ -1310,7 +1309,7 @@ Library {
 	      Name		      "DIN_2"
 	      SID		      39
 	      Ports		      [1]
-	      Position		      [20, 115, 140, 165]
+	      Position		      [15, 115, 145, 165]
 	      BackgroundColor	      "yellow"
 	      FunctionName	      "ec_slave3"
 	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
