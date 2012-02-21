@@ -80,26 +80,6 @@ scale_int = 2^15;
 number_elements = 2;
 
 
-
-% Populate the block's output port(s)
-r = 0:1;
-
-if strcmp(output_type, 'Vector Output')
-    if status
-        for k = 0:1
-        rv.PortConfig.output(k+1).pdo = [zeros(numel(r),4)];
-        rv.PortConfig.output(k+1).pdo(:,2) = [r];
-        rv.PortConfig.output(k+1).pdo(:,3) = k;
-        end
-    else
-        rv.PortConfig.output.pdo = [zeros(numel(r),4)];
-        rv.PortConfig.output.pdo(:,3) = [r];
-    end
-else
-    rv.PortConfig.output = arrayfun(@(x) struct('pdo', [0, 0, x, 0]), r);
-end
-
-
 % Set data type scale
 if ~strcmp(dtype, 'Raw Bits')
     if strcmp(output_type, 'Separate Outputs')
@@ -107,7 +87,7 @@ if ~strcmp(dtype, 'Raw Bits')
             rv.PortConfig.output(k).full_scale = scale_int; 
         end
     else
-            rv.PortConfig.output.full_scale = scale_int; 
+            rv.PortConfig.output(1).full_scale = scale_int; 
     end
 end
 
@@ -159,7 +139,7 @@ if strcmp(dtype, 'Double with scale and offset')
                 elseif numel(scale) == number_elements 
                     rv.PortConfig.output(k).gain = {'Gain', scale(k)};
                 else
-                    rv.PortConfig.output(k).gain = [];
+                    rv.PortConfig.output(k).gain = {'Gain', []};
                 end
              end
         else
@@ -210,11 +190,33 @@ if strcmp(dtype, 'Double with scale and offset')
 end
 
 
-if status && strcmp(output_type, 'Vector Output')
-   if ~isempty(offset)
-       rv.PortConfig.output(2).offset = {'Offset', []};;
-   end
-   if ~isempty(scale)  
-       rv.PortConfig.output(2).gain = {'Scale', []};
-   end 
+
+% Populate the block's output port(s)
+r = 0:1;
+
+if strcmp(output_type, 'Vector Output')
+    if status
+        for k = 0:1
+        rv.PortConfig.output(k+1).pdo = [zeros(numel(r),4)];
+        rv.PortConfig.output(k+1).pdo(:,2) = [r];
+        rv.PortConfig.output(k+1).pdo(:,3) = k;
+        end
+    else
+        rv.PortConfig.output.pdo = [zeros(numel(r),4)];
+        rv.PortConfig.output.pdo(:,3) = [r];
+    end
+else
+    rv.PortConfig.output = arrayfun(@(x) struct('pdo', [0, 0, x, 0]), r);
 end
+
+
+%if status && strcmp(output_type, 'Vector Output')
+%   if ~isempty(offset)
+%       rv.PortConfig.output(2).offset = {'Offset', []};;
+%   end
+%   if ~isempty(scale)  
+%       rv.PortConfig.output(2).gain = {'Scale', []};
+%   end 
+%end
+
+
