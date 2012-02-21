@@ -15,9 +15,9 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "jn"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Mon Feb 20 18:43:08 2012"
-  RTWModifiedTimeStamp	  251664186
-  ModelVersionFormat	  "1.%<AutoIncrement:839>"
+  LastModifiedDate	  "Mon Feb 20 18:49:20 2012"
+  RTWModifiedTimeStamp	  251664207
+  ModelVersionFormat	  "1.%<AutoIncrement:840>"
   ConfigurationManager	  "rcs"
   SampleTimeColors	  off
   SampleTimeAnnotations	  off
@@ -1215,7 +1215,7 @@ Library {
 	      Name		      "DIN_0"
 	      SID		      11
 	      Ports		      [0, 1]
-	      Position		      [20, 255, 140, 305]
+	      Position		      [20, 259, 140, 311]
 	      BackgroundColor	      "yellow"
 	      LibraryVersion	      "1.837"
 	      FunctionName	      "ec_slave3"
@@ -1257,7 +1257,7 @@ Library {
 	      MaskIconRotate	      "none"
 	      MaskPortRotate	      "default"
 	      MaskIconUnits	      "autoscale"
-	      MaskValueString	      "0|1|EP10080001_00110001|Vector Output|0|0"
+	      MaskValueString	      "0|1|EP10080002_00110002|Vector Output|0|0"
 	    }
 	    Block {
 	      BlockType		      "S-Function"

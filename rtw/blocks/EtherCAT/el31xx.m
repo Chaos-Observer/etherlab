@@ -47,7 +47,7 @@ models = struct(...
   'EL3142'  ,[hex2dec('0C463052'), hex2dec('00000000'), 1,    2,     3,      3 ],...
   'EL3152'  ,[hex2dec('0C503052'), hex2dec('00000000'), 1,    2,     3,      3 ],...
   'EL3162'  ,[hex2dec('0C5A3052'), hex2dec('00000000'), 1,    2,     3,      3 ],...
-  'EL3164'  ,[hex2dec('0C5C3052'), hex2dec('00100000'), 1,    2,     3,      3 ],...
+  'EL3164'  ,[hex2dec('0C5C3052'), hex2dec('00100000'), 1,    2,     3,      3 ]...
     );
 
 
@@ -79,76 +79,6 @@ rv.SlaveConfig.pdo{1}{3} = arrayfun(...
 scale_int = 2^15;
 number_elements = 2;
 
-% Set scale and offset for each data type
-rv.PortConfig.output = struct(...
-    'gain', [],... 
-    'offset', [],...
-    'filter', [],...
-    'full_scale', []...
-    );
-
-
-% set scale and offset 
-if strcmp(dtype, 'Double with scale and offset')
-    % Check vor valiability of variable outputs
-    % Set Scales
-    if  strcmp(output_type,'Separate Outputs') &&...
-            (isempty(scale) || numel(scale)==1 || numel(scale) == number_elements)
-            if numel(scale) == 1
-                rv.PortConfig.output.scale = ...
-                    {'Scale', [ones(1,number_elements)]*scale};
-            else
-                rv.PortConfig.output.scale = {'Scale', scale};
-            end
-     elseif strcmp(output_type,'Vector Output') &&...
-             (isempty(scale) || numel(scale)==1)
-              rv.PortConfig.output.scale = {'Scale', scale};
-     else
-        warning('EtherLAB:Beckhoff:EL31xx:scale', ['The dimension of the'...
-       ' scale output does not match to the number of elements of the'...
-       ' terminal. Please choose a valid output, or the scale is being ignored'])
-     end
-    % Set Offsets
-    if  strcmp(output_type,'Separate Outputs') &&...
-            (isempty(offset) || numel(offset)==1 || numel(offset) == number_elements)
-            if numel(offset) == 1
-                rv.PortConfig.output.offset = ...
-                    {'Offset', [ones(1,number_elements)]*offset};
-            else
-                rv.PortConfig.output.offset = {'Offset', offset};
-            end
-     elseif strcmp(output_type,'Vector Output') &&...
-             (isempty(offset) || numel(offset)==1)
-              rv.PortConfig.output.offset = {'Offset', offset};
-     else
-        warning('EtherLAB:Beckhoff:EL31xx:offset', ['The dimension of the'...
-       ' offset output does not match to the number of elements of the'...
-       ' terminal. Please choose a valid output, or the offset is being ignored'])
-     end 
-end
-
-
-% Set data type scale
-if ~strcmp(dtype, 'Raw Bits')
-    rv.PortConfig.output.full_scale = scale_int; 
-end
-
-
-% define filter if choosen
-if filter && ~strcmp(dtype, 'Raw bits') 
-    if numel(filter) == 1
-        if filter < 0
-            errodlg(['Specify a nonzero time constant '...
-                        'for the output filter'],'Filter Error');
-        else
-            rv.PortConfig.output.filter = {'Filter', tau};
-        end
-   else
-       warning('EtherLAB:Beckhoff:EL31xx:filter', ['Filter output must be a'...
-               ' scalar. Please choose a valid output, or the filter is being'...
-               ' ignored']);    
-   end
-end
 
 
 % Populate the block's output port(s)
@@ -170,16 +100,121 @@ else
 end
 
 
-if status && strcmp(output_type, 'Vector Output')
-   if ~isempty(offset)
-       rv.PortConfig.output(2).offset = {'Offset', [0 0]};;
-   end
-   if ~isempty(scale)  
-       rv.PortConfig.output(2).scale = {'Scale', [1 1]};
-   end 
-  rv.PortConfig.output(2).pdo = [zeros(numel(r),4)];
- 
-  rv.PortConfig.output(2).pdo(:,3) = 1;   
-  rv.PortConfig.output(2).pdo(:,2) = [0;1];
+% Set data type scale
+if ~strcmp(dtype, 'Raw Bits')
+    if strcmp(output_type, 'Separate Outputs')
+        for k = 1:number_elements
+            rv.PortConfig.output(k).full_scale = scale_int; 
+        end
+    else
+            rv.PortConfig.output.full_scale = scale_int; 
+    end
 end
 
+% Fill in Offsets
+if filter
+    if (isempty(tau) || numel(tau)==1 || numel(tau) == number_elements)
+        if isempty(find(tau <= 0))   
+            if strcmp(output_type,'Separate Outputs')        
+                for k = 1:number_elements
+                    if numel(tau) == 1
+                        rv.PortConfig.output(k).filter = {'Filter', tau};
+                    elseif numel(tau) == number_elements 
+                        rv.PortConfig.output(k).filter = {'Filter', tau(k)};
+                    else
+                        rv.PortConfig.output(k).filter = [];
+                    end
+                end 
+            else
+                rv.PortConfig.output.filter = {'Filter', tau};
+            end
+        else
+            errodlg(['Specify a nonzero time constant '...
+                     'for the output filter'],'Filter Error');
+        end
+     % if input is wrong, fill with emptys
+    else 
+        if strcmp(output_type,'Separate Outputs')
+            for k = 1:number_elements
+                rv.PortConfig.output(k).filter = [];
+            end
+        else
+           rv.PortConfig.output.filter = {'Filter', tau};
+        end
+           warning('EtherLAB:Beckhoff:EL31xx:filter', ['The dimension of the'...
+           ' filter output does not match to the number of elements of the'...
+           ' terminal. Please choose a valid output, or the filter is being ignored'])
+    end
+end
+
+
+% set scale and offset 
+if strcmp(dtype, 'Double with scale and offset')
+% Fill in Scale
+    if (isempty(scale) || numel(scale)==1 || numel(scale) == number_elements)   
+        if strcmp(output_type,'Separate Outputs')        
+            for k = 1:number_elements
+                if numel(scale) == 1
+                    rv.PortConfig.output(k).gain = {'Gain', scale};
+                elseif numel(scale) == number_elements 
+                    rv.PortConfig.output(k).gain = {'Gain', scale(k)};
+                else
+                    rv.PortConfig.output(k).gain = [];
+                end
+             end
+        else
+            rv.PortConfig.output.gain = {'Gain', scale};
+        end
+         % if input is wrong, fill with emptys
+    else 
+        if strcmp(output_type,'Separate Outputs')
+            for k = 1:number_elements
+                rv.PortConfig.output(k).gain = [];
+            end
+        else
+            rv.PortConfig.output.gain = {'Gain', scale};
+        end
+        warning('EtherLAB:Beckhoff:EL31xx:scale', ['The dimension of the'...
+        ' scale output does not match to the number of elements of the'...
+        ' terminal. Please choose a valid output, or the scale is being ignored'])
+    end
+     
+    % Fill in Offsets
+    if (isempty(offset) || numel(offset)==1 || numel(offset) == number_elements)   
+        if strcmp(output_type,'Separate Outputs')        
+            for k = 1:number_elements
+                if numel(offset) == 1
+                    rv.PortConfig.output(k).offset = {'Offset', offset};
+                elseif numel(offset) == number_elements 
+                    rv.PortConfig.output(k).offset = {'Offset', offset(k)};
+                else
+                    rv.PortConfig.output(k).offset = [];
+                end
+             end
+        else
+            rv.PortConfig.output.offset = {'Offset', offset};
+        end
+         % if input is wrong, fill with emptys
+    else 
+        if strcmp(output_type,'Separate Outputs')
+            for k = 1:number_elements
+                rv.PortConfig.output(k).offset = [];
+            end
+        else
+            rv.PortConfig.output.offset = {'Offset', offset};
+        end
+        warning('EtherLAB:Beckhoff:EL31xx:offset', ['The dimension of the'...
+        ' offset output does not match to the number of elements of the'...
+        ' terminal. Please choose a valid output, or the offset is being ignored'])
+    end
+end
+
+
+if status && strcmp(output_type, 'Vector Output')
+   if ~isempty(offset)
+       rv.PortConfig.output(2).offset = {'Offset', []};;
+   end
+   if ~isempty(scale)  
+       rv.PortConfig.output(2).gain = {'Scale', []};
+   end 
+end
