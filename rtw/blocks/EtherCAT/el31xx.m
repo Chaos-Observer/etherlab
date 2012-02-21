@@ -70,7 +70,7 @@ end
 
 % Populate the RxPDO Inputs structure
 rv.SlaveConfig.pdo{1}{3} = arrayfun(...
-        @(x) {pdo(x,1), entries(pdo(x,2):pdo(x,3),:)}, ...
+        @(x) (pdo(x,1), entries(pdo(x,2):pdo(x,3),:)), ...
         pdoindex, ...
         'UniformOutput',0 ...
 );
@@ -207,5 +207,7 @@ if strcmp(output_type, 'Vector Output')
         rv.PortConfig.output.pdo(:,3) = [r];
     end
 else
-    rv.PortConfig.output = arrayfun(@(x) struct('pdo', [0, 0, x, 0]), r);
+    for k = 1:number_elements
+        rv.PortConfig.output(k).pdo = [0, 0, r(k), 0];
+    end
 end

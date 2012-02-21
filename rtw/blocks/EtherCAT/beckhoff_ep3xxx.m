@@ -301,6 +301,7 @@ function config = prepare_config(selection,device,type_1,type_2,type_3,type_4, d
                     config.IO.Port(i).Filter = k(min(i,max(size(k))));
                     config.IO.Port(i).FilterName = [prefix num2str(i)];
                 end
+
             end
         end
     end  
@@ -316,4 +317,3 @@ function config = prepare_config(selection,device,type_1,type_2,type_3,type_4, d
     {'Index' 'SubIndex' 'BitLen' 'Value'}, 2);
 
 end
-
