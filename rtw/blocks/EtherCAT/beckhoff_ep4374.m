@@ -269,3 +269,171 @@ function config = prepare_config(varargin)
     {'Index' 'SubIndex' 'BitLen' 'Value'}, 2);
 
 end
+
+
+% Infrastructure
+
+masterStr = '';
+positionStr = '';
+[Address masterStr positionStr] = getEtherCATAddress(gcb,master,index);
+
+SdoConfig = [];
+func = 'Unknown';
+
+% Find the product code from the available models
+models = struct( ...
+    'EK1100', {{hex2dec('044c2c52') hex2dec('00000000') 'EtherCAT Coupler'    }}, ...
+    'EK1110', {{hex2dec('04562c52') hex2dec('00000000') 'EtherCAT Extension'  }}, ...
+    'EL9110', {{hex2dec('23963052') hex2dec('00100000') '24V w. Diag.'        }}, ...
+    'EL9160', {{hex2dec('23c83052') hex2dec('00100000') '230V w. Diag.'       }}, ...
+    'EL9210', {{hex2dec('23fa3052') hex2dec('00100000') '24V w. Fuse & Diag.' }}, ...
+    'EL9260', {{hex2dec('242c3052') hex2dec('00100000') '230V w. Fuse & Diag.'}}, ...
+    'EK1122', {{hex2dec('04622c52') hex2dec('00100000') '2-Port Ethercat Junction'}} ...
+    );
+
+if isfield(models,model)
+    selection = models.(model);
+    func = selection{3};
+else
+    errordlg([gcb ': Slave model "' model '" is not implemented'])
+end
+
+try
+    switch model(1:2)
+        case 'EK'
+            EtherCATInfoFile = 'EtherCATInfo_ekxxxx';
+            load(EtherCATInfoFile);
+            ei = EtherCATInfo_ekxxxx;
+        case 'EL'
+            EtherCATInfoFile = 'EtherCATInfo_el9xxx';
+            load(EtherCATInfoFile);
+            ei = EtherCATInfo_el9xxx;
+    end
+catch
+    errordlg([gcb ': Could not load EtherCATInfo MAT file ' EtherCATInfoFile]);
+end
+LayoutVersion = 0;
+
+output = [];
+dev = ei(selection{1}, selection{2});
+SlaveConfig = genSlaveConfig(dev);
+if ~isempty(dev)
+    PdoEntries = getEntries(dev);
+    output.Port = struct('PdoEntry',PdoEntries);
+end        
+
+
+clear all
+model =  'EK1100'
+model =  'EL9160'
+
+
+
+
+masterStr = '';
+positionStr = '';
+[Address masterStr positionStr] = getEtherCATAddress(gcb,master,index);
+
+
+% Find the product code from the available models
+product_id = hex2dec('26483052');
+version_id = hex2dec('03020101');
+labe_id = 'MTS Temposonics';
+
+
+func = model;
+
+EtherCATInfoFile = 'EtherCATInfo_mts';
+try 
+    load(EtherCATInfoFile);
+catch
+    errordlg([gcb ': Could not load EtherCATInfo MAT file '...
+        'EtherCATInfo_mts']);
+    % Regenerate with: 
+    %  EtherCATInfo_mts = getEtherCATInfo('MTS.xml')
+    %  save EtherCATInfo_mts 'EtherCATInfo_mts'
+end
+
+
+IOSpec = [];
+SdoConfig = []; 
+
+device = EtherCATInfo_mts(product_id,version_id);
+if isempty(device)
+    errordlg(sprintf(...
+        ['%s: Could not find device with\n'...
+        'ProductCode \t#x%08X\n'...
+        'RevisionNo \t#x%08X\n'...
+        'in file %s.'],...
+        gcs, product_id, version_id, EtherCATInfoFile));
+else
+    SlaveConfig = genSlaveConfig(device);
+
+    % SDO Config is the configuration of a slave
+    % It is a matrix, every row having 4 elements:
+    % 1: SDO Index
+    % 2: SDO Subindex
+    % 3: Size    (8,16,32)
+    % 4: value
+    SdoConfig = [...
+       SdoConfig;...
+       hex2dec('200A'), hex2dec('0'),  32, do_revert; ... % Revert Measuring Direction
+      ];
+
+
+    IOSpec.Pdo.Unique=1;
+ 
+    anz_magnets=str2num(model(1));
+    pdo_entry_pos=[];
+    pdo_entry_vel=[];
+    pdo_entry_status=[];
+    zaehler=1;
+    for j=1:anz_magnets
+        pdo_entry_pos=[pdo_entry_pos;hex2dec('3101') (zaehler+1)];
+        pdo_entry_vel=[pdo_entry_vel;hex2dec('3101') (zaehler+2)];
+        pdo_entry_status=[pdo_entry_status;hex2dec('3101') (zaehler)];
+        zaehler=zaehler+4;
+    end
+    % Position, Velocity, Status Vector output
+    IOSpec.Port(1).PdoEntry = pdo_entry_pos;
+    if velocity_output == 1
+       IOSpec.Port(2).PdoEntry = pdo_entry_vel;
+    end
+    if status == 1
+       IOSpec.Port(3).PdoEntry = pdo_entry_status;
+    end
+
+    if sensorlen == 0
+         sensorlen = 1;
+     end
+     IOSpec.Port(1).PdoFullScale = sensorlen*1000000;
+     if velocity_output == 1
+         IOSpec.Port(2).PdoFullScale = 2^30;   
+     end   
+     IOSpec.Port(1).Gain = sensorlen;
+     IOSpec.Port(1).Offset = offset;
+     %IOSpec.Port(1).GainName = 'FullScalePosition';
+     IOSpec.Port(1).OffsetName = 'OffsetPosition';
+     IOSpec.Port(2).Gain = 1000;
+     IOSpec.Port(2).Offset = 0;
+     %IOSpec.Port(2).GainName = 'FullScaleSpeed';
+     %IOSpec.Port(2).OffsetName = 'OffsetSpeed';
+      
+     if filter
+         if sum(tau == 0)
+             errordlg([gcb ': Specify a nonzero time constant '...
+             'for the output filter.']);
+         end
+         if (tsample)
+             IOSpec.Port(1).Filter = tsample./tau;
+             IOSpec.Port(1).FilterName = 'InputWeight';
+         else
+             IOSpec.Port(1).Filter = 2*pi./tau;
+             IOSpec.Port(1).FilterName = 'Omega';
+         end
+     end
+    
+    SdoConfig = cell2struct(...
+    num2cell(SdoConfig),...
+    {'Index' 'SubIndex' 'BitLen' 'Value'}, 2);
+end

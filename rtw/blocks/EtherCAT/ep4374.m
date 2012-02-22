@@ -201,7 +201,7 @@ if ( strcmp(dtype, 'Double with scale and offset')&&strcmp(io{pdos},'output') ||
                 if numel(scale) == 1
                     rv.PortConfig.(io{pdos})(k).gain = {'Gain', scale};
                 elseif numel(scale) == dir.(io{pdos}).number_pdo 
-                    rv.PortConfig.(io{pdos})(k).gain = {'Gain', scale(pdos)};
+                    rv.PortConfig.(io{pdos})(k).gain = {'Gain', scale(k)};
                 else
                     rv.PortConfig.(io{pdos})(k).gain = {'Gain', []};
                 end
@@ -240,7 +240,7 @@ if strcmp(io{pdos},'output')
                         if numel(tau) == 1
                             rv.PortConfig.output(k).filter = {'Filter', tau};
                         elseif numel(tau) == dir.(io{pdos}).number_pdo 
-                            rv.PortConfig.output(k).filter = {'Filter', tau(pdos)};
+                            rv.PortConfig.output(k).filter = {'Filter', tau(k)};
                         else
                             rv.PortConfig.output(k).filter = [];
                         end
@@ -277,7 +277,7 @@ if strcmp(io{pdos},'output')
                     if numel(output_offset) == 1
                         rv.PortConfig.output(k).offset = {'Offset', output_offset};
                     elseif numel(output_offset) == dir.(io{pdos}).number_pdo 
-                        rv.PortConfig.output(k).offset = {'Offset', output_offset(pdos)};
+                        rv.PortConfig.output(k).offset = {'Offset', output_offset(k)};
                     else
                         rv.PortConfig.output(pdos).offset = [];
                     end
