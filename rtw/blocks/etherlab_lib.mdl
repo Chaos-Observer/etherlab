@@ -15,9 +15,9 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "jn"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Tue Feb 21 22:26:07 2012"
-  RTWModifiedTimeStamp	  251763964
-  ModelVersionFormat	  "1.%<AutoIncrement:845>"
+  LastModifiedDate	  "Wed Feb 22 09:11:16 2012"
+  RTWModifiedTimeStamp	  251802674
+  ModelVersionFormat	  "1.%<AutoIncrement:846>"
   ConfigurationManager	  "rcs"
   SampleTimeColors	  off
   SampleTimeAnnotations	  off
@@ -755,7 +755,7 @@ Library {
 	  MaskIconUnits		  "autoscale"
 	  System {
 	    Name		    "Beckhoff"
-	    Location		    [847, 148, 1929, 703]
+	    Location		    [834, 711, 1916, 1266]
 	    Open		    on
 	    ModelBrowserVisibility  off
 	    ModelBrowserWidth	    200
@@ -1005,6 +1005,7 @@ Library {
 	      Ports		      [0, 1]
 	      Position		      [200, 190, 325, 240]
 	      BackgroundColor	      "yellow"
+	      LibraryVersion	      "1.845"
 	      FunctionName	      "ec_slave3"
 	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
 	      EnableBusSupport	      off
@@ -1082,8 +1083,8 @@ Library {
 	      MaskPortRotate	      "default"
 	      MaskIconUnits	      "autoscale"
 	      MaskValueString	      "0|1|EP31740002r00100002|-10...+10 V|-10...+10 V|-10...+10 V|-10...+10 V|FreeRun/SM-Synch"
-	      "ron|[1 hex2dec('700') 0 0 0 0 0 0 0]|Vector Output|1|0|Double with scale and offset|off|off|1|-1|0|beckhoff_ep3"
-	      "xxx"
+	      "ron|[1 hex2dec('700') 0 0 0 0 0 0 0]|Vector Output|1|0|Double with scale and offset|off|off|1|0|0|beckhoff_ep3x"
+	      "xx"
 	    }
 	    Block {
 	      BlockType		      "S-Function"

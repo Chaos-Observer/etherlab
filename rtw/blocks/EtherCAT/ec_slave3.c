@@ -1029,10 +1029,10 @@ get_slave_config(struct ecat_slave *slave)
         const real_T *val;
 
         if (!mxIsDouble(array)
-                || mxGetNumberOfElements(array) != 5
+                || mxGetNumberOfElements(array) != 10
                 || !(val = mxGetPr(array))) {
             pr_error(slave, context, "dc", __LINE__,
-                    "DC configuration is not a vector[5]");
+                    "DC configuration is not a vector[10]");
             return -1;
         }
 
@@ -1130,6 +1130,9 @@ get_port_parameter(struct ecat_slave *slave, const char_T *p_ctxt,
     size_t n;
 
     if (!spec || !(n = mxGetNumberOfElements(spec)))
+        return 0;
+
+    if (mxIsCell(spec) && n == 2 && mxIsEmpty(mxGetCell(spec,1)))
         return 0;
 
     CHECK_CALLOC(slave->S, 1, sizeof(struct output_param), *param);

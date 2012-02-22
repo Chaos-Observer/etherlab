@@ -1,8 +1,58 @@
-%function output = ep3xxx(command,varargin)
-% 
-% 
-% 
-function rv = ep4xxx(model,input_type, scale, type_1, type_2,...
+function output = ep4xxx(command,varargin)
+
+switch command
+	case 'model'
+            en = cell2struct(...
+            get_param(gcb,'MaskEnables'),...
+            get_param(gcb,'MaskNames')...
+            );
+        values = cell2struct(...
+            get_param(gcb,'MaskValues'),...
+            get_param(gcb,'MaskNames')...
+            );
+        % 2 or 4 channel terminal
+        if str2double(values.model(6)) == 2
+            en.type_1='on';
+            en.type_2='on';
+            en.type_3='off';
+            en.type_4='off';
+        end
+        if str2double(values.model(6)) == 4
+            en.type_1='on';
+            en.type_2='on';
+            en.type_3='on';
+            en.type_4='on';
+        end	   
+        set_param(gcb,'MaskEnables',struct2cell(en));
+        set_param(gcb,'MaskValues',struct2cell(values));
+        output = [];
+    case 'dc'
+        en = cell2struct(...
+            get_param(gcb,'MaskEnables'),...
+            get_param(gcb,'MaskNames')...
+            );
+        values = cell2struct(...
+            get_param(gcb,'MaskValues'),...
+            get_param(gcb,'MaskNames')...
+            );
+        if strcmp(values.dcmode, 'DC-Customized');
+            en.dccustom = 'on';
+        else
+            en.dccustom = 'off';
+        end;
+        set_param(gcb,'MaskEnables',struct2cell(en));
+        set_param(gcb,'MaskValues',struct2cell(values));
+        output=[];			 
+    case 'process'
+        output = prepare_config(varargin{:}); 
+    otherwise
+        disp('Unknown method.')
+        output = [];  
+end
+
+
+ 
+function rv = prepare_config(model,input_type, scale, type_1, type_2,...
                      type_3, type_4, dcmode, dccustom)
 
 entries = [...
@@ -54,7 +104,7 @@ end
 
 % Configure Sdo's for input types
 
-rv,slaveConfig.sdo = cell(number_pdo,4);
+rv.slaveConfig.sdo = cell(number_pdo,4);
 for k = 1:number_pdo
     rv.SlaveConfig.sdo{k,1} = hex2dec('F800');
     rv.SlaveConfig.sdo{k,2} = k;
@@ -63,9 +113,13 @@ for k = 1:number_pdo
 end    
 
 % set DC mode 
-%                   AA,     CST0, STS0, CST1,  STS1,
-dcstate = [              0,   0,    0,    1,       0;...
-            hex2dec('730'),   1,    0,    1,  140000;...
+% 
+%[AssignActivate, CycleTimeSync0, CycleTimeSync0Factor, ShiftTimeSync0,...
+% ShiftTimeSync0Factor, ShiftTimeSync0Input, CycleTimeSync1, CycleTimeSync1Factor,...
+% ShiftTimeSync1, ShiftTimeSync1Factor]   
+
+dcstate = [              0, 0, 0, 0, 0, 0, 0, 1,      0, 0;...
+            hex2dec('700'), 0, 1, 0, 0, 0, 0, 1, 140000, 0;...
 ];
 
 if dcmode == 3 % DC Customer
