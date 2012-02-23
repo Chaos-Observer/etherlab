@@ -15,9 +15,9 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "jn"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Wed Feb 22 16:59:49 2012"
-  RTWModifiedTimeStamp	  251830786
-  ModelVersionFormat	  "1.%<AutoIncrement:849>"
+  LastModifiedDate	  "Thu Feb 23 14:40:05 2012"
+  RTWModifiedTimeStamp	  251908802
+  ModelVersionFormat	  "1.%<AutoIncrement:850>"
   ConfigurationManager	  "rcs"
   SampleTimeColors	  off
   SampleTimeAnnotations	  off
@@ -598,7 +598,7 @@ Library {
     ShowPageBoundaries	    off
     ZoomFactor		    "100"
     ReportName		    "simulink-default.rpt"
-    SIDHighWatermark	    41
+    SIDHighWatermark	    42
     Block {
       BlockType		      SubSystem
       Name		      "EtherCAT"
@@ -620,7 +620,7 @@ Library {
       MaskIconUnits	      "pixels"
       System {
 	Name			"EtherCAT"
-	Location		[1252, 232, 1709, 722]
+	Location		[75, 64, 532, 554]
 	Open			on
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
@@ -638,7 +638,7 @@ Library {
 	  Name			  "BAUMER0"
 	  SID			  2
 	  Ports			  []
-	  Position		  [55, 237, 179, 263]
+	  Position		  [55, 317, 179, 343]
 	  ShowName		  off
 	  MinAlgLoopOccurrences	  off
 	  PropExecContextOutsideSubsystem off
@@ -738,7 +738,7 @@ Library {
 	  Name			  "Beckhoff"
 	  SID			  4
 	  Ports			  []
-	  Position		  [60, 109, 210, 148]
+	  Position		  [60, 189, 210, 228]
 	  ShowName		  off
 	  MinAlgLoopOccurrences	  off
 	  PropExecContextOutsideSubsystem off
@@ -755,8 +755,8 @@ Library {
 	  MaskIconUnits		  "autoscale"
 	  System {
 	    Name		    "Beckhoff"
-	    Location		    [40, 493, 1122, 1047]
-	    Open		    on
+	    Location		    [75, 64, 1157, 618]
+	    Open		    off
 	    ModelBrowserVisibility  off
 	    ModelBrowserWidth	    200
 	    ScreenColor		    "white"
@@ -2017,7 +2017,7 @@ Library {
 	  Name			  "Generic Slave"
 	  SID			  21
 	  Ports			  []
-	  Position		  [60, 34, 140, 76]
+	  Position		  [60, 29, 138, 69]
 	  BackgroundColor	  "yellow"
 	  FunctionName		  "ec_slave2"
 	  Parameters		  "Address,ei,SdoConfig,soe_config,IOSpec,debug,tsample"
@@ -2098,7 +2098,7 @@ Library {
 	  Name			  "MTS"
 	  SID			  22
 	  Ports			  []
-	  Position		  [60, 169, 118, 219]
+	  Position		  [60, 249, 118, 299]
 	  ShowName		  off
 	  MinAlgLoopOccurrences	  off
 	  PropExecContextOutsideSubsystem off
@@ -2115,8 +2115,8 @@ Library {
 	  MaskIconUnits		  "autoscale"
 	  System {
 	    Name		    "MTS"
-	    Location		    [452, 503, 714, 669]
-	    Open		    off
+	    Location		    [895, 678, 1157, 844]
+	    Open		    on
 	    ModelBrowserVisibility  off
 	    ModelBrowserWidth	    200
 	    ScreenColor		    "white"
@@ -2132,11 +2132,12 @@ Library {
 	      BlockType		      "S-Function"
 	      Name		      "MTS_0"
 	      SID		      23
-	      Ports		      [0, 3]
+	      Ports		      [0, 2]
 	      Position		      [70, 50, 150, 90]
 	      BackgroundColor	      "yellow"
-	      FunctionName	      "ec_slave2"
-	      Parameters	      "Address,SlaveConfig,SdoConfig,[],IOSpec,0,tsample"
+	      LibraryVersion	      "1.849"
+	      FunctionName	      "ec_slave3"
+	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
 	      EnableBusSupport	      off
 	      MaskType		      "MTS R-Series"
 	      MaskDescription	      "MTS R-Series Position Senor\n\nOutput 1: position vector (magnets 1-5) in meter\nOptiona"
@@ -2173,45 +2174,19 @@ Library {
 	      "lock. <tt>0</tt> is continuous sample time (runs at the model's base rate). Setting <tt>-1</tt> will try to set"
 	      " the time using back propagation.\n"
 	      MaskPromptString	      "Master|Slave Index|Device Model |Sensorlength in m|Output Offset|Revert Position|Velici"
-	      "ty Output|Status Output|Output Filter|LPF Time Constant (sec)|Sample Time"
+	      "ty Output|Status Output|Output Filter|LPF Time Constant (sec)|Sample Time|Debug"
 	      MaskStyleString	      "edit,edit,popup(1 Magnet|2 Magnets|3 Magnets|4 Magnets|5 Magnets),edit,edit,checkbox,che"
-	      "ckbox,checkbox,checkbox,edit,edit"
-	      MaskTunableValueString  "off,off,off,off,off,off,off,off,off,off,off"
-	      MaskCallbackString      "||||||||mtsrseries_check('filter');||"
-	      MaskEnableString	      "on,on,on,on,on,on,on,on,on,off,on"
-	      MaskVisibilityString    "on,on,on,on,on,on,on,on,on,on,on"
-	      MaskToolTipString	      "on,on,on,on,on,on,on,on,on,on,on"
+	      "ckbox,checkbox,checkbox,edit,edit,edit"
+	      MaskTunableValueString  "off,off,off,off,off,off,off,off,off,off,off,off"
+	      MaskCallbackString      "||||||||mtsrseries_check('filter');|||"
+	      MaskEnableString	      "on,on,on,on,on,on,on,on,on,off,on,on"
+	      MaskVisibilityString    "on,on,on,off,on,on,on,on,on,on,on,off"
+	      MaskToolTipString	      "on,on,on,on,on,on,on,on,on,on,on,on"
 	      MaskVariables	      "master=@1;index=@2;model=&3;sensorlen=@4;offset=@5;do_revert=@6;velocity_output=@7;status="
-	      "@8;filter=@9;tau=@10;tsample=@11;"
-	      MaskInitialization      "\nmasterStr = '';\npositionStr = '';\n[Address masterStr positionStr] = getEtherCATAdd"
-	      "ress(gcb,master,index);\n\n\n% Find the product code from the available models\nproduct_id = hex2dec('26483052'"
-	      ");\nversion_id = hex2dec('03020101');\nlabe_id = 'MTS Temposonics';\n\n\nfunc = model;\n\nEtherCATInfoFile = 'E"
-	      "therCATInfo_mts';\ntry \n    load(EtherCATInfoFile);\ncatch\n    errordlg([gcb ': Could not load EtherCATInfo M"
-	      "AT file '...\n        'EtherCATInfo_mts']);\n    % Regenerate with: \n    %  EtherCATInfo_mts = getEtherCATInfo"
-	      "('MTS.xml')\n    %  save EtherCATInfo_mts 'EtherCATInfo_mts'\nend\n\n\nIOSpec = [];\nSdoConfig = []; \n\ndevice"
-	      " = EtherCATInfo_mts(product_id,version_id);\nif isempty(device)\n    errordlg(sprintf(...\n        ['%s: Could "
-	      "not find device with\\n'...\n        'ProductCode \\t#x%08X\\n'...\n        'RevisionNo \\t#x%08X\\n'...\n     "
-	      "   'in file %s.'],...\n        gcs, product_id, version_id, EtherCATInfoFile));\nelse\n    SlaveConfig = genSla"
-	      "veConfig(device);\n\n    % SDO Config is the configuration of a slave\n    % It is a matrix, every row having 4"
-	      " elements:\n    % 1: SDO Index\n    % 2: SDO Subindex\n    % 3: Size    (8,16,32)\n    % 4: value\n    SdoConfi"
-	      "g = [...\n       SdoConfig;...\n       hex2dec('200A'), hex2dec('0'),  32, do_revert; ... % Revert Measuring Di"
-	      "rection\n      ];\n\n\n    IOSpec.Pdo.Unique=1;\n \n    anz_magnets=str2num(model(1));\n    pdo_entry_pos=[];\n"
-	      "    pdo_entry_vel=[];\n    pdo_entry_status=[];\n    zaehler=1;\n    for j=1:anz_magnets\n        pdo_entry_pos"
-	      "=[pdo_entry_pos;hex2dec('3101') (zaehler+1)];\n        pdo_entry_vel=[pdo_entry_vel;hex2dec('3101') (zaehler+2)"
-	      "];\n        pdo_entry_status=[pdo_entry_status;hex2dec('3101') (zaehler)];\n        zaehler=zaehler+4;\n    end"
-	      "\n    % Position, Velocity, Status Vector output\n    IOSpec.Port(1).PdoEntry = pdo_entry_pos;\n    if velocity"
-	      "_output == 1\n       IOSpec.Port(2).PdoEntry = pdo_entry_vel;\n    end\n    if status == 1\n       IOSpec.Port("
-	      "3).PdoEntry = pdo_entry_status;\n    end\n\n    if sensorlen == 0\n         sensorlen = 1;\n     end\n     IOSp"
-	      "ec.Port(1).PdoFullScale = sensorlen*1000000;\n     if velocity_output == 1\n         IOSpec.Port(2).PdoFullScal"
-	      "e = 2^30;   \n     end   \n     IOSpec.Port(1).Gain = sensorlen;\n     IOSpec.Port(1).Offset = offset;\n     %I"
-	      "OSpec.Port(1).GainName = 'FullScalePosition';\n     IOSpec.Port(1).OffsetName = 'OffsetPosition';\n     IOSpec."
-	      "Port(2).Gain = 1000;\n     IOSpec.Port(2).Offset = 0;\n     %IOSpec.Port(2).GainName = 'FullScaleSpeed';\n     "
-	      "%IOSpec.Port(2).OffsetName = 'OffsetSpeed';\n      \n     if filter\n         if sum(tau == 0)\n             er"
-	      "rordlg([gcb ': Specify a nonzero time constant '...\n             'for the output filter.']);\n         end\n  "
-	      "       if (tsample)\n             IOSpec.Port(1).Filter = tsample./tau;\n             IOSpec.Port(1).FilterName"
-	      " = 'InputWeight';\n         else\n             IOSpec.Port(1).Filter = 2*pi./tau;\n             IOSpec.Port(1)."
-	      "FilterName = 'Omega';\n         end\n     end\n    \n    SdoConfig = cell2struct(...\n    num2cell(SdoConfig),."
-	      "..\n    {'Index' 'SubIndex' 'BitLen' 'Value'}, 2);\nend\n"
+	      "@8;filter=@9;tau=@10;tsample=@11;debug=@12;"
+	      MaskInitialization      "masterStr = '';\npositionStr = '';\n\n%model\n%offset\n%velocity_output\n%status\n%fil"
+	      "ter\n%tau\n\n\n\n[Address masterStr positionStr] = getEtherCATAddress(gcb,master,index);\n\nrv = mts_temposonic"
+	      "s(model, offset, filter, tau, ...\n                     status, do_revert, velocity_output);\n\n\n"
 	      MaskDisplay	      "fprintf(...\n    'MTS R-Series\\n%s\\n%s Idx:%s',...\n    model,...\n    masterStr,...\n    "
 	      "positionStr\n)\n"
 	      MaskIconFrame	      on
@@ -2219,7 +2194,7 @@ Library {
 	      MaskIconRotate	      "none"
 	      MaskPortRotate	      "default"
 	      MaskIconUnits	      "autoscale"
-	      MaskValueString	      "0|1|1 Magnet|0|0|off|on|on|off|0.1|0"
+	      MaskValueString	      "0|1|1 Magnet|0|0|off|on|off|off|0.1|0|0"
 	    }
 	  }
 	}
@@ -2228,7 +2203,7 @@ Library {
 	  Name			  "MURR1"
 	  SID			  24
 	  Ports			  []
-	  Position		  [50, 277, 186, 333]
+	  Position		  [50, 357, 186, 413]
 	  ShowName		  off
 	  MinAlgLoopOccurrences	  off
 	  PropExecContextOutsideSubsystem off
@@ -2376,6 +2351,38 @@ Library {
 	    ShowPageBoundaries	    off
 	    ZoomFactor		    "100"
 	  }
+	}
+	Block {
+	  BlockType		  "S-Function"
+	  Name			  "TemplateSlave"
+	  SID			  42
+	  Ports			  []
+	  Position		  [61, 103, 139, 143]
+	  BackgroundColor	  "yellow"
+	  FunctionName		  "ec_slave3"
+	  Parameters		  "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
+	  EnableBusSupport	  off
+	  MaskPromptString	  "Master|Slave Index|EtherCAT Slave Configuration struct. (SlaveConfig, PortConfig)|Sample Time|D"
+	  "ebug"
+	  MaskStyleString	  "edit,edit,edit,edit,edit"
+	  MaskTunableValueString  "off,off,off,off,off"
+	  MaskCallbackString	  "||||"
+	  MaskEnableString	  "on,on,on,on,on"
+	  MaskVisibilityString	  "on,on,on,on,off"
+	  MaskToolTipString	  "on,on,on,on,on"
+	  MaskVariables		  "master=@1;index=@2;rv=@3;tsample=@4;debug=@5;"
+	  MaskInitialization	  "masterStr = '';\npositionStr = '';\n\n[Address masterStr positionStr] = getEtherCATAddress(gc"
+	  "b,master,index);\n\n\nif ~isfield(rv,'PortConfig')||isempty(rv)\n   rv.PortConfig = [];\nend\n\nif ~isfield(rv,'Sla"
+	  "veConfig')||isempty(rv)\n   rv.SlaveConfig = [];\nend\n\nif ~isfield(rv,'name')||isempty(rv)\n   rv.name = 'unknown"
+	  "';\nend\n"
+	  MaskDisplay		  "fprintf(...\n    'Template Slave\\n%s \\n%s Idx:%s',...\n    rv.name,...\n    masterStr,...\n    po"
+	  "sitionStr\n)\n"
+	  MaskIconFrame		  on
+	  MaskIconOpaque	  on
+	  MaskIconRotate	  "none"
+	  MaskPortRotate	  "default"
+	  MaskIconUnits		  "autoscale"
+	  MaskValueString	  "0|0|[]|0|0"
 	}
       }
     }

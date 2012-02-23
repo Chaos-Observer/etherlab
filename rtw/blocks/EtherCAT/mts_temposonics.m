@@ -29,7 +29,7 @@ pdo = [...
 ];
                                                                             
 
-rv.SlaveConfig.vendor = 2;       
+rv.SlaveConfig.vendor = 64;       
 rv.SlaveConfig.product = hex2dec('26483052');
 
 

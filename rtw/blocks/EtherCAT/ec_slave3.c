@@ -1555,6 +1555,7 @@ static void mdlInitializeSizes(SimStruct *S)
     for (i = 0, port = slave->i_port; port != slave->i_port_end; port++, i++) {
         ssSetInputPortWidth   (S, i, DYNAMICALLY_SIZED);
         ssSetInputPortDataType(S, i, port->sl_port_data_type);
+        printf("port %i dt=%i\n", i, port->sl_port_data_type);
     }
 
     /* Process output ports */
@@ -1563,6 +1564,7 @@ static void mdlInitializeSizes(SimStruct *S)
     for (i = 0, port = slave->o_port; port != slave->o_port_end; port++, i++) {
         ssSetOutputPortWidth   (S, i, port->pdo_end - port->pdo);
         ssSetOutputPortDataType(S, i, port->sl_port_data_type);
+        printf("oport %i dt=%s\n", i, ssGetDataTypeName(S,port->sl_port_data_type));
     }
 
     ssSetNumSampleTimes(S, 1);
@@ -1622,6 +1624,7 @@ static void mdlSetInputPortDataType(SimStruct *S, int_T p, DTypeId id)
 {
     struct ecat_slave *slave = ssGetUserData(S);
     struct io_port *port = slave->i_port + p;
+    printf("port %i dt=%s\n", p, ssGetDataTypeName(S, id));
 
     /* Check whether the data type is compatable with the PDO data type or is
      * SS_SINGLE or SS_DOUBLE */
@@ -1669,6 +1672,24 @@ static void mdlSetInputPortWidth(SimStruct *S, int_T port, int_T width)
     pr_debug(slave, ssGetPath(S), "", 0,
             "Setting input port width of port %u to %u\n",
             port+1, width);
+}
+
+#define MDL_SET_DEFAULT_PORT_DATA_TYPES
+static void mdlSetDefaultPortDataTypes(SimStruct *S)
+{
+    struct ecat_slave *slave = ssGetUserData(S);
+    struct io_port *port;
+    uint_T i = 0;
+
+    if (!slave)
+        return;
+
+    for (port = slave->i_port; port != slave->i_port_end; port++, i++) {
+        if (!ssGetInputPortConnected(S, i)
+            && ssGetInputPortDataType(S, i) == DYNAMICALLY_TYPED) {
+            ssSetInputPortDataType(S, i, port->data_type->sl_type);
+        }
+    }
 }
 
 /* This function is called when some ports are still DYNAMICALLY_SIZED
