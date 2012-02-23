@@ -1,4 +1,4 @@
-function rv = mts_temposonics(model, offset, filter, tau, sensorlen,...
+function rv = mts_temposonics(model, offset, filter, tau,...
                              status, do_revert, velocity_output)
 
 entries = [...
@@ -24,18 +24,17 @@ entries = [...
 ];
 
         
- %                   TxPdoSt TxPdoEnd StatusStart StatusEnd                          
 pdo = [...               
         hex2dec('1a00'),  1,   15 ;...
 ];
                                                                             
-%   Model       ProductCode          Revision                 RxSt|RxEnd|TxSt|TxEn|func
-
 
 rv.SlaveConfig.vendor = 2;       
-
 rv.SlaveConfig.product = hex2dec('26483052');
 
+
+% set numbers of magnets
+model =str2num(model(1));
 num_all_pdos = 3*model; 
 
 % set scale for double outputs
@@ -43,7 +42,7 @@ scale_int = 2^15;
 
 % RxPdo SyncManager
 rv.SlaveConfig.pdo = { {3 1 {}} };
-rv.SlaveConfig.pdo{1}{3} = {pdo(1,1), entries(1:3*model,:)};
+rv.SlaveConfig.pdo{1}{3} = {{pdo(1,1), entries(1:3*model,:)}};
 
 
  % Fill in Offsets
@@ -77,7 +76,7 @@ end
 
 r = 0 : model-1;
 rv.PortConfig.output.pdo = [zeros(numel(r),4)];
-rv.PortConfig.output.pdo(:,2) = [3*r];
+rv.PortConfig.output.pdo(:,3) = [3*r];
 
 rv.PortConfig.output(1).full_scale = 1000000;
 
@@ -93,13 +92,13 @@ end
 if velocity_output
     rv.PortConfig.output(2).gain = 1000;
     rv.PortConfig.output(2).pdo = [zeros(numel(r),4)];
-    rv.PortConfig.output(2).pdo(:,2) = [3*r+1];
+    rv.PortConfig.output(2).pdo(:,3) = [3*r+1];
     rv.PortConfig.output(2).fullscale = 2^30;
 end
 
 if status
     rv.PortConfig.output(status_pdo).pdo = [zeros(numel(r),4)];
-    rv.PortConfig.output(status_pdo).pdo(:,2) = [3*r+2];
+    rv.PortConfig.output(status_pdo).pdo(:,3) = [3*r+2];
 end
 
 
