@@ -310,7 +310,7 @@ if strcmp(io_type, 'Vector Output')
         rv.PortConfig.(io{pdos}).pdo(:,2) = [r];
         rv.PortConfig.(io{pdos}).pdo(:,1) = [r(pdos)];
 else
-    for k = 1 : dir.(io{k}).number_pdo
+    for k = 1 : dir.(io{pdos}).number_pdo
         rv.PortConfig.(io{pdos})(k).pdo = [r(pdos), r(k), 0, 0];
     end
 end
