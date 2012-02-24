@@ -12,7 +12,7 @@
  * to configure the slave, all the outputs and inputs, scaling,
  * filtering, etc. is specified via the parameters passed to the SFunction.
  *
- * Slave description:
+ * Slave address:
  * This is a struct with the fields:
  *      master:
  *      domain:
@@ -29,7 +29,7 @@
  *          { Index, SubIndex, BitLen, Value;...
  *            Index, SubIndex,      0, 'string' }; ...
  *            Index, SubIndex, BitLen, [Value, Value, ...] }
- *          BitLen = {8,16,32}
+ *          BitLen = one of 8, 16, 32
  *          Row 1 configures a single value
  *          Row 2 configures a string array
  *          Row 3 configures a variable array of uint8
@@ -45,11 +45,11 @@
  *                   CycleTimeSync0, ShiftTimeSync0, ...
  *                   CycleTimeSync1, ShiftTimeSync1]
  *
- *      pdo: Optional slave pdo definition. This definition has 3 level of
- *           indirections Sm <- Pdos <- Entries
+ *      sm: Optional slave SyncManager definition. This definition has 3 level
+ *                  of indirections Sm <- Pdos <- Entries
  *
- *          pdo:        {Sm*}
- *          Sm:         {SmIndex, SmDir, Pdos}
+ *          sm:        {SmDef*}
+ *          SmDef:     {SmIndex, SmDir, Pdos}
  *          SmIndex:    Index of SyncManager
  *          SmDir:      SyncManager direction, as seen by the Master:
  *                      0 => Output (RxPdo), 1 => Input (TxPdo)
@@ -102,7 +102,7 @@
  *          .full_scale = This value is used to normalize an integer to 1.0
  *                        e.g. .full_scale = 32768.0 for int16_T
  *
- *                        output = (PDO / full_scale) * gain + offset
+ *                        output = filter((PDO / full_scale) * gain + offset)
  *
  *          .pdo = PdoSpec
  *          .pdo_data_type = specifies the data type of the PDO.
@@ -118,7 +118,7 @@
  *                   The vector can have none, 1 or the same
  *                   number of elements as there are pdo's
  *
- *      PdoSpec   := [SmIdx, PdoIdx, PdoEntryIdx, DataIdx]
+ *      PdoSpec   := [SmIdx, PdoIdx, PdoEntryIdx, DataIdx]  (nx5 Matrix)
  *
  *      SmIdx, PdoIdx, PdoEntryIdx := Index into the slave configuration
  *      DataIdx := index of the PdoEntry value, e.g. DataIdx = 3
@@ -1056,12 +1056,12 @@ get_slave_config(struct ecat_slave *slave)
     /***********************
      * Get PDO's
      ***********************/
-    if ((array = mxGetField( slave_config, 0, "pdo"))
+    if ((array = mxGetField( slave_config, 0, "sm"))
             && (sm_count = mxGetNumberOfElements(array))) {
 
         if (!mxIsCell(array)) {
-            pr_error(slave, context, "pdo", __LINE__,
-                    "PDO configuration is not a Mx3 cell array");
+            pr_error(slave, context, "sm", __LINE__,
+                    "SyncManager configuration is not a Mx3 cell array");
             return -1;
         }
 
