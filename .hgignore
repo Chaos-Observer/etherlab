@@ -1,25 +1,28 @@
 syntax: glob
 
-rtw/blocks/EtherCAT/xml/*
-rtw/blocks/EtherCAT/zwischen.m
-rtw/blocks/etherlab_in.mexa64
-rtw/blocks/etherlab_out.mexa64
-rtw/blocks/event.mexa64
-rtw/blocks/findidx.mexa64
-rtw/blocks/raise.mexa64
-rtw/blocks/test.mdl
-rtw/blocks/test2.mdl
-rtw/blocks/world_time.mexa64
-rtw/blocks/EtherCAT/domain_state.mexa64                                     
-rtw/blocks/EtherCAT/ec_slave3.mexa64                                        
-rtw/blocks/EtherCAT/master_state.mexa64                                     
-rtw/blocks/EtherCAT/moog_msd.mexa64  
-rtw/blocks/EtherCAT/xml/BKxxxx (MDP)/Beckhoff BKxxxx MDP.xml                
-rtw/blocks/EtherCAT/xml/BKxxxx (MDP)/Beckhoff BKxxxx MDP/BKxxxxModules.xml
-rtw/blocks/EtherCAT/octave-core
-
-
-build
-*~
-*.sw?
-bak
+CMakeCache.txt
+CMakeFiles
+CPackConfig.cmake
+CPackSourceConfig.cmake
+Makefile
+_CPack_Packages
+cmake_install.cmake
+rtw/CMakeFiles
+rtw/Makefile
+rtw/bin/CMakeFiles
+rtw/bin/Makefile
+rtw/bin/cmake_install.cmake
+rtw/blocks/CMakeFiles
+rtw/blocks/EtherCAT/CMakeFiles
+rtw/blocks/EtherCAT/Makefile
+rtw/blocks/EtherCAT/cmake_install.cmake
+rtw/blocks/EtherCAT/xml/CMakeFiles
+rtw/blocks/EtherCAT/xml/Makefile
+rtw/blocks/EtherCAT/xml/cmake_install.cmake
+rtw/blocks/Makefile
+rtw/blocks/cmake_install.cmake
+rtw/cmake_install.cmake
+rtw/etherlab/CMakeFiles
+rtw/etherlab/Contents.m
+rtw/etherlab/Makefile
+rtw/etherlab/cmake_install.cmake
