@@ -42,8 +42,11 @@
  *
  *      dc: Distributed Clocks Configuration: OPTIONAL; Vector[5]
  *          Matrix [ AssignActivate, ...
- *                   CycleTimeSync0, ShiftTimeSync0, ...
- *                   CycleTimeSync1, ShiftTimeSync1]
+ *                   CycleTimeSync0, CycleTimeSync0Factor, ...
+ *                   ShiftTimeSync0, ShiftTimeSync0Factor,
+ *                   ShiftTimeSync0Input, ...
+ *                   CycleTimeSync1, CycleTimeSync1Factor, ...
+ *                   ShiftTimeSync1, ShiftTimeSync1Factor]
  *
  *      sm: Optional slave SyncManager definition. This definition has 3 level
  *                  of indirections Sm <- Pdos <- Entries
@@ -266,10 +269,17 @@ struct ecat_slave {
     struct dc_opmode {
         uint16_T assign_activate;
 
-        uint32_T sync0_cycle;
-        uint32_T sync0_shift;
-        uint32_T sync1_cycle;
-        uint32_T sync1_shift;
+        int32_T  cycle_time_sync0;
+        int32_T  cycle_time_sync0_factor;
+        int32_T  shift_time_sync0;
+        int32_T  shift_time_sync0_factor;
+        boolean_T shift_time_sync0_input;
+
+        int32_T  cycle_time_sync1;
+        int32_T  cycle_time_sync1_factor;
+        int32_T  shift_time_sync1;
+        int32_T  shift_time_sync1_factor;
+
     } dc_opmode;
 
     struct io_port {
@@ -1036,21 +1046,36 @@ get_slave_config(struct ecat_slave *slave)
             return -1;
         }
 
-        slave->dc_opmode.assign_activate = val[0];
-        slave->dc_opmode.sync0_cycle     = val[1];
-        slave->dc_opmode.sync0_shift     = val[2];
-        slave->dc_opmode.sync1_cycle     = val[3];
-        slave->dc_opmode.sync1_shift     = val[4];
+        slave->dc_opmode.assign_activate            = val[0];
+
+        slave->dc_opmode.cycle_time_sync0           = val[1];
+        slave->dc_opmode.cycle_time_sync0_factor    = val[2];
+        slave->dc_opmode.shift_time_sync0           = val[3];
+        slave->dc_opmode.shift_time_sync0_factor    = val[4];
+        slave->dc_opmode.shift_time_sync0_input     = val[5] != 0.0;
+
+        slave->dc_opmode.cycle_time_sync1           = val[6];
+        slave->dc_opmode.cycle_time_sync1_factor    = val[7];
+        slave->dc_opmode.shift_time_sync1           = val[8];
+        slave->dc_opmode.shift_time_sync1_factor    = val[9];
 
         pr_debug(slave, NULL, "", 1,
                 "DC AssignActivate=%u "
-                "Sync0Cycle=%u, Sync0Shift=%u "
-                "Sync1Cycle=%u, Sync1Shift=%u\n",
+                "CycleTimeSync0=%i, CycleTimeSync0Factor=%i, "
+                "ShiftTimeSync0=%i, ShiftTimeSync0Factor=%i, "
+                "ShiftTimeSync0Input=%i, "
+                "CycleTimeSync1=%i, CycleTimeSync1Factor=%i, "
+                "ShiftTimeSync1=%i, ShiftTimeSync1Factor=%i\n",
                 slave->dc_opmode.assign_activate,
-                slave->dc_opmode.sync0_cycle,
-                slave->dc_opmode.sync0_shift,
-                slave->dc_opmode.sync1_cycle,
-                slave->dc_opmode.sync1_shift);
+                slave->dc_opmode.cycle_time_sync0,
+                slave->dc_opmode.cycle_time_sync0_factor,
+                slave->dc_opmode.shift_time_sync0,
+                slave->dc_opmode.shift_time_sync0_factor,
+                slave->dc_opmode.shift_time_sync0_input,
+                slave->dc_opmode.cycle_time_sync1,
+                slave->dc_opmode.cycle_time_sync1_factor,
+                slave->dc_opmode.shift_time_sync1,
+                slave->dc_opmode.shift_time_sync1_factor);
     }
 
     /***********************
@@ -2099,15 +2124,20 @@ static void mdlRTW(SimStruct *S)
             return;
 
         if (slave->dc_opmode.assign_activate != 0) {
-            uint32_T opmode[5] = {
+            int32_T opmode[10] = {
                 slave->dc_opmode.assign_activate,
-                slave->dc_opmode.sync0_cycle,
-                slave->dc_opmode.sync0_shift,
-                slave->dc_opmode.sync1_cycle,
-                slave->dc_opmode.sync1_shift
+                slave->dc_opmode.cycle_time_sync0,
+                slave->dc_opmode.cycle_time_sync0_factor,
+                slave->dc_opmode.shift_time_sync0,
+                slave->dc_opmode.shift_time_sync0_factor,
+                slave->dc_opmode.shift_time_sync0_input,
+                slave->dc_opmode.cycle_time_sync1,
+                slave->dc_opmode.cycle_time_sync1_factor,
+                slave->dc_opmode.shift_time_sync1,
+                slave->dc_opmode.shift_time_sync1_factor
             };
 
-            if (!ssWriteRTWVectParam(S, "DcOpMode", opmode, SS_UINT32, 5))
+            if (!ssWriteRTWVectParam(S, "DcOpMode", opmode, SS_INT32, 10))
                 return;
         }
 
