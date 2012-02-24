@@ -1,47 +1,6 @@
-$Id$
+$Id: NEWS,v 4ce213f4ce7e 2008/04/08 10:55:56 fp $
 
-1. Code generation and compilation are separated
-------------------------------------------------
+Version 2.0:
 
-The Linux kernel is quite fussy about modules that were compiled using a different build environment than that which was used to generate the kernel. It will refuse to load modules that have an incorrect version string.
+- New EtherLab target for PREEMPT-RT using the pdserv library.
 
-Till now it was quite difficult to generate RTW code on one machine and then do the module compile on another.
-
-This has been improved. 
-
-* On the machine running Matlab/Simulink, configure EtherLab as follows:
-        ./configure --disable-kernel
-        make
-        make install
-Of coarse you can also install the full version if you want to (omit the
---disable-kernel option).
-
-* On the machine used to build the rt_kernel module, configure EtherLab as:
-        ./configure --disable-simulink 
-        make
-        make install
-Maybe you still need to help configure with --rtai-dir= and --linux-dir=
-options if rtai-config is not in your path as usual. You also need to copy 
-the following original Matlab/Simulink sources to the build machine:
-        $(MATLAB_ROOT)/extern/include
-        $(MATLAB_ROOT)/simulink/include/
-        $(MATLAB_ROOT)/rtw/c/src/
-        $(MATLAB_ROOT)/rtw/c/libsrc/
-to /opt/matlab, for example
-
-Now you can generate your code from Simulink on one machine. Note that you have
-to check the option "Generate code only" in the Real-Time Workshop section of
-the Configuration Parameters (Tools -> Real-Time Worksop -> Options...)
-(Ctrl-E for those of you who hate the mouse like me ;-) ).
-
-Copy the sources (under <model>_etl_rtw/*) to the target machine, and compile
-it there:
-make -f <mdl>.mk MATLAB_ROOT=/opt/matlab ALT_ETHERLAB_DIR=/opt/etherlab/rtw
-
-You can omit ETHERLAB_DIR and ALT_MATLAB_ROOT if these are the the same on 
-both platforms
-
-You can save the copy cycle if you use NFS. Beware that you probably won't
-be able to compile if you are lazy and do everything as root because you
-have not yet made friends with sudo (to do insmod, etc) ;-). NFS doesn't allow
-root to generate files!
