@@ -1,7 +1,7 @@
 # Copyright 2012 IgH Essen GmbH
 #
 # Abstract:
-#	Real-Time Workshop template makefile for building a 
+#	Real-Time Workshop template makefile for building a
 #	RTAI Kernel Module of a Simulink model
 #
 # 	This makefile attempts to conform to the guidelines specified in the
@@ -151,7 +151,7 @@ ADD_INCLUDES = \
 
 SHARED_INCLUDES =
 ifneq ($(SHARED_SRC_DIR),)
-SHARED_INCLUDES = -I$(SHARED_SRC_DIR) 
+SHARED_INCLUDES = -I$(SHARED_SRC_DIR)
 endif
 
 INCLUDES = -I. -I$(RELATIVE_PATH_TO_ANCHOR) $(MATLAB_INCLUDES) \
@@ -218,6 +218,10 @@ CPPFLAGS = $(DEP) $(CPP_OPTS) $(CC_OPTS) $(CPP_REQ_DEFINES) $(RTW_OPTS) $(INCLUD
 
 SYSLIBS = $(EXT_LIB) -lm -lrt -lpdserv -L$(ETHERLAB_DIR)/lib -Wl,--rpath $(ETHERLAB_DIR)/lib
 
+ifneq ($(findstring ecrt_support.c,$(S_FUNCTIONS)),)
+    SYSLIBS += -lethercat
+endif
+
 LIBS =
 |>START_PRECOMP_LIBRARIES<|
 ifeq ($(OPT_OPTS),$(DEFAULT_OPT_OPTS))
@@ -239,7 +243,6 @@ USER_SRCS =
 
 USER_OBJS       = $(addsuffix .o, $(basename $(USER_SRCS)))
 LOCAL_USER_OBJS = $(notdir $(USER_OBJS))
-
 
 SRCS = $(MODULES) $(S_FUNCTIONS)
 
@@ -310,7 +313,7 @@ all : Makefile $(PRODUCT)
 
 ifeq ($(MODELREF_TARGET_TYPE),NONE)
 $(PRODUCT) : $(OBJS) $(SHARED_LIB) $(LIBS) $(MODELREF_LINK_LIBS)
-	LD_LIBRARY_PATH= $(BIN_SETTING) $(LINK_OBJS) $(MODELREF_LINK_LIBS) $(SHARED_LIB) $(LIBS) 
+	LD_LIBRARY_PATH= $(BIN_SETTING) $(LINK_OBJS) $(MODELREF_LINK_LIBS) $(SHARED_LIB) $(LIBS)
 	@echo "### Created $(BUILD_PRODUCT_TYPE): $@"
 else
 $(PRODUCT) : $(OBJS) $(SHARED_LIB)
@@ -329,7 +332,7 @@ endif
 # Generate model symbol file
 module_payload.c: $(MODULE_PAYLOAD)
 	@echo Generating $@
-	@LD_LIBRARY_PATH= $(ETHERLAB_DIR)/rtw/bin/gen_payload.py $^ > $@ 
+	@LD_LIBRARY_PATH= $(ETHERLAB_DIR)/rtw/bin/gen_payload.py $^ > $@
 
 Makefile: $(MAKEFILE)
 	ln -s $< $@

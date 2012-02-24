@@ -22,6 +22,7 @@
 #endif
 
 #include <stdint.h>
+#include <stdio.h>
 #include "ecrt_support.h"
 
 /* The following message gets repeated quite frequently. */
@@ -183,10 +184,12 @@ ecs_receive(struct ecs_handle *ecs_handle, size_t tid)
     struct ecat_domain *domain;
     struct endian_convert_t *conversion_list;
         
+    printf("%p %zu\n", ecs_handle, tid);
     ecs_handle += tid;
 
     for (master = ecs_handle->master;
             master != ecs_handle->master_end; master++) {
+        printf("%p %p %p\n", master, ecs_handle->master, ecs_handle->master_end);
         ecrt_master_receive(master->handle);
         ecrt_master_state(master->handle, master->state);
     }
@@ -251,16 +254,156 @@ struct ecat_master *get_master(struct ecs_handle *ecs_handle, size_t nst,
         unsigned int master, unsigned int tid)
 {
     size_t i;
-    for (i = 0; i < nst; i++) {
-        struct ecat_master **master_p;
-        for (master_p = &ecs_handle[i].master;
-                *master_p; master_p = &(*master_p)->next);
+    struct ecat_master **master_p;
 
+    for (i = 0; i < nst; i++) {
+        for (master_p = &ecs_handle[i].master;
+                *master_p; master_p = &(*master_p)->next) {
+            if ((*master_p)->id == master) {
+
+                if ((*master_p)->fastest_tid > tid)
+                    (*master_p)->fastest_tid = tid;
+
+                return *master_p;
+            }
+        }
     }
+
+    *master_p = calloc(1, sizeof(struct ecat_master));
+    (*master_p)->id = master;
+    (*master_p)->fastest_tid = tid;
+    (*master_p)->handle = ecrt_request_master(master);
+
+    return *master_p;
 }
 
 /***************************************************************************/
-const char *ecs_start( 
+    const char *
+init_domains( struct ecat_master *master)
+{
+    return NULL;
+}
+
+/***************************************************************************/
+    const char *
+init_slave( struct ecs_handle *ecs_handle, size_t nst,
+        const struct ec_slave *slave)
+{
+    struct ecat_master *master =
+        get_master(ecs_handle, nst, slave->master, slave->tid);
+    struct ecat_domain *domain;
+    ec_slave_config_t *slave_config;
+    const struct sdo_config *sdo;
+    const struct soe_config *soe;
+    const char *failed_method;
+
+    if (!master) {
+        return errbuf;
+    }
+
+    slave_config = ecrt_master_slave_config(master->handle, slave->alias,
+            slave->position, slave->vendor, slave->product);
+    if (!slave_config) {
+        failed_method = "ecrt_master_slave_config";
+        goto out_slave_failed;
+    }
+
+    /* Inform EtherCAT of how the slave configuration is expected */
+    if (ecrt_slave_config_pdos(slave_config,
+                EC_END, slave->ec_sync_info)) {
+        failed_method = "ecrt_slave_config_pdos";
+        goto out_slave_failed;
+    }
+
+    /* Send SDO configuration to the slave */
+    for (sdo = slave->sdo_config; 
+            sdo != &slave->sdo_config[slave->sdo_config_count]; sdo++) {
+        if (sdo->byte_array) {
+            if (ecrt_slave_config_complete_sdo(slave_config, 
+                        sdo->sdo_index, sdo->byte_array,
+                        sdo->sdo_attribute)) {
+                failed_method = "ecrt_slave_config_complete_sdo";
+                goto out_slave_failed;
+            }
+        }
+        else {
+            switch (sdo->datatype) {
+                case 8:
+                    if (ecrt_slave_config_sdo8(slave_config, 
+                                sdo->sdo_index, sdo->sdo_attribute,
+                                (uint8_t)sdo->value)) {
+                        failed_method = "ecrt_slave_config_sdo8";
+                        goto out_slave_failed;
+                    }
+                    break;
+
+                case 16:
+                    if (ecrt_slave_config_sdo16(slave_config, 
+                                sdo->sdo_index, sdo->sdo_attribute,
+                                (uint16_t)sdo->value)) {
+                        failed_method = "ecrt_slave_config_sdo16";
+                        goto out_slave_failed;
+                    }
+                    break;
+
+                case 32:
+                    if (ecrt_slave_config_sdo32(slave_config, 
+                                sdo->sdo_index, sdo->sdo_attribute,
+                                sdo->value)) {
+                        failed_method = "ecrt_slave_config_sdo32";
+                        goto out_slave_failed;
+                    }
+                    break;
+
+                default:
+                    failed_method = "ecrt_slave_config_sdo_unknown";
+                    goto out_slave_failed;
+                    break;
+            }
+        }
+    }
+
+    /* Send SoE configuration to the slave */
+    for (soe = slave->soe_config; 
+            soe != &slave->soe_config[slave->soe_config_count]; soe++) {
+        if (ecrt_slave_config_idn(slave_config,
+                    0, /* drive_no */
+                    soe->idn,
+                    EC_AL_STATE_PREOP,
+                    soe->data,
+                    soe->data_len)) {
+            failed_method = "ecrt_slave_config_idn";
+            goto out_slave_failed;
+        }
+    }
+
+    /* Configure distributed clocks for slave if assign_activate is set */
+    if (slave->dc_config[0]) {
+        ecrt_slave_config_dc(slave_config, slave->dc_config[0],
+                slave->dc_config[1], slave->dc_config[2],
+                slave->dc_config[3], slave->dc_config[4]);
+    }
+
+    /*
+       if (slave->input_count) {
+       domain = get_domain(master, slave->domain, 1);
+       ecrt_slave_config_reg_pdo_entry
+       slave->input_count);
+       }
+     */
+
+    return NULL;
+
+out_slave_failed:
+    snprintf(errbuf, sizeof(errbuf), 
+            "EtherCAT %s() failed "
+            "for slave #%u:%u on master %u", failed_method,
+            slave->alias, slave->position, slave->master);
+    return errbuf;
+}
+
+/***************************************************************************/
+const char * ecs_start( 
         const struct ec_slave *slave_head,
         unsigned int *st,       /* List of sample times in nanoseconds */
         size_t nst,
@@ -270,24 +413,51 @@ const char *ecs_start(
         struct ecs_handle **ecs_handle
         )
 {
+    const char *err;
     const struct ec_slave *slave;
+    struct ecat_master *master;
     size_t i;
 
     *ecs_handle = calloc(nst, sizeof(struct ecs_handle));
-    if (!ecs_handle[i])
+    if (!*ecs_handle)
         goto out;
 
+    printf("init: %p %p %zu\n", ecs_handle, *ecs_handle, nst);
+
     for (slave = slave_head; slave; slave = slave->next) {
-        struct ecat_master *master =
-            get_master(*ecs_handle, nst, slave->master, slave->tid);
-        if (!master)
+    printf("init: %i\n", __LINE__);
+        if ((err = init_slave(*ecs_handle, nst, slave)))
             goto out;
     }
+    printf("init: %i\n", __LINE__);
 
+    for (i = 0; i < nst; i++) {
+        for (master = (*ecs_handle)[i].master;
+                master != (*ecs_handle)[i].master_end; master++) {
+    printf("init: %i\n", __LINE__);
+            if (ecrt_master_activate(master->handle)) {
+                snprintf(errbuf, sizeof(errbuf),
+                        "Master %i activate failed", master->id);
+                return errbuf;
+            }
+
+            if ((err = init_domains(master)))
+                return err;
+        }
+    }
+
+    printf("init: %p %p\n", (*ecs_handle)->master, (*ecs_handle)->master_end);
     return NULL;
 
 out:
-    return errbuf;
+    printf("initout : %p %p %s\n", (*ecs_handle)->master,
+            (*ecs_handle)->master_end, err);
+    return err;
+}
+
+/***************************************************************************/
+void ecs_end(struct ecs_handle *ecs_handle, size_t nst)
+{
 }
 
 #if 0

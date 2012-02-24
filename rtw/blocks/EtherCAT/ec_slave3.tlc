@@ -701,26 +701,17 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   %if !EXISTS("DcOpMode")
-    %return "NULL"
+    %return "{0,}"
   %endif
 
-  %assign varName = "dc_opmode_config_%<EtherCATSlaveId>"
-
   %openfile buf
-
-  /* Distributed clock configuration for %<ProductName>
-   */
-  uint32_t %<varName>[5] = {
-    %%
-    %<SPRINTF("0x%04X,", DcOpMode[0])> ...
-    %<DcOpMode[1]>, %<DcOpMode[2]>, ...
-    %<DcOpMode[3]>, %<DcOpMode[4]>
-  };
+  { %<SPRINTF("0x%04X", DcOpMode[0])>, \
+    %<DcOpMode[1]>, %<DcOpMode[2]>, \
+    %<DcOpMode[3]>, %<DcOpMode[4]> \
+  } \
   %closefile buf
-  %<LibSetSourceFileSection(CompiledModel.EtherCAT.model_c, \
-        "Definitions", buf)>
 
-  %return varName
+  %return buf
 
 %endfunction
 

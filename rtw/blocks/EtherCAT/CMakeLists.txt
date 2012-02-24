@@ -31,9 +31,16 @@ INSTALL (FILES
     mts-logo.png 
     Murr.png 
     EtherCAT.tlc 
+    getEtherCATAddress.m 
+    strjoin.m 
+    ec_slave3.c ec_slave3.tlc 
+    setup.m
+    el1xxx.m 
+
     master_state.c master_state.tlc 
     domain_state.c domain_state.tlc 
     moog_msd.c moog_msd_callback.m moog_msd.tlc moog.png 
+    ethercat_ss_funcs.h
     el31xx_check.m 
     el320x_check.m 
     el5001_check.m 
@@ -50,15 +57,12 @@ INSTALL (FILES
     murr_impact67.m 
     mtsrseries_check.m 
     ethercatinfo_check.m 
-    getEtherCATAddress.m 
     SoeConfig.m 
-    strjoin.m 
-    ec_slave3.c ec_slave3.tlc 
-    setup.m
+
     DESTINATION rtw/blocks/EtherCAT)
 
 INSTALL (DIRECTORY @EtherCATInfo
     DESTINATION rtw/blocks
-    PATTERN "*.m")
+    FILES_MATCHING PATTERN "*.m")
 
 ADD_SUBDIRECTORY (xml)

@@ -11,6 +11,6 @@ mex domain_state.c
 mex ec_slave3.c
 mex -I.. moog_msd.c
 
-% run xml/setup.m
+run xml/setup.m
 
 return

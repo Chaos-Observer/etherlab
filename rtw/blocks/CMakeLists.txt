@@ -26,17 +26,19 @@
 
 INSTALL (FILES
     ethercat_mini.png tools.png 
-    ETL.tlc EtherLAB_IO.tlc 
-    RaiseCatch.tlc 
+    ETL.tlc
+    findidx.c findidx.tlc 
+    event.c event.tlc 
+    etherlab_lib.mdl 
+    setup.m 
+
+    EtherLAB_IO.tlc 
     etherlab_in.c etherlab_in.tlc 
     etherlab_out.c etherlab_out.tlc 
     world_time.c world_time.tlc
-    findidx.c findidx.tlc 
-    event.c event.tlc 
-    raise.c raise.tlc 
-    etherlab_lib.mdl 
-    get_string.h 
-    test_var.m setup.m 
+    raise.c raise.tlc RaiseCatch.tlc 
+    get_string.h test_var.m
+
     DESTINATION rtw/blocks)
 
 ADD_SUBDIRECTORY (EtherCAT)

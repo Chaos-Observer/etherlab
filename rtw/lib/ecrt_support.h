@@ -49,7 +49,7 @@ struct ec_slave {
     size_t soe_config_count;
     const struct soe_config *soe_config;
     const ec_sync_info_t *ec_sync_info;
-    const uint32_t *dc_opmode;
+    const uint32_t dc_config[5];
     size_t input_count;
     size_t output_count;
     const struct pdo_map *pdo_map;

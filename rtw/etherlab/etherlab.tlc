@@ -89,7 +89,8 @@
 
   rtwoptions(6).prompt       = 'EtherLab directory:	';
   rtwoptions(6).type         = 'Edit';
-  rtwoptions(6).default      = fullfile(fileparts(which('etherlab.tlc')),'..','..');
+  rtwoptions(6).default      = ...
+        fileparts(fileparts(fileparts(which('etherlab.tlc'))));
   rtwoptions(6).tlcvariable  = 'EtherLabDir';
   rtwoptions(6).makevariable = 'ETHERLAB_DIR';
   rtwoptions(6).tooltip      = ['Path to EtherLab installation'];
