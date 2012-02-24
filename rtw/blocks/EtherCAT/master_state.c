@@ -15,8 +15,10 @@
 #include "simstruc.h"
 
 #define MASTER             mxGetScalar(ssGetSFcnParam(S,0))
-#define TSAMPLE            mxGetScalar(ssGetSFcnParam(S,1))
-#define PARAM_COUNT                                     2
+#define RESET              mxGetScalar(ssGetSFcnParam(S,1))
+#define REFCLOCK_DEC       mxGetScalar(ssGetSFcnParam(S,2))
+#define TSAMPLE            mxGetScalar(ssGetSFcnParam(S,3))
+#define PARAM_COUNT                                     4
 
 
 /*====================*
@@ -40,7 +42,15 @@ static void mdlInitializeSizes(SimStruct *S)
     for( i = 0; i < PARAM_COUNT; i++) 
         ssSetSFcnParamTunable(S,i,SS_PRM_NOT_TUNABLE);
 
-    if (!ssSetNumInputPorts(S, 0)) return;
+    if (RESET) {
+        ssSetNumInputPorts(S, 1);
+        ssSetNumIWork(S, 1);
+        ssSetInputPortDataType(S, 0, DYNAMICALLY_TYPED);
+        ssSetInputPortWidth(S, 0, 1);
+    }
+    else {
+        ssSetNumInputPorts(S, 0);
+    }
 
     if (!ssSetNumOutputPorts(S, 3)) return;
     ssSetOutputPortWidth(S, 0, 1);
@@ -93,11 +103,19 @@ static void mdlTerminate(SimStruct *S)
 static void mdlRTW(SimStruct *S)
 {
     int32_T master = MASTER;
+    uint32_T refclock_dec = REFCLOCK_DEC >= 1.0 ? REFCLOCK_DEC : 0;
 
     if (!ssWriteRTWScalarParam(S, "MasterId", &master, SS_INT32))
         return;
+    if (!ssWriteRTWScalarParam(S, "RefClkSyncDec", &refclock_dec, SS_UINT32))
+        return;
     if (!ssWriteRTWWorkVect(S, "PWork", 1, "MasterPtr", 1))
         return;
+
+    if (ssGetNumInputPorts(S)) {
+        if (!ssWriteRTWWorkVect(S, "IWork", 1, "ResetState", 1))
+            return;
+    }
 }
 
 

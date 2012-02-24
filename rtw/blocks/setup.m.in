@@ -6,19 +6,17 @@ if ~length(strfind(path,pwd))
 end
 
 disp(['Precompiling functions in ' pwd]);
-mex taskinfo.c
 mex world_time.c
 mex raise.c
 mex etherlab_in.c
 mex etherlab_out.c
 mex event.c
-mex persist.c
+mex findidx.c
 
 run EtherCAT/setup.m
 
 if @EXPERIMENTAL@
   run AddiData/setup.m
-  run Hilscher/setup.m
 end
 
 return

@@ -53,11 +53,7 @@ for i = 1:length(index)
                 error('Index exceeds matrix dimensions.');
             end
         case '.'
-            if isfield(val,index(i).subs)
-                val = val.(index(i).subs);
-            else
-                error('Reference to nonStructure does not have field %s', index(i).subs)
-            end
+            val = val.(index(i).subs);
         otherwise
             error('Method %s is not implemented by %s', index(i).type, class(val));
     end

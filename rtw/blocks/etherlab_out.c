@@ -14,9 +14,8 @@
 #include "get_string.h"
 
 #define ID                             (ssGetSFcnParam(S,0)) 
-#define DTYPE      ((uint_T)mxGetScalar(ssGetSFcnParam(S,1)))
-#define TSAMPLE            (mxGetScalar(ssGetSFcnParam(S,2)))
-#define PARAM_COUNT                                      3
+#define TSAMPLE            (mxGetScalar(ssGetSFcnParam(S,1)))
+#define PARAM_COUNT                                      2
 
 
 /*====================*
@@ -40,11 +39,6 @@ static void mdlInitializeSizes(SimStruct *S)
     for( i = 0; i < PARAM_COUNT; i++) 
         ssSetSFcnParamTunable(S,i,SS_PRM_NOT_TUNABLE);
 
-    if (DTYPE == 0 || DTYPE >= 13) {
-        ssSetErrorStatus(S, "Unknown data type");
-        return;
-    }
-    
     if (!ssSetNumInputPorts(S, 1)) return;
     ssSetInputPortWidth(S, 0, DYNAMICALLY_SIZED);
     ssSetInputPortDataType(S, 0, DYNAMICALLY_TYPED);

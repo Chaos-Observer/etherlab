@@ -1,0 +1,54 @@
+%%
+%% This TLC script is called by etherlab_postprocess().
+%% Here the whole compiled <model>.rtw is parsed to find
+%% Description fields that possibly contains text of
+%% the form <meta .../>, which in turn is used by the msr tools when
+%% registering parameters. It generates a file
+%% <model>_meta_data.c, which eventually is linked to the
+%% buddy process
+%%
+%% Copyright (c) 2012 Richard Hacker
+%% License: GPL
+%%
+
+%assign mroot = FEVAL("matlabroot")
+%addincludepath "%<mroot>/rtw/c/tlc/lib"
+
+%include "utillib.tlc"
+
+%assign Accelerator = 0
+%openfile meta = "%<CompiledModel.Name>_meta.txt"
+# EtherLab target specific file
+#
+# This file is created to augment additional informatioin
+# to the <model>_capi.c file. 
+#
+# List of <meta .../> tags that were found in the Description fields
+# of blocks. These are passed on verbatim to the msr kernel
+
+%with CompiledModel.BlockHierarchyMap
+  %foreach ss = NumSubsystems
+    %foreach block = Subsystem[ss].NumBlocks
+      %assign x = [%<ss>, %<block>]
+      %if ISFIELD(Subsystem[ss].Block[block], "Description") && \
+            !ISEMPTY(Subsystem[ss].Block[block].Description)
+        %assign descr = STRING(Subsystem[ss].Block[block].Description)
+        %assign y = FEVAL("get_meta_tag",descr)
+        %if !ISEMPTY(y)
+"%<SLibMangledGrBlockPath(x)>", %<y>
+        %endif
+      %endif
+    %endforeach
+  %endforeach
+%endwith
+%closefile meta
+
+%% Generate a file <model>_header.c containing some values extracted from
+%% the .rtw file
+%with CompiledModel 
+%openfile header = "%<Name>_header.c"
+  const char *%<Name>_version = "%<ModelVersion>";
+  const char *%<Name>_generator = "%<Version>";
+  const char *%<Name>_date = "%<GeneratedOn>";
+%closefile header
+%endwith

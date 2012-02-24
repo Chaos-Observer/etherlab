@@ -1,1 +1,0 @@
-osc_noec:up+sem:push rt_appcore;sh -c read;popall:control_c

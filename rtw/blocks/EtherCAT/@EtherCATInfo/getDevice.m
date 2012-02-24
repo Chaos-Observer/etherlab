@@ -105,7 +105,7 @@ end
 % exclude list
 if strcmp(RevisionNo, 'latest')
     for i = length(device):-1:1
-        if find(exclude == device(i).RevisionNo,1)
+        if find(exclude == device(i).Type.RevisionNo,1)
             device(i) = [];
         end
     end

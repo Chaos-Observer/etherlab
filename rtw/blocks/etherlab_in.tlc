@@ -10,12 +10,12 @@
 %% 
 %% License: GPL
 
-%%include "EtherLAB_IO.tlc"
+%include "ETL.tlc"
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %function BlockTypeSetup( block, system ) void
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  %%<InitEtherLABIO()>
+  %<InitETL()>
   %<LibAddToCommonIncludes("rt_vars.h")>
 %endfunction
 
@@ -23,82 +23,61 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %function BlockInstanceSetup( block, system ) void
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  %%<InitEtherLABIOTask(block, system)>
 %endfunction
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %function Start(block, system) Output
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  %assign dtype = GetEtlDTypeName(LibBlockOutputSignalDataTypeId(0))
+  %assign tid = LibGetGlobalTIDFromLocalSFcnTID(0)
+  %assign tid = tid ? tid - LibGetTID01EQ() : 0
 
   /* Input RT Variable %<Type> Block: %<VarName> 
    * Registering destination variable with EtherLAB IO Signal Layer
    */
-  %%<GetEtherLABIO_Output(block, VarName, CTypeName)>
-  %assign dtype = GetEtlDTypeName(LibBlockOutputSignalDataTypeId(0))
-  %if LibBlockOutputSignalWidth(0) > 1
-    {
-      unsigned int width[] = {%<LibBlockOutputSignalWidth(0)>, 0};
-
-      rt_var_reg_input(&rt_app, "%<VarName>", %<dtype>, width, 0,
-                &%<LibBlockOutputSignal(0,"","",0)>);
-    }
-  %else
-    rt_var_reg_input(&rt_app, "%<VarName>", %<dtype>, NULL, 0,
-              &%<LibBlockOutputSignal(0,"","",0)>);
-  %endif
+  if ((%<ETL.ErrStr> = rt_var_reg_input(&rt_app, "%<VarName>", %<dtype>, \
+            %<LibBlockOutputSignalWidth(0)>, \
+            %<tid>, \
+            &%<LibBlockOutputSignal(0,"","",0)>, \
+            &%<LibBlockOutputSignal(1,"","",0)>))) {
+        snprintf(%<ETL.ErrMsg>, sizeof(%<ETL.ErrMsg>), 
+           "Input Signal %<VarName> could not be registered: %s",
+           %<ETL.ErrStr>);
+        %<LibSetRTModelErrorStatus( "%<ETL.ErrMsg>")>;
+  }
 %endfunction
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %function Outputs( block, system ) Output
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%  %if UseBuffer != 1
-%%    %return
-%%  %endif
-%%
-%%  /* Input RT Variable %<Type> Block: %<VarName> 
-%%   */
-%%  %%
-%%  %assign rollVars = ["Y"]
-%%  %roll sigIdx = RollRegions, lcv = RollThreshold, block, ...
-%%        "Roller", rollVars
-%%    %if lcv == ""
-%%      %assign paramSettingIdx = sigIdx
-%%    %else
-%%      %if sigIdx == 0
-%%        %assign paramSettingIdx = lcv
-%%      %else
-%%        %assign paramSettingIdx = "%<lcv> + %<sigIdx>"
-%%      %endif
-%%    %endif
-%%    %<LibBlockOutputSignal(0,"",lcv,sigIdx)> =
-%%      ((%<CTypeName>*)&%<LibBlockPWork(Buffer,"","",0)>)[%<paramSettingIdx>];
-%%  %endroll
+  %% The outputs get written directly in the copy function
 %endfunction
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %function GetEtlDTypeName( dtype ) void
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   %switch dtype
     %case tSS_BOOLEAN
-      %return "si_boolean_T"
+      %return "pd_boolean_T"
     %case tSS_UINT8
-      %return "si_uint8_T"
+      %return "pd_uint8_T"
     %case tSS_INT8
-      %return "si_sint8_T"
+      %return "pd_sint8_T"
     %case tSS_UINT16
-      %return "si_uint16_T"
+      %return "pd_uint16_T"
     %case tSS_INT16
-      %return "si_sint16_T"
+      %return "pd_sint16_T"
     %case tSS_UINT32
-      %return "si_uint32_T"
+      %return "pd_uint32_T"
     %case tSS_INT32
-      %return "si_sint32_T"
+      %return "pd_sint32_T"
     %case tSS_DOUBLE
-      %return "si_double_T"
+      %return "pd_double_T"
     %case tSS_SINGLE
-      %return "si_single_T"
+      %return "pd_single_T"
     %default
       %error Unknown PDODataType: %<dtype>; Known types: ...
                 %<tSS_UINT8> %<tSS_INT8> %<tSS_UINT16> %<tSS_INT16> ...

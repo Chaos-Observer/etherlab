@@ -12,45 +12,43 @@ tree = xmlread(xmlfile);
 root = tree.getDocumentElement;
 
 if ~strcmp(root.getNodeName, 'EtherCATInfo')
-    invalidDocument();
+    InvalidDoc(root,'ParseXML','RootNotFound');
 end
 
 
 %% Try to get the VendorId - this is required
-try
-    VendorElem = root.getElementsByTagName('Vendor').item(0);
-    VendorIdTxt = VendorElem.getElementsByTagName('Id').item(0);
-    ei.Vendor.Id = fromHexString(VendorIdTxt.getTextContent.trim);
-catch
+VendorElem = root.getElementsByTagName('Vendor').item(0);
+if isempty(VendorElem)
+    InvalidDoc(root,'ParseXML','ElementNotFound','Vendor')
 end
 
-if isempty(ei.Vendor.Id)
-    invalidDocument();
+VendorIdTxt = VendorElem.getElementsByTagName('Id').item(0);
+if isempty(VendorIdTxt)
+    InvalidDoc(VendorElem,'ParseXML','ElementNotFound','Id')
 end
 
-%% Get the devices
-try
-    % These really should be separate classes of :
-    %   * Descriptions
-    %   * Devices
-    descriptionsElem = root.getElementsByTagName('Descriptions').item(0);
-    ei.Descriptions = [];
-    DevicesElem = descriptionsElem.getElementsByTagName('Devices').item(0);
-    ei.Descriptions.Devices = [];
-    DeviceElem = DevicesElem.getElementsByTagName('Device');
-catch
-    invalidDocument();
+ei.Vendor.Id = readHexDecValue(VendorIdTxt,0);
+
+% Descend into <EtherCATInfo><Descriptions><Devices>
+descriptionsElem = root.getElementsByTagName('Descriptions').item(0);
+if isempty(descriptionsElem)
+    InvalidDoc(root,'ParseXML','ElementNotFound','Descriptions');
 end
 
+DevicesElem = descriptionsElem.getElementsByTagName('Devices').item(0);
+if isempty(DevicesElem)
+    InvalidDoc(descriptionsElem,'ParseXML','ElementNotFound','Devices');
+end
+
+% Go throuch every <Device>
+ei.Descriptions = [];
+ei.Descriptions.Devices = [];
+DeviceElem = DevicesElem.getElementsByTagName('Device');
 idx = 1;
 for i = 1:DeviceElem.getLength
     dev = XML_ParseSlave(DeviceElem.item(i-1));
-    if ~isempty(dev.Type.ProductCode) && ~isempty(dev.Type.RevisionNo)
+    if ~isempty(dev)
         ei.Descriptions.Devices.Device(idx) = dev;
         idx = idx + 1;
     end
 end
-
-%%
-function invalidDocument
-error('XML file is not a valid EtherCATInfo Document');

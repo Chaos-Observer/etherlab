@@ -14,13 +14,10 @@
 #include "get_string.h"
 
 #define ID                             (ssGetSFcnParam(S,0)) 
-#define SRC_DTYPE  ((uint_T)mxGetScalar(ssGetSFcnParam(S,1)))
+#define DTYPE      ((uint_T)mxGetScalar(ssGetSFcnParam(S,1)))
 #define LEN        ((uint_T)mxGetScalar(ssGetSFcnParam(S,2)))
-#define SCALE_IDX                                        3
-#define OFFSET_IDX                                       4
-#define OUT_DTYPE  ((uint_T)mxGetScalar(ssGetSFcnParam(S,5)))
-#define TSAMPLE            (mxGetScalar(ssGetSFcnParam(S,6)))
-#define PARAM_COUNT                                      7
+#define TSAMPLE            (mxGetScalar(ssGetSFcnParam(S,3)))
+#define PARAM_COUNT                                      4
 
 
 struct {
@@ -62,43 +59,21 @@ static void mdlInitializeSizes(SimStruct *S)
     for( i = 0; i < PARAM_COUNT; i++) 
         ssSetSFcnParamTunable(S,i,SS_PRM_NOT_TUNABLE);
 
-    if (SRC_DTYPE == 0 || SRC_DTYPE > 9) {
+    if (DTYPE == 0 || DTYPE > 9) {
         ssSetErrorStatus(S, "Unknown source data type");
         return;
     }
     
     if (!ssSetNumInputPorts(S, 0)) return;
 
-    if (!ssSetNumOutputPorts(S, 1)) return;
+    if (!ssSetNumOutputPorts(S, 2)) return;
     ssSetOutputPortWidth(S, 0, LEN);
-    switch (OUT_DTYPE) {
-        case 1:         /* Same as source */
-            ssSetOutputPortDataType(S,0,
-                    ss_dtype_properties[SRC_DTYPE].type);
-            break;
-        case 2:         /* Double */
-            ssSetOutputPortDataType(S,0,SS_DOUBLE);
-            break;
-        case 3:         /* Double with scale and offset */
-            ssSetOutputPortDataType(S,0,SS_DOUBLE);
-            break;
-        default:
-            ssSetErrorStatus(S, "Invalid output type selected");
-            return;
-    }
+    ssSetOutputPortDataType(S, 0,
+		    ss_dtype_properties[DTYPE].type);
+    ssSetOutputPortWidth(S, 1, 1);
+    ssSetOutputPortDataType(S, 1, SS_BOOLEAN);
 
     ssSetNumSampleTimes(S, 1);
-    ssSetNumContStates(S, 0);
-    ssSetNumDiscStates(S, 0);
-    ssSetNumRWork(S, 0);
-    ssSetNumIWork(S, 0);
-    if (OUT_DTYPE != 1)
-        ssSetNumPWork(S, 
-                LEN * ss_dtype_properties[SRC_DTYPE].len / sizeof(void*) + 1);
-    else
-        ssSetNumPWork(S, 0);
-    ssSetNumModes(S, 0);
-    ssSetNumNonsampledZCs(S, 0);
 
     ssSetOptions(S, 
             SS_OPTION_WORKS_WITH_CODE_REUSE | 
@@ -140,30 +115,9 @@ static void mdlTerminate(SimStruct *S)
 static void mdlRTW(SimStruct *S)
 {
     const char *id      = getString(S,ID);
-    uint32_T len = LEN;
-    uint32_T use_buffer;
 
     if (!ssWriteRTWStrParam(S, "VarName", id))
         return;
-    if (!ssWriteRTWStrParam(S, "CTypeName", 
-                ss_dtype_properties[SRC_DTYPE].ctype))
-        return;
-    if (!ssWriteRTWScalarParam(S, "VectorLen", &len, SS_UINT32))
-        return;
-    if (OUT_DTYPE != 1) {
-        use_buffer = 1;
-        if (!ssWriteRTWScalarParam(S, "UseBuffer", &use_buffer, SS_UINT32))
-            return;
-        if (!ssWriteRTWWorkVect(S, "PWork", 1, 
-                    "Buffer", 
-                    (LEN * ss_dtype_properties[SRC_DTYPE].len 
-                     / sizeof(void*) + 1)));
-            return;
-    } else {
-        use_buffer = 0;
-        if (!ssWriteRTWScalarParam(S, "UseBuffer", &use_buffer, SS_UINT32))
-            return;
-    }
 }
 
 

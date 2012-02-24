@@ -44,9 +44,9 @@ function etherlab_config(hDlg,hSrc)
   slConfigUISetVal(hDlg,hSrc,'OptimizeBlockIOStorage','off');
 
   % Hardware
-  slConfigUISetVal(hDlg,hSrc,'ProdHWDeviceType', ...
-  	'32-bit xPC Target (Intel Pentium)');
-  slConfigUISetEnabled(hDlg,hSrc,'ProdHWDeviceType', 'off');
+  %slConfigUISetVal(hDlg,hSrc,'ProdHWDeviceType', ...
+  %	'32-bit xPC Target (Intel Pentium)');
+  %slConfigUISetEnabled(hDlg,hSrc,'ProdHWDeviceType', 'off');
 
   % Interface
   slConfigUISetVal(hDlg,hSrc,'RTWCAPISignals','on');
@@ -60,11 +60,10 @@ function etherlab_config(hDlg,hSrc)
   slConfigUISetVal(hDlg,hSrc,'RTWVerbose','on');
   slConfigUISetVal(hDlg,hSrc,'RetainRTWFile','on');
   slConfigUISetEnabled(hDlg,hSrc,'RetainRTWFile','off');
+  slConfigUISetVal(hDlg,hSrc,'MatFileLogging','off');
+  slConfigUISetEnabled(hDlg,hSrc,'MatFileLogging','off');
 
 %slConfigUISetVal(hDlg, hSrc, 'ModelReferenceCompliant', 'on');
 
-%  if ~@KERNEL@
-%       set_param(bdroot,'GenCodeOnly','on');
-%  end
   set_param(bdroot,'PostCodeGenCommand', 'etherlab_postprocess(modelName,buildInfo)');
 

@@ -13,7 +13,6 @@
 
 #include "simstruc.h"
 #include "ethercat_ss_funcs.h"
-#include "ss_analog_in_funcs.c"
 
 #define PARAM_COUNT 4
 #define MASTER     ((uint_T)mxGetScalar(ssGetSFcnParam(S, 0)))
@@ -32,7 +31,7 @@
  */
 static void mdlInitializeSizes(SimStruct *S)
 {
-    int_T i, width;
+    int_T i;
     
     ssSetNumSFcnParams(S, PARAM_COUNT);  /* Number of expected parameters */
     if (ssGetNumSFcnParams(S) != ssGetSFcnParamsCount(S)) {

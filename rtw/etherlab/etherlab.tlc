@@ -1,7 +1,7 @@
-%% SYSTLC: EtherLab Real-Time Target \
-%%    TMF: etherlab_kmod.tmf MAKE: make_rtw EXTMODE: ext_comm 
+%% SYSTLC: EtherLab PREEMT_RT Real-Time Target \
+%%    TMF: etherlab_hrt.tmf MAKE: make_rtw EXTMODE: ext_comm 
 %%
-%% Copyright (c) 2005 IgH Essen GmbH
+%% Copyright (c) 2012 IgH Essen GmbH
 %% License: GPL
 %%
 %% Abstract: EtherLab system target file.
@@ -16,7 +16,6 @@
 %assign TargetType = "RT"       %% RT; NRT
 %assign Language   = "C"
 %assign GenRTModel = 1
-
 
 %assign CodeFormat = "RealTime" %% RealTime, RealTimeMalloc, Embedded-C
 
@@ -50,7 +49,7 @@
 
   rtwoptions(2).prompt         = 'BIO Buffer time:	';
   rtwoptions(2).type           = 'Edit';
-  rtwoptions(2).default        = '10';
+  rtwoptions(2).default        = '2';
   rtwoptions(2).tlcvariable    = 'BufferTime';
   rtwoptions(2).makevariable   = 'BUFFER_TIME';
   rtwoptions(2).tooltip        = ...
@@ -66,7 +65,7 @@
   rtwoptions(3).tooltip      = ...
     ['Exit realtime model if task overruns exceeds this amount'];
 
-  rtwoptions(4).prompt       = 'RTAI Stack Size:	';
+  rtwoptions(4).prompt       = 'Stack Size prefault:	';
   rtwoptions(4).type         = 'Edit';
   rtwoptions(4).default      = '2000';
   rtwoptions(4).tlcvariable  = 'StackSize';
@@ -80,29 +79,20 @@
      sprintf('\n'), ...
      'Keep ~500 bytes free.' ];
 
-  rtwoptions(5).prompt       = 'Process Image decimation rate:	';
-  rtwoptions(5).type         = 'Edit';
-  rtwoptions(5).default      = '1';
-  rtwoptions(5).tlcvariable  = 'ETLDecimation';
-  rtwoptions(5).makevariable = 'DECIMATION';
+  rtwoptions(5).prompt       = 'Verbose build ';
+  rtwoptions(5).type         = 'Checkbox';
+  rtwoptions(5).default      = 'off';
+  rtwoptions(5).tlcvariable  = 'VerboseBuild';
+  rtwoptions(5).makevariable = 'VERBOSE_BUILD';
   rtwoptions(5).tooltip      = ...
-    ['The number of simulation runs between which', sprintf('\n'), ...
-     'snapshots are made of the process image.'];
-
-  rtwoptions(6).prompt       = 'Verbose build ';
-  rtwoptions(6).type         = 'Checkbox';
-  rtwoptions(6).default      = 'off';
-  rtwoptions(6).tlcvariable  = 'VerboseBuild';
-  rtwoptions(6).makevariable = 'VERBOSE_BUILD';
-  rtwoptions(6).tooltip      = ...
     ['Check this to turn on extra compiler messages.'];
 
-  rtwoptions(7).prompt       = 'Staged build directory:	';
-  rtwoptions(7).type         = 'Edit';
-  rtwoptions(7).default      = '';
-  rtwoptions(7).tlcvariable  = 'StagingDir';
-  rtwoptions(7).makevariable = 'STAGING_DIR';
-  rtwoptions(7).tooltip      = ...
+  rtwoptions(6).prompt       = 'Staged build directory:	';
+  rtwoptions(6).type         = 'Edit';
+  rtwoptions(6).default      = '';
+  rtwoptions(6).tlcvariable  = 'StagingDir';
+  rtwoptions(6).makevariable = 'STAGING_DIR';
+  rtwoptions(6).tooltip      = ...
     ['When developing models on a host that is not the target,', ...
      sprintf('\n'), ...
      'you can install the target''s EtherLab/kernel/RTAI locally into', ...
@@ -111,12 +101,12 @@
      sprintf('\n'), ...
      'directory.'];
 
-  rtwoptions(8).prompt       = 'Module Payload:	';
-  rtwoptions(8).type         = 'Edit';
-  rtwoptions(8).default      = [gcs '.mdl '];
-  rtwoptions(8).tlcvariable  = 'ModulePayload';
-  rtwoptions(8).makevariable = 'MODULE_PAYLOAD';
-  rtwoptions(8).tooltip      = ...
+  rtwoptions(7).prompt       = 'Module Payload:	';
+  rtwoptions(7).type         = 'Edit';
+  rtwoptions(7).default      = [gcs '.mdl '];
+  rtwoptions(7).tlcvariable  = 'ModulePayload';
+  rtwoptions(7).makevariable = 'MODULE_PAYLOAD';
+  rtwoptions(7).tooltip      = ...
     ['Space separated list of files that are attached verbatim to the ', ...
      sprintf('\n'), ...
      'kernel module. These files will appear compressed in the /proc ', ...
@@ -129,9 +119,10 @@
   % Configure RTW code generation settings %
   %----------------------------------------%
   
-  rtwgensettings.BuildDirSuffix = '_etl_rtw';
+  rtwgensettings.BuildDirSuffix = '_etl_hrt';
   rtwgensettings.Version = '1';
-  rtwgensettings.SelectCallback = 'clear etherlab_config; etherlab_config(hDlg,hSrc)';
+  rtwgensettings.SelectCallback = ...
+        ['clear etherlab_config; etherlab_config(hDlg,hSrc)'];
   rtwgensettings.DerivedFrom = 'grt.tlc';
   
   END_RTW_OPTIONS 

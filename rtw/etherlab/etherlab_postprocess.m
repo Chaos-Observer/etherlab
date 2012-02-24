@@ -2,7 +2,7 @@ function etherlab_postprocess(modelName,buildInfo)
 % This function does custom post processing after the normal RTW Code 
 % Generation is finished, but before the make process
 %
-% Copyright (c) 2006 Richard Hacker
+% Copyright (c) 2012 Richard Hacker
 % License: GPL
 %
 %
@@ -13,12 +13,9 @@ function etherlab_postprocess(modelName,buildInfo)
 fprintf('### Generating parameter meta information: %s_meta.txt\n', modelName);
 
 % Remove lines with Simulink's stored internal data
-sysCmd = ['sed "/Value.*SLData([0-9]*)/d" ' modelName '.rtw ' ...
-        ' > ' modelName '_mod.rtw'];
-system(sysCmd);
+perl('postprocess_rtw.pl', [modelName '.rtw'], [modelName '_mod.rtw']);
 
 tlcCmd = ['tlc -r ' modelName '_mod.rtw' ...
-        ' ' which('get_description.tlc') ...
-        ' -acFile="' modelName '_meta.txt"'...
+        ' ''' which('postprocess.tlc') '''' ...
         ' -aMatlabRoot="' matlabroot '"'];
 eval(tlcCmd);

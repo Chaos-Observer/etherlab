@@ -18,21 +18,21 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #else
-#error "Don't have config.h"
+//#error "Don't have config.h"
 #endif
 
-#define DEBUG 1
-#define DEBUG_MALLOC 1
-
-#include <linux/types.h>
-#include <linux/list.h>
-#include <asm/timex.h>
-#include "rtai_sem.h"
+#include <stdio.h>
+#include <pthread.h>
 #include "ecrt_support.h"
+#include "list.h"
 
 /* The following message gets repeated quite frequently. */
 char *no_mem_msg = "Could not allocate memory";
 char errbuf[256];
+
+#define my_kcalloc(nmemb,size,s) calloc((nmemb), (size))
+#define my_kfree(ptr,s) free(ptr)
+#define pr_debug(fmt, args...) printf(fmt, args)
 
 /* Structure to temporarily store PDO objects prior to registration */
 struct ecat_slave {
@@ -46,8 +46,16 @@ struct ecat_slave {
 
     const ec_sync_info_t *sync_info;
 
+    /* Distributed clock configuration */
+    uint16_t assign_activate;   /**< If != 0, use distributed clocks */
+    uint32_t dc_time_sync[4];   /**< Values for CycleTimeSync0, ShiftTimeSync0,
+                                  * CycleTimeSync1, ShiftTimeSync1 */
+
     unsigned int sdo_config_count;
     const struct sdo_config *sdo_config;
+
+    unsigned int soe_config_count;
+    const struct soe_config *soe_config;
 
     unsigned int pdo_map_count;
     struct mapped_pdo {
@@ -58,7 +66,7 @@ struct ecat_slave {
 };
 
 struct endian_convert_t {
-    enum si_datatype_t pdo_datatype;
+    unsigned int pdo_datatype_size;
     void *data_ptr;
 };
 
@@ -82,10 +90,12 @@ struct ecat_domain {
     unsigned int tid;           /* Id of the corresponding RealTime Workshop
                                  * task */
 
-    unsigned int io_count;      /* The number of field io's this domain has */
+    unsigned int
+        endian_convert_count;   /* Number of elements to convert when
+                                 * doing endian conversion */
     struct endian_convert_t       
-        *endian_convert_list; /* List for data copy instructions. List is
-                                  * terminated with list->from = NULL */
+        *endian_convert_list;   /* List for data copy instructions. List is
+                                 * terminated with list->from = NULL */
 
     size_t io_data_len;         /* Lendth of io_data image */
     void *io_data;              /* IO data is located here */
@@ -101,11 +111,17 @@ struct ecat_master {
     unsigned int fastest_tid;   /* Fastest RTW task id that uses this 
                                  * master */
 
+    struct task_stats *task_stats; /* Index into global task_stats */
+
     unsigned int id;            /* Id of the EtherCAT master */
     ec_master_t *handle;        /* Handle retured by EtherCAT code */
     ec_master_state_t *state;   /* Pointer for master's state */
 
-    SEM lock;                   /* Lock the ecat master */
+    unsigned int refclk_trigger_init; /* Decimation for reference clock
+                                         == 0 => do not use dc */
+    unsigned int refclk_trigger; /* When == 1, trigger a time syncronisation */
+
+    pthread_mutex_t lock;        /* Lock the ecat master */
 
     struct list_head slave_list; /* List of all slaves. Only active during
                                   * initialisation */
@@ -122,6 +138,7 @@ struct ecat_master {
 /* Data used by the EtherCAT support layer */
 static struct ecat_data {
     unsigned int nst;           /* Number of unique RTW sample times */
+    unsigned int single_tasking;
 
     /* This list is used to store all masters during the registration
      * process. Thereafter this list is reworked in ecs_start(), moving 
@@ -139,43 +156,12 @@ static struct ecat_data {
         struct ecat_domain *input_domain;
         struct ecat_domain *output_domain;
 
-        /* The tick period in microseconds for this sample time */
+        /* The tick period in nanoseconds for this sample time */
         unsigned int period;
     } st[];
 } *ecat_data;
 
-/////////////////////////////////////////////////
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,17)
-static void * __init
-kzalloc(size_t len, int type)
-{
-    void *p;
-    if ((p = kmalloc(len,type))) {
-        memset(p, 0, len);
-    }
-    return p;
-}
-#endif
 
-#if DEBUG_MALLOC
-static void* __init
-my_kcalloc(size_t nmemb, size_t size, const char* who)
-{
-    void *p = kzalloc(nmemb * size, GFP_KERNEL);
-    pr_debug("Allocated %u bytes for %s: %p\n", nmemb * size, who, p);
-    return p;
-}
-
-static void
-my_kfree(void *p, const char* who)
-{
-    pr_debug("Releasing memory for %s: %p\n", who, p);
-    kfree(p);
-}
-#else
-#define my_kcalloc(nmemb, size, who) kzalloc((nmemb)*(size), GFP_KERNEL)
-#define my_kfree(p, who) kfree(p)
-#endif
 /////////////////////////////////////////////////
 
 /* Do input processing for a RTW task. It does the following:
@@ -193,40 +179,38 @@ ecs_receive(int tid)
     struct ecat_domain * const domain_end = 
         domain + ecat_data->st[tid].input_domain_count;
     struct endian_convert_t *conversion_list;
-//    static unsigned int count = 0;
         
     for ( ; master != master_end; master++) {
-        rt_sem_wait(&master->lock);
+        pthread_mutex_lock (&master->lock);
         ecrt_master_receive(master->handle);
         ecrt_master_state(master->handle, master->state);
-        rt_sem_signal(&master->lock);
+        pthread_mutex_unlock (&master->lock);
     }
 
     for ( ; domain != domain_end; domain++) {
-        rt_sem_wait(&domain->master->lock);
+        pthread_mutex_lock (&domain->master->lock);
         ecrt_domain_process(domain->handle);
         ecrt_domain_state(domain->handle, domain->state);
         ecrt_domain_queue(domain->handle);
-        rt_sem_signal(&domain->master->lock);
+        pthread_mutex_unlock (&domain->master->lock);
         for (conversion_list = domain->endian_convert_list;
                 conversion_list->data_ptr;
                 conversion_list++) {
-            switch (conversion_list->pdo_datatype) {
-                case si_uint16_T:
-                case si_sint16_T:
-                    le16_to_cpus(conversion_list->data_ptr);
+            switch (conversion_list->pdo_datatype_size) {
+                case 8:
+                    *(uint64_t*)conversion_list->data_ptr =
+                        le64toh(*(uint64_t*)conversion_list->data_ptr);
                     break;
-                case si_uint32_T:
-                case si_sint32_T:
-                    le32_to_cpus(conversion_list->data_ptr);
+                case 4:
+                    *(uint32_t*)conversion_list->data_ptr =
+                        le32toh(*(uint32_t*)conversion_list->data_ptr);
                     break;
-                default:
-                    /* Dont have singles and doubles in EtherCAT */
+                case 2:
+                    *(uint16_t*)conversion_list->data_ptr =
+                        le32toh(*(uint16_t*)conversion_list->data_ptr);
                     break;
             }
         }
-//        if (!(count++ % 1000))
-//            pr_debug("ecs_receive %u\n", *(char*)domain->io_data);
     }
 }
 
@@ -245,96 +229,89 @@ ecs_send(int tid)
     struct ecat_domain * const domain_end = 
         domain + ecat_data->st[tid].output_domain_count;
     struct endian_convert_t *conversion_list;
-//    static unsigned int count = 0;
 
     for ( ; domain != domain_end; domain++) {
         for (conversion_list = domain->endian_convert_list; 
                 conversion_list->data_ptr;
                 conversion_list++) {
-            switch (conversion_list->pdo_datatype) {
-                case si_uint16_T:
-                case si_sint16_T:
-                    cpu_to_le16s(conversion_list->data_ptr);
+            switch (conversion_list->pdo_datatype_size) {
+                case 8:
+                    *(uint64_t*)conversion_list->data_ptr =
+                        htole64(*(uint64_t*)conversion_list->data_ptr);
                     break;
-                case si_uint32_T:
-                case si_sint32_T:
-                    cpu_to_le32s(conversion_list->data_ptr);
+                case 4:
+                    *(uint32_t*)conversion_list->data_ptr =
+                        htole32(*(uint32_t*)conversion_list->data_ptr);
                     break;
-                default:
+                case 2:
+                    *(uint16_t*)conversion_list->data_ptr =
+                        htole16(*(uint16_t*)conversion_list->data_ptr);
                     break;
             }
         }
-        rt_sem_wait(&domain->master->lock);
+        pthread_mutex_lock (&domain->master->lock);
         ecrt_domain_process(domain->handle);
         ecrt_domain_state(domain->handle, domain->state);
+
         ecrt_domain_queue(domain->handle);
-        rt_sem_signal(&domain->master->lock);
-//        if (!(count++ % 1000))
-//            pr_debug("ecs_send %u\n", *(char*)domain->io_data);
+        pthread_mutex_unlock (&domain->master->lock);
     }
 
     for ( ; master != master_end; master++) {
-        rt_sem_wait(&master->lock);
+//        ecrt_master_application_time(master->handle,
+//                task_stats->monotonic_time);
+
+        pthread_mutex_lock (&master->lock);
+        if (master->refclk_trigger_init && !--master->refclk_trigger) {
+            ecrt_master_sync_reference_clock(master->handle);
+            master->refclk_trigger = master->refclk_trigger_init;
+        }
+
+        ecrt_master_sync_slave_clocks(master->handle);
         ecrt_master_send(master->handle);
-        rt_sem_signal(&master->lock);
+        pthread_mutex_unlock (&master->lock);
     }
 }
 
-/* This callback is passed to EtherCAT during master initialisation. 
- *
- * Normally it is not allowable for anyone else to use the master other
- * than the owner himself to guarantee hard real-time response. In rare
- * cases, however, it may be necessary for EtherCAT to request private usage
- * of the master, for example to do EoE.
- * Using this function, EtherCAT has the chance to gain temporary exclusive 
- * use of the master.
- */
-static int
-ecs_request_cb(void *p)
-{
-#define MASTER ((struct ecat_master *)p)
-    rt_sem_wait(&MASTER->lock);
-    return 0;
-#undef MASTER
-}
-
-/* This callback is passed to EtherCAT during master initialisation. 
- *
- * With this function the master is released again.
- */
-static void
-ecs_release_cb(void *p)
-{
-#define MASTER ((struct ecat_master *)p)
-    rt_sem_signal(&MASTER->lock);
-#undef MASTER
-}
-
-unsigned int
-get_addr_incr(enum si_datatype_t dtype)
-{
-    switch (dtype) {
-        case si_uint32_T:
-        case si_sint32_T:
-            return 4;
-        case si_uint16_T:
-        case si_sint16_T:
-            return 2;
-        case si_uint8_T:
-        case si_sint8_T:
-            return 1;
-        default:
-            return 0;
-    }
-}
+// /* This callback is passed to EtherCAT during master initialisation. 
+//  *
+//  * Normally it is not allowable for anyone else to use the master other
+//  * than the owner himself to guarantee hard real-time response. In rare
+//  * cases, however, it may be necessary for EtherCAT to request private usage
+//  * of the master, for example to do EoE.
+//  * Using this function, EtherCAT has the chance to gain temporary exclusive 
+//  * use of the master.
+//  */
+// static void
+// ecs_send_cb(void *p)
+// {
+// #define MASTER ((struct ecat_master *)p)
+//     pthread_mutex_lock (&MASTER->lock);
+//     ecrt_master_send_ext(MASTER->handle);
+//     pthread_mutex_unlock (&MASTER->lock);
+// #undef MASTER
+// }
+// 
+// /* This callback is passed to EtherCAT during master initialisation. 
+//  */
+// static void
+// ecs_receive_cb(void *p)
+// {
+// #define MASTER ((struct ecat_master *)p)
+//     pthread_mutex_lock (&MASTER->lock);
+//     ecrt_master_receive(MASTER->handle);
+//     pthread_mutex_unlock (&MASTER->lock);
+// #undef MASTER
+// }
 
 /* Initialise all slaves listed in master->slave_list. */
-static const char* __init
+static const char*
 init_slaves( struct ecat_master *master)
 {
     struct ecat_slave *slave;
     ec_slave_config_t *slave_config;
     const struct sdo_config *sdo;
+    const struct soe_config *soe;
     const char* failed_method;
     struct mapped_pdo *mapped_pdo;
 
@@ -361,37 +338,66 @@ init_slaves( struct ecat_master *master)
         /* Send SDO configuration to the slave */
         for (sdo = slave->sdo_config; 
                 sdo != &slave->sdo_config[slave->sdo_config_count]; sdo++) {
-            switch (sdo->datatype) {
-                case si_uint8_T:
-                    if (ecrt_slave_config_sdo8(slave_config, 
-                                sdo->sdo_index, sdo->sdo_subindex,
-                                (uint8_t)sdo->value)) {
-                        failed_method = "ecrt_slave_config_sdo8";
-                        goto out_slave_failed;
-                    }
-                    break;
-                case si_uint16_T:
-                    if (ecrt_slave_config_sdo16(slave_config, 
-                                sdo->sdo_index, sdo->sdo_subindex,
-                                (uint16_t)sdo->value)) {
-                        failed_method = "ecrt_slave_config_sdo16";
-                        goto out_slave_failed;
-                    }
-                    break;
-                case si_uint32_T:
-                    if (ecrt_slave_config_sdo32(slave_config, 
-                                sdo->sdo_index, sdo->sdo_subindex,
-                                sdo->value)) {
-                        failed_method = "ecrt_slave_config_sdo32";
-                        goto out_slave_failed;
-                    }
-                    break;
-                default:
-                    failed_method = "ecrt_slave_config_sdo_unknown";
+            if (sdo->byte_array) {
+                if (ecrt_slave_config_complete_sdo(slave_config, 
+                            sdo->sdo_index, sdo->byte_array,
+                            sdo->sdo_attribute)) {
+                    failed_method = "ecrt_slave_config_complete_sdo";
                     goto out_slave_failed;
-                    break;
+                }
+            }
+            else {
+                switch (sdo->datatype) {
+                    case pd_uint8_T:
+                        if (ecrt_slave_config_sdo8(slave_config, 
+                                    sdo->sdo_index, sdo->sdo_attribute,
+                                    (uint8_t)sdo->value)) {
+                            failed_method = "ecrt_slave_config_sdo8";
+                            goto out_slave_failed;
+                        }
+                        break;
+                    case pd_uint16_T:
+                        if (ecrt_slave_config_sdo16(slave_config, 
+                                    sdo->sdo_index, sdo->sdo_attribute,
+                                    (uint16_t)sdo->value)) {
+                            failed_method = "ecrt_slave_config_sdo16";
+                            goto out_slave_failed;
+                        }
+                        break;
+                    case pd_uint32_T:
+                        if (ecrt_slave_config_sdo32(slave_config, 
+                                    sdo->sdo_index, sdo->sdo_attribute,
+                                    sdo->value)) {
+                            failed_method = "ecrt_slave_config_sdo32";
+                            goto out_slave_failed;
+                        }
+                        break;
+                    default:
+                        failed_method = "ecrt_slave_config_sdo_unknown";
+                        goto out_slave_failed;
+                        break;
+                }
             }
         }
+
+        /* Send SoE configuration to the slave */
+        for (soe = slave->soe_config; 
+                soe != &slave->soe_config[slave->soe_config_count]; soe++) {
+            if (ecrt_slave_config_idn(slave_config,
+                        0, /* drive_no */
+                        soe->idn,
+                        EC_AL_STATE_PREOP,
+                        soe->data,
+                        soe->data_len)) {
+                failed_method = "ecrt_slave_config_idn";
+                goto out_slave_failed;
+            }
+        }
+
+        /* Configure distributed clocks for slave if assign_activate is set */
+        ecrt_slave_config_dc(slave_config, slave->assign_activate,
+                slave->dc_time_sync[0], slave->dc_time_sync[1],
+                slave->dc_time_sync[2], slave->dc_time_sync[3]);
 
         /* Now map the required PDO's into the process image. The offset
          * inside the image is returned by the function call */
@@ -431,7 +437,7 @@ out_slave_failed:
 
 /* An internal function to return a master pointer.
  * If the master does not exist, one is created */
-struct ecat_master * __init
+struct ecat_master *
 get_master(
         unsigned int master_id,
         unsigned int tid,
@@ -464,6 +470,10 @@ get_master(
                 /* Tell the new that task that it has a new master */
                 ecat_data->st[tid].master_count++;
                 master->fastest_tid = tid;
+
+                /* Where the master should get its statistics from */
+//                master->task_stats =
+//                    &task_stats[ecat_data->single_tasking ? 0 : tid];
             }
             return master;
         }
@@ -488,6 +498,8 @@ get_master(
     }
     INIT_LIST_HEAD(&master->slave_list);
     master->fastest_tid = tid;
+//    master->task_stats =
+//        &task_stats[ecat_data->single_tasking ? 0 : tid];
     ecat_data->st[tid].master_count++;
 
     master->state = my_kcalloc(1, sizeof(*master->state), "master state");
@@ -515,7 +527,7 @@ get_master(
 /* An internal function to return a domain pointer of a master with sample
  * time tid.
  * If the domain does not exist, one is created */
-struct ecat_domain * __init
+struct ecat_domain *
 get_domain(
         struct ecat_master *master,
         unsigned int domain_id,
@@ -605,7 +617,7 @@ get_domain(
  * This is the first function that has to be called when dealing with complex
  * slaves - those that can be parameterised, etc.
  */
-const char* __init
+const char*
 ecs_reg_slave(
         unsigned int tid,
         unsigned int master_id,
@@ -619,7 +631,12 @@ ecs_reg_slave(
         unsigned int sdo_config_count,
         const struct sdo_config *sdo_config,
 
+        unsigned int soe_config_count,
+        const struct soe_config *soe_config,
+
         const ec_sync_info_t *sync_info,
+
+        const uint32_t *dc_opmode_config,
 
         unsigned int pdo_count,
         const struct pdo_map *pdo_map
@@ -634,11 +651,14 @@ ecs_reg_slave(
     int i;
     pr_debug( "ecs_reg_slave( tid = %u, master_id = %u, domain_id = %u, "
         "slave_alias = %hu, slave_position = %hu, vendor_id = 0x%x, "
-        "product_code = 0x%x, sdo_config_count = %u, *sdo_config = %p, "
+        "product_code = 0x%x, "
+        "sdo_config_count = %u, *sdo_config = %p, "
+        "soe_config_count = %u, *soe_config = %p, "
         "*sync_info = %p, pdo_count = %u, *pdo_map = %p )\n",
         tid, master_id, domain_id,
-        slave_alias, slave_position, vendor_id,
-        product_code, sdo_config_count, sdo_config,
+        slave_alias, slave_position, vendor_id, product_code,
+        sdo_config_count, sdo_config,
+        soe_config_count, soe_config,
         sync_info, pdo_count, pdo_map
         );
 
@@ -665,8 +685,20 @@ ecs_reg_slave(
     slave->sdo_config = sdo_config;
     slave->sdo_config_count = sdo_config_count;
 
+    /* Copy the SoE's locally */
+    slave->soe_config = soe_config;
+    slave->soe_config_count = soe_config_count;
+
     /* Copy the PDO structures locally */
     slave->sync_info = sync_info;
+
+    if (dc_opmode_config) {
+        slave->assign_activate = *dc_opmode_config++;
+        slave->dc_time_sync[0] = *dc_opmode_config++;
+        slave->dc_time_sync[1] = *dc_opmode_config++;
+        slave->dc_time_sync[2] = *dc_opmode_config++;
+        slave->dc_time_sync[3] = *dc_opmode_config++;
+    }
 
     /* The pdo lists the PDO's that should be mapped
      * into the process image and also contains pointers where the data
@@ -676,6 +708,8 @@ ecs_reg_slave(
     slave->pdo_map_count = pdo_count;
     for (i = 0; i < pdo_count; i++) {
         struct ecat_domain *domain;
+        unsigned int endian_convert_count;
+
         pr_debug("Doing pdo_mapping %i\n", i);
         slave->mapped_pdo[i].mapping = &pdo_map[i];
         switch (pdo_map[i].dir) {
@@ -715,9 +749,13 @@ ecs_reg_slave(
                 return "Unknown PDO Direction encountered.";
         }
         slave->mapped_pdo[i].domain = domain;
-        domain->io_count +=
-            get_addr_incr(pdo_map[i].pdo_datatype) > 1
-            ? pdo_map[i].vector_len : 0;
+
+        endian_convert_count = pdo_map[i].pdo_datatype_size > 1;
+        endian_convert_count +=
+            (pdo_map[i].pdo_datatype_size == 7
+             || pdo_map[i].pdo_datatype_size == 6);
+        domain->endian_convert_count +=
+            endian_convert_count * pdo_map[i].vector_len;
     }
 
     return NULL;
@@ -726,20 +764,28 @@ out_slave_alloc:
     return no_mem_msg;
 }
 
-ec_master_t * __init 
-ecs_get_master_ptr(unsigned int master_id, const char **errmsg)
+const char *
+ecs_setup_master(unsigned int master_id, unsigned int refclk_sync_dec,
+        void **master_p)
 {
+    const char *errmsg;
     struct ecat_master *master;
 
     /* Get the master structure, making sure not to change the task it 
      * is currently assigned to */
-    if (!(master = get_master(master_id, ecat_data->nst - 1, errmsg)))
-        return NULL;
+    if (!(master = get_master(master_id, ecat_data->nst - 1, &errmsg)))
+        return errmsg;
 
-    return master->handle;
+    if (master_p)
+        *master_p = master->handle;
+
+    master->refclk_trigger_init = refclk_sync_dec;
+    master->refclk_trigger = 1;
+
+    return NULL;
 }
 
-ec_domain_t * __init 
+ec_domain_t *
 ecs_get_domain_ptr(unsigned int master_id, unsigned int domain_id, 
         ec_direction_t dir, unsigned int tid, const char **errmsg)
 {
@@ -757,7 +803,7 @@ ecs_get_domain_ptr(unsigned int master_id, unsigned int domain_id,
     return domain->handle;
 }
 
-void __init
+void
 cleanup_mem(void)
 {
     struct ecat_master *master, *m;
@@ -797,7 +843,7 @@ cleanup_mem(void)
     INIT_LIST_HEAD(&ecat_data->master_list);
 }
 
-const char * __init
+const char *
 init_domains(struct ecat_master *master, struct ecat_master *new_master) 
 {
     unsigned int i;
@@ -812,19 +858,20 @@ init_domains(struct ecat_master *master, struct ecat_master *new_master)
                 &master->st_domain[i].input_domain_list, list) {
             /* The list has to be zero terminated */
             domain->endian_convert_list = 
-                my_kcalloc(domain->io_count + 1,
+                my_kcalloc(domain->endian_convert_count + 1,
                         sizeof(*domain->endian_convert_list),
                         "input copy list");
             if (!domain->endian_convert_list)
                 return no_mem_msg;
 
-            /* Allocate local IO memory */
-            domain->io_data_len = ecrt_domain_size(domain->handle);
-            domain->io_data = 
-                my_kcalloc(1, domain->io_data_len, "input io data");
-            if (!domain->io_data)
-                return no_mem_msg;
-            ecrt_domain_external_memory(domain->handle, domain->io_data);
+            domain->io_data = ecrt_domain_data(domain->handle);
+//            /* Allocate local IO memory */
+//            domain->io_data_len = ecrt_domain_size(domain->handle);
+//            domain->io_data = 
+//                my_kcalloc(1, domain->io_data_len, "input io data");
+//            if (!domain->io_data)
+//                return no_mem_msg;
+//            ecrt_domain_external_memory(domain->handle, domain->io_data);
 
             /* Move the domain to the sample time array */
             tid = domain->tid;
@@ -839,19 +886,19 @@ init_domains(struct ecat_master *master, struct ecat_master *new_master)
 
             /* The list has to be zero terminated */
             domain->endian_convert_list = 
-                my_kcalloc( domain->io_count + 1,
+                my_kcalloc( domain->endian_convert_count + 1,
                         sizeof(*domain->endian_convert_list),
                         "output copy list");
             if (!domain->endian_convert_list)
                 return no_mem_msg;
 
-            /* Allocate local IO memory */
-            domain->io_data_len = ecrt_domain_size(domain->handle);
-            domain->io_data = 
-                my_kcalloc(1, domain->io_data_len, "output io data");
-            if (!domain->io_data)
-                return no_mem_msg;
-            ecrt_domain_external_memory(domain->handle, domain->io_data);
+//            /* Allocate local IO memory */
+//            domain->io_data_len = ecrt_domain_size(domain->handle);
+//            domain->io_data = 
+//                my_kcalloc(1, domain->io_data_len, "output io data");
+//            if (!domain->io_data)
+//                return no_mem_msg;
+//            ecrt_domain_external_memory(domain->handle, domain->io_data);
 
             /* Move the domain to the sample time array */
             tid = domain->tid;
@@ -864,7 +911,7 @@ init_domains(struct ecat_master *master, struct ecat_master *new_master)
     return NULL;
 }
 
-const char * __init
+const char *
 init_slave_iodata(struct ecat_slave *slave)
 {
     struct mapped_pdo *mapped_pdo;
@@ -877,18 +924,7 @@ init_slave_iodata(struct ecat_slave *slave)
         char *data_ptr = 
             mapped_pdo->domain->io_data + mapped_pdo->base_offset;
         unsigned int bitposition = pdo->bitoffset ? *pdo->bitoffset : 0;
-        struct endian_convert_t *endian_convert_list;
-        unsigned int data_width = get_addr_incr(pdo->pdo_datatype);
-
-        if (!data_width) {
-            snprintf(errbuf, sizeof(errbuf),
-                    "Error: do not know how to do endian "
-                    "processing on datatype %u for "
-                    "(slave #%u.%u)",
-                    pdo->pdo_datatype,
-                    slave->alias, slave->position);
-            return  errbuf;
-        }
+        struct endian_convert_t *endian_convert;
 
         for (i = 0; i < pdo->vector_len; i++) {
             pdo->address[i] = data_ptr;
@@ -898,25 +934,40 @@ init_slave_iodata(struct ecat_slave *slave)
                 pdo->bitoffset[i] = bitposition;
 
                 bitposition += pdo->bitlen;
-                data_ptr += bitposition / 8;
-                bitposition %= 8;
+                data_ptr += bitposition >> 3;
+                bitposition &= 0x07;
             }
             else {
-                data_ptr += data_width;
+                data_ptr += pdo->pdo_datatype_size;
             }
 
-            if (data_width > 1) {
-                /* Note: mapped_pdo->domain is still a pointer to 
-                 * the old domain structure (the one in the linked
-                 * list), not the one in the sample time structure 
-                 * (ecat_data->st[].input_domain). Since this will be 
-                 * thrown away soon, we can misuse its 
-                 * endian_convert_list pointer as a counter. */
-                endian_convert_list = 
+            /* Note: mapped_pdo->domain is still a pointer to 
+             * the old domain structure (the one in the linked
+             * list), not the in the new sample time structure 
+             * (ecat_data->st[].input_domain). Since this will be 
+             * thrown away soon, we can misuse its 
+             * endian_convert_list pointer as a counter. */
+            if (pdo->pdo_datatype_size == 6 || pdo->pdo_datatype_size == 7) {
+                /* Data sizes of 7 and 6 need to endian conversions:
+                 * one uint32_t and one uint16_t */
+                endian_convert = 
                     mapped_pdo->domain->endian_convert_list++;
+                endian_convert->data_ptr = data_ptr;
+                endian_convert->pdo_datatype_size = 4;
 
-                endian_convert_list->data_ptr = data_ptr;
-                endian_convert_list->pdo_datatype = pdo->pdo_datatype;
+                endian_convert = 
+                    mapped_pdo->domain->endian_convert_list++;
+                endian_convert->data_ptr = data_ptr + 4;
+                endian_convert->pdo_datatype_size = 2;
+            }
+            else if (pdo->pdo_datatype_size > 1) {
+                /* All other data sizes except for 1 need only 
+                 * one endian conversion */
+                endian_convert = 
+                    mapped_pdo->domain->endian_convert_list++;
+                endian_convert->data_ptr = data_ptr;
+                endian_convert->pdo_datatype_size =
+                    pdo->pdo_datatype_size & ~1U;
             }
         }
     } 
@@ -930,7 +981,7 @@ init_slave_iodata(struct ecat_slave *slave)
  * registration items. Now the EtherCAT driver can be contacted to activate
  * the subsystem.
  */
-const char * __init
+const char *
 ecs_start(void)
 {
     struct ecat_master *master;
@@ -981,6 +1032,13 @@ ecs_start(void)
         if ((err = init_slaves(master)))
             return err;
 
+        pr_debug ("ecrt_master_activate(%p)\n", master->handle);
+        if (ecrt_master_activate(master->handle)) {
+            snprintf(errbuf, sizeof(errbuf),
+                    "Master %i activate failed", master->id);
+            return errbuf;
+        }
+
         if ((err = init_domains(master, new_master)))
             return err;
 
@@ -999,16 +1057,10 @@ ecs_start(void)
 
         /* Setup the lock, timing  and callbacks needed for sharing 
          * the master. */
-        rt_sem_init(&new_master->lock,1);
-        ecrt_master_callbacks(new_master->handle, 
-                ecs_request_cb, ecs_release_cb, new_master);
+        pthread_mutex_init(&new_master->lock, NULL);
+//        ecrt_master_callbacks(new_master->handle, 
+//                ecs_send_cb, ecs_receive_cb, new_master);
 
-        pr_debug ("ecrt_master_activate(%p)\n", new_master->handle);
-        if (ecrt_master_activate(new_master->handle)) {
-            snprintf(errbuf, sizeof(errbuf),
-                    "Master %i activate failed", master->id);
-            return errbuf;
-        }
     }
 
     /* Release all temporary memory */
@@ -1017,7 +1069,7 @@ ecs_start(void)
     return NULL;
 }
 
-void __exit
+void
 ecs_end(void)
 {
     struct st_data *st;
@@ -1043,7 +1095,7 @@ ecs_end(void)
                 master && master != &st->master[st->master_count]; 
                 master++) {
             if (master->handle) {
-                ecrt_master_callbacks(master->handle, NULL, NULL, NULL);
+//                ecrt_master_callbacks(master->handle, NULL, NULL, NULL);
                 ecrt_release_master(master->handle);
             }
             my_kfree(master->state, "master state");
@@ -1083,9 +1135,10 @@ ecs_end(void)
  * structures are initialised and the sample time domains are prepared.
  * Compatability with the EtherCAT interface is also checked.
  */
-const char * __init
+const char *
 ecs_init( 
-        unsigned int *st    /* a 0 terminated list of sample times */
+        unsigned int *st,    /* a 0 terminated list of sample times */
+        unsigned int single_tasking
         )
 {
     unsigned int nst;       /* Number of sample times */
@@ -1093,9 +1146,9 @@ ecs_init(
     int i;
 
     /* Make sure that the correct header version is used */
-#if ECRT_VERSION_MAGIC != ECRT_VERSION(1,4)
+#if ECRT_VERSION_MAGIC != ECRT_VERSION(1,5)
 #error Incompatible EtherCAT header file found.
-#error This source is only compatible with EtherCAT Version 1.4
+#error This source is only compatible with EtherCAT Version 1.5
 #endif
 
     /* Make sure that the EtherCAT driver has the correct interface */
@@ -1120,6 +1173,7 @@ ecs_init(
 
     /* Set default values for all variables */
     ecat_data->nst = nst;
+    ecat_data->single_tasking = single_tasking;
 
     INIT_LIST_HEAD(&ecat_data->master_list);
 
@@ -1130,15 +1184,72 @@ ecs_init(
     return NULL;
 }
 
-unsigned int etl_strlen(const char *str) {
-    return strlen(str);
+/** Read non-aligned data types.
+ *
+ * The following functions are used to read non aligned data types.
+ *
+ * The return value is a generic data type that can represent the
+ * source, left shifted so that the highest bits are occupied.
+ *
+ * The data is interpreted as little endian, which is the format
+ * used by EtherCAT */
+
+uint32_t ecs_read_uint24(void *byte)
+{
+    return 
+        ((uint32_t) *(uint8_t*)(byte+2)) << 16
+        | (uint32_t)*(uint16_t*)byte;
 }
 
-extern char *etl_strrchr(const char *str, int c) {
-    return strrchr(str, c);
+uint64_t ecs_read_uint40(void *byte)
+{
+    return 
+        ((uint64_t) *(uint8_t*)(byte+4)) << 32
+        | (uint64_t)*(uint32_t*)byte;
 }
 
-extern char *etl_strncpy(char *target, const char *source, unsigned int n) {
-    return strncpy(target, source, n);
+uint64_t ecs_read_uint48(void *byte)
+{
+    return
+        ((uint64_t) *(uint16_t*)(byte+4)) << 40
+        | (uint64_t)*(uint32_t*) byte;
 }
 
+uint64_t ecs_read_uint56(void *byte)
+{
+    return
+        ((uint64_t)  *(uint8_t *)(byte+6)) << 48
+        | ((uint64_t)*(uint16_t*)(byte+4)) << 40
+        |  (uint64_t)*(uint32_t*) byte;
+}
+
+/** Write non-aligned data types.
+ *
+ * The following functions are used to write non-aligned data types.
+ *
+ * The source value is a generic data type that can represent the
+ * destination.
+ *
+ * The data is interpreted as little endian, which is the format
+ * used by EtherCAT */
+void ecs_write_uint24(void *byte, uint32_t value)
+{
+    *(uint16_t*) byte    =  value;
+    *(uint8_t *)(byte+2) =  value >> 16;
+}
+void ecs_write_uint40(void *byte, uint64_t value)
+{
+    *(uint32_t*) byte    =  value;
+    *(uint8_t *)(byte+4) =  value >> 32;
+}
+void ecs_write_uint48(void *byte, uint64_t value)
+{
+    *(uint32_t*) byte    =  value;
+    *(uint16_t*)(byte+4) =  value >> 32;
+}
+void ecs_write_uint56(void *byte, uint64_t value)
+{
+    *(uint32_t*) byte    =  value;
+    *(uint16_t*)(byte+4) =  value >> 32;
+    *(uint8_t *)(byte+6) =  value >> 48;
+}

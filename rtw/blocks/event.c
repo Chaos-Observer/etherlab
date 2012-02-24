@@ -13,7 +13,7 @@
 
 #include "simstruc.h"
 
-#include <stdint.h>
+
 
 #define WIDTH      (int_T)(mxGetScalar(ssGetSFcnParam(S,0)))
 #define SINGLESHOT        (mxGetScalar(ssGetSFcnParam(S,1)))
@@ -103,19 +103,18 @@ static void mdlInitializeSampleTimes(SimStruct *S)
 static void mdlSetWorkWidths(SimStruct *S)
 {
     int_T width = WIDTH;
-    ssParamRec p = {
-        .name = "Trigger",
-        .nDimensions = 1,
-        .dimensions = &width,
-        .dataTypeId = SS_UINT32,
-        .complexSignal = 0,
-        .data = mxCalloc(width, sizeof(uint32_T)),
-        .dataAttributes = NULL,
-        .nDlgParamIndices = 0,
-        .dlgParamIndices = NULL,
-        .transformed = RTPARAM_TRANSFORMED,
-        .outputAsMatrix = 0,
-    };
+    ssParamRec p;
+    p.name = "Trigger";
+    p.nDimensions = 1;
+    p.dimensions = &width;
+    p.dataTypeId = SS_UINT32;
+    p.complexSignal = 0;
+    p.data = mxCalloc(width, sizeof(uint32_T));
+    p.dataAttributes = NULL;
+    p.nDlgParamIndices = 0;
+    p.dlgParamIndices = NULL;
+    p.transformed = RTPARAM_TRANSFORMED;
+    p.outputAsMatrix = 0;
 
     mexMakeMemoryPersistent(p.data);
     memset(p.data, 0, width * sizeof(uint32_T));

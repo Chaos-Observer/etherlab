@@ -1,12 +1,10 @@
-#ifdef __KERNEL__
-#include <linux/types.h>
-#else
-#include <inttypes.h>
-#define __init
-#endif
-
+#include <stdint.h>
 #include <ecrt.h>
-#include <etl_data_info.h>
+#include <pdserv/pdserv.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 struct pdo_map {
     uint16_t pdo_entry_index;
@@ -14,30 +12,41 @@ struct pdo_map {
     unsigned int vector_len;
     ec_direction_t dir;
 
-    enum si_datatype_t pdo_datatype;
+    unsigned int pdo_datatype_size;
     unsigned int bitlen;
     void **address;
     unsigned int *bitoffset;
 };
 
 /* Structure to temporarily store SDO objects prior to registration */
+struct soe_config {
+    /* SoE values. Used by EtherCAT functions */
+    uint16_t idn;
+    const uint8_t *data;
+    size_t data_len;
+};
+
+/* Structure to temporarily store SDO objects prior to registration */
 struct sdo_config {
     /* The data type of the sdo: 
      * only si_uin8_t, si_uint16_t, si_uint32_t are allowed */
-    enum si_datatype_t datatype;
+    enum pdserv_datatype_t datatype;
 
     /* SDO values. Used by EtherCAT functions */
     uint16_t sdo_index;
-    uint8_t sdo_subindex;
+    size_t sdo_attribute;   /* Either Subindex, or length of byte_array */
     uint32_t value;
+    uint8_t *byte_array;
 };
+
+struct ecat_master;
 
 void ecs_send(int tid);
 void ecs_receive(int tid);
 const char *ecs_start(void);
 
 const char*
-__init ecs_reg_slave(
+ecs_reg_slave(
         unsigned int tid,       /**< Task id of the task this slave will 
                                      run in */
         unsigned int master_id, /**< Master id this slave is connected to */
@@ -55,16 +64,28 @@ __init ecs_reg_slave(
                                           objects passed in \a sdo_config */
         const struct sdo_config *sdo_config, /**< Slave configuration objects */
 
+        unsigned int soe_config_count, /**< Number of SoE Configuration
+                                         objects */
+        const struct soe_config *soe_config, /**< SoE Configuration data */
+
         const ec_sync_info_t *pdo_info, /**< PDO Configuration objects */
+
+        const uint32_t *dc_opmode_config, /**< Vector of 5 values:
+                                            * [ AssignActivate,
+                                            *   CycleTimeSync0, ShiftTimeSync0,
+                                            *   CycleTimeSync1, ShiftTimeSync1]
+                                            *
+                                            * NULL = no dc */
 
         unsigned int pdo_count, /**< Number of PDO mapping objects 
                                              passed in \a pdo */
         const struct pdo_map *pdo /**< PDO mapping objects */
         );
 
-ec_master_t *ecs_get_master_ptr(
+const char *ecs_setup_master(
         unsigned int master_id, 
-        const char **errmsg);
+        unsigned int refclk_sync_dec,
+        void **master);
 
 ec_domain_t *ecs_get_domain_ptr(
         unsigned int master_id, 
@@ -76,6 +97,26 @@ ec_domain_t *ecs_get_domain_ptr(
 void ecs_end(void);
 
 const char *ecs_init( 
-        unsigned int *st       /* Zero terminated list of sample times in 
-                                 * microseconds */
+        unsigned int *st,       /* Zero terminated list of sample times in 
+                                 * nanoseconds */
+        unsigned int single_tasking /* Set if the model is single tasking,
+                                     * even though there are more than one
+                                     * sample time */
         );
+
+/** Read non-aligned data types. */
+uint32_t ecs_read_uint24(void *byte);
+uint64_t ecs_read_uint40(void *byte);
+uint64_t ecs_read_uint48(void *byte);
+uint64_t ecs_read_uint56(void *byte);
+
+/** Write non-aligned data types. */
+void ecs_write_uint24(void *byte, uint32_t value);
+void ecs_write_uint40(void *byte, uint64_t value);
+void ecs_write_uint48(void *byte, uint64_t value);
+void ecs_write_uint56(void *byte, uint64_t value);
+
+#ifdef __cplusplus
+}
+#endif
+

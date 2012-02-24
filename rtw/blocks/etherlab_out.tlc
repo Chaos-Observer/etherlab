@@ -10,12 +10,12 @@
 %% 
 %% License: GPL
 
-%%include "EtherLAB_IO.tlc"
+%include "ETL.tlc"
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %function BlockTypeSetup( block, system ) void
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  %%<InitEtherLABIO()>
+  %<InitETL()>
   %<LibAddToCommonIncludes("rt_vars.h")>
 %endfunction
 
@@ -23,29 +23,27 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %function BlockInstanceSetup( block, system ) void
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  %%<InitEtherLABIOTask(block, system)>
 %endfunction
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %function Start(block, system) Output
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  %assign dtype = GetEtlDTypeName(LibBlockInputSignalDataTypeId(0))
+  %assign tid = LibGetGlobalTIDFromLocalSFcnTID(0)
+  %assign tid = tid ? tid - LibGetTID01EQ() : 0
 
   /* Output RT Variable %<Type> Block: %<VarName> 
    * Registering source variable with EtherLAB IO Signal Layer
    */
-  %assign dtype = GetEtlDTypeName(LibBlockInputSignalDataTypeId(0))
-  %if LibBlockInputSignalWidth(0) > 1
-    {
-      unsigned int width[] = {%<LibBlockInputSignalWidth(0)>, 0};
-
-      rt_var_reg_output(&rt_app, "%<VarName>", %<dtype>, width, 0,
-                &%<LibBlockPWork(DstAddr,"","",0)>);
-    }
-  %else
-    rt_var_reg_input(&rt_app, "%<VarName>", %<dtype>, NULL, 0,
-              &%<LibBlockPWork(DstAddr,"","",0)>);
-  %endif
+  if ((%<ETL.ErrStr> = rt_var_reg_output(&rt_app, "%<VarName>", %<dtype>, \
+             %<LibBlockInputSignalWidth(0)>, %<tid>, \
+            &%<LibBlockPWork(DstAddr,"","",0)>))) {
+        snprintf(%<ETL.ErrMsg>, sizeof(%<ETL.ErrMsg>), 
+           "Output Signal %<VarName> could not be registered: %s",
+           %<ETL.ErrStr>);
+        %<LibSetRTModelErrorStatus( "%<ETL.ErrMsg>")>;
+  }
 %endfunction
 
 
@@ -79,23 +77,23 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   %switch dtype
     %case tSS_BOOLEAN
-      %return "si_boolean_T"
+      %return "pd_boolean_T"
     %case tSS_UINT8
-      %return "si_uint8_T"
+      %return "pd_uint8_T"
     %case tSS_INT8
-      %return "si_sint8_T"
+      %return "pd_sint8_T"
     %case tSS_UINT16
-      %return "si_uint16_T"
+      %return "pd_uint16_T"
     %case tSS_INT16
-      %return "si_sint16_T"
+      %return "pd_sint16_T"
     %case tSS_UINT32
-      %return "si_uint32_T"
+      %return "pd_uint32_T"
     %case tSS_INT32
-      %return "si_sint32_T"
+      %return "pd_sint32_T"
     %case tSS_DOUBLE
-      %return "si_double_T"
+      %return "pd_double_T"
     %case tSS_SINGLE
-      %return "si_single_T"
+      %return "pd_single_T"
     %default
       %error Unknown PDODataType: %<dtype>; Known types: ...
                 %<tSS_UINT8> %<tSS_INT8> %<tSS_UINT16> %<tSS_INT16> ...
