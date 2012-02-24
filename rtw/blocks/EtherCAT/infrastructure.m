@@ -36,6 +36,9 @@ prod_name = struct( ...
 product = models.(model);            
 rv.SlaveConfig.product = product(1); 
 rv.SlaveConfig.vendor = 2;
+
+
+rv.SlaveConfig.description = model; 
 rv.name = prod_name.(model); 
 
 pdoindex = product(3):product(4);

@@ -1,9 +1,5 @@
 function rv = el4xxx(model,input_type, scale)
 
-%model = 'EL2032v2'
-%diagnose = 1;
-%input_type = 'Vector Input'
-
 entries = [...
            hex2dec('7000'), 17, 16, 2016; ...
            hex2dec('7010'), 17, 16, 2016; ...
@@ -79,7 +75,9 @@ input_unit = struct(...
     );
 
 rv.input_unit = input_unit.(model);
+
 rv.SlaveConfig.vendor = 2;
+rv.SlaveConfig.description = model;
 
 
 product = models.(model);
@@ -119,7 +117,7 @@ rv.PortConfig.input.full_scale = scale_int;
 %       ' terminal. Please choose a valid input, or the scale is being ignored'])
 %end
 
-r = 0 : product(4) - product(3)
+r = 0 : product(4) - product(3);
 if strcmp(input_type, 'Vector Input')
     rv.PortConfig.input.pdo = [zeros(numel(r),4)];
     rv.PortConfig.input.pdo(:,2) = r;

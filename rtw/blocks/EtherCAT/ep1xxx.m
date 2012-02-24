@@ -86,7 +86,7 @@ models = struct(...
     );
 
 rv.SlaveConfig.vendor = 2;
-
+rv.SlaveCongig.description = model;
 
 product = models.(model);
 rv.SlaveConfig.product = product(1);
@@ -103,7 +103,7 @@ rv.SlaveConfig.pdo{1}{3} = arrayfun(...
 
 %Populate the Port entries
 
-r = 0 : product(4) - product(3)
+r = 0 : product(4) - product(3);
 if strcmp(output_type, 'Vector Output')
     rv.PortConfig.output.pdo = [zeros(numel(r),4)];
     rv.PortConfig.output.pdo(:,2) = r;

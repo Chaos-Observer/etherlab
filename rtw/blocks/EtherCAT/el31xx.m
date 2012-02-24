@@ -53,6 +53,7 @@ models = struct(...
 
 rv.output_unit = output_unit.(model);
 rv.SlaveConfig.vendor = 2;
+rv.SlaveConfig.description = model;
 
 
 product = models.(model);

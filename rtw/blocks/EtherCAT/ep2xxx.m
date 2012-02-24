@@ -76,6 +76,7 @@ models = struct(...
     );
 
 rv.SlaveConfig.vendor = 2;
+rv.SlaveConfig.description = model;
 
 
 product = models.(model);

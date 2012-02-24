@@ -1,9 +1,5 @@
 function rv = el2xxx(model,input_type, diagnose)
 
-%model = 'EL2032v2'
-%diagnose = 1;
-%input_type = 'Vector Input'
-
 entries = [...
         hex2dec('3001'), 1, 1, 1001; ...
         hex2dec('3001'), 2, 1, 1001; ...
@@ -71,6 +67,8 @@ rv.SlaveConfig.vendor = 2;
 
 product = models.(model);
 rv.SlaveConfig.product = product(1);
+rv.SlaveConfig.description = model;
+
 
 % RxPdo SyncManager
 rv.SlaveConfig.pdo = { {0 0 {}} };

@@ -84,6 +84,8 @@ rv.SlaveConfig.vendor = 2;
 
 product = models.(model);            
 rv.SlaveConfig.product = product(1); 
+rv.SlaveConfig.description = model; 
+
 
 % Determine Function Input
 func = {'differential', 'single end'};

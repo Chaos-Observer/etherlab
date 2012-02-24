@@ -15,9 +15,9 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "jn"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Thu Feb 23 14:40:05 2012"
-  RTWModifiedTimeStamp	  251908802
-  ModelVersionFormat	  "1.%<AutoIncrement:850>"
+  LastModifiedDate	  "Thu Feb 23 16:00:13 2012"
+  RTWModifiedTimeStamp	  251908922
+  ModelVersionFormat	  "1.%<AutoIncrement:851>"
   ConfigurationManager	  "rcs"
   SampleTimeColors	  off
   SampleTimeAnnotations	  off
@@ -2116,7 +2116,7 @@ Library {
 	  System {
 	    Name		    "MTS"
 	    Location		    [895, 678, 1157, 844]
-	    Open		    on
+	    Open		    off
 	    ModelBrowserVisibility  off
 	    ModelBrowserWidth	    200
 	    ScreenColor		    "white"
