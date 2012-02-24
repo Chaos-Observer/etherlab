@@ -108,7 +108,7 @@
       %<EtherCATTid>, /* TID */ \
       %<MasterId>, %<DomainId>, %<SlaveAlias>, %<SlavePosition>, \
       /* MasterId, DomainId, SlaveAlias, SlavePosition */
-      %<VendorId>, %<ProductCode>, \
+      %<VendorId>, %<SPRINTF("0x%08X", ProductCode)>, \
       /* VendorId, ProductCode */
       %<SdoConfiguration.count>, %<SdoConfiguration.id>, \
       /* SdoConfigCount, SdoVar */
