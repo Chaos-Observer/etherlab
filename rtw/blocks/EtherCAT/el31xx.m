@@ -190,7 +190,11 @@ if strcmp(dtype, 'Double with scale and offset')
     end
 end
 
-
+if status && strcmp(model,'EL3164')
+        warning('EtherLAB:Beckhoff:EL3164:status', ['The status port for '...
+        'the EL3164 is not available, so your status configuration is'...
+        ' beeing ignored'])
+end
 
 % Populate the block's output port(s)
 r = 0:number_elements;
