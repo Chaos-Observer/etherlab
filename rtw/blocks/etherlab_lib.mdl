@@ -15,9 +15,9 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "jn"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Thu Feb 23 16:00:13 2012"
-  RTWModifiedTimeStamp	  251908922
-  ModelVersionFormat	  "1.%<AutoIncrement:851>"
+  LastModifiedDate	  "Fri Feb 24 10:27:08 2012"
+  RTWModifiedTimeStamp	  251980025
+  ModelVersionFormat	  "1.%<AutoIncrement:852>"
   ConfigurationManager	  "rcs"
   SampleTimeColors	  off
   SampleTimeAnnotations	  off
@@ -2373,10 +2373,10 @@ Library {
 	  MaskVariables		  "master=@1;index=@2;rv=@3;tsample=@4;debug=@5;"
 	  MaskInitialization	  "masterStr = '';\npositionStr = '';\n\n[Address masterStr positionStr] = getEtherCATAddress(gc"
 	  "b,master,index);\n\n\nif ~isfield(rv,'PortConfig')||isempty(rv)\n   rv.PortConfig = [];\nend\n\nif ~isfield(rv,'Sla"
-	  "veConfig')||isempty(rv)\n   rv.SlaveConfig = [];\nend\n\nif ~isfield(rv,'name')||isempty(rv)\n   rv.name = 'unknown"
-	  "';\nend\n"
-	  MaskDisplay		  "fprintf(...\n    'Template Slave\\n%s \\n%s Idx:%s',...\n    rv.name,...\n    masterStr,...\n    po"
-	  "sitionStr\n)\n"
+	  "veConfig')||isempty(rv)\n   rv.SlaveConfig = [];\nend\n\nif ~isfield(rv.SlaveConfig,'description')||isempty(rv)\n  "
+	  " slave_name = 'unknown';\nelse\n   slave_name = rv.SlaveConfig.description;\nend\n\n"
+	  MaskDisplay		  "fprintf(...\n    'Template Slave\\n%s \\n%s Idx:%s',...\n    slave_name,...\n    masterStr,...\n   "
+	  " positionStr\n)\n"
 	  MaskIconFrame		  on
 	  MaskIconOpaque	  on
 	  MaskIconRotate	  "none"
