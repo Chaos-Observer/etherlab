@@ -362,9 +362,11 @@ const char *register_signal(const struct thread_task *task,
             dim[i] = dimArray[dimArrayIndex + i];
     }
 
+    /*
     printf("%s task[%u], decim=%u, dt=%u, %p, ndim=%u, %p\n",
             path, tid - (tid && FIRST_TID),
             decimation, data_type, address, ndim, dim);
+            */
     signal = pdserv_signal(task->pdtask, decimation,
             path, data_type, address, ndim, dim);
 
