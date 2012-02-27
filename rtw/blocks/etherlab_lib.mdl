@@ -13,11 +13,11 @@ Library {
   Creator		  "rich"
   UpdateHistory		  "UpdateHistoryNever"
   ModifiedByFormat	  "%<Auto>"
-  LastModifiedBy	  "jn"
+  LastModifiedBy	  "fp"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Fri Feb 24 10:27:08 2012"
-  RTWModifiedTimeStamp	  251980025
-  ModelVersionFormat	  "1.%<AutoIncrement:852>"
+  LastModifiedDate	  "Mon Feb 27 10:40:08 2012"
+  RTWModifiedTimeStamp	  252239978
+  ModelVersionFormat	  "1.%<AutoIncrement:856>"
   ConfigurationManager	  "rcs"
   SampleTimeColors	  off
   SampleTimeAnnotations	  off
@@ -584,7 +584,7 @@ Library {
   }
   System {
     Name		    "etherlab_lib"
-    Location		    [1151, 348, 1632, 570]
+    Location		    [781, 452, 1274, 611]
     Open		    on
     ModelBrowserVisibility  off
     ModelBrowserWidth	    200
@@ -604,7 +604,7 @@ Library {
       Name		      "EtherCAT"
       SID		      1
       Ports		      []
-      Position		      [250, 39, 348, 59]
+      Position		      [202, 59, 299, 78]
       MinAlgLoopOccurrences   off
       PropExecContextOutsideSubsystem off
       RTWSystemCode	      "Auto"
@@ -620,8 +620,8 @@ Library {
       MaskIconUnits	      "pixels"
       System {
 	Name			"EtherCAT"
-	Location		[75, 64, 532, 554]
-	Open			on
+	Location		[693, 389, 1150, 879]
+	Open			off
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
 	ScreenColor		"white"
@@ -635,11 +635,10 @@ Library {
 	ZoomFactor		"100"
 	Block {
 	  BlockType		  SubSystem
-	  Name			  "BAUMER0"
+	  Name			  "Baumer"
 	  SID			  2
 	  Ports			  []
-	  Position		  [55, 317, 179, 343]
-	  ShowName		  off
+	  Position		  [70, 342, 194, 368]
 	  MinAlgLoopOccurrences	  off
 	  PropExecContextOutsideSubsystem off
 	  RTWSystemCode		  "Auto"
@@ -654,7 +653,7 @@ Library {
 	  MaskPortRotate	  "default"
 	  MaskIconUnits		  "autoscale"
 	  System {
-	    Name		    "BAUMER0"
+	    Name		    "Baumer"
 	    Location		    [452, 503, 906, 669]
 	    Open		    off
 	    ModelBrowserVisibility  off
@@ -739,7 +738,6 @@ Library {
 	  SID			  4
 	  Ports			  []
 	  Position		  [60, 189, 210, 228]
-	  ShowName		  off
 	  MinAlgLoopOccurrences	  off
 	  PropExecContextOutsideSubsystem off
 	  RTWSystemCode		  "Auto"
@@ -755,7 +753,7 @@ Library {
 	  MaskIconUnits		  "autoscale"
 	  System {
 	    Name		    "Beckhoff"
-	    Location		    [75, 64, 1157, 618]
+	    Location		    [413, 338, 1495, 779]
 	    Open		    off
 	    ModelBrowserVisibility  off
 	    ModelBrowserWidth	    200
@@ -773,7 +771,7 @@ Library {
 	      Name		      "AIN_0"
 	      SID		      5
 	      Ports		      [0, 1]
-	      Position		      [230, 55, 295, 95]
+	      Position		      [245, 55, 310, 95]
 	      BackgroundColor	      "yellow"
 	      LibraryVersion	      "1.840"
 	      FunctionName	      "ec_slave3"
@@ -825,8 +823,9 @@ Library {
 	      MaskVariables	      "master=@1;index=@2;model=&3;output_type=&4;scale=@5;offset=@6;dtype=&7;status=@8;filter=@9"
 	      ";tau=@10;tsample=@11;debug=@12;"
 	      MaskInitialization      "masterStr = '';\npositionStr = '';\n[Address masterStr positionStr] = getEtherCATAddre"
-	      "ss(gcb,master,index);\n\nrv = el31xx(model,output_type, status, dtype, scale, offset, filter, tau);"
-	      MaskDisplay	      "fprintf('%s\\n%s AIn\\nM:%s Idx:%s',...\n    model,rv.output_unit, masterStr,positionStr)\n\n"
+	      "ss(gcb, master, index);\n\nrv = el31xx(model, output_type, status, dtype, scale, offset, filter, tau);"
+	      MaskDisplay	      "fprintf('%s\\n%s AIn\\nM:%s Idx:%s', ...\n    model, rv.output_unit, masterStr, positionStr)"
+	      "\n\n"
 	      MaskIconFrame	      on
 	      MaskIconOpaque	      on
 	      MaskIconRotate	      "none"
@@ -839,7 +838,7 @@ Library {
 	      Name		      "AIN_EL30xx"
 	      SID		      6
 	      Ports		      [0, 1]
-	      Position		      [355, 52, 445, 98]
+	      Position		      [375, 52, 465, 98]
 	      BackgroundColor	      "yellow"
 	      FunctionName	      "ec_slave2"
 	      Parameters	      "Address,config.SlaveConfig,config.SdoConfig,config.SoeConfig,config.IO,debug,tsample"
@@ -919,7 +918,7 @@ Library {
 	      Name		      "AIN_EP1"
 	      SID		      8
 	      Ports		      [1, 1]
-	      Position		      [200, 348, 325, 402]
+	      Position		      [215, 353, 340, 407]
 	      BackgroundColor	      "yellow"
 	      LibraryVersion	      "1.846"
 	      FunctionName	      "ec_slave3"
@@ -986,12 +985,13 @@ Library {
 	      "9;io_type=&10;input_scale=@11;input_offset=@12;dtype=@13;filter=@14;tau=@15;output_scale=@16;tsample=@17;debug="
 	      "@18;updatefcn=&19;"
 	      MaskInitialization      "masterStr = '';\npositionStr = '';\n[Address masterStr positionStr] = getEtherCATAddre"
-	      "ss(gcb,master,index);\n\n% Due to required compatibility to older Etherlab versions, the\n% name of the input a"
-	      "nd output variables (input_scale, input_offset,\n% output_scale) had to remain transposed. \n% In the ep4374.m "
-	      "file, the names are equal to the corresponded \n% io direction.\n\nrv = ep4374('process',model,io_type, dtype, "
-	      "input_scale, input_offset, ...\n             filter, tau, type_1,  type_2, type_3, type_4, output_scale,... \n "
-	      "            dcmode, dccustomer);"
-	      MaskDisplay	      "fprintf('%s\\n%s AIn\\nM:%s Idx:%s',...\n    model, rv.output_func, masterStr,positionStr);\n"
+	      "ss(gcb, master, index);\n\n% Due to required compatibility to older Etherlab versions, the\n% name of the input"
+	      " and output variables (input_scale, input_offset,\n% output_scale) had to remain transposed. \n% In the ep4374."
+	      "m file, the names are equal to the corresponded \n% io direction.\n\nrv = ep4374('process', model, io_type, dty"
+	      "pe, input_scale, ...\n            input_offset, filter, tau, type_1, type_2, type_3, type_4, ...\n            o"
+	      "utput_scale, dcmode, dccustomer);"
+	      MaskDisplay	      "fprintf('%s\\n%s AIn\\nM:%s Idx:%s', ...\n    model, rv.output_func, masterStr, positionStr)"
+	      ";\n"
 	      MaskIconFrame	      on
 	      MaskIconOpaque	      on
 	      MaskIconRotate	      "none"
@@ -1005,7 +1005,7 @@ Library {
 	      Name		      "AIN_EP2"
 	      SID		      40
 	      Ports		      [0, 1]
-	      Position		      [200, 190, 325, 240]
+	      Position		      [215, 200, 340, 250]
 	      BackgroundColor	      "yellow"
 	      LibraryVersion	      "1.845"
 	      FunctionName	      "ec_slave3"
@@ -1078,10 +1078,10 @@ Library {
 	      "9;output_type=&10;scale=@11;offset=@12;dtype=&13;status=@14;filter=@15;tau=@16;tsample=@17;debug=@18;updatefcn="
 	      "&19;"
 	      MaskInitialization      "masterStr = '';\npositionStr = '';\n[Address masterStr positionStr] = getEtherCATAddre"
-	      "ss(gcb,master,index);\n\nrv = ep3xxx('process', model,output_type, status, dtype, scale, offset,...\n          "
-	      "  filter, tau, type_1,  type_2, type_3, type_4, dcmode, dccustomer);"
-	      MaskDisplay	      "fprintf('%s\\n%s AIn\\nM:%s Idx:%s',...\n    model, rv.output_func, masterStr, positionStr);"
-	      "\n"
+	      "ss(gcb, master, index);\n\nrv = ep3xxx('process', model,output_type, status, dtype, scale, offset, ...\n       "
+	      "     filter, tau, type_1,  type_2, type_3, type_4, dcmode, ...\n            dccustomer);"
+	      MaskDisplay	      "fprintf('%s\\n%s AIn\\nM:%s Idx:%s', ...\n    model, rv.output_func, masterStr, positionStr)"
+	      ";\n"
 	      MaskIconFrame	      on
 	      MaskIconOpaque	      on
 	      MaskIconRotate	      "none"
@@ -1096,7 +1096,7 @@ Library {
 	      Name		      "AOUT_0"
 	      SID		      9
 	      Ports		      [1]
-	      Position		      [225, 120, 300, 160]
+	      Position		      [240, 130, 315, 170]
 	      BackgroundColor	      "yellow"
 	      LibraryVersion	      "1.835"
 	      FunctionName	      "ec_slave3"
@@ -1139,8 +1139,8 @@ Library {
 	      MaskToolTipString	      "on,on,on,on,on,on,on"
 	      MaskVariables	      "master=@1;index=@2;model=&3;input_type=&4;scale=@5;tsample=@6;debug=@7;"
 	      MaskInitialization      "masterStr = '';\npositionStr = '';\n[Address masterStr positionStr] = getEtherCATAddre"
-	      "ss(gcb,master,index);\n\nrv = el4xxx(model, input_type, scale);\n"
-	      MaskDisplay	      "fprintf('%s\\n%s AIn\\nM:%s Idx:%s',...\n    model,rv.input_unit,masterStr,positionStr)\n"
+	      "ss(gcb, master, index);\n\nrv = el4xxx(model, input_type, scale);\n"
+	      MaskDisplay	      "fprintf('%s\\n%s AIn\\nM:%s Idx:%s', ...\n    model, rv.input_unit, masterStr, positionStr)\n"
 	      MaskIconFrame	      on
 	      MaskIconOpaque	      on
 	      MaskIconRotate	      "none"
@@ -1153,14 +1153,14 @@ Library {
 	      Name		      "AOUT_EP0"
 	      SID		      41
 	      Ports		      [1]
-	      Position		      [200, 260, 325, 310]
+	      Position		      [215, 275, 340, 325]
 	      BackgroundColor	      "yellow"
 	      LibraryVersion	      "1.846"
 	      FunctionName	      "ec_slave3"
 	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
 	      EnableBusSupport	      off
 	      MaskType		      "EP4xxx"
-	      MaskDescription	      "Beckhoff Analog Output\nFieldbus Box"
+	      MaskDescription	      "Beckhoff Analog Output Fieldbus Box"
 	      MaskHelp		      "This block generically implements the EtherCAT 16-Bit Analog Input Terminal for various fieldb"
 	      "us boxes.\n<p/>\nThe block input is generally a <tt>double</tt> from the range 0..1 for unipolar terminals and "
 	      "-1..1 for bipolar terminals, where 1 is the highest possible output of the terminal.\n<p/>\nExceeding the input"
@@ -1206,9 +1206,9 @@ Library {
 	      MaskVariables	      "master=@1;index=@2;model=&3;type_1=@4;type_2=@5;type_3=@6;type_4=@7;dcmode=@8;dccustom=@9;"
 	      "input_type=&10;scale=@11;tsample=@12;debug=@13;updatefcn=&14;"
 	      MaskInitialization      "masterStr = '';\npositionStr = '';\n[Address masterStr positionStr] = getEtherCATAddre"
-	      "ss(gcb,master,index);\n\nrv = ep4xxx('process', model,input_type, scale, type_1,...\n             type_2, type_"
-	      "3, type_4, dcmode, dccustom);"
-	      MaskDisplay	      "fprintf('%s\\n%s AIn\\nM:%s Idx:%s',...\n    model,rv.input_func ,masterStr,positionStr)\n"
+	      "ss(gcb, master, index);\n\nrv = ep4xxx('process', model, input_type, scale, type_1, ...\n             type_2, t"
+	      "ype_3, type_4, dcmode, dccustom);"
+	      MaskDisplay	      "fprintf('%s\\n%s AIn\\nM:%s Idx:%s', ...\n    model, rv.input_func, masterStr, positionStr)\n"
 	      MaskIconFrame	      on
 	      MaskIconOpaque	      on
 	      MaskIconRotate	      "none"
@@ -1222,15 +1222,14 @@ Library {
 	      Name		      "DIN_0"
 	      SID		      11
 	      Ports		      [0, 1]
-	      Position		      [15, 260, 145, 310]
+	      Position		      [30, 275, 160, 325]
 	      BackgroundColor	      "yellow"
 	      LibraryVersion	      "1.837"
 	      FunctionName	      "ec_slave3"
 	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
 	      EnableBusSupport	      off
 	      MaskType		      "EL1xxx"
-	      MaskDescription	      "Beckhoff EtherCAT Digital Input\n\nDevices:\n  EL1004,8:	3ms filter\n  EL1014,8:	10us fi"
-	      "lter\n  EL1034           24V floating, 10us filter\n  EL1004v2: Newer version with PDO at 0x6000"
+	      MaskDescription	      "Beckhoff EtherCAT Digital Input Fieldbus Box"
 	      MaskHelp		      "This block implements the Beckhoff's EtherCAT series of Digital Input Terminals.\n<p/>\nChoose"
 	      " or set the following options:\n<h4>Master:</h4>\nSet the EtherCAT Master number that this terminal is connecte"
 	      "d to.\n\n<h4>Slave Index:</h4>\nSet the EtherCAT slave index. Following address formats are allowed:\n<ol>\n<li"
@@ -1257,8 +1256,8 @@ Library {
 	      MaskToolTipString	      "on,on,on,on,on,on"
 	      MaskVariables	      "master=@1;index=@2;model=&3;output_type=&4;tsample=@5;debug=@6;"
 	      MaskInitialization      "masterStr = '';\npositionStr = '';\n[Address masterStr positionStr] = getEtherCATAddre"
-	      "ss(gcb,master,index);\n\nrv = ep1xxx(model,output_type);\n"
-	      MaskDisplay	      "fprintf('%s\\nM:%s Idx:%s',...\n    model,masterStr,positionStr)\n\n"
+	      "ss(gcb, master, index);\n\nrv = ep1xxx(model, output_type);\n"
+	      MaskDisplay	      "fprintf('%s\\nM:%s Idx:%s', ...\n    model, masterStr, positionStr)\n\n"
 	      MaskIconFrame	      on
 	      MaskIconOpaque	      on
 	      MaskIconRotate	      "none"
@@ -1271,14 +1270,13 @@ Library {
 	      Name		      "DIN_1"
 	      SID		      37
 	      Ports		      [0, 1]
-	      Position		      [45, 190, 115, 230]
+	      Position		      [60, 205, 130, 245]
 	      BackgroundColor	      "yellow"
 	      FunctionName	      "ec_slave3"
 	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
 	      EnableBusSupport	      off
 	      MaskType		      "EL1xxx"
-	      MaskDescription	      "Beckhoff EtherCAT Digital Input\n\nDevices:\n  EL1004,8:	3ms filter\n  EL1014,8:	10us fi"
-	      "lter\n  EL1034           24V floating, 10us filter\n  EL1004v2: Newer version with PDO at 0x6000"
+	      MaskDescription	      "Beckhoff EtherCAT Digital Input"
 	      MaskHelp		      "This block implements the Beckhoff's EtherCAT series of Digital Input Terminals.\n<p/>\nChoose"
 	      " or set the following options:\n<h4>Master:</h4>\nSet the EtherCAT Master number that this terminal is connecte"
 	      "d to.\n\n<h4>Slave Index:</h4>\nSet the EtherCAT slave index. Following address formats are allowed:\n<ol>\n<li"
@@ -1303,8 +1301,8 @@ Library {
 	      MaskToolTipString	      "on,on,on,on,on,on"
 	      MaskVariables	      "master=@1;index=@2;model=&3;output_type=&4;tsample=@5;debug=@6;"
 	      MaskInitialization      "masterStr = '';\npositionStr = '';\n[Address masterStr positionStr] = getEtherCATAddre"
-	      "ss(gcb,master,index);\n\nrv = el1xxx(model,output_type);\n"
-	      MaskDisplay	      "fprintf('%s\\nM:%s Idx:%s',...\n    model,masterStr,positionStr)\n\n"
+	      "ss(gcb, master, index);\n\nrv = el1xxx(model, output_type);\n"
+	      MaskDisplay	      "fprintf('%s\\nM:%s Idx:%s', ...\n    model, masterStr, positionStr)\n\n"
 	      MaskIconFrame	      on
 	      MaskIconOpaque	      on
 	      MaskIconRotate	      "none"
@@ -1317,14 +1315,13 @@ Library {
 	      Name		      "DIN_2"
 	      SID		      39
 	      Ports		      [1]
-	      Position		      [15, 115, 145, 165]
+	      Position		      [30, 125, 160, 175]
 	      BackgroundColor	      "yellow"
 	      FunctionName	      "ec_slave3"
 	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
 	      EnableBusSupport	      off
 	      MaskType		      "EL1xxx"
-	      MaskDescription	      "Beckhoff EtherCAT Digital Input\n\nDevices:\n  EL1004,8:	3ms filter\n  EL1014,8:	10us fi"
-	      "lter\n  EL1034           24V floating, 10us filter\n  EL1004v2: Newer version with PDO at 0x6000"
+	      MaskDescription	      "Beckhoff EtherCAT Digital Output Fieldbus Box"
 	      MaskHelp		      "This block implements the Beckhoff's EtherCAT series of Digital Input Terminals.\n<p/>\nChoose"
 	      " or set the following options:\n<h4>Master:</h4>\nSet the EtherCAT Master number that this terminal is connecte"
 	      "d to.\n\n<h4>Slave Index:</h4>\nSet the EtherCAT slave index. Following address formats are allowed:\n<ol>\n<li"
@@ -1351,8 +1348,8 @@ Library {
 	      MaskToolTipString	      "on,on,on,on,on,on"
 	      MaskVariables	      "master=@1;index=@2;model=&3;input_type=&4;tsample=@5;debug=@6;"
 	      MaskInitialization      "masterStr = '';\npositionStr = '';\n[Address masterStr positionStr] = getEtherCATAddre"
-	      "ss(gcb,master,index);\n\nrv = ep2xxx(model,input_type);\n"
-	      MaskDisplay	      "fprintf('%s\\nM:%s Idx:%s',...\n    model,masterStr,positionStr)\n\n"
+	      "ss(gcb, master, index);\n\nrv = ep2xxx(model, input_type);\n"
+	      MaskDisplay	      "fprintf('%s\\nM:%s Idx:%s', ...\n    model, masterStr, positionStr)\n\n"
 	      MaskIconFrame	      on
 	      MaskIconOpaque	      on
 	      MaskIconRotate	      "none"
@@ -1365,14 +1362,13 @@ Library {
 	      Name		      "DOUT_0"
 	      SID		      12
 	      Ports		      [1]
-	      Position		      [40, 55, 120, 95]
+	      Position		      [55, 55, 135, 95]
 	      BackgroundColor	      "yellow"
 	      FunctionName	      "ec_slave3"
 	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
 	      EnableBusSupport	      off
 	      MaskType		      "EL20xx"
-	      MaskDescription	      "Beckhoff EtherCAT Digital Output\n\nDevices:\n  EL2002,4:	24V 0.5A\n  EL2032:	24V 2A, Op"
-	      "tional Status (with Vector Input)"
+	      MaskDescription	      "Beckhoff EtherCAT Digital Output"
 	      MaskHelp		      "This block implements the Beckhoff's EtherCAT series of Digital Output Terminals.\n<p/>\nChoos"
 	      "e or set the following options:\n<h4>Master:</h4>\nSet the EtherCAT Master number that this terminal is connect"
 	      "ed to.\n\n<h4>Slave Index:</h4>\nSet the EtherCAT slave index. Following address formats are allowed:\n<ol>\n<l"
@@ -1402,8 +1398,8 @@ Library {
 	      MaskToolTipString	      "on,on,on,on,on,on,on"
 	      MaskVariables	      "master=@1;index=@2;model=&3;input_type=&4;tsample=@5;debug=@6;diagnose=@7;"
 	      MaskInitialization      "masterStr = '';\npositionStr = '';\n[Address masterStr positionStr] = getEtherCATAddre"
-	      "ss(gcb,master,index);\n\nrv = el2xxx(model,input_type,diagnose);\n"
-	      MaskDisplay	      "fprintf('%s\\nM:%s Idx:%s',...\n    model,masterStr,positionStr)\n\n"
+	      "ss(gcb, master, index);\n\nrv = el2xxx(model, input_type, diagnose);\n"
+	      MaskDisplay	      "fprintf('%s\\nM:%s Idx:%s', ...\n    model, masterStr, positionStr)\n\n"
 	      MaskIconFrame	      on
 	      MaskIconOpaque	      on
 	      MaskIconRotate	      "none"
@@ -1416,7 +1412,7 @@ Library {
 	      Name		      "ENC_0"
 	      SID		      13
 	      Ports		      [0, 1]
-	      Position		      [645, 130, 725, 170]
+	      Position		      [660, 130, 735, 170]
 	      BackgroundColor	      "yellow"
 	      FunctionName	      "ec_slave2"
 	      Parameters	      "Address,SlaveConfig,SdoConfig,[],IOSpec,debug,tsample"
@@ -1513,7 +1509,7 @@ Library {
 	      Name		      "INC_IN1"
 	      SID		      14
 	      Ports		      [5, 9]
-	      Position		      [635, 191, 740, 239]
+	      Position		      [645, 201, 750, 249]
 	      BackgroundColor	      "yellow"
 	      FunctionName	      "ec_slave2"
 	      Parameters	      "Address,config.SlaveConfig,config.SdoConfig,config.SoeConfig,config.IO,debug,tsample"
@@ -1585,7 +1581,7 @@ Library {
 	      Name		      "Infrastructure"
 	      SID		      15
 	      Ports		      []
-	      Position		      [915, 58, 1035, 107]
+	      Position		      [930, 53, 1050, 102]
 	      BackgroundColor	      "yellow"
 	      LibraryVersion	      "1.846"
 	      FunctionName	      "ec_slave3"
@@ -1605,8 +1601,8 @@ Library {
 	      MaskToolTipString	      "on,on,on,on,on"
 	      MaskVariables	      "master=@1;index=@2;model=&3;tsample=@4;debug=@5;"
 	      MaskInitialization      "masterStr = '';\npositionStr = '';\n[Address masterStr positionStr] = getEtherCATAddre"
-	      "ss(gcb,master,index);\n\nrv = infrastructure(model);"
-	      MaskDisplay	      "fprintf('%s\\n%s\\nM:%s Idx:%s',...\n    model,rv.name,masterStr,positionStr)\n\n"
+	      "ss(gcb, master, index);\n\nrv = infrastructure(model);"
+	      MaskDisplay	      "fprintf('%s\\n%s\\nM:%s Idx:%s', ...\n    model, rv.name, masterStr, positionStr)\n\n"
 	      MaskIconFrame	      on
 	      MaskIconOpaque	      on
 	      MaskIconRotate	      "none"
@@ -1619,7 +1615,7 @@ Library {
 	      Name		      "K-Bus"
 	      SID		      16
 	      Ports		      []
-	      Position		      [780, 53, 860, 106]
+	      Position		      [795, 53, 875, 106]
 	      BackgroundColor	      "yellow"
 	      FunctionName	      "ec_slave2"
 	      Parameters	      "Address,SlaveConfig,SdoConfig,[],IOSpec,debug,tsample"
@@ -1660,8 +1656,8 @@ Library {
 	      "oEntries = getEntries(ei{1},'GroupType',type);\n    IOSpec.Port = struct('PdoEntry', PdoEntries);\n%     IOSpec"
 	      ".Pdo.SmAssignment = [6911 3];\n%     IOSpec.Pdo.Selection = [6911];\n%     IOSpec.Pdo.Variant = 4;\n    IOSpec."
 	      "Pdo.Unique = 1;\n\n    [p f e] = fileparts(fname);\n    display_name = [f e];\nend"
-	      MaskDisplay	      "fprintf('BK1120\\nK-Bus Coupler\\n%s\\nM:%s Idx:%s',...\n    display_name,masterStr,position"
-	      "Str);\n"
+	      MaskDisplay	      "fprintf('BK1120\\nK-Bus Coupler\\n%s\\nM:%s Idx:%s', ...\n    display_name, masterStr, posit"
+	      "ionStr);\n"
 	      MaskIconFrame	      on
 	      MaskIconOpaque	      on
 	      MaskIconRotate	      "none"
@@ -1674,7 +1670,7 @@ Library {
 	      Name		      "RTD_0"
 	      SID		      17
 	      Ports		      [0, 1]
-	      Position		      [500, 55, 580, 95]
+	      Position		      [520, 55, 595, 95]
 	      BackgroundColor	      "yellow"
 	      FunctionName	      "ec_slave2"
 	      Parameters	      "Address,SlaveConfig,SdoConfig,[],IOSpec,0,tsample"
@@ -1790,7 +1786,7 @@ Library {
 	      Name		      "RTD_1"
 	      SID		      18
 	      Ports		      [0, 1]
-	      Position		      [495, 127, 590, 173]
+	      Position		      [510, 127, 605, 173]
 	      BackgroundColor	      "yellow"
 	      FunctionName	      "ec_slave2"
 	      Parameters	      "Address,config.SlaveConfig,config.SdoConfig,config.SoeConfig,config.IO,debug,tsample"
@@ -1859,7 +1855,7 @@ Library {
 	      Name		      "SSI_0"
 	      SID		      19
 	      Ports		      [0, 1]
-	      Position		      [640, 55, 720, 95]
+	      Position		      [660, 55, 735, 95]
 	      BackgroundColor	      "yellow"
 	      FunctionName	      "ec_slave2"
 	      Parameters	      "Address,SlaveConfig,SdoConfig,[],output,debug,tsample"
@@ -1945,38 +1941,38 @@ Library {
 	      MaskValueString	      "0|1|Rev 0001|1|0|Double|Binary|1250k|Multiturn (25 bits)|25|24|off|off|1|off|off|0.1|0|0"
 	    }
 	    Annotation {
-	      Name		      "Analog-IO(16Bit)"
-	      Position		      [256, 34]
+	      Name		      "Analog I/O (16 bit)"
+	      Position		      [276, 34]
 	      FontSize		      12
 	    }
 	    Annotation {
-	      Name		      "Digital-IO"
-	      Position		      [86, 34]
+	      Name		      "Digital I/O"
+	      Position		      [96, 34]
 	      FontSize		      12
 	    }
 	    Annotation {
-	      Name		      "Analog-IO(12Bit)"
-	      Position		      [401, 34]
+	      Name		      "Analog I/O (12 bit)"
+	      Position		      [416, 34]
 	      FontSize		      12
 	    }
 	    Annotation {
-	      Name		      "Special-Analog-IO"
-	      Position		      [541, 34]
+	      Name		      "Special Analog I/O"
+	      Position		      [556, 34]
 	      FontSize		      12
 	    }
 	    Annotation {
-	      Name		      "Special-IO"
-	      Position		      [681, 34]
+	      Name		      "Special I/O"
+	      Position		      [696, 34]
 	      FontSize		      12
 	    }
 	    Annotation {
-	      Name		      "Bus-Coupler"
-	      Position		      [816, 34]
+	      Name		      "KBus"
+	      Position		      [831, 34]
 	      FontSize		      12
 	    }
 	    Annotation {
-	      Name		      "EtherCAT \nInfrastructure"
-	      Position		      [971, 34]
+	      Name		      "Infrastructure"
+	      Position		      [986, 34]
 	      FontSize		      12
 	    }
 	  }
@@ -1986,7 +1982,7 @@ Library {
 	  Name			  "Domain State"
 	  SID			  20
 	  Ports			  [0, 2]
-	  Position		  [270, 86, 355, 119]
+	  Position		  [280, 105, 355, 145]
 	  BackgroundColor	  "yellow"
 	  FunctionName		  "domain_state"
 	  Parameters		  "master,domain,input,output,tsample"
@@ -2017,7 +2013,7 @@ Library {
 	  Name			  "Generic Slave"
 	  SID			  21
 	  Ports			  []
-	  Position		  [60, 29, 138, 69]
+	  Position		  [95, 29, 173, 69]
 	  BackgroundColor	  "yellow"
 	  FunctionName		  "ec_slave2"
 	  Parameters		  "Address,ei,SdoConfig,soe_config,IOSpec,debug,tsample"
@@ -2094,12 +2090,40 @@ Library {
 	  MaskValueString	  "0|1|''|hex2dec('0')|hex2dec('0')|''|[]|No Grouping|[]|[]|0|0|0"
 	}
 	Block {
+	  BlockType		  "S-Function"
+	  Name			  "Master State"
+	  SID			  26
+	  Ports			  [0, 3]
+	  Position		  [280, 30, 355, 70]
+	  BackgroundColor	  "yellow"
+	  FunctionName		  "master_state"
+	  Parameters		  "master,reset,sync_dec,tsample"
+	  EnableBusSupport	  off
+	  MaskType		  "Master State"
+	  MaskDescription	  "Outputs master state:\n* number of responding slaves\n* Slave states\n* Link up\n\nEnabling <b>M"
+	  "aster Reset</b> forces the master to reset the bus\nand scan for new slaves\n"
+	  MaskPromptString	  "Master|Reset Port|Reference Clock Sync Decimation|Sample Time"
+	  MaskStyleString	  "edit,checkbox,edit,edit"
+	  MaskTunableValueString  "off,off,off,off"
+	  MaskCallbackString	  "|||"
+	  MaskEnableString	  "on,on,on,on"
+	  MaskVisibilityString	  "on,on,on,on"
+	  MaskToolTipString	  "on,on,on,on"
+	  MaskVariables		  "master=@1;reset=@2;sync_dec=@3;tsample=@4;"
+	  MaskDisplay		  "fprintf('Master State\\nM: %u',\nmaster);"
+	  MaskIconFrame		  on
+	  MaskIconOpaque	  on
+	  MaskIconRotate	  "none"
+	  MaskPortRotate	  "default"
+	  MaskIconUnits		  "autoscale"
+	  MaskValueString	  "0|off|0|0"
+	}
+	Block {
 	  BlockType		  SubSystem
-	  Name			  "MTS"
+	  Name			  "Mts"
 	  SID			  22
 	  Ports			  []
-	  Position		  [60, 249, 118, 299]
-	  ShowName		  off
+	  Position		  [105, 259, 163, 309]
 	  MinAlgLoopOccurrences	  off
 	  PropExecContextOutsideSubsystem off
 	  RTWSystemCode		  "Auto"
@@ -2114,7 +2138,7 @@ Library {
 	  MaskPortRotate	  "default"
 	  MaskIconUnits		  "autoscale"
 	  System {
-	    Name		    "MTS"
+	    Name		    "Mts"
 	    Location		    [895, 678, 1157, 844]
 	    Open		    off
 	    ModelBrowserVisibility  off
@@ -2200,11 +2224,10 @@ Library {
 	}
 	Block {
 	  BlockType		  SubSystem
-	  Name			  "MURR1"
+	  Name			  "Murr"
 	  SID			  24
 	  Ports			  []
-	  Position		  [50, 357, 186, 413]
-	  ShowName		  off
+	  Position		  [65, 387, 201, 443]
 	  MinAlgLoopOccurrences	  off
 	  PropExecContextOutsideSubsystem off
 	  RTWSystemCode		  "Auto"
@@ -2219,7 +2242,7 @@ Library {
 	  MaskPortRotate	  "default"
 	  MaskIconUnits		  "autoscale"
 	  System {
-	    Name		    "MURR1"
+	    Name		    "Murr"
 	    Location		    [118, 165, 572, 331]
 	    Open		    off
 	    ModelBrowserVisibility  off
@@ -2286,40 +2309,11 @@ Library {
 	  }
 	}
 	Block {
-	  BlockType		  "S-Function"
-	  Name			  "Master State"
-	  SID			  26
-	  Ports			  [0, 3]
-	  Position		  [270, 33, 355, 67]
-	  BackgroundColor	  "yellow"
-	  FunctionName		  "master_state"
-	  Parameters		  "master,reset,sync_dec,tsample"
-	  EnableBusSupport	  off
-	  MaskType		  "Master State"
-	  MaskDescription	  "Outputs master state:\n* number of responding slaves\n* Slave states\n* Link up\n\nEnabling <b>M"
-	  "aster Reset</b> forces the master to reset the bus\nand scan for new slaves\n"
-	  MaskPromptString	  "Master|Reset Port|Reference Clock Sync Decimation|Sample Time"
-	  MaskStyleString	  "edit,checkbox,edit,edit"
-	  MaskTunableValueString  "off,off,off,off"
-	  MaskCallbackString	  "|||"
-	  MaskEnableString	  "on,on,on,on"
-	  MaskVisibilityString	  "on,on,on,on"
-	  MaskToolTipString	  "on,on,on,on"
-	  MaskVariables		  "master=@1;reset=@2;sync_dec=@3;tsample=@4;"
-	  MaskDisplay		  "fprintf('Master State\\nM: %u',\nmaster);"
-	  MaskIconFrame		  on
-	  MaskIconOpaque	  on
-	  MaskIconRotate	  "none"
-	  MaskPortRotate	  "default"
-	  MaskIconUnits		  "autoscale"
-	  MaskValueString	  "0|off|0|0"
-	}
-	Block {
 	  BlockType		  SubSystem
 	  Name			  "Subsystem"
 	  SID			  27
 	  Ports			  []
-	  Position		  [275, 194, 375, 216]
+	  Position		  [270, 194, 370, 216]
 	  ShowName		  off
 	  OpenFcn		  "[];"
 	  MinAlgLoopOccurrences	  off
@@ -2357,7 +2351,7 @@ Library {
 	  Name			  "TemplateSlave"
 	  SID			  42
 	  Ports			  []
-	  Position		  [61, 103, 139, 143]
+	  Position		  [96, 108, 174, 148]
 	  BackgroundColor	  "yellow"
 	  FunctionName		  "ec_slave3"
 	  Parameters		  "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
@@ -2391,7 +2385,7 @@ Library {
       Name		      "Generate Code"
       SID		      28
       Ports		      []
-      Position		      [51, 55, 154, 95]
+      Position		      [51, 50, 154, 90]
       BackgroundColor	      "lightBlue"
       ShowName		      off
       OpenFcn		      "model=bdroot;     \ntry               \n  rtwbuild(model);\ncatch             \n  error(lasterr)"
@@ -2431,57 +2425,10 @@ Library {
     }
     Block {
       BlockType		      SubSystem
-      Name		      "Subsystem"
-      SID		      29
-      Ports		      []
-      Position		      [50, 129, 150, 171]
-      BackgroundColor	      "blue"
-      ShowName		      off
-      OpenFcn		      "s = find_system(gcs);                        \nfor i = 1:numel(s)                           \n  "
-      "op= get_param(s{i},'objectparameters');    \n  if isfield(op,'updatefcn')                 \n    disp(['Update of"
-      " ' s{i} ' Model list'])  \n    try                                      \n      eval([get_param(s{i}, 'updatefcn"
-      "'), ...\n         '(''update'',''',s{i},''')']) ;     \n    catch                                    \n      dis"
-      "p(['Eval of ' s{i} ' failed!'])     \n    end                                      \n  end                      "
-      "                  \nend                                          "
-      MinAlgLoopOccurrences   off
-      PropExecContextOutsideSubsystem off
-      RTWSystemCode	      "Auto"
-      FunctionWithSeparateData off
-      Opaque		      off
-      RequestExecContextInheritance off
-      MaskHideContents	      off
-      MaskHelp		      "The blocks searches for update function. \nThe update functions name are stored in a block para"
-      "meter names <b>updatefcn</b>.\nThis parameter should not be visible.\n\nTo set it click on the block and call\n\n"
-      "set_param(gcb,'updatefcn','functionname')\n\nThe function will be called as: \n\nfunctionname('update',gcb)\n"
-      MaskDisplay	      "disp('Update Library')"
-      MaskIconFrame	      on
-      MaskIconOpaque	      on
-      MaskIconRotate	      "none"
-      MaskPortRotate	      "default"
-      MaskIconUnits	      "autoscale"
-      System {
-	Name			"Subsystem"
-	Location		[433, 403, 931, 703]
-	Open			off
-	ModelBrowserVisibility	off
-	ModelBrowserWidth	200
-	ScreenColor		"white"
-	PaperOrientation	"landscape"
-	PaperPositionMode	"auto"
-	PaperType		"A4"
-	PaperUnits		"centimeters"
-	TiledPaperMargins	[0.500000, 0.500000, 0.500000, 0.500000]
-	TiledPageScale		1
-	ShowPageBoundaries	off
-	ZoomFactor		"100"
-      }
-    }
-    Block {
-      BlockType		      SubSystem
       Name		      "Util"
       SID		      30
       Ports		      []
-      Position		      [265, 94, 335, 154]
+      Position		      [365, 39, 435, 99]
       MinAlgLoopOccurrences   off
       PropExecContextOutsideSubsystem off
       RTWSystemCode	      "Auto"
@@ -2671,7 +2618,7 @@ Library {
     }
     Annotation {
       Name		      "$Id$"
-      Position		      [56, 201]
+      Position		      [56, 136]
       HorizontalAlignment     "left"
     }
   }
