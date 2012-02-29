@@ -9,8 +9,14 @@ struct pdo_map {
     uint16_t pdo_entry_index;
     uint8_t pdo_entry_subindex;
     unsigned int datatype;
+    uint8_t bigendian; 
     unsigned int idx;
     void *address;
+
+    /* The next values are used by the support layer */
+    struct ecat_domain *domain;
+    size_t offset;
+    unsigned int bit_pos;
 };
 
 /* Structure to temporarily store SDO objects prior to registration */
@@ -44,15 +50,19 @@ struct ec_slave {
     unsigned int position;
     unsigned int vendor;
     unsigned int product;
+
     size_t sdo_config_count;
     const struct sdo_config *sdo_config;
+
     size_t soe_config_count;
     const struct soe_config *soe_config;
+
     const ec_sync_info_t *ec_sync_info;
     const uint32_t dc_config[5];
-    size_t input_count;
-    size_t output_count;
-    const struct pdo_map *pdo_map;
+
+    size_t rxpdo_count;
+    size_t txpdo_count;
+    struct pdo_map *pdo_map;
 };
 
 void ecs_send(struct ecs_handle *, size_t tid);
@@ -69,6 +79,18 @@ const char *ecs_start(
                                          * sample time */
         struct ecs_handle **ecs_handle
         );
+
+const char *ecs_setup_master(
+        unsigned int master_id, 
+        unsigned int refclk_sync_dec,
+        void **master);
+
+ec_domain_t *ecs_get_domain_ptr(
+        unsigned int master_id, 
+        unsigned int domain_id, 
+        ec_direction_t dir,
+        unsigned int tid,
+        const char **errmsg);
 
 #ifdef __cplusplus
 }

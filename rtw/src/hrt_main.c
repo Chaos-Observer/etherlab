@@ -289,7 +289,7 @@ const char *register_signal(const struct thread_task *task,
     size_t ndim = rtwCAPI_GetNumDims(dimMap, dimIndex);
     const real_T *sampleTime =
         rtwCAPI_GetSamplePeriodPtr(sampleTimeMap, sTimeIndex);
-    unsigned int tid = rtwCAPI_GetSampleTimeTID(sampleTimeMap, sTimeIndex);
+    int tid = rtwCAPI_GetSampleTimeTID(sampleTimeMap, sTimeIndex);
     uint_T decimation;
 
     struct pdvariable *signal;
@@ -339,10 +339,11 @@ const char *register_signal(const struct thread_task *task,
     }
 
 #if !defined(MULTITASKING)
-    decimation = *sampleTime ? *sampleTime / task[0].sample_time : 1;
+    decimation = tid >= 0 && *sampleTime ? *sampleTime / task[0].sample_time : 1;
 #else
     decimation = 1;
-    task += tid - (tid && FIRST_TID);
+    if (tid >= 0)
+        task += tid - (tid && FIRST_TID);
 #endif
 
     if (ndim == 1) {
@@ -376,6 +377,8 @@ const char *register_signal(const struct thread_task *task,
 out:
     free(path);
     free(dim);
+    if (err)
+        printf("%s\n", err);
     return err;
 }
 
@@ -466,6 +469,7 @@ rtw_capi_init(RT_MODEL *S,
 {
     const rtwCAPI_Signals* signals;
     const rtwCAPI_BlockParameters* params;
+    const char *err;
     size_t i;
 
     mmi = &(rtmGetDataMapInfo(S).mmi);
@@ -482,6 +486,7 @@ rtw_capi_init(RT_MODEL *S,
     params = rtwCAPI_GetBlockParameters(mmi);
     for (i = 0; params && i < rtwCAPI_GetNumBlockParameters(mmi); ++i)
         register_parameter(pdserv, params, i);
+
     return NULL;
 }
 
@@ -559,12 +564,14 @@ int main (int argc, char **argv)
     }
 
     /* Register signals and parameters */
-    rtw_capi_init(S, pdserv, task);
+    if ((err = rtw_capi_init(S, pdserv, task)))
+        goto out;
 
     pdserv_prepare(pdserv);
     mlockall(MCL_CURRENT | MCL_FUTURE);
 
-    init_application(S);
+    if ((err = init_application(S)))
+        goto out;
 
     clock_gettime(CLOCK_MONOTONIC, &task[0].time);
 
@@ -596,5 +603,11 @@ int main (int argc, char **argv)
     pdserv_exit(pdserv);
     MdlTerminate();
 
-    return 0;
+out:
+    if (err) {
+        printf("Fatal error: %s\n", err);
+        return 1;
+    }
+    else
+        return 0;
 }
