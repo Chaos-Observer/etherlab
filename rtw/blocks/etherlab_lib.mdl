@@ -15,9 +15,9 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "fp"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Mon Feb 27 10:40:08 2012"
-  RTWModifiedTimeStamp	  252239978
-  ModelVersionFormat	  "1.%<AutoIncrement:856>"
+  LastModifiedDate	  "Wed Feb 29 14:23:48 2012"
+  RTWModifiedTimeStamp	  252426195
+  ModelVersionFormat	  "1.%<AutoIncrement:858>"
   ConfigurationManager	  "rcs"
   SampleTimeColors	  off
   SampleTimeAnnotations	  off
@@ -584,7 +584,7 @@ Library {
   }
   System {
     Name		    "etherlab_lib"
-    Location		    [781, 452, 1274, 611]
+    Location		    [991, 168, 1327, 327]
     Open		    on
     ModelBrowserVisibility  off
     ModelBrowserWidth	    200
@@ -598,13 +598,13 @@ Library {
     ShowPageBoundaries	    off
     ZoomFactor		    "100"
     ReportName		    "simulink-default.rpt"
-    SIDHighWatermark	    42
+    SIDHighWatermark	    43
     Block {
       BlockType		      SubSystem
       Name		      "EtherCAT"
       SID		      1
       Ports		      []
-      Position		      [202, 59, 299, 78]
+      Position		      [42, 59, 139, 78]
       MinAlgLoopOccurrences   off
       PropExecContextOutsideSubsystem off
       RTWSystemCode	      "Auto"
@@ -620,7 +620,7 @@ Library {
       MaskIconUnits	      "pixels"
       System {
 	Name			"EtherCAT"
-	Location		[693, 389, 1150, 879]
+	Location		[700, 414, 1157, 904]
 	Open			off
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
@@ -1980,9 +1980,9 @@ Library {
 	Block {
 	  BlockType		  "S-Function"
 	  Name			  "Domain State"
-	  SID			  20
+	  SID			  43
 	  Ports			  [0, 2]
-	  Position		  [280, 105, 355, 145]
+	  Position		  [280, 110, 355, 150]
 	  BackgroundColor	  "yellow"
 	  FunctionName		  "domain_state"
 	  Parameters		  "master,domain,input,output,tsample"
@@ -1990,23 +1990,23 @@ Library {
 	  MaskType		  "Domain State"
 	  MaskDescription	  "Displays the following domain state information:\n* Working Counter\n* Domain state:\n	0 - No sl"
 	  "aves\n	1 - Domain incomplete\n	2 - Domain complete"
-	  MaskPromptString	  "Master|Domain|Direction|Sample Time"
-	  MaskStyleString	  "edit,edit,popup(Input Only|Output Only|Input and Output),edit"
-	  MaskTunableValueString  "off,off,off,off"
-	  MaskCallbackString	  "|||"
-	  MaskEnableString	  "on,on,on,on"
-	  MaskVisibilityString	  "on,on,on,on"
-	  MaskToolTipString	  "on,on,on,on"
-	  MaskVariables		  "master=@1;domain=@2;direction=@3;tsample=@4;"
+	  MaskPromptString	  "Master|Domain|Direction|Tx and RxPdo in one domain|Sample Time"
+	  MaskStyleString	  "edit,edit,popup(Input Only|Output Only|Input and Output),checkbox,edit"
+	  MaskTunableValueString  "off,off,off,off,off"
+	  MaskCallbackString	  "||||"
+	  MaskEnableString	  "on,on,on,on,on"
+	  MaskVisibilityString	  "on,on,on,on,on"
+	  MaskToolTipString	  "on,on,on,on,on"
+	  MaskVariables		  "master=@1;domain=@2;direction=@3;io_domain=@4;tsample=@5;"
 	  MaskInitialization	  "switch direction\n    case 1\n        input = 1;\n        output = 0;\n    case 2\n        in"
 	  "put = 0;\n        output = 1;\n    case 3\n        input = 1;\n        output = 1;\nend"
-	  MaskDisplay		  "fprintf('Domain State\\nM:%u d:%u',\nmaster,domain);"
+	  MaskDisplay		  "fprintf('Domain State\\nM:%u d:%u', master,domain);"
 	  MaskIconFrame		  on
 	  MaskIconOpaque	  on
 	  MaskIconRotate	  "none"
 	  MaskPortRotate	  "default"
 	  MaskIconUnits		  "autoscale"
-	  MaskValueString	  "0|0|Input and Output|0"
+	  MaskValueString	  "0|0|Input and Output|on|0"
 	}
 	Block {
 	  BlockType		  "S-Function"
@@ -2382,53 +2382,10 @@ Library {
     }
     Block {
       BlockType		      SubSystem
-      Name		      "Generate Code"
-      SID		      28
-      Ports		      []
-      Position		      [51, 50, 154, 90]
-      BackgroundColor	      "lightBlue"
-      ShowName		      off
-      OpenFcn		      "model=bdroot;     \ntry               \n  rtwbuild(model);\ncatch             \n  error(lasterr)"
-      "; \nend               \n                  "
-      FontName		      "Arial"
-      FontSize		      12
-      FontWeight	      "bold"
-      MinAlgLoopOccurrences   off
-      PropExecContextOutsideSubsystem off
-      RTWSystemCode	      "Auto"
-      FunctionWithSeparateData off
-      Opaque		      off
-      RequestExecContextInheritance off
-      MaskHideContents	      off
-      MaskDisplay	      "disp(['Generate Code\\n',...\n	  '(double-click)'])"
-      MaskIconFrame	      on
-      MaskIconOpaque	      on
-      MaskIconRotate	      "none"
-      MaskPortRotate	      "default"
-      MaskIconUnits	      "autoscale"
-      System {
-	Name			"Generate Code"
-	Location		[1035, 233, 1395, 566]
-	Open			off
-	ModelBrowserVisibility	off
-	ModelBrowserWidth	200
-	ScreenColor		"white"
-	PaperOrientation	"landscape"
-	PaperPositionMode	"auto"
-	PaperType		"usletter"
-	PaperUnits		"inches"
-	TiledPaperMargins	[0.500000, 0.500000, 0.500000, 0.500000]
-	TiledPageScale		1
-	ShowPageBoundaries	off
-	ZoomFactor		"100"
-      }
-    }
-    Block {
-      BlockType		      SubSystem
       Name		      "Util"
       SID		      30
       Ports		      []
-      Position		      [365, 39, 435, 99]
+      Position		      [205, 39, 275, 99]
       MinAlgLoopOccurrences   off
       PropExecContextOutsideSubsystem off
       RTWSystemCode	      "Auto"
