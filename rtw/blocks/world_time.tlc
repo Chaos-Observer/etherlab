@@ -3,27 +3,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %function BlockTypeSetup( block, system) void
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%<LibAddToCommonIncludes("app_taskstats.h")>
-%endfunction
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%function BlockInstanceSetup( block, system) void
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%endfunction
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%function Start( block, system) Output
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-  /* %<Type> Block: %<Name>
-   */
-  %if LibIsSingleTasking()
-    %assign tid = 0
-  %else
-    %assign tid = LibGetGlobalTIDFromLocalSFcnTID(0)
-    %assign tid = tid - (LibGetTID01EQ() && tid)
-  %endif
-  %<LibBlockPWork(Addr,"","",0)> = &task_stats[%<tid>].time;
+  %<LibAddToCommonIncludes("time.h")>
 %endfunction
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -33,8 +13,9 @@
   /* %<Type> Block: %<Name>
    */
   {
-    struct timespec *wt = 
-      (struct timespec *)%<LibBlockPWork(Addr,"","",0)>;
-    %<LibBlockOutputSignal(0,"","",0)> = wt->tv_sec + wt->tv_nsec * 1.0e-9;
+    struct timespec time;
+    if (!clock_gettime(CLOCK_REALTIME, &time))
+        %<LibBlockOutputSignal(0,"","",0)> = \
+                time.tv_sec + time.tv_nsec * 1.0e-9;
   }
 %endfunction
