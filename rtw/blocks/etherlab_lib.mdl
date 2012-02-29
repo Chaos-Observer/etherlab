@@ -776,6 +776,7 @@ Library {
 	      LibraryVersion	      "1.840"
 	      FunctionName	      "ec_slave3"
 	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
+	      SFunctionModules	      "'ecrt_support'"
 	      EnableBusSupport	      off
 	      MaskType		      "EL31xx"
 	      MaskDescription	      "Beckhoff 2,4,8-Channel 16-Bit Analog Input"
@@ -923,6 +924,7 @@ Library {
 	      LibraryVersion	      "1.846"
 	      FunctionName	      "ec_slave3"
 	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
+	      SFunctionModules	      "'ecrt_support'"
 	      EnableBusSupport	      off
 	      MaskType		      "EP4374"
 	      MaskDescription	      "Beckhoff Analog Input/Output 16-Bit Fieldbus Box"
@@ -1010,6 +1012,7 @@ Library {
 	      LibraryVersion	      "1.845"
 	      FunctionName	      "ec_slave3"
 	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
+	      SFunctionModules	      "'ecrt_support'"
 	      EnableBusSupport	      off
 	      MaskType		      "EP3xxx"
 	      MaskDescription	      "Beckhoff Analog Input 16-Bit Fieldbus Box"
@@ -1101,6 +1104,7 @@ Library {
 	      LibraryVersion	      "1.835"
 	      FunctionName	      "ec_slave3"
 	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
+	      SFunctionModules	      "'ecrt_support'"
 	      EnableBusSupport	      off
 	      MaskType		      "EL4xxx"
 	      MaskDescription	      "Beckhoff Analog Output"
@@ -1158,6 +1162,7 @@ Library {
 	      LibraryVersion	      "1.846"
 	      FunctionName	      "ec_slave3"
 	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
+	      SFunctionModules	      "'ecrt_support'"
 	      EnableBusSupport	      off
 	      MaskType		      "EP4xxx"
 	      MaskDescription	      "Beckhoff Analog Output Fieldbus Box"
@@ -1227,6 +1232,7 @@ Library {
 	      LibraryVersion	      "1.837"
 	      FunctionName	      "ec_slave3"
 	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
+	      SFunctionModules	      "'ecrt_support'"
 	      EnableBusSupport	      off
 	      MaskType		      "EL1xxx"
 	      MaskDescription	      "Beckhoff EtherCAT Digital Input Fieldbus Box"
@@ -1274,6 +1280,7 @@ Library {
 	      BackgroundColor	      "yellow"
 	      FunctionName	      "ec_slave3"
 	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
+	      SFunctionModules	      "'ecrt_support'"
 	      EnableBusSupport	      off
 	      MaskType		      "EL1xxx"
 	      MaskDescription	      "Beckhoff EtherCAT Digital Input"
@@ -1319,6 +1326,7 @@ Library {
 	      BackgroundColor	      "yellow"
 	      FunctionName	      "ec_slave3"
 	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
+	      SFunctionModules	      "'ecrt_support'"
 	      EnableBusSupport	      off
 	      MaskType		      "EL1xxx"
 	      MaskDescription	      "Beckhoff EtherCAT Digital Output Fieldbus Box"
@@ -1366,6 +1374,7 @@ Library {
 	      BackgroundColor	      "yellow"
 	      FunctionName	      "ec_slave3"
 	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
+	      SFunctionModules	      "'ecrt_support'"
 	      EnableBusSupport	      off
 	      MaskType		      "EL20xx"
 	      MaskDescription	      "Beckhoff EtherCAT Digital Output"
@@ -1586,6 +1595,7 @@ Library {
 	      LibraryVersion	      "1.846"
 	      FunctionName	      "ec_slave3"
 	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
+	      SFunctionModules	      "'ecrt_support'"
 	      EnableBusSupport	      off
 	      MaskType		      "Infrastructure Block"
 	      MaskDescription	      "EtherCAT Infrastructure Slaves. \n\nThe following slaves are available:\nEK1100	EtherCAT"
@@ -2162,6 +2172,7 @@ Library {
 	      LibraryVersion	      "1.849"
 	      FunctionName	      "ec_slave3"
 	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
+	      SFunctionModules	      "'ecrt_support'"
 	      EnableBusSupport	      off
 	      MaskType		      "MTS R-Series"
 	      MaskDescription	      "MTS R-Series Position Senor\n\nOutput 1: position vector (magnets 1-5) in meter\nOptiona"
@@ -2355,6 +2366,7 @@ Library {
 	  BackgroundColor	  "yellow"
 	  FunctionName		  "ec_slave3"
 	  Parameters		  "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
+          SFunctionModules	  "'ecrt_support'"
 	  EnableBusSupport	  off
 	  MaskPromptString	  "Master|Slave Index|EtherCAT Slave Configuration struct. (SlaveConfig, PortConfig)|Sample Time|D"
 	  "ebug"
