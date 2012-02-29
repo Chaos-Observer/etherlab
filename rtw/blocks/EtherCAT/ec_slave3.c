@@ -1845,6 +1845,11 @@ mdlRTWWritePort(struct ecat_slave *slave, struct io_port *port,
     int32_T param[3] = {-1, -1, -1};
     struct port_pdo *pdo;
     size_t i;
+    enum {
+        PS_PdoEntryIndex = 0,
+        PS_PdoEntrySubIndex,
+        PS_ElementIndex,
+    };
 
     if (port->gain) {
         if (!ssWriteRTWParamSettings(slave->S, 3,
@@ -1909,17 +1914,20 @@ mdlRTWWritePort(struct ecat_slave *slave, struct io_port *port,
 
     pdo_spec = mxCalloc(port->pdo_end - port->pdo, sizeof(*pdo_spec));
     for (pdo = port->pdo, i = 0; pdo != port->pdo_end; pdo++, i++) {
-        pdo_spec[i][0] = pdo->entry->index;
-        pdo_spec[i][1] = pdo->entry->subindex;
-        pdo_spec[i][2] = pdo->element_idx;
+        pdo_spec[i][PS_PdoEntryIndex]    = pdo->entry->index;
+        pdo_spec[i][PS_PdoEntrySubIndex] = pdo->entry->subindex;
+        pdo_spec[i][PS_ElementIndex]     = pdo->element_idx;
     }
 
-    if (!ssWriteRTWParamSettings(slave->S, 5,
+    if (!ssWriteRTWParamSettings(slave->S, 6,
                 SSWRITE_VALUE_DTYPE_2DMAT, "Pdo",
                 pdo_spec, 3, i, DTINFO(SS_UINT32, 0),
 
                 SSWRITE_VALUE_DTYPE_NUM, "PdoDataTypeId",
                 &port->data_type->id, DTINFO(SS_UINT32,0),
+
+                SSWRITE_VALUE_DTYPE_NUM, "BigEndian",
+                &port->big_endian, DTINFO(SS_BOOLEAN,0),
 
                 SSWRITE_VALUE_DTYPE_VECT, "Param",
                 param, 3, DTINFO(SS_INT32,0),
