@@ -274,7 +274,7 @@ end
 % Fill in Offsets
 if filter
     if (isempty(tau) || numel(tau)==1 || numel(tau) == number_elements)
-        if isempty(find(tau <= 0))   
+        if isempty(find(tau <= 0, 1))   
             if strcmp(output_type,'Separate Outputs')        
                 for k = 1:number_elements
                     if numel(tau) == 1
@@ -377,12 +377,12 @@ r = 0:number_elements-1;
 if strcmp(output_type, 'Vector Output')
     if status
         for k = 0:1
-        rv.PortConfig.output(k+1).pdo = [zeros(numel(r),4)];
-        rv.PortConfig.output(k+1).pdo(:,2) = [number_elements*k+r];
+        rv.PortConfig.output(k+1).pdo = zeros(numel(r),4);
+        rv.PortConfig.output(k+1).pdo(:,2) = number_elements*k+r;
         end
     else
-        rv.PortConfig.output.pdo = [zeros(numel(r),4)];
-        rv.PortConfig.output.pdo(:,2) = [r];
+        rv.PortConfig.output.pdo = zeros(numel(r),4);
+        rv.PortConfig.output.pdo(:,2) = r;
     end
 else
     for k = 1:number_elements
