@@ -1985,18 +1985,6 @@ static void mdlRTW(SimStruct *S)
         SdoConfigValue,             /* 3 */
         SdoConfigMax                /* 4 */
     };
-    enum {
-        DcAssignActivate = 0,
-        DcCycleTimeSync0,
-        DcCycleTimeSync0Factor,
-        DcShiftTimeSync0,
-        DcShiftTimeSync0Factor,
-        DcShiftTimeSync0Input,
-        DcCycleTimeSync1,
-        DcCycleTimeSync1Factor,
-        DcShiftTimeSync1,
-        DcShiftTimeSync1Factor
-    };
 
     if (!ssWriteRTWScalarParam(S, "MasterId",
                 &slave->master, SS_UINT32))                     return;

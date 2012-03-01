@@ -31,43 +31,10 @@
   %% the S-Function <-> TLC communication
   %% DO NOT CHANGE THESE without updating the S-Function ec_test2.c
   %% as well
-  %%   %assign ::PortSpecDir                 = 0
-  %%   %assign ::PortSpecPortIdx             = 1
-  %%   %assign ::PortSpecPWork               = 2
-  %%   %assign ::PortSpecDType               = 3
-  %%   %assign ::PortSpecBitLen              = 4
-  %%   %assign ::PortSpecIWork               = 5
-  %%   %assign ::PortSpecGainCount           = 6
-  %%   %assign ::PortSpecGainConstIdx        = 7
-  %%   %assign ::PortSpecOffsetCount         = 8
-  %%   %assign ::PortSpecOffsetConstIdx      = 9
-  %%   %assign ::PortSpecFilterCount         = 10
-  %%   %assign ::PortSpecFilterIdx           = 11
-  %%   %assign ::PortSpecFilterConstIdx      = 12
 
   %assign ::PS_PdoEntryIndex            = 0
   %assign ::PS_PdoEntrySubIndex         = 1
   %assign ::PS_ElementIndex             = 2
-
-  %assign ::DC_AssignActivate           = 0
-  %assign ::DC_CycleTimeSync0           = 1
-  %assign ::DC_CycleTimeSync0Factor     = 2
-  %assign ::DC_ShiftTimeSync0           = 3
-  %assign ::DC_ShiftTimeSync0Factor     = 4
-  %assign ::DC_ShiftTimeSync0Input      = 5
-  %assign ::DC_CycleTimeSync1           = 6
-  %assign ::DC_CycleTimeSync1Factor     = 7
-  %assign ::DC_ShiftTimeSync1           = 8
-  %assign ::DC_ShiftTimeSync1Factor     = 9
-
-  %%   %assign ::PdoEntryIndex               = 0
-  %%   %assign ::PdoEntrySubIndex            = 1
-  %%   %assign ::PdoEntryVectorLength        = 2
-  %%   %assign ::PdoEntryDir                 = 3
-  %%   %assign ::PdoEntryDTypeSize           = 4
-  %%   %assign ::PdoEntryBitLen              = 5
-  %%   %assign ::PdoEntryPWork               = 6
-  %%   %assign ::PdoEntryIWork               = 7
 
   %assign ::SdoConfigIndex              = 0
   %assign ::SdoConfigSubIndex           = 1
@@ -734,7 +701,7 @@
   %endforeach
 
   %openfile buf
-  { %<SPRINTF("0x%04X", DcOpMode[DC_AssignActivate])>, \
+  { %<SPRINTF("0x%04X", DC.AssignActivate)>, \
     %<DC.Time[0]>, %<DC.Time[1]>, \
     %<DC.Time[2]>, %<DC.Time[3]> \
   } \
