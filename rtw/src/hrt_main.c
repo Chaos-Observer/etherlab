@@ -1,16 +1,21 @@
 #include <stdio.h>
-#include <pdserv.h>
 #include <time.h>
 #include <pthread.h>
 #include <sys/mman.h>
+#include <getopt.h>
+#include <libgen.h> // basename()
+#include <errno.h>
+
+#include <pdserv.h>
 
 #include "rtmodel.h"
 #include "rtwtypes.h"
 #include "rt_nonfinite.h"
 #include "rt_sim.h"
 
-#define MAX_SAFE_STACK (8 * 1024) /* The maximum stack size which is guranteed
-                                     safe to access without faulting. */
+#define MAX_SAFE_STACK (8 * 1024) /** The maximum stack size which is
+                                    guranteed safe to access without faulting.
+                                   */
 
 /* To quote a string */
 #define STR(x) #x
@@ -82,6 +87,11 @@ extern void rt_ODEUpdateContinuousStates(RTWSolverInfo *si);
 #ifdef __cplusplus
 }
 #endif
+
+/* Command-line option variables.  */
+
+char *base_name = NULL;
+int priority = -1; /* Task priority, -1 means RT (maximum). */
 
 static rtwCAPI_ModelMappingInfo* mmi;
 static const rtwCAPI_DimensionMap* dimMap;
@@ -557,6 +567,72 @@ void stack_prefault(void)
     memset(dummy, 0, MAX_SAFE_STACK);
 }
 
+/*****************************************************************************/
+
+void usage(FILE *f)
+{
+    fprintf(f,
+            "Usage: %s [OPTIONS]\n"
+            "Options:\n"
+            "  --priority  -p <PRIO>  Set task priority. Default: RT.\n"
+            "  --help      -h         Show this help.\n",
+            base_name);
+}
+
+/*****************************************************************************/
+
+void get_options(int argc, char **argv)
+{
+    int c, arg_count;
+
+    static struct option longOptions[] = {
+        //name,         has_arg,           flag, val
+        {"priority",    required_argument, NULL, 'p'},
+        {"help",        no_argument,       NULL, 'h'},
+        {}
+    };
+
+    do {
+        c = getopt_long(argc, argv, "p:h", longOptions, NULL);
+
+        switch (c) {
+            case 'p':
+                if (!strcmp(optarg, "RT")) {
+                    priority = -1;
+                } else {
+                    char *end;
+                    priority = strtoul(optarg, &end, 10);
+                    if (!*optarg || *end) {
+                        fprintf(stderr, "Invalid priority: %s\n", optarg);
+                        exit(1);
+                    }
+                }
+
+                break;
+
+            case 'h':
+                usage(stdout);
+                exit(0);
+
+            case '?':
+                usage(stderr);
+                exit(1);
+
+            default:
+                break;
+        }
+    }
+    while (c != -1);
+
+    arg_count = argc - optind;
+
+    if (arg_count) {
+        fprintf(stderr, "%s takes no arguments!\n", base_name);
+        usage(stderr);
+        exit(1);
+    }
+}
+
 /* Function: main ============================================================
  *
  * Abstract:
@@ -570,8 +646,12 @@ int main (int argc, char **argv)
     unsigned int dt;
     unsigned int running = 1;
     const char *err = NULL;
-
     size_t i;
+
+    /* Set defaults for command-line options. */
+    base_name = basename(argv[0]);
+
+    get_options(argc, argv);
 
     if (!(pdserv = pdserv_create(QUOTE(MODEL), MODEL_VERSION, gettime))) {
         err = "Failed to init pdserv.";
@@ -599,10 +679,15 @@ int main (int argc, char **argv)
     /* Set task priority. */
     {
         struct sched_param param = {};
-        param.sched_priority = sched_get_priority_max(SCHED_FIFO);
-        printf("Using priority %i\n", param.sched_priority);
+        if (priority == -1) {
+            param.sched_priority = sched_get_priority_max(SCHED_FIFO);
+        } else {
+            param.sched_priority = priority;
+        }
         if (sched_setscheduler(0, SCHED_FIFO, &param) == -1) {
-            perror("sched_setscheduler failed");
+            fprintf(stderr, "Setting SCHED_FIFO"
+                    " with priority %i failed: %s\n",
+                    param.sched_priority, strerror(errno));
         }
     }
 
