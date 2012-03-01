@@ -40,7 +40,6 @@ struct sdo_config {
     const char *byte_array;
 };
 
-struct ecs_handle;
 struct ec_slave {
     const struct ec_slave *next;
     unsigned int tid;
@@ -65,19 +64,18 @@ struct ec_slave {
     struct pdo_map *pdo_map;
 };
 
-void ecs_send(struct ecs_handle *, size_t tid);
-void ecs_receive(struct ecs_handle *, size_t tid);
+void ecs_send(size_t tid);
+void ecs_receive(size_t tid);
 
-void ecs_end(struct ecs_handle *ecs_handle, size_t nst);
+void ecs_end(size_t nst);
 
 const char *ecs_start( 
         const struct ec_slave *slave_head,
         unsigned int *st,       /* List of sample times in nanoseconds */
         size_t nst,
-        unsigned int single_tasking,    /* Set if the model is single tasking,
+        unsigned int single_tasking     /* Set if the model is single tasking,
                                          * even though there are more than one
                                          * sample time */
-        struct ecs_handle **ecs_handle
         );
 
 const char *ecs_setup_master(
