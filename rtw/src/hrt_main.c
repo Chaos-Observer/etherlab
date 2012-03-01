@@ -642,7 +642,7 @@ int main (int argc, char **argv)
 {
     RT_MODEL  *S = MODEL();
     struct thread_task task[NUMTASKS];
-    struct pdserv *pdserv;
+    struct pdserv *pdserv = NULL;
     unsigned int dt;
     unsigned int running = 1;
     const char *err = NULL;
@@ -663,7 +663,7 @@ int main (int argc, char **argv)
         task[i].S = S;
         task[i].tid = i + FIRST_TID;
         task[i].sample_time = rtmGetSampleTime(S, task[i].tid);
-        task[i].pdtask = pdserv_create_task( pdserv, task[i].sample_time, 0);
+        task[i].pdtask = pdserv_create_task(pdserv, task[i].sample_time, 0);
     }
 
     /* Register signals and parameters */
