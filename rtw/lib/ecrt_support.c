@@ -676,7 +676,7 @@ ecs_read_be_double(const struct endian_convert_t *c)
  *  - calls ecrt_domain_process() for every domain in this task
  */
 void
-ecs_receive(struct ecs_handle *ecs_handle, size_t tid)
+ecs_receive(size_t tid)
 {
     struct ecat_master *master;
     struct ecat_domain *domain;
@@ -716,7 +716,7 @@ ecs_receive(struct ecs_handle *ecs_handle, size_t tid)
  * - calls ecrt_master_send() for every domain in this task
  */
 void
-ecs_send(struct ecs_handle *ecs_handle, size_t tid)
+ecs_send(size_t tid)
 {
     struct ecat_master *master;
     struct ecat_domain *domain;
@@ -904,8 +904,7 @@ out_slave_failed:
 /***************************************************************************/
 
 const char *
-init_slave( struct ecs_handle *ecs_handle, size_t nst,
-        const struct ec_slave *slave)
+init_slave(size_t nst, const struct ec_slave *slave)
 {
     struct ecat_master *master;
     struct ecat_domain *domain;
@@ -1041,10 +1040,9 @@ const char * ecs_start(
         const struct ec_slave *slave_head,
         unsigned int *st,       /* List of sample times in nanoseconds */
         size_t nst,
-        unsigned int single_tasking,    /* Set if the model is single tasking,
+        unsigned int single_tasking     /* Set if the model is single tasking,
                                          * even though there are more than one
                                          * sample time */
-        struct ecs_handle **ecs_handle
         )
 {
     const char *err;
@@ -1056,7 +1054,7 @@ const char * ecs_start(
 
     for (slave = slave_head; slave; slave = slave->next) {
     printf("init: %i\n", __LINE__);
-        if ((err = init_slave(*ecs_handle, nst, slave)))
+        if ((err = init_slave(nst, slave)))
             goto out;
     }
     printf("init: %i\n", __LINE__);
@@ -1208,7 +1206,7 @@ out:
 
 /***************************************************************************/
 
-void ecs_end(struct ecs_handle *ecs_handle, size_t nst)
+void ecs_end(size_t nst)
 {
 }
 
