@@ -121,15 +121,20 @@ struct thread_task {
 #  define FIRST_TID 0
 # endif
 
+#define NSEC_PER_SEC (1000000000U)
+
 #undef timeradd
 inline void timeradd(struct timespec *t, unsigned int dt)
 {
     t->tv_nsec += dt;
-    while (t->tv_nsec >= 1000000000U) {
-        t->tv_nsec -= 1000000000U;
+    while (t->tv_nsec >= NSEC_PER_SEC) {
+        t->tv_nsec -= NSEC_PER_SEC;
         t->tv_sec++;
     }
 }
+
+#define DIFF_NS(A, B) (((B).tv_sec - (A).tv_sec) * NSEC_PER_SEC + \
+        (B).tv_nsec - (A).tv_nsec)
 
 #if !defined(MULTITASKING)  /* SINGLETASKING */
 
@@ -652,6 +657,8 @@ int main (int argc, char **argv)
     unsigned int running = 1;
     const char *err = NULL;
     size_t i;
+    uint32_t exec_ns = 0, period_ns = 0;
+    struct timespec start_time, last_start_time, end_time;
 
     /* Set defaults for command-line options. */
     base_name = basename(argv[0]);
@@ -726,13 +733,24 @@ int main (int argc, char **argv)
 
     /* Main thread running here */
     do {
+        clock_gettime(CLOCK_MONOTONIC, &start_time);
+
         pdserv_get_parameters(pdserv, task[0].pdtask, &task[0].time);
 
         err = rt_OneStepMain(S);
 
         pdserv_update(task[0].pdtask, &task[0].time);
 
+        period_ns = DIFF_NS(last_start_time, start_time);
+        exec_ns = DIFF_NS(last_start_time, end_time);
+        last_start_time = start_time;
+        pdserv_update_statistics(task[0].pdtask,
+                exec_ns / 1e9, period_ns / 1e9, 0);
+
         timeradd(&task[0].time, dt);
+
+        clock_gettime(CLOCK_MONOTONIC, &end_time);
+
         clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &task[0].time, 0);
     } while(!err && running);
 
