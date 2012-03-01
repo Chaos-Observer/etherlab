@@ -1,31 +1,4 @@
 $Id$
 
-* Model build uses Kernel CFLAGS
-* Make RTW build use new loading, with registration of variables
-  with rt_kernel
-* Use new librtw.a
+- Set subthread priorities.
 
-* Change kernel typical Makefile ala 
-     make -C /opt/etherlab/src M=/path/to/model
-  Then it will not be necessary to use etherlab/rtw/etherlab/etherlab_tools.mk   
-  any more; it will be implemented in /opt/etherlab/src/Makefile. That file
-  can also contain Kernel CFLAGS, etc.
-
-
-For Rel 1.1
------------
-* Buddy should fork properly and report using the syslog channel
-* edit some README and/or INSTALL 
-
-
-Others:
-------
-* Implement Data input stream
-* use kmalloc() for process and parameter io.
-* make Virtual block inputs and outputs visible
-* Activate meta-tags
-* make something to store permanent data
-* Make test thread in rt_module.c a command line switch
-* Implement raise/catch
-* Implement rate change
-* Implement printf()
