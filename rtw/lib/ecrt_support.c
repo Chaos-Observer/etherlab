@@ -700,12 +700,10 @@ ecs_receive(struct ecs_handle *ecs_handle, size_t tid)
             if (!domain->input)
                 continue;
 
-#if 0
             for (conversion_list = domain->input_convert_list;
                     conversion_list->copy; conversion_list++) {
                 conversion_list->copy(conversion_list);
             }
-#endif
         }
     }
 }
@@ -730,14 +728,12 @@ ecs_send(struct ecs_handle *ecs_handle, size_t tid)
             if (domain->tid != tid)
                 continue;
 
-#if 0
             if (domain->output) {
                 for (conversion_list = domain->input_convert_list;
                         conversion_list->copy; conversion_list++) {
                     conversion_list->copy(conversion_list);
                 }
             }
-#endif
 
             ecrt_domain_queue(domain->handle);
         }
@@ -1082,7 +1078,7 @@ const char * ecs_start(
                     domain->input, domain->output, domain->tid);
 
             domain->input_convert_list =
-                calloc(domain->input_count + domain->output_count,
+                calloc(domain->input_count + domain->output_count + 2,
                         sizeof(struct endian_convert_t));
             domain->output_convert_list =
                 domain->input_convert_list + domain->input_count + 1;
