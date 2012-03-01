@@ -40,8 +40,8 @@
  *          Row 1 configures a variable array of uint8
  *          Row 2 configures a string array
  *
- *      dc: Distributed Clocks Configuration: OPTIONAL; Vector[5]
- *          Matrix [ AssignActivate, ...
+ *      dc: Distributed Clocks Configuration: OPTIONAL; Vector[10]
+ *          Vector [ AssignActivate, ...
  *                   CycleTimeSync0, CycleTimeSync0Factor, ...
  *                   ShiftTimeSync0, ShiftTimeSync0Factor,
  *                   ShiftTimeSync0Input, ...
@@ -269,17 +269,15 @@ struct ecat_slave {
     struct dc_opmode {
         uint16_T assign_activate;
 
-        int32_T  cycle_time_sync0;
-        int32_T  cycle_time_sync0_factor;
-        int32_T  shift_time_sync0;
-        int32_T  shift_time_sync0_factor;
         boolean_T shift_time_sync0_input;
 
-        int32_T  cycle_time_sync1;
-        int32_T  cycle_time_sync1_factor;
-        int32_T  shift_time_sync1;
-        int32_T  shift_time_sync1_factor;
+        /* CycleTimeSync0Factor, ShiftTimeSync0Factor,
+         * CycleTimeSync1Factor, ShiftTimeSync1Factor */
+        int32_T  factor[4];
 
+        /* CycleTimeSync0, ShiftTimeSync0,
+         * CycleTimeSync1, ShiftTimeSync1*/
+        int32_T  value[4];
     } dc_opmode;
 
     struct io_port {
@@ -1047,17 +1045,17 @@ get_slave_config(struct ecat_slave *slave)
         }
 
         slave->dc_opmode.assign_activate            = val[0];
-
-        slave->dc_opmode.cycle_time_sync0           = val[1];
-        slave->dc_opmode.cycle_time_sync0_factor    = val[2];
-        slave->dc_opmode.shift_time_sync0           = val[3];
-        slave->dc_opmode.shift_time_sync0_factor    = val[4];
         slave->dc_opmode.shift_time_sync0_input     = val[5] != 0.0;
 
-        slave->dc_opmode.cycle_time_sync1           = val[6];
-        slave->dc_opmode.cycle_time_sync1_factor    = val[7];
-        slave->dc_opmode.shift_time_sync1           = val[8];
-        slave->dc_opmode.shift_time_sync1_factor    = val[9];
+        slave->dc_opmode.value[0]                   = val[1];
+        slave->dc_opmode.value[1]                   = val[3];
+        slave->dc_opmode.value[2]                   = val[6];
+        slave->dc_opmode.value[3]                   = val[8];
+
+        slave->dc_opmode.factor[0]                  = val[2];
+        slave->dc_opmode.factor[1]                  = val[4];
+        slave->dc_opmode.factor[2]                  = val[7];
+        slave->dc_opmode.factor[3]                  = val[9];
 
         pr_debug(slave, NULL, "", 1,
                 "DC AssignActivate=%u "
@@ -1067,15 +1065,15 @@ get_slave_config(struct ecat_slave *slave)
                 "CycleTimeSync1=%i, CycleTimeSync1Factor=%i, "
                 "ShiftTimeSync1=%i, ShiftTimeSync1Factor=%i\n",
                 slave->dc_opmode.assign_activate,
-                slave->dc_opmode.cycle_time_sync0,
-                slave->dc_opmode.cycle_time_sync0_factor,
-                slave->dc_opmode.shift_time_sync0,
-                slave->dc_opmode.shift_time_sync0_factor,
+                slave->dc_opmode.value[0],
+                slave->dc_opmode.factor[0],
+                slave->dc_opmode.value[1],
+                slave->dc_opmode.factor[1],
                 slave->dc_opmode.shift_time_sync0_input,
-                slave->dc_opmode.cycle_time_sync1,
-                slave->dc_opmode.cycle_time_sync1_factor,
-                slave->dc_opmode.shift_time_sync1,
-                slave->dc_opmode.shift_time_sync1_factor);
+                slave->dc_opmode.value[2],
+                slave->dc_opmode.factor[2],
+                slave->dc_opmode.value[3],
+                slave->dc_opmode.factor[3]);
     }
 
     /***********************
@@ -1987,6 +1985,18 @@ static void mdlRTW(SimStruct *S)
         SdoConfigValue,             /* 3 */
         SdoConfigMax                /* 4 */
     };
+    enum {
+        DcAssignActivate = 0,
+        DcCycleTimeSync0,
+        DcCycleTimeSync0Factor,
+        DcShiftTimeSync0,
+        DcShiftTimeSync0Factor,
+        DcShiftTimeSync0Input,
+        DcCycleTimeSync1,
+        DcCycleTimeSync1Factor,
+        DcShiftTimeSync1,
+        DcShiftTimeSync1Factor
+    };
 
     if (!ssWriteRTWScalarParam(S, "MasterId",
                 &slave->master, SS_UINT32))                     return;
@@ -2129,21 +2139,24 @@ static void mdlRTW(SimStruct *S)
             return;
 
         if (slave->dc_opmode.assign_activate != 0) {
-            int32_T opmode[10] = {
-                slave->dc_opmode.assign_activate,
-                slave->dc_opmode.cycle_time_sync0,
-                slave->dc_opmode.cycle_time_sync0_factor,
-                slave->dc_opmode.shift_time_sync0,
-                slave->dc_opmode.shift_time_sync0_factor,
-                slave->dc_opmode.shift_time_sync0_input,
-                slave->dc_opmode.cycle_time_sync1,
-                slave->dc_opmode.cycle_time_sync1_factor,
-                slave->dc_opmode.shift_time_sync1,
-                slave->dc_opmode.shift_time_sync1_factor
-            };
+            if (!ssWriteRTWParamSettings(slave->S, 4,
+                    SSWRITE_VALUE_DTYPE_NUM, "AssignActivate",
+                    &slave->dc_opmode.assign_activate, DTINFO(SS_UINT16, 0),
 
-            if (!ssWriteRTWVectParam(S, "DcOpMode", opmode, SS_INT32, 10))
+                    SSWRITE_VALUE_DTYPE_NUM, "ShiftTimeSync0Input",
+                    &slave->dc_opmode.shift_time_sync0_input,
+                    DTINFO(SS_BOOLEAN, 0),
+
+                    SSWRITE_VALUE_DTYPE_VECT, "Factor",
+                    slave->dc_opmode.factor, 4, DTINFO(SS_INT32, 0),
+
+                    SSWRITE_VALUE_DTYPE_VECT, "Time",
+                    slave->dc_opmode.value, 4, DTINFO(SS_INT32, 0)))
                 return;
+
+            if (!ssWriteRTWScalarParam(S, "DcOpMode", &param_idx, SS_UINT32))
+                return;
+            param_idx++;
         }
 
         mxFree(sync_manager);

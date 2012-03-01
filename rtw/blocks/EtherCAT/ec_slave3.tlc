@@ -49,6 +49,17 @@
   %assign ::PS_PdoEntrySubIndex         = 1
   %assign ::PS_ElementIndex             = 2
 
+  %assign ::DC_AssignActivate           = 0
+  %assign ::DC_CycleTimeSync0           = 1
+  %assign ::DC_CycleTimeSync0Factor     = 2
+  %assign ::DC_ShiftTimeSync0           = 3
+  %assign ::DC_ShiftTimeSync0Factor     = 4
+  %assign ::DC_ShiftTimeSync0Input      = 5
+  %assign ::DC_CycleTimeSync1           = 6
+  %assign ::DC_CycleTimeSync1Factor     = 7
+  %assign ::DC_ShiftTimeSync1           = 8
+  %assign ::DC_ShiftTimeSync1Factor     = 9
+
   %%   %assign ::PdoEntryIndex               = 0
   %%   %assign ::PdoEntrySubIndex            = 1
   %%   %assign ::PdoEntryVectorLength        = 2
@@ -709,11 +720,23 @@
   %if !EXISTS("DcOpMode")
     %return "{0,}"
   %endif
+  %assign DC = SFcnParamSettings[DcOpMode]
+
+  %assign CycleTime = block.BlockSampleTime ...
+        ? block.BlockSampleTime : LibGetClockTickStepSize(LibGetTID01EQ())
+  %assign CycleTime = CAST("Number", CycleTime * 1000000000.0)
+
+  %foreach i = 4
+    %if !DC.Time[i] && DC.Factor[i]
+      %assign DC.Time[i] = DC.Factor[i] > 0 ...
+          ? DC.Factor[i] * CycleTime : CycleTime / -DC.Factor[i]
+    %endif
+  %endforeach
 
   %openfile buf
-  { %<SPRINTF("0x%04X", DcOpMode[0])>, \
-    %<DcOpMode[1]>, %<DcOpMode[2]>, \
-    %<DcOpMode[3]>, %<DcOpMode[4]> \
+  { %<SPRINTF("0x%04X", DcOpMode[DC_AssignActivate])>, \
+    %<DC.Time[0]>, %<DC.Time[1]>, \
+    %<DC.Time[2]>, %<DC.Time[3]> \
   } \
   %closefile buf
 
