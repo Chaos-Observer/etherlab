@@ -729,7 +729,7 @@ ecs_send(size_t tid)
                 continue;
 
             if (domain->output) {
-                for (conversion_list = domain->input_convert_list;
+                for (conversion_list = domain->output_convert_list;
                         conversion_list->copy; conversion_list++) {
                     conversion_list->copy(conversion_list);
                 }
