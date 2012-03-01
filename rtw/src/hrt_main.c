@@ -90,8 +90,9 @@ extern void rt_ODEUpdateContinuousStates(RTWSolverInfo *si);
 
 /* Command-line option variables.  */
 
-char *base_name = NULL;
-int priority = -1; /* Task priority, -1 means RT (maximum). */
+char *base_name = NULL; /** basename of executable for usage() output. */
+int priority = -1; /** Task priority, -1 means RT (maximum). */
+char *pdserv_config = NULL; /** Path to PdServ configuration file. */
 
 static rtwCAPI_ModelMappingInfo* mmi;
 static const rtwCAPI_DimensionMap* dimMap;
@@ -586,14 +587,15 @@ void get_options(int argc, char **argv)
     int c, arg_count;
 
     static struct option longOptions[] = {
-        //name,         has_arg,           flag, val
-        {"priority",    required_argument, NULL, 'p'},
-        {"help",        no_argument,       NULL, 'h'},
+        //name,           has_arg,           flag, val
+        {"priority",      required_argument, NULL, 'p'},
+        {"pdserv-config", required_argument, NULL, 'c'},
+        {"help",          no_argument,       NULL, 'h'},
         {}
     };
 
     do {
-        c = getopt_long(argc, argv, "p:h", longOptions, NULL);
+        c = getopt_long(argc, argv, "p:c:h", longOptions, NULL);
 
         switch (c) {
             case 'p':
@@ -607,7 +609,10 @@ void get_options(int argc, char **argv)
                         exit(1);
                     }
                 }
+                break;
 
+            case 'c':
+                pdserv_config = optarg;
                 break;
 
             case 'h':
@@ -642,7 +647,7 @@ int main (int argc, char **argv)
 {
     RT_MODEL  *S = MODEL();
     struct thread_task task[NUMTASKS];
-    struct pdserv *pdserv;
+    struct pdserv *pdserv = NULL;
     unsigned int dt;
     unsigned int running = 1;
     const char *err = NULL;
@@ -658,12 +663,19 @@ int main (int argc, char **argv)
         goto out;
     }
 
+    if (pdserv_config) {
+        if (pdserv_config_file(pdserv, pdserv_config)) {
+            err = "Invalid pdserv config file.";
+            goto out;
+        }
+    }
+
     /* Create necessary pdserv tasks */
     for (i = 0; i < NUMTASKS; ++i) {
         task[i].S = S;
         task[i].tid = i + FIRST_TID;
         task[i].sample_time = rtmGetSampleTime(S, task[i].tid);
-        task[i].pdtask = pdserv_create_task( pdserv, task[i].sample_time, 0);
+        task[i].pdtask = pdserv_create_task(pdserv, task[i].sample_time, 0);
     }
 
     /* Register signals and parameters */
