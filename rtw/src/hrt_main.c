@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <pdserv.h>
 #include <time.h>
 #include <pthread.h>
@@ -565,13 +566,17 @@ int main (int argc, char **argv)
 {
     RT_MODEL  *S = MODEL();
     struct thread_task task[NUMTASKS];
-    struct pdserv *pdserv = pdserv_create(
-            QUOTE(MODEL), MODEL_VERSION, gettime);
+    struct pdserv *pdserv;
     unsigned int dt;
     unsigned int running = 1;
-    const char *err;
+    const char *err = NULL;
 
     size_t i;
+
+    if (!(pdserv = pdserv_create(QUOTE(MODEL), MODEL_VERSION, gettime))) {
+        err = "Failed to init pdserv.";
+        goto out;
+    }
 
     /* Create necessary pdserv tasks */
     for (i = 0; i < NUMTASKS; ++i) {
@@ -644,7 +649,7 @@ int main (int argc, char **argv)
 
 out:
     if (err) {
-        printf("Fatal error: %s\n", err);
+        fprintf(stderr, "Fatal error: %s\n", err);
         return 1;
     }
     else
