@@ -8,21 +8,24 @@
 #include "rt_nonfinite.h"
 #include "rt_sim.h"
 
+#define MAX_SAFE_STACK (8 * 1024) /* The maximum stack size which is guranteed
+                                     safe to access without faulting. */
+
 /* To quote a string */
 #define STR(x) #x
 #define QUOTE(x) STR(x)
 
-#define EXPAND_CONCAT(name1,name2) name1 ## name2
-#define CONCAT(name1,name2) EXPAND_CONCAT(name1,name2)
-#define MODEL_VERSION       CONCAT(MODEL,_version)
-#define RT_MODEL            CONCAT(MODEL,_rtModel)
+#define EXPAND_CONCAT(name1, name2) name1 ## name2
+#define CONCAT(name1, name2) EXPAND_CONCAT(name1, name2)
+#define MODEL_VERSION        CONCAT(MODEL, _version)
+#define RT_MODEL             CONCAT(MODEL, _rtModel)
 
 #ifndef max
-#define max(x1,x2) ((x1) > (x2) ? (x1) : (x2))
+#define max(x1, x2) ((x1) > (x2) ? (x1) : (x2))
 #endif
 
 #ifndef min
-#define min(x1,x2) ((x2) > (x1) ? (x1) : (x2))
+#define min(x1, x2) ((x2) > (x1) ? (x1) : (x2))
 #endif
 
 #ifndef RT
@@ -44,6 +47,7 @@
 /*====================*
  * External functions *
  *====================*/
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -60,8 +64,8 @@ extern void MdlTerminate(void);
 extern const char *MODEL_VERSION;
 
 #if NCSTATES > 0
-  extern void rt_ODECreateIntegrationData(RTWSolverInfo *si);
-  extern void rt_ODEUpdateContinuousStates(RTWSolverInfo *si);
+extern void rt_ODECreateIntegrationData(RTWSolverInfo *si);
+extern void rt_ODEUpdateContinuousStates(RTWSolverInfo *si);
 
 # define rt_CreateIntegrationData(S) \
     rt_ODECreateIntegrationData(rtmGetRTWSolverInfo(S));
@@ -282,7 +286,8 @@ const char *register_signal(const struct thread_task *task,
     size_t dimIndex        = rtwCAPI_GetSignalDimensionIdx(signals, idx);
     size_t sTimeIndex      = rtwCAPI_GetSignalSampleTimeIdx(signals, idx);
 
-    const void *address = rtwCAPI_GetDataAddress( dataAddressMap, addrMapIndex);
+    const void *address =
+        rtwCAPI_GetDataAddress(dataAddressMap, addrMapIndex);
     size_t dimArrayIndex = rtwCAPI_GetDimArrayIndex(dimMap, dimIndex);
     unsigned int data_type = get_etl_data_type(dataTypeIndex);
     size_t pathLen = strlen(blockPath) + strlen(signalName) + 9;
@@ -320,10 +325,11 @@ const char *register_signal(const struct thread_task *task,
         goto out;
     }
 
-    /* If portNumber or the port number of the next signal is set, it
-     * means that these signals are part of a single block. Try to
-     * use the signalName to extend the path, otherwise attach the portNumber.
-     * Note: idx+1 is valid, since the list is null terminated
+    /* If portNumber or the port number of the next signal is set, it means
+     * that these signals are part of a single block. Try to use the
+     * signalName to extend the path, otherwise attach the portNumber.
+     *
+     * Note: * idx + 1 is valid, since the list is null terminated
      */
     if (portNumber || rtwCAPI_GetSignalPortNumber(signals, idx + 1)) {
         if (*signalName) {
@@ -339,7 +345,8 @@ const char *register_signal(const struct thread_task *task,
     }
 
 #if !defined(MULTITASKING)
-    decimation = tid >= 0 && *sampleTime ? *sampleTime / task[0].sample_time : 1;
+    decimation =
+        tid >= 0 && *sampleTime ? *sampleTime / task[0].sample_time : 1;
 #else
     decimation = 1;
     if (tid >= 0)
@@ -350,8 +357,9 @@ const char *register_signal(const struct thread_task *task,
         ndim = dimArray[dimArrayIndex];
     }
     else if (ndim == 2 
-            && min(dimArray[dimArrayIndex], dimArray[dimArrayIndex+1]) == 1) {
-        ndim = max(dimArray[dimArrayIndex], dimArray[dimArrayIndex+1]);
+            && min(dimArray[dimArrayIndex],
+                dimArray[dimArrayIndex + 1]) == 1) {
+        ndim = max(dimArray[dimArrayIndex], dimArray[dimArrayIndex + 1]);
     }
     else {
         dim = calloc(ndim, sizeof(size_t));
@@ -363,11 +371,12 @@ const char *register_signal(const struct thread_task *task,
             dim[i] = dimArray[dimArrayIndex + i];
     }
 
-    /*
+#if 0
     printf("%s task[%u], decim=%u, dt=%u, %p, ndim=%u, %p\n",
             path, tid - (tid && FIRST_TID),
             decimation, data_type, address, ndim, dim);
-            */
+#endif
+
     signal = pdserv_signal(task->pdtask, decimation,
             path, data_type, address, ndim, dim);
 
@@ -385,13 +394,13 @@ out:
 const char *register_parameter( struct pdserv *pdserv,
         const rtwCAPI_BlockParameters* params, size_t idx)
 {
-    size_t addrMapIndex    = rtwCAPI_GetBlockParameterAddrIdx(params, idx);
-    const char *blockPath  = rtwCAPI_GetBlockParameterBlockPath(params, idx);
-    const char *paramName  = rtwCAPI_GetBlockParameterName(params, idx);
-    size_t dataTypeIndex   = rtwCAPI_GetBlockParameterDataTypeIdx(params, idx);
-    size_t dimIndex        = rtwCAPI_GetBlockParameterDimensionIdx(params, idx);
+    size_t addrMapIndex = rtwCAPI_GetBlockParameterAddrIdx(params, idx);
+    const char *blockPath = rtwCAPI_GetBlockParameterBlockPath(params, idx);
+    const char *paramName = rtwCAPI_GetBlockParameterName(params, idx);
+    size_t dataTypeIndex = rtwCAPI_GetBlockParameterDataTypeIdx(params, idx);
+    size_t dimIndex = rtwCAPI_GetBlockParameterDimensionIdx(params, idx);
 
-    void *address = rtwCAPI_GetDataAddress( dataAddressMap, addrMapIndex);
+    void *address = rtwCAPI_GetDataAddress(dataAddressMap, addrMapIndex);
     size_t dimArrayIndex = rtwCAPI_GetDimArrayIndex(dimMap, dimIndex);
     unsigned int data_type = get_etl_data_type(dataTypeIndex);
     size_t pathLen = strlen(blockPath) + strlen(paramName) + 9;
@@ -538,6 +547,15 @@ int gettime(struct timespec *time)
     return clock_gettime(CLOCK_REALTIME, time);
 }
 
+/****************************************************************************/
+
+void stack_prefault(void)
+{
+    unsigned char dummy[MAX_SAFE_STACK];
+
+    memset(dummy, 0, MAX_SAFE_STACK);
+}
+
 /* Function: main ============================================================
  *
  * Abstract:
@@ -567,8 +585,24 @@ int main (int argc, char **argv)
     if ((err = rtw_capi_init(S, pdserv, task)))
         goto out;
 
+    /* Prepare process-data interface, create threads, etc. */
     pdserv_prepare(pdserv);
+
+    /* Lock all memory forever. */
     mlockall(MCL_CURRENT | MCL_FUTURE);
+
+    /* Set task priority. */
+    {
+        struct sched_param param = {};
+        param.sched_priority = sched_get_priority_max(SCHED_FIFO);
+        printf("Using priority %i\n", param.sched_priority);
+        if (sched_setscheduler(0, SCHED_FIFO, &param) == -1) {
+            perror("sched_setscheduler failed");
+        }
+    }
+
+    /* Provoke the first stack fault before cyclic operation. */
+    stack_prefault();
 
     if ((err = init_application(S)))
         goto out;
@@ -582,15 +616,20 @@ int main (int argc, char **argv)
         task[i].running = &running;
         task[i].err = 0;
         pthread_create(&task[i].thread, 0, run_task, &task[i]);
+        /* FIXME: set subtask priorities. */
     }
 #endif
 
-    /* Main thread running here */
     dt = task[0].sample_time * 1.0e9 + 0.5;
+
+    /* Main thread running here */
     do {
         pdserv_get_parameters(pdserv, task[0].pdtask, &task[0].time);
+
         err = rt_OneStepMain(S);
+
         pdserv_update(task[0].pdtask, &task[0].time);
+
         timeradd(&task[0].time, dt);
         clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &task[0].time, 0);
     } while(!err && running);
