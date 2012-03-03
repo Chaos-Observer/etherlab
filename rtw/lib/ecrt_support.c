@@ -765,7 +765,8 @@ ecs_send(size_t tid)
 
 /***************************************************************************/
 
-struct ecat_master *get_master(
+static struct ecat_master *
+get_master(
         unsigned int master_id, unsigned int tid, const char **errmsg)
 {
     struct ecat_master *master;
@@ -801,7 +802,7 @@ struct ecat_master *get_master(
 
 /***************************************************************************/
 
-struct ecat_domain *
+static struct ecat_domain *
 get_domain( struct ecat_master *master, unsigned int domain_id,
         char input, char output, unsigned int tid, const char **errmsg)
 {
@@ -850,7 +851,7 @@ get_domain( struct ecat_master *master, unsigned int domain_id,
 
 /***************************************************************************/
 
-const char *
+static const char *
 register_pdos( ec_slave_config_t *slave_config, struct ecat_domain *domain,
         char dir, struct pdo_map *pdo_map, size_t count)
 {
@@ -907,7 +908,7 @@ out_slave_failed:
 
 /***************************************************************************/
 
-const char *
+static const char *
 init_slave(size_t nst, const struct ec_slave *slave)
 {
     struct ecat_master *master;
