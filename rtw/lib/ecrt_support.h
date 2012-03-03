@@ -72,7 +72,7 @@ void ecs_end(size_t nst);
 const char *ecs_start( 
         const struct ec_slave *slave_head,
         unsigned int *st,       /* List of sample times in nanoseconds */
-        size_t nst,
+        size_t nst,             /* Number of sample times */
         unsigned int single_tasking     /* Set if the model is single tasking,
                                          * even though there are more than one
                                          * sample time */
@@ -86,8 +86,9 @@ const char *ecs_setup_master(
 ec_domain_t *ecs_get_domain_ptr(
         unsigned int master_id, 
         unsigned int domain_id, 
-        ec_direction_t dir,
-        unsigned int tid,
+        char input,             /* Domain is  input domain (for TxPdo) */
+        char output,            /* Domain is output domain (for RxPdo) */
+        unsigned int tid,       /* Task Id of domain */
         const char **errmsg);
 
 #ifdef __cplusplus

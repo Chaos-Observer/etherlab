@@ -20,35 +20,41 @@
 
   /* %<Type> Block: %<Name>
    */
-  %assign DomainIdx = 0
-  %if Input
-    %<LibBlockPWork(DomainPtr, "", "", DomainIdx)> = \
-        ecs_get_domain_ptr(%<MasterId>, %<DomainId>, EC_DIR_INPUT, \
+  %%
+  %if IODomain
+    %<LibBlockPWork(DomainPtr, "", "", 0)> = \
+        ecs_get_domain_ptr(%<MasterId>, %<DomainId>, 1, 1, \
                 %<EtherCATTid>, &%<ETL.ErrStr>);
-    if (!%<LibBlockPWork(DomainPtr, "", "", DomainId)>) {
-          snprintf(%<ETL.ErrMsg>, sizeof(%<ETL.ErrMsg>), 
-             "Getting input domain pointer in "
-             "%<LibGetFormattedBlockPath(block)> failed: %s", 
-             %<ETL.ErrStr>);
-          %<LibSetRTModelErrorStatus("%<ETL.ErrMsg>")>;
-          return;
-    }
-    %assign DomainIdx = DomainIdx + 1
+    %assign DomainIdx = 1
+  %else
+    %assign DomainIdx = 0
+    %if Input
+      %<LibBlockPWork(DomainPtr, "", "", DomainIdx)> = \
+          ecs_get_domain_ptr(%<MasterId>, %<DomainId>, 1, 0, \
+                  %<EtherCATTid>, &%<ETL.ErrStr>);
+      %assign DomainIdx = DomainIdx + 1
+    %endif
+    %if Output
+      %<LibBlockPWork(DomainPtr, "", "", DomainIdx)> = \
+          ecs_get_domain_ptr(%<MasterId>, %<DomainId>, 0, 1, \
+                  %<EtherCATTid>, &%<ETL.ErrStr>);
+      %assign DomainIdx = DomainIdx + 1
+    %endif
   %endif
-  %if Output
-    %<LibBlockPWork(DomainPtr, "", "", DomainIdx)> = \
-        ecs_get_domain_ptr(%<MasterId>, %<DomainId>, EC_DIR_OUTPUT, \
-                %<EtherCATTid>, &%<ETL.ErrStr>);
-    if (!%<LibBlockPWork(DomainPtr, "", "", DomainId)>) {
-          snprintf(%<ETL.ErrMsg>, sizeof(%<ETL.ErrMsg>), 
-             "Getting output domain pointer in "
-             "%<LibGetFormattedBlockPath(block)> failed: %s", 
-             %<ETL.ErrStr>);
-          %<LibSetRTModelErrorStatus("%<ETL.ErrMsg>")>;
-          return;
-    }
-    %assign DomainIdx = DomainIdx + 1
+  %%
+  %assign TestCond = "!" + LibBlockPWork(DomainPtr, "", "", 0)
+  %if DomainIdx == 2
+    %assign TestCond = TestCond + "|| !" + LibBlockPWork(DomainPtr, "", "", 1)
   %endif
+  if (%<TestCond>) {
+        snprintf(%<ETL.ErrMsg>, sizeof(%<ETL.ErrMsg>), 
+           "Getting input domain pointer in "
+           "%<LibGetFormattedBlockPath(block)> failed: %s", 
+           %<ETL.ErrStr>);
+        %<LibSetRTModelErrorStatus("%<ETL.ErrMsg>")>;
+        return;
+  }
+  %%
   %addtorecord block PortWidth DomainIdx
 %endfunction
 

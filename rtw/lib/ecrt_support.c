@@ -803,17 +803,22 @@ get_domain( struct ecat_master *master, unsigned int domain_id,
     printf("get_domain(master=%u, domain=%u, input=%u, output=%u, tid=%u)\n",
             master->id, domain_id, input, output, tid);
 
+    /* Go through every master's domain list to see whether the
+     * required domain exists */
     list_for_each(domain, &master->domain_list, list) {
-        printf("check: domain=%u, input=%u output=%u, tid=%u\n",
-                domain->id, domain->output, domain->input, domain->tid);
         if (domain->id == domain_id
                 && ((domain->output && output) || (domain->input && input))
                 && domain->tid == tid) {
-            printf("Fojund domain\n");
+
+            /* Set input and output flags. The flags are cumulative */
+            domain->input  |=  input != 0;
+            domain->output |= output != 0;
+
             return domain;
         }
     }
 
+    /* No domain found, create new one */
     domain = calloc(1, sizeof(struct ecat_domain));
     domain->id = domain_id;
     domain->tid = tid;
@@ -823,9 +828,6 @@ get_domain( struct ecat_master *master, unsigned int domain_id,
     list_add_tail(&domain->list, &master->domain_list);
 
     domain->handle = ecrt_master_create_domain(master->handle);
-    printf("New domain(%u) = %p IP=%u, OP=%u, tid=%u\n",
-            domain_id, domain->handle, input, output, tid);
-
     if (!domain->handle) {
         snprintf(errbuf, sizeof(errbuf),
                 "ecrt_master_create_domain(master=%u) failed", master->id);
@@ -833,15 +835,10 @@ get_domain( struct ecat_master *master, unsigned int domain_id,
         return NULL;
     }
 
+    printf("New domain(%u) = %p IP=%u, OP=%u, tid=%u\n",
+            domain_id, domain->handle, input, output, tid);
+
     return domain;
-}
-
-/***************************************************************************/
-
-const char *
-init_domains( struct ecat_master *master)
-{
-    return NULL;
 }
 
 /***************************************************************************/
@@ -1237,7 +1234,7 @@ ecs_setup_master( unsigned int master_id,
 
 ec_domain_t *
 ecs_get_domain_ptr(unsigned int master_id, unsigned int domain_id, 
-        ec_direction_t dir, unsigned int tid, const char **errmsg)
+        char input, char output, unsigned int tid, const char **errmsg)
 {
     struct ecat_master *master;
     struct ecat_domain *domain;
@@ -1245,8 +1242,7 @@ ecs_get_domain_ptr(unsigned int master_id, unsigned int domain_id,
     if (!(master = get_master(master_id, tid, errmsg)))
         return NULL;
 
-    domain = get_domain(master, domain_id,
-            dir == EC_DIR_INPUT, dir == EC_DIR_OUTPUT, tid, errmsg);
+    domain = get_domain(master, domain_id, input, output, tid, errmsg);
     return domain ? domain->handle : NULL;
 }
 

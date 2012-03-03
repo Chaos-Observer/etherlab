@@ -15,8 +15,9 @@
 #define DOMAIN             mxGetScalar(ssGetSFcnParam(S,1))
 #define INPUT              mxGetScalar(ssGetSFcnParam(S,2))
 #define OUTPUT             mxGetScalar(ssGetSFcnParam(S,3))
-#define TSAMPLE            mxGetScalar(ssGetSFcnParam(S,4))
-#define PARAM_COUNT                                     5
+#define IO_DOMAIN          mxGetScalar(ssGetSFcnParam(S,4))
+#define TSAMPLE            mxGetScalar(ssGetSFcnParam(S,5))
+#define PARAM_COUNT                                     6
 
 
 /*====================*
@@ -43,7 +44,7 @@ static void mdlInitializeSizes(SimStruct *S)
 
     if (!ssSetNumInputPorts(S, 0)) return;
 
-    width = INPUT && OUTPUT ? 2 : 1;
+    width = INPUT && OUTPUT && !IO_DOMAIN ? 2 : 1;
 
     if (!ssSetNumOutputPorts(S, 2)) return;
     ssSetOutputPortWidth(S, 0, width);
@@ -97,6 +98,7 @@ static void mdlRTW(SimStruct *S)
     uint32_T domain = DOMAIN;
     boolean_T input = INPUT;
     boolean_T output = OUTPUT;
+    boolean_T io_domain = IO_DOMAIN;
 
     if (!ssWriteRTWScalarParam(S, "MasterId", &master, SS_UINT32))
         return;
@@ -105,6 +107,8 @@ static void mdlRTW(SimStruct *S)
     if (!ssWriteRTWScalarParam(S, "Input", &input, SS_BOOLEAN))
         return;
     if (!ssWriteRTWScalarParam(S, "Output", &output, SS_BOOLEAN))
+        return;
+    if (!ssWriteRTWScalarParam(S, "IODomain", &io_domain, SS_BOOLEAN))
         return;
     if (!ssWriteRTWWorkVect(S, "PWork", 1, "DomainPtr", ssGetNumPWork(S)))
         return;
