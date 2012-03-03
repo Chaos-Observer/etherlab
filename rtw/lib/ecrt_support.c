@@ -36,7 +36,11 @@
 char *no_mem_msg = "Could not allocate memory";
 char errbuf[256];
 
-#define pr_debug(fmt, args...) printf(fmt, args)
+#if 0
+#  define pr_debug(fmt, args...) printf(fmt, args)
+#else
+#  define pr_debug(fmt, args...)
+#endif
 
 /*#######################################################################
  * List definition, ideas taken from linux kernel
@@ -800,7 +804,7 @@ get_domain( struct ecat_master *master, unsigned int domain_id,
 {
     struct ecat_domain *domain;
 
-    printf("get_domain(master=%u, domain=%u, input=%u, output=%u, tid=%u)\n",
+    pr_debug("get_domain(master=%u, domain=%u, input=%u, output=%u, tid=%u)\n",
             master->id, domain_id, input, output, tid);
 
     /* Go through every master's domain list to see whether the
@@ -835,7 +839,7 @@ get_domain( struct ecat_master *master, unsigned int domain_id,
         return NULL;
     }
 
-    printf("New domain(%u) = %p IP=%u, OP=%u, tid=%u\n",
+    pr_debug("New domain(%u) = %p IP=%u, OP=%u, tid=%u\n",
             domain_id, domain->handle, input, output, tid);
 
     return domain;
@@ -860,7 +864,7 @@ register_pdos( ec_slave_config_t *slave_config, struct ecat_domain *domain,
                 domain->handle,
                 &pdo_map->bit_pos);
 
-        printf("offset=%i %i\n", pdo_map->offset, pdo_map_end - pdo_map);
+        pr_debug("offset=%i %i\n", pdo_map->offset, pdo_map_end - pdo_map);
 
         pdo_map->domain = domain;
         if (dir)
@@ -910,7 +914,7 @@ init_slave(size_t nst, const struct ec_slave *slave)
     const struct soe_config *soe;
     const char *failed_method;
 
-    printf("Initializing slave %u\n", slave->position);
+    pr_debug("Initializing slave %u\n", slave->position);
     if (!(master = get_master(slave->master, slave->tid, &failed_method)))
         return failed_method;
 
@@ -1050,16 +1054,16 @@ const char * ecs_start(
     ecat_data.single_tasking = single_tasking;
 
     for (slave = slave_head; slave; slave = slave->next) {
-    printf("init: %i\n", __LINE__);
+    pr_debug("init: %i\n", __LINE__);
         if ((err = init_slave(nst, slave)))
             goto out;
     }
-    printf("init: %i\n", __LINE__);
+    pr_debug("init: %i\n", __LINE__);
 
     list_for_each(master, &ecat_data.master_list, list) {
         struct ecat_domain *domain;
 
-        printf("init: %i\n", __LINE__);
+        pr_debug("init: %i\n", __LINE__);
         if (ecrt_master_activate(master->handle)) {
             snprintf(errbuf, sizeof(errbuf),
                     "Master %i activate failed", master->id);
@@ -1068,7 +1072,7 @@ const char * ecs_start(
 
         list_for_each(domain, &master->domain_list, list) {
             domain->io_data = ecrt_domain_data(domain->handle);
-            printf("domain %p master=%u domain=%u, IP=%u, OP=%u, tid=%u\n",
+            pr_debug("domain %p master=%u domain=%u, IP=%u, OP=%u, tid=%u\n",
                     domain->io_data, domain->master->id, domain->id,
                     domain->input, domain->output, domain->tid);
 
@@ -1197,7 +1201,7 @@ const char * ecs_start(
     return NULL;
 
 out:
-    printf("initout : %s\n", err);
+    pr_debug("initout : %s\n", err);
     return err;
 }
 
