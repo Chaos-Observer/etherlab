@@ -444,7 +444,7 @@ ecs_write_be_uint64(const struct endian_convert_t *c)
 static void
 ecs_write_be_single(const struct endian_convert_t *c)
 {
-    *(uint32_t*)c->dst = htole32(*(uint32_t*)c->src);
+    *(uint32_t*)c->dst = htobe32(*(uint32_t*)c->src);
 }
 
 /*****************************************************************/
@@ -452,7 +452,7 @@ ecs_write_be_single(const struct endian_convert_t *c)
 static void
 ecs_write_be_double(const struct endian_convert_t *c)
 {
-    *(uint64_t*)c->dst = htole64(*(uint64_t*)c->src);
+    *(uint64_t*)c->dst = htobe64(*(uint64_t*)c->src);
 }
 
 /*****************************************************************/
@@ -525,8 +525,9 @@ ecs_read_le_uint16(const struct endian_convert_t *c)
 static void
 ecs_read_le_uint24(const struct endian_convert_t *c)
 {
-    *(uint32_t*)c->dst = ((uint32_t) le16toh(*(uint16_t*)(c->src + 1)) << 8) +
-        *c->src;
+    *(uint32_t*)c->dst =
+        ((uint32_t) le16toh(*(uint16_t*)(c->src + 1)) << 8)
+        + *c->src;
 }
 
 /*****************************************************************/
@@ -542,8 +543,9 @@ ecs_read_le_uint32(const struct endian_convert_t *c)
 static void
 ecs_read_le_uint40(const struct endian_convert_t *c)
 {
-    *(double*)c->dst = ((uint64_t) le32toh(*(uint32_t*)(c->src + 1)) << 8) +
-        *c->src;
+    *(uint64_t*)c->dst =
+        ((uint64_t) le32toh(*(uint32_t*)(c->src + 1)) << 8)
+        + *c->src;
 }
 
 /*****************************************************************/
@@ -551,7 +553,7 @@ ecs_read_le_uint40(const struct endian_convert_t *c)
 static void
 ecs_read_le_uint48(const struct endian_convert_t *c)
 {
-    *(double*)c->dst =
+    *(uint64_t*)c->dst =
         ((uint64_t)le32toh(*(uint32_t*)(c->src+2)) << 16)
         + le16toh(*(uint16_t*)c->src);
 }
@@ -561,7 +563,7 @@ ecs_read_le_uint48(const struct endian_convert_t *c)
 static void
 ecs_read_le_uint56(const struct endian_convert_t *c)
 {
-    *(double*)c->dst =
+    *(uint64_t*)c->dst =
         ((uint64_t)le32toh(*(uint32_t*)(c->src+3)) << 24)
         + ((uint64_t)le16toh(*(uint16_t*)(c->src+1)) <<  8)
         + *c->src;
@@ -572,7 +574,7 @@ ecs_read_le_uint56(const struct endian_convert_t *c)
 static void
 ecs_read_le_uint64(const struct endian_convert_t *c)
 {
-    *(double*)c->dst = le64toh(*(uint64_t*)c->src);
+    *(uint64_t*)c->dst = le64toh(*(uint64_t*)c->src);
 }
 
 /*****************************************************************/
@@ -604,8 +606,8 @@ ecs_read_be_uint16(const struct endian_convert_t *c)
 static void
 ecs_read_be_uint24(const struct endian_convert_t *c)
 {
-    *(uint32_t*)c->dst = ((uint32_t)*c->src << 16) +
-        be16toh(*(uint16_t*)(c->src + 1));
+    *(uint32_t*)c->dst = ((uint32_t)*c->src << 16)
+        + be16toh(*(uint16_t*)(c->src + 1));
 }
 
 /*****************************************************************/
@@ -621,7 +623,8 @@ ecs_read_be_uint32(const struct endian_convert_t *c)
 static void
 ecs_read_be_uint40(const struct endian_convert_t *c)
 {
-    *(double*)c->dst = ((uint64_t)*c->src << 32) + be32toh(*(uint32_t*)(c->src+1));
+    *(uint64_t*)c->dst = ((uint64_t)*c->src << 32)
+        + be32toh(*(uint32_t*)(c->src+1));
 }
 
 /*****************************************************************/
@@ -629,7 +632,7 @@ ecs_read_be_uint40(const struct endian_convert_t *c)
 static void
 ecs_read_be_uint48(const struct endian_convert_t *c)
 {
-    *(double*)c->dst =
+    *(uint64_t*)c->dst =
         ((uint64_t)be16toh(*(uint16_t*)c->src) << 32)
         + be32toh(*(uint32_t*)(c->src+2));
 }
@@ -639,7 +642,7 @@ ecs_read_be_uint48(const struct endian_convert_t *c)
 static void
 ecs_read_be_uint56(const struct endian_convert_t *c)
 {
-    *(double*)c->dst =
+    *(uint64_t*)c->dst =
         ((uint64_t)*c->src << 48)
         + ((uint64_t)be16toh(*(uint16_t*)(c->src+1)) << 32)
         + be32toh(*(uint32_t*)(c->src+3));
@@ -650,7 +653,7 @@ ecs_read_be_uint56(const struct endian_convert_t *c)
 static void
 ecs_read_be_uint64(const struct endian_convert_t *c)
 {
-    *(double*)c->dst = be64toh(*(uint64_t*)c->src);
+    *(uint64_t*)c->dst = be64toh(*(uint64_t*)c->src);
 }
 
 /*****************************************************************/
