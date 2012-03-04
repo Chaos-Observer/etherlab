@@ -2142,7 +2142,7 @@ static void mdlRTW(SimStruct *S)
                     slave->dc_opmode.value, 4, DTINFO(SS_INT32, 0)))
                 return;
 
-            if (!ssWriteRTWScalarParam(S, "DcOpMode", &param_idx, SS_UINT32))
+            if (!ssWriteRTWScalarParam(S, "DcOpMode", &param_idx, SS_INT32))
                 return;
             param_idx++;
         }
