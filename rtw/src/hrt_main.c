@@ -580,8 +580,9 @@ void usage(FILE *f)
     fprintf(f,
             "Usage: %s [OPTIONS]\n"
             "Options:\n"
-            "  --priority  -p <PRIO>  Set task priority. Default: RT.\n"
-            "  --help      -h         Show this help.\n",
+            "  --priority       -p <PRIO>  Set task priority. Default: RT.\n"
+            "  --pdserv-config  -c <PATH>  PdServ configuration file.\n"
+            "  --help           -h         Show this help.\n",
             base_name);
 }
 
