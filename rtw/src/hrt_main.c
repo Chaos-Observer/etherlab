@@ -5,6 +5,7 @@
 #include <getopt.h>
 #include <libgen.h> // basename()
 #include <errno.h>
+#include <inttypes.h>
 
 #include <pdserv.h>
 
