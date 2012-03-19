@@ -15,9 +15,9 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "fp"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Mon Mar 19 16:13:15 2012"
-  RTWModifiedTimeStamp	  254074388
-  ModelVersionFormat	  "1.%<AutoIncrement:862>"
+  LastModifiedDate	  "Mon Mar 19 17:00:17 2012"
+  RTWModifiedTimeStamp	  254077199
+  ModelVersionFormat	  "1.%<AutoIncrement:863>"
   ConfigurationManager	  "rcs"
   SampleTimeColors	  off
   SampleTimeAnnotations	  off
@@ -584,7 +584,7 @@ Library {
   }
   System {
     Name		    "etherlab_lib"
-    Location		    [998, 193, 1334, 352]
+    Location		    [1005, 218, 1377, 382]
     Open		    on
     ModelBrowserVisibility  off
     ModelBrowserWidth	    200
@@ -604,7 +604,7 @@ Library {
       Name		      "EtherCAT"
       SID		      1
       Ports		      []
-      Position		      [42, 59, 139, 78]
+      Position		      [67, 54, 164, 73]
       MinAlgLoopOccurrences   off
       PropExecContextOutsideSubsystem off
       RTWSystemCode	      "Auto"
@@ -2401,7 +2401,7 @@ Library {
       Name		      "Util"
       SID		      30
       Ports		      []
-      Position		      [205, 39, 275, 99]
+      Position		      [230, 34, 300, 94]
       MinAlgLoopOccurrences   off
       PropExecContextOutsideSubsystem off
       RTWSystemCode	      "Auto"
@@ -2591,8 +2591,7 @@ Library {
     }
     Annotation {
       Name		      "$Id$"
-      Position		      [56, 136]
-      HorizontalAlignment     "left"
+      Position		      [188, 141]
     }
   }
 }
