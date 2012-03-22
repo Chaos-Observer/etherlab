@@ -15,9 +15,9 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "fp"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Thu Mar 22 06:46:39 2012"
-  RTWModifiedTimeStamp	  254299309
-  ModelVersionFormat	  "1.%<AutoIncrement:864>"
+  LastModifiedDate	  "Thu Mar 22 08:10:51 2012"
+  RTWModifiedTimeStamp	  254300562
+  ModelVersionFormat	  "1.%<AutoIncrement:865>"
   ConfigurationManager	  "rcs"
   SampleTimeColors	  off
   SampleTimeAnnotations	  off
@@ -584,7 +584,7 @@ Library {
   }
   System {
     Name		    "etherlab_lib"
-    Location		    [401, 363, 773, 527]
+    Location		    [101, 149, 473, 313]
     Open		    on
     ModelBrowserVisibility  off
     ModelBrowserWidth	    200
@@ -620,7 +620,7 @@ Library {
       MaskIconUnits	      "pixels"
       System {
 	Name			"EtherCAT"
-	Location		[252, 290, 709, 780]
+	Location		[16, 97, 473, 587]
 	Open			off
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
@@ -753,7 +753,7 @@ Library {
 	  MaskIconUnits		  "autoscale"
 	  System {
 	    Name		    "Beckhoff"
-	    Location		    [188, 300, 1270, 741]
+	    Location		    [7, 200, 1089, 641]
 	    Open		    off
 	    ModelBrowserVisibility  off
 	    ModelBrowserWidth	    200
@@ -1601,7 +1601,7 @@ Library {
 	      MaskDescription	      "EtherCAT Infrastructure Slaves. \n\nIncluding these slaves (even if they don't have I/Os"
 	      ")\nwill create slave configurations, which will cause them to go into the\noperational state.\n"
 	      MaskPromptString	      "Master|Slave Index|Device Model |Sample Time (-1 inherited)|Debug"
-	      MaskStyleString	      "edit,edit,popup(EK1100|EK1110|EK1122|EL9110|EL9160|EL9210|EL9260),edit,edit"
+	      MaskStyleString	      "edit,edit,popup(EK1100|EK1110|EK1122|EL9110|EL9160|EL9210|EL9260|EP1122-0001),edit,edit"
 	      MaskTunableValueString  "off,off,off,off,off"
 	      MaskCallbackString      "||||"
 	      MaskEnableString	      "on,on,on,on,on"
