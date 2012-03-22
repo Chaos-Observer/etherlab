@@ -91,7 +91,7 @@ product = models.(model);
 rv.SlaveConfig.product = product(1);
 
 % RxPdo SyncManager
-rv.SlaveConfig.sm = { {1 1 {}} };
+rv.SlaveConfig.sm = { {0 1 {}} };
 
 % Populate the RxPDO Outputs structure
 rv.SlaveConfig.sm{1}{3} = arrayfun(...
