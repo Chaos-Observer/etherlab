@@ -15,9 +15,9 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "fp"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Mon Mar 19 17:00:17 2012"
-  RTWModifiedTimeStamp	  254077199
-  ModelVersionFormat	  "1.%<AutoIncrement:863>"
+  LastModifiedDate	  "Thu Mar 22 06:46:39 2012"
+  RTWModifiedTimeStamp	  254299309
+  ModelVersionFormat	  "1.%<AutoIncrement:864>"
   ConfigurationManager	  "rcs"
   SampleTimeColors	  off
   SampleTimeAnnotations	  off
@@ -584,7 +584,7 @@ Library {
   }
   System {
     Name		    "etherlab_lib"
-    Location		    [1005, 218, 1377, 382]
+    Location		    [401, 363, 773, 527]
     Open		    on
     ModelBrowserVisibility  off
     ModelBrowserWidth	    200
@@ -620,7 +620,7 @@ Library {
       MaskIconUnits	      "pixels"
       System {
 	Name			"EtherCAT"
-	Location		[823, 630, 1280, 1120]
+	Location		[252, 290, 709, 780]
 	Open			off
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
@@ -753,7 +753,7 @@ Library {
 	  MaskIconUnits		  "autoscale"
 	  System {
 	    Name		    "Beckhoff"
-	    Location		    [764, 587, 1846, 1028]
+	    Location		    [188, 300, 1270, 741]
 	    Open		    off
 	    ModelBrowserVisibility  off
 	    ModelBrowserWidth	    200
@@ -1598,10 +1598,8 @@ Library {
 	      SFunctionModules	      "'ecrt_support'"
 	      EnableBusSupport	      off
 	      MaskType		      "Infrastructure Block"
-	      MaskDescription	      "EtherCAT Infrastructure Slaves. \n\nThe following slaves are available:\nEK1100	EtherCAT"
-	      " Coupler\nEK1110	EtherCAT Extension\nEK1122	2-Port EtherCAT Junction\nEL9110	24V w. Diag.\nEL9160	230V w. Diag."
-	      "\nEL9210	24V w. Fuse & Diag.\nEL9260	230V w. Fuse & Diag.\n\nIncluding these slaves (even if they don't have ou"
-	      "tputs)\nin the bus configuration will cause them to go into the\noperational state.\n"
+	      MaskDescription	      "EtherCAT Infrastructure Slaves. \n\nIncluding these slaves (even if they don't have I/Os"
+	      ")\nwill create slave configurations, which will cause them to go into the\noperational state.\n"
 	      MaskPromptString	      "Master|Slave Index|Device Model |Sample Time (-1 inherited)|Debug"
 	      MaskStyleString	      "edit,edit,popup(EK1100|EK1110|EK1122|EL9110|EL9160|EL9210|EL9260),edit,edit"
 	      MaskTunableValueString  "off,off,off,off,off"
