@@ -1,5 +1,4 @@
 function rv = ep1xxx(model,output_type)
-
 entries = [...
            hex2dec('6000'),  1, 1, 1001; ...
            hex2dec('6010'),  1, 1, 1001; ...
@@ -108,6 +107,6 @@ if strcmp(output_type, 'Vector Output')
     rv.PortConfig.output.pdo = [zeros(numel(r),4)];
     rv.PortConfig.output.pdo(:,2) = r;
 else
-    rv.PortConfig.output = arrayfun(@(x) struct('pdo', [0, x 0, 0]), r);
+  rv.PortConfig.output = arrayfun(@(x) struct('pdo', [0, x, 0, 0]), r);
 end
 

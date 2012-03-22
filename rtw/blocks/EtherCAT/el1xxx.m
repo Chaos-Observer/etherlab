@@ -57,7 +57,8 @@ rv.SlaveConfig.sm{1}{3} = arrayfun(...
         'UniformOutput',0 ...
 );
 
-% Populate the block's output port(s)
+% Populate the blocks output port(s)
+
 r = 0:(product(4) - product(3));
 if strcmp(output_type, 'Vector Output')
     rv.PortConfig.output.pdo = zeros(numel(r),4);
