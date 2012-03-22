@@ -1,4 +1,7 @@
 $Id$
 
 - Set subthread priorities.
+- Remove stack size parameter.
+- Remove module payload parameter.
+- Support complex signals.
 
