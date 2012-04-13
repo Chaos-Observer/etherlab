@@ -19,7 +19,7 @@
  *      alias:
  *      position:
  *
- * Slave configuration:
+ * Slave configuration (SLAVE_CONFIG):
  * This is a structure with the fields:
  *      vendor: Vendor Id
  *      product: Product Code
@@ -91,7 +91,6 @@
  *                      3032: Real32
  *                      3064: Real64
  *
- *
  * PORT_CONFIG:      Vector structure with fields
  *      .output := outputspec*     Block outputs; The number of elements
  *                                  correspond to the number of ports
@@ -131,7 +130,7 @@
  *                 Note that the data types must match
  *
  *      inputspec := same as outputspec, except for filter
- *                      In this case, 
+ *                      In this case,
  *                      PDO = (input * gain + offset) * full_scale
  */
 
@@ -758,7 +757,7 @@ get_sync_manager(struct ecat_slave *slave, struct sync_manager *sm,
 
     for (i = 0; i < pdo_count; i++) {
 
-        snprintf(ctxt, sizeof(ctxt), "%s{3}{%u}", p_ctxt, i+1);
+        snprintf(ctxt, sizeof(ctxt), "%s{3}{%u}", p_ctxt, i + 1);
 
         sm->pdo[i].sm = sm;
         if (get_sync_manager_pdo(slave,
@@ -856,7 +855,8 @@ get_slave_config(struct ecat_slave *slave)
 
                 slave->sdo_config[i].datatype = type_uint8_info;
 
-                if (!mxGetString(valueCell, (char*)slave->sdo_config[i].byte_array,
+                if (!mxGetString(valueCell,
+                            (char*) slave->sdo_config[i].byte_array,
                             slave->sdo_config[i].value)) {
                     char_T sdo_ctxt[20];
 
@@ -1094,7 +1094,7 @@ get_slave_config(struct ecat_slave *slave)
 
         for (i = 0; i < sm_count; i++) {
             char_T ctxt[30];
-            snprintf(ctxt, sizeof(ctxt), "SLAVE_CONFIG.pdo{%zu}", i+1);
+            snprintf(ctxt, sizeof(ctxt), "SLAVE_CONFIG.sm{%zu}", i + 1);
             if (get_sync_manager(slave, slave->sync_manager + i,
                         ctxt, mxGetCell(array, i)))
                 return -1;
