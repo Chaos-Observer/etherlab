@@ -14,6 +14,7 @@
 #include <libgen.h> // basename()
 #include <errno.h>
 #include <inttypes.h>
+#include <unistd.h>  // daemon()
 
 #include <pdserv.h>
 
@@ -99,9 +100,10 @@ extern void rt_ODEUpdateContinuousStates(RTWSolverInfo *si);
 
 /* Command-line option variables.  */
 
-char *base_name = NULL; /** basename of executable for usage() output. */
-int priority = -1; /** Task priority, -1 means RT (maximum). */
-char *pdserv_config = NULL; /** Path to PdServ configuration file. */
+char *base_name = NULL; /**< basename of executable for usage() output. */
+int priority = -1; /**< Task priority, -1 means RT (maximum). */
+char *pdserv_config = NULL; /**< Path to PdServ configuration file. */
+bool daemonize = false; /**< Become a daemon. */
 
 static rtwCAPI_ModelMappingInfo* mmi;
 static const rtwCAPI_DimensionMap* dimMap;
@@ -596,6 +598,8 @@ void usage(FILE *f)
             "Options:\n"
             "  --priority       -p <PRIO>  Set task priority. Default: RT.\n"
             "  --pdserv-config  -c <PATH>  PdServ configuration file.\n"
+            "  --daemon         -d         Become a daemon before cyclic\n"
+            "                              operation.\n"
             "  --help           -h         Show this help.\n",
             base_name);
 }
@@ -610,12 +614,13 @@ void get_options(int argc, char **argv)
         //name,           has_arg,           flag, val
         {"priority",      required_argument, NULL, 'p'},
         {"pdserv-config", required_argument, NULL, 'c'},
+        {"daemon",        no_argument,       NULL, 'd'},
         {"help",          no_argument,       NULL, 'h'},
         {}
     };
 
     do {
-        c = getopt_long(argc, argv, "p:c:h", longOptions, NULL);
+        c = getopt_long(argc, argv, "p:c:dh", longOptions, NULL);
 
         switch (c) {
             case 'p':
@@ -633,6 +638,10 @@ void get_options(int argc, char **argv)
 
             case 'c':
                 pdserv_config = optarg;
+                break;
+
+            case 'd':
+                daemonize = true;
                 break;
 
             case 'h':
@@ -730,7 +739,19 @@ int main(int argc, char **argv)
     stack_prefault();
 
     if ((err = init_application(S))) {
+        pdserv_exit(pdserv);
         goto out;
+    }
+
+    if (daemonize) {
+        int ret;
+        fprintf(stderr, "Now becoming a daemon.\n");
+        ret = daemon(0, 0);
+        if (ret != 0) {
+            fprintf(stderr, "Failed to become daemon: %s\n", strerror(errno));
+            pdserv_exit(pdserv);
+            goto out;
+        }
     }
 
     clock_gettime(CLOCK_MONOTONIC, &task[0].time);
