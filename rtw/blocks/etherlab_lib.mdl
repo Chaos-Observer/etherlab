@@ -15,9 +15,9 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "fp"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Thu Mar 22 08:19:16 2012"
-  RTWModifiedTimeStamp	  254305148
-  ModelVersionFormat	  "1.%<AutoIncrement:866>"
+  LastModifiedDate	  "Fri Apr 13 16:42:21 2012"
+  RTWModifiedTimeStamp	  256236130
+  ModelVersionFormat	  "1.%<AutoIncrement:870>"
   ConfigurationManager	  "rcs"
   SampleTimeColors	  off
   SampleTimeAnnotations	  off
@@ -584,7 +584,7 @@ Library {
   }
   System {
     Name		    "etherlab_lib"
-    Location		    [297, 322, 669, 486]
+    Location		    [250, 216, 622, 380]
     Open		    on
     ModelBrowserVisibility  off
     ModelBrowserWidth	    200
@@ -620,7 +620,7 @@ Library {
       MaskIconUnits	      "pixels"
       System {
 	Name			"EtherCAT"
-	Location		[36, 157, 493, 647]
+	Location		[92, 166, 549, 575]
 	Open			off
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
@@ -638,7 +638,7 @@ Library {
 	  Name			  "Baumer"
 	  SID			  2
 	  Ports			  []
-	  Position		  [70, 342, 194, 368]
+	  Position		  [70, 267, 194, 293]
 	  MinAlgLoopOccurrences	  off
 	  PropExecContextOutsideSubsystem off
 	  RTWSystemCode		  "Auto"
@@ -737,7 +737,7 @@ Library {
 	  Name			  "Beckhoff"
 	  SID			  4
 	  Ports			  []
-	  Position		  [60, 189, 210, 228]
+	  Position		  [60, 114, 210, 153]
 	  MinAlgLoopOccurrences	  off
 	  PropExecContextOutsideSubsystem off
 	  RTWSystemCode		  "Auto"
@@ -2023,87 +2023,6 @@ Library {
 	}
 	Block {
 	  BlockType		  "S-Function"
-	  Name			  "Generic Slave"
-	  SID			  21
-	  Ports			  []
-	  Position		  [95, 29, 173, 69]
-	  BackgroundColor	  "yellow"
-	  FunctionName		  "ec_slave2"
-	  Parameters		  "Address,ei,SdoConfig,soe_config,IOSpec,debug,tsample"
-	  EnableBusSupport	  off
-	  MaskType		  "Generic EtherCAT Slave"
-	  MaskDescription	  "Implements a generic EtherCAT Slave as described in the EtherCATInfo XML File"
-	  MaskHelp		  "<h4>Master:</h4>\nSet the EtherCAT Master index. \n\n<h4>Slave Index:</h4>\nSet the EtherCAT slave ind"
-	  "ex. Following address formats are allowed:\n<ol>\n<li> Absolute addressing: a scalar number <<b><tt>n</tt></b>> rep"
-	  "resenting\n the (zero based) absolute position in the bus.\n<li> SSId addressing: the Secondary Slave (or 'Alias') "
-	  "Addressing has the\n form <<b><tt>[alias position]</tt></b>>\n where <b><tt>alias</tt></b> is the Secondary Slave I"
-	  "d of the EtherCAT\n slave and <b><tt>position</tt></b> is the offset after the slave with the\n given <b><tt>alias<"
-	  "/tt></b>. The SSId has to be preprogrammed into the\n slave with other service tools (see 'ethercat alias --help')."
-	  "\n</ol>\n\n<h4>EtherCATInfo</h4>\nThis is the Slave description xml-File or a struct with the xml-info which\ncan b"
-	  "e generated with <tt> EtherCATInfo('my slavexxx.xml') </tt>.\nThe EtherCATInfo is suppied by the vendor of the slav"
-	  "e or can be generated\nwith the <tt> ethercat <\\tt> command (see 'ethercat xml --help').\nEtherCATInfo is mandator"
-	  "y.\n\n<h4>Product Code</h4>\nSet the product code here, if the slave description file holds more than\none slave in"
-	  "fo. This info can be found in the xml-File or can be extracted\nwith the <tt> ethercat <\\tt> command (see 'etherca"
-	  "t slaves --help').\n\n<h4>Revision</h4>\nSet the revison of the slave here, if the slave description file holds mor"
-	  "e\nthan one revisions of the selected slave. This info can be found in the\nxml-File or can be extracted with the <"
-	  "tt> ethercat <\\tt> command.\n(see 'ethercat slaves --help').\n\n<h4>Distr. Clocks OpMode</h4>\nThe DC Opmode confi"
-	  "guration is contained in the EtherCAT Info XML file.\n\nDC Opmode can be supplied as:\n<ol>\n<li> String: name of t"
-	  "he DC Opmode in the xml file\n<li> Vector with 5 elements:\n<tt>[AssignActivate CycleTimeSync0 ShiftTimeSync0...\n "
-	  "CycleTimeSync1 ShiftTimeSync1]</tt>\nSee EtherCAT documentation for the slave.\n</ol>\n\n<h4>Mapped PDO</h4>\nCurre"
-	  "ntly not implemented. All Pdo's available in the slave XML will\nbe available in the block.\n\n<h4>SDO Config</h4>\n"
-	  "SDO Config is the configuration of a slave. The configuration can be\nsupplied as a matrix, a struct or complete ac"
-	  "cess.\n\nIf the matrix form is used, it must have 4 columns:\n<ol>\n<li>  SDO Index\n<li>  SDO Subindex\n<li>  Size"
-	  "    (8,16,32)\n<li>  value\n</ol>\nExample:\n<tt>\nSdoConfig = [\n    hex2dec('8000'), 1,  8, 1;... % Reload\n    h"
-	  "ex2dec('8000'), 2,  8, 0;... % No Index Reset\n    hex2dec('8000'), 3,  8, 1;... % Forward Count\n    ];</tt>\n\nAl"
-	  "ternatively, the struct form can be used:\n<tt>    SdoConfig(1).Index = hex2dec('8000');\n    SdoConfig(1).SubIndex"
-	  " = 1;\n    SdoConfig(1).BitLen = 8;\n    SdoConfig(1).Value = 1;\n    SdoConfig(2).Index = hex2dec('8000');\n    Sd"
-	  "oConfig(2).SubIndex = 2;\n    SdoConfig(2).BitLen = 8;\n    SdoConfig(2).Value = 0;</tt>\n\nWriting SDO's with comp"
-	  "lete access is also possible.\n<tt>\nSdoConfig(1).Index=hex2dec('8000');\nSdoConfig(1).ByteArray=hex2dec(reshape('2"
-	  "d000200',[],2));\n<\\tt>\n\n<h4>SoE</h4>\nSercos over EtherCat configuration for a slave. See <tt>SoeConfig()<\\tt>"
-	  "\nfor further information.\nExample: <tt>SoeConfig('xxxx.xml')<\\tt>\n\n<h4>Sample Time</h4>\nSelect the correct sa"
-	  "mple time. Setting this to 0 makes for a sample time\nat the model's base rate. If another block can set the sample"
-	  " time,\nchoose -1 for inherited sample time.\n"
-	  MaskPromptString	  "Master|Slave Index|EtherCATInfo (filename or object)|Product Code |Revision |Distr. Clocks OpMo"
-	  "de|Mapped PDO (empty for all)|Group PDO Entries|SDO Config|SoE Config|Sample Time (-1 inherited)|Debug|EtherCATInfo"
-	  MaskStyleString	  "edit,edit,edit,edit,edit,edit,edit,popup(No Grouping|Group Data Types in PDO|Group Data Types),e"
-	  "dit,edit,edit,edit,edit"
-	  MaskTunableValueString  "off,off,off,off,off,off,off,off,off,off,off,off,off"
-	  MaskCallbackString	  "||\n||||||||||"
-	  MaskEnableString	  "on,on,on,on,on,on,on,on,on,on,on,on,on"
-	  MaskVisibilityString	  "on,on,on,on,on,on,on,on,on,on,on,off,off"
-	  MaskToolTipString	  "on,on,on,on,on,on,on,on,on,on,on,on,on"
-	  MaskVariables		  "master=@1;index=@2;ethercatinfo=@3;product_code=@4;revision=@5;dc_opmode=@6;pdo_list=@7;group=&8;"
-	  "sdo_config=@9;soe_config=@10;tsample=@11;debug=@12;ei=&13;"
-	  MaskInitialization	  "dev = [];\nmasterStr = '';\npositionStr = '';\nproduct_name = 'Unknown';\n[Address masterStr "
-	  "positionStr] = getEtherCATAddress(gcb,master,index);\n\n% Generate a LayoutVersion that is unique for every slave\n"
-	  "% of this type to enure that a separate slave config is generated\n% for every slave\nLayoutVersion = 0;\n\nif ~(is"
-	  "numeric(product_code) && isnumeric(revision) ...\n        && isnumeric(pdo_list))\n    fname = '';\n    errordlg([g"
-	  "cb ':Value for Product Code, Revision Number '...\n        'Pdo List and Sdo Config must be numeric']);\nend\n\nSdo"
-	  "Config = [];\nif isempty(sdo_config)\n    SdoConfig = [];\nelseif isnumeric(sdo_config) && size(sdo_config,2) == 4\n"
-	  "    SdoConfig = cell2struct(...\n        num2cell(sdo_config),...\n        {'Index' 'SubIndex' 'BitLen' 'Value'}, 2"
-	  ");\nelseif isstruct(sdo_config)\n    SdoConfig = sdo_config;\nelse\n    errordlg([gcb ':Value Sdo Config must be a "
-	  "numeric M-by-4 '...\n        'matrix [Index SubIndex BitLen Value] '...\n        'or a structure vector with the fi"
-	  "elds '...\n        '''Index'', ''SubIndex'', ''BitLen'' and ''Value''']);\nend\n\nethercatinfo_check;\nUserData = g"
-	  "et_param(gcb,'UserData');\n\nif isfield(UserData,'ei') && isa(UserData.ei,'EtherCATInfo')\n    ei = UserData.ei(pro"
-	  "duct_code,revision);\nelse\n    ei = [];\nend\n\nIOSpec = [];\nSlaveConfig = [];\ndev = [];\n\nif ~isempty(ei)\n   "
-	  " if ~isempty(product_code) && product_code(1)\n        dev = ei(product_code, revision);\n        if isempty(dev)\n"
-	  "            errordlg([gcb ': Product with specified Product Code '...\n                'and Revision Number does no"
-	  "t exist']);\n        end\n    else\n        dev = ei{1};\n    end\n    \n    SlaveConfig = genSlaveConfig(dev);\n\n"
-	  "    switch lower(group)\n        case 'group data types in pdo'\n            type = 'PDO';\n        case 'group dat"
-	  "a types'\n            type = 'ALL';\n        otherwise\n            type = 'None';\n    end\n    \n    PdoEntries ="
-	  " getEntries(dev,'GroupType',type);\n    if ~isempty(SlaveConfig)\n        product_name = SlaveConfig.Descriptions.D"
-	  "evices.Device.Type.TextContent;\n    end\n    IOSpec.Port = struct('PdoEntry', PdoEntries);\nend\n"
-	  MaskDisplay		  "fprintf('%s\\nM:%s Idx:%s',...\n    product_name,masterStr,positionStr);\n"
-	  MaskSelfModifiable	  on
-	  MaskIconFrame		  on
-	  MaskIconOpaque	  on
-	  MaskIconRotate	  "none"
-	  MaskPortRotate	  "default"
-	  MaskIconUnits		  "autoscale"
-	  MaskValueString	  "0|1|''|hex2dec('0')|hex2dec('0')|''|[]|No Grouping|[]|[]|0|0|0"
-	}
-	Block {
-	  BlockType		  "S-Function"
 	  Name			  "Master State"
 	  SID			  26
 	  Ports			  [0, 3]
@@ -2136,7 +2055,7 @@ Library {
 	  Name			  "Mts"
 	  SID			  22
 	  Ports			  []
-	  Position		  [105, 259, 163, 309]
+	  Position		  [105, 184, 163, 234]
 	  MinAlgLoopOccurrences	  off
 	  PropExecContextOutsideSubsystem off
 	  RTWSystemCode		  "Auto"
@@ -2152,7 +2071,7 @@ Library {
 	  MaskIconUnits		  "autoscale"
 	  System {
 	    Name		    "Mts"
-	    Location		    [895, 678, 1157, 844]
+	    Location		    [310, 269, 572, 435]
 	    Open		    off
 	    ModelBrowserVisibility  off
 	    ModelBrowserWidth	    200
@@ -2169,12 +2088,12 @@ Library {
 	      BlockType		      "S-Function"
 	      Name		      "MTS_0"
 	      SID		      23
-	      Ports		      [0, 2]
-	      Position		      [70, 50, 150, 90]
+	      Ports		      [0, 1]
+	      Position		      [90, 60, 170, 100]
 	      BackgroundColor	      "yellow"
 	      LibraryVersion	      "1.849"
 	      FunctionName	      "ec_slave3"
-	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
+	      Parameters	      "address, rv.SlaveConfig, rv.PortConfig, debug, tsample"
 	      SFunctionModules	      "'ecrt_support'"
 	      EnableBusSupport	      off
 	      MaskType		      "MTS R-Series"
@@ -2190,49 +2109,38 @@ Library {
 	      "lias') Addressing has the form <<b><tt>[alias position]</tt></b>> where <b><tt>alias</tt></b> is the Secondary "
 	      "Slave Id of the EtherCAT slave and <b><tt>position</tt></b> is the offset after the slave with the given <b><tt"
 	      ">alias</tt></b>. The SSId has to be preprogrammed into the slave with other service tools (see 'ethercat alias "
-	      "--help').\n</ol>\n\n<h4>Device Model:</h4>\nChoose the model at the Indexed position of the master.\n\n<h4>Outp"
-	      "ut Type:</h4>\n<ul>\n<li>Choose <b>Vector Output</b> to have a single output as a vector\nwith a size correspon"
-	      "ding to the channel count of the terminal. This mode also allows a status output port to be displayed. <br/>\n<"
-	      "li>Choose <b>Separate Outputs</b> to have one output for every channel.\n</ul>\n<h4>Output Full Scale</h4>\nWhe"
-	      "n <b>Output Data Type</b> is set to <b>Double with scale and offset</b>, the block's output value at full scale"
-	      " terminal input can be set here.\n\n<h4>Output Offset</h4>\nWhen <b>Output Data Type</b> is set to <b>Double wi"
-	      "th scale and offset</b>, the blocks output at zero terminal input can be set here. Note that the Full Scale abo"
-	      "ve is also increased by this amount. Note furthermore that this corresponds to the minimum input for terminals "
-	      "such as 4..20mA.\n\n<h4>Output Data Type</h4>\nChoose the block's output data type for the output signal. Avail"
-	      "able are:\n<ul>\n<li><b><tt>Raw</tt></b> outputting the internal raw value as <tt>int16_T</tt> or <tt>uint16_T<"
-	      "/tt> as appropriate\n<li><b><tt>Double</tt></b> outputting 0..10, -10..10, 0..0.02 and 0.004..0.02 depending on"
-	      " the Model as appropriate\n<li><b><tt>Double with scale and offset</tt></b>, allowing the output to be scaled w"
-	      "ith an offset.\n</ul>\n\n<p>\nChoosing <b>Status Output</b> provides a port of type <tt>uint8_T</tt> where the "
-	      "status is presented. This is only enabled when <b>Vector Output</b> is selected. Terminal input over- and under"
-	      "range can be detected using this output. See the terminal's documentation.\n\n<h4>Output Filter</h4>\nWhen not "
-	      "in <b>Raw</b> mode, the <b>Output Filter</b> checkbox becomes available, allowing the use of an internal low pa"
-	      "ss filter. Enter the <b>LPF Time Constant</b> for the filter in the field below.\n<br>For continuous sample tim"
-	      "e systems (0 in Sample Time), the filter is also continuous. Discrete samples systems (Sample Time > 0) uses an"
-	      " equivalent discrete low pass filter with a similar time constant.\n\n<p>\nSet the <b>Sample Time</b> for the b"
-	      "lock. <tt>0</tt> is continuous sample time (runs at the model's base rate). Setting <tt>-1</tt> will try to set"
-	      " the time using back propagation.\n"
-	      MaskPromptString	      "Master|Slave Index|Device Model |Sensorlength in m|Output Offset|Revert Position|Velici"
-	      "ty Output|Status Output|Output Filter|LPF Time Constant (sec)|Sample Time|Debug"
-	      MaskStyleString	      "edit,edit,popup(1 Magnet|2 Magnets|3 Magnets|4 Magnets|5 Magnets),edit,edit,checkbox,che"
-	      "ckbox,checkbox,checkbox,edit,edit,edit"
-	      MaskTunableValueString  "off,off,off,off,off,off,off,off,off,off,off,off"
-	      MaskCallbackString      "||||||||mtsrseries_check('filter');|||"
-	      MaskEnableString	      "on,on,on,on,on,on,on,on,on,off,on,on"
-	      MaskVisibilityString    "on,on,on,off,on,on,on,on,on,on,on,off"
-	      MaskToolTipString	      "on,on,on,on,on,on,on,on,on,on,on,on"
-	      MaskVariables	      "master=@1;index=@2;model=&3;sensorlen=@4;offset=@5;do_revert=@6;velocity_output=@7;status="
-	      "@8;filter=@9;tau=@10;tsample=@11;debug=@12;"
-	      MaskInitialization      "masterStr = '';\npositionStr = '';\n\n%model\n%offset\n%velocity_output\n%status\n%fil"
-	      "ter\n%tau\n\n\n\n[Address masterStr positionStr] = getEtherCATAddress(gcb,master,index);\n\nrv = mts_temposonic"
-	      "s(model, offset, filter, tau, ...\n                     status, do_revert, velocity_output);\n\n\n"
-	      MaskDisplay	      "fprintf(...\n    'MTS R-Series\\n%s\\n%s Idx:%s',...\n    model,...\n    masterStr,...\n    "
-	      "positionStr\n)\n"
+	      "--help').\n</ol>\n\n<h4>Device Model:</h4>\nChoose the model at the Indexed position of the master.\n\n<p>\nCho"
+	      "osing <b>Status Output</b> provides a port of type <tt>uint8_T</tt> where the status is presented. This is only"
+	      " enabled when <b>Vector Output</b> is selected. Terminal input over- and underrange can be detected using this "
+	      "output. See the terminal's documentation.\n\n<h4>Output Filter</h4>\nWhen not in <b>Raw</b> mode, the <b>Output"
+	      " Filter</b> checkbox becomes available, allowing the use of an internal low pass filter. Enter the <b>LPF Time "
+	      "Constant</b> for the filter in the field below.\n<br>For continuous sample time systems (0 in Sample Time), the"
+	      " filter is also continuous. Discrete samples systems (Sample Time > 0) uses an equivalent discrete low pass fil"
+	      "ter with a similar time constant.\n\n<p>\nSet the <b>Sample Time</b> for the block. <tt>0</tt> is continuous sa"
+	      "mple time (runs at the model's base rate). Setting <tt>-1</tt> will try to set the time using back propagation."
+	      "\n"
+	      MaskPromptString	      "Master|Slave Index|Device Model |Output Offset|Invert Position / Velocity|Velocity Outp"
+	      "ut|Status Output|Output Filter|LPF Time Constant [s]|Sample Time|Debug"
+	      MaskStyleString	      "edit,edit,popup(1 Magnet|2 Magnets|3 Magnets|4 Magnets|5 Magnets),edit,checkbox,checkbox"
+	      ",checkbox,checkbox,edit,edit,edit"
+	      MaskTunableValueString  "off,off,off,off,off,off,off,off,off,off,off"
+	      MaskCallbackString      "|||||||mtsrseries_check('filter');|||"
+	      MaskEnableString	      "on,on,on,on,on,on,on,on,off,on,on"
+	      MaskVisibilityString    "on,on,on,on,on,on,on,on,on,on,off"
+	      MaskToolTipString	      "on,on,on,on,on,on,on,on,on,on,on"
+	      MaskVariables	      "master=@1;index=@2;model=&3;offset=@4;invert=@5;velocity_output=@6;status_output=@7;filter"
+	      "=@8;tau=@9;tsample=@10;debug=@11;"
+	      MaskInitialization      "masterStr = '';\npositionStr = '';\n\n[address masterStr positionStr] = ...\n        g"
+	      "etEtherCATAddress(gcb, master, index);\n\nrv = mts_temposonics(model, offset, filter, tau, ...\n               "
+	      "      invert, velocity_output, status_output);\n\n\n"
+	      MaskDisplay	      "fprintf(...\n    'MTS R-Series\\n%s\\n%s Idx:%s', ...\n    model, ...\n    masterStr, ...\n "
+	      "   positionStr\n)\n"
 	      MaskIconFrame	      on
 	      MaskIconOpaque	      on
 	      MaskIconRotate	      "none"
 	      MaskPortRotate	      "default"
 	      MaskIconUnits	      "autoscale"
-	      MaskValueString	      "0|1|1 Magnet|0|0|off|on|off|off|0.1|0|0"
+	      MaskValueString	      "0|1|1 Magnet|0|off|off|off|off||0|0"
 	    }
 	  }
 	}
@@ -2241,7 +2149,7 @@ Library {
 	  Name			  "Murr"
 	  SID			  24
 	  Ports			  []
-	  Position		  [65, 387, 201, 443]
+	  Position		  [65, 312, 201, 368]
 	  MinAlgLoopOccurrences	  off
 	  PropExecContextOutsideSubsystem off
 	  RTWSystemCode		  "Auto"
@@ -2327,7 +2235,7 @@ Library {
 	  Name			  "Subsystem"
 	  SID			  27
 	  Ports			  []
-	  Position		  [270, 194, 370, 216]
+	  Position		  [270, 329, 370, 351]
 	  ShowName		  off
 	  OpenFcn		  "[];"
 	  MinAlgLoopOccurrences	  off
@@ -2365,7 +2273,7 @@ Library {
 	  Name			  "TemplateSlave"
 	  SID			  42
 	  Ports			  []
-	  Position		  [96, 108, 174, 148]
+	  Position		  [96, 33, 174, 73]
 	  BackgroundColor	  "yellow"
 	  FunctionName		  "ec_slave3"
 	  Parameters		  "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"

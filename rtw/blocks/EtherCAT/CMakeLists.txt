@@ -56,6 +56,7 @@ INSTALL (FILES
     esd_cangateway.m
     murr_impact67.m
     mtsrseries_check.m
+    mts_temposonics.m
     ethercatinfo_check.m
     SoeConfig.m
 
