@@ -15,6 +15,9 @@
 #include <errno.h>
 #include <inttypes.h>
 #include <unistd.h>  // daemon()
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #include <pdserv.h>
 
@@ -22,6 +25,8 @@
 #include "rtwtypes.h"
 #include "rt_nonfinite.h"
 #include "rt_sim.h"
+
+/****************************************************************************/
 
 #define MAX_SAFE_STACK (8 * 1024) /** The maximum stack size which is
                                     guranteed safe to access without faulting.
@@ -104,6 +109,7 @@ char *base_name = NULL; /**< basename of executable for usage() output. */
 int priority = -1; /**< Task priority, -1 means RT (maximum). */
 char *pdserv_config = NULL; /**< Path to PdServ configuration file. */
 bool daemonize = false; /**< Become a daemon. */
+char *pidPath = ""; /**< Path of PID file (empty for no PID file). */
 
 static rtwCAPI_ModelMappingInfo* mmi;
 static const rtwCAPI_DimensionMap* dimMap;
@@ -147,16 +153,16 @@ inline void timeradd(struct timespec *t, unsigned int dt)
 #define DIFF_NS(A, B) (((B).tv_sec - (A).tv_sec) * NSEC_PER_SEC + \
         (B).tv_nsec - (A).tv_nsec)
 
+/****************************************************************************/
+
 #if !defined(MULTITASKING)  /* SINGLETASKING */
 
 #define NUMTASKS 1
 
-/* Function: rtOneStep ========================================================
+/** Perform one step of the model.
  *
- * Abstract:
- *      Perform one step of the model. This function is modeled such that
- *      it could be called from an interrupt service routine (ISR) with minor
- *      modifications.
+ * This function is modeled such that it could be called from an interrupt
+ * service routine (ISR) with minor modifications.
  */
 const char *
 rt_OneStepMain(RT_MODEL *S)
@@ -179,27 +185,27 @@ rt_OneStepMain(RT_MODEL *S)
     }
 
     return rtmGetErrorStatusFlag(S);
-} /* end rtOneStep */
+}
+
+/****************************************************************************/
 
 #else /* MULTITASKING */
 
 #define NUMTASKS (NUMST - FIRST_TID)
 
-/* Function: rtOneStep ========================================================
+
+/** Perform one step of the model.
  *
- * Abstract:
- *      Perform one step of the model. This function is modeled such that
- *      it could be called from an interrupt service routine (ISR) with minor
- *      modifications.
+ * This function is modeled such that it could be called from an interrupt
+ * service routine (ISR) with minor modifications.
  *
- *      This routine is modeled for use in a multitasking environment and
- *	therefore needs to be fully re-entrant when it is called from an
- *	interrupt service routine.
+ * This routine is modeled for use in a multitasking environment and therefore
+ * needs to be fully re-entrant when it is called from an interrupt service
+ * routine.
  *
  * Note:
  *      Error checking is provided which will only be used if this routine
  *      is attached to an interrupt.
- *
  */
 const char *
 rt_OneStepMain(RT_MODEL *S)
@@ -232,21 +238,19 @@ rt_OneStepMain(RT_MODEL *S)
 #endif
 
     return rtmGetErrorStatusFlag(S);
-} /* end rtOneStepMain */
+}
 
-/* Function: rt_OneStepTid ====================================================
+/****************************************************************************/
+
+/** Perform one step of the model subrates
  *
- * Abstract:
- *      Perform one step of the model subrates
- *
- *      This routine is modeled for use in a multitasking environment and
- *	therefore needs to be fully re-entrant when it is called from an
- *	interrupt service routine.
+ * This routine is modeled for use in a multitasking environment and therefore
+ * needs to be fully re-entrant when it is called from an interrupt service
+ * routine.
  *
  * Note:
  *      Error checking is provided which will only be used if this routine
  *      is attached to an interrupt.
- *
  */
 const char *
 rt_OneStepTid(RT_MODEL *S, uint_T tid)
@@ -259,8 +263,12 @@ rt_OneStepTid(RT_MODEL *S, uint_T tid)
 
     return rtmGetErrorStatusFlag(S);
 
-} /* end rtOneStepTid */
+}
 
+/****************************************************************************/
+
+/** Run the main task.
+ */
 void *run_task(void *p)
 {
     struct thread_task *thread = p;
@@ -280,11 +288,12 @@ void *run_task(void *p)
 
 #endif /* MULTITASKING */
 
-/* Function: get_etl_data_type ===============================================
- * Abstract:
- *     return the data type as expected by EtherLab
+/****************************************************************************/
+
+/** Get the data type as expected by EtherLab.
  */
-unsigned int get_etl_data_type(size_t dataTypeIdx) {
+unsigned int get_etl_data_type(size_t dataTypeIdx)
+{
     switch (rtwCAPI_GetDataTypeSLId(dTypeMap, dataTypeIdx)) {
         case SS_DOUBLE:  return pd_double_T;
         case SS_SINGLE:  return pd_single_T;
@@ -299,6 +308,10 @@ unsigned int get_etl_data_type(size_t dataTypeIdx) {
     }
 }
 
+/****************************************************************************/
+
+/** Register a signal with PdServ.
+ */
 const char *register_signal(const struct thread_task *task,
         const rtwCAPI_Signals* signals, size_t idx)
 {
@@ -420,6 +433,10 @@ out:
     return err;
 }
 
+/****************************************************************************/
+
+/** Register a parameter with PdServ.
+ */
 const char *register_parameter( struct pdserv *pdserv,
         const rtwCAPI_BlockParameters* params, size_t idx)
 {
@@ -495,13 +512,9 @@ out:
     return err;
 }
 
-/* Function: rtw_capi_init ====================================================
- *
- * Abstract:
- *      Initialize all the model variables
- *
- * Note:
- *
+/****************************************************************************/
+
+/** Initialize all model variables.
  */
 const char *
 rtw_capi_init(RT_MODEL *S,
@@ -532,12 +545,11 @@ rtw_capi_init(RT_MODEL *S,
     return NULL;
 }
 
-/* Function: init_application ================================================
- *
- * Abstract:
- *      Execute model on a generic target such as a workstation.
+/****************************************************************************/
+
+/** Execute model.
  */
-const char * init_application(RT_MODEL *S)
+const char *init_application(RT_MODEL *S)
 {
     const char *errmsg;
 
@@ -568,12 +580,13 @@ const char * init_application(RT_MODEL *S)
     }
 
     return NULL;
-} /* end main */
+}
 
-/* Function: gettime ============================================================
+/****************************************************************************/
+
+/** Return the current system time.
  *
- * Abstract:
- *      Return the current system time. This is a callback needed by pdserv
+ * This is a callback needed by pdserv.
  */
 int gettime(struct timespec *time)
 {
@@ -582,6 +595,8 @@ int gettime(struct timespec *time)
 
 /****************************************************************************/
 
+/** Cause a stack fault before entering cyclic operation.
+ */
 void stack_prefault(void)
 {
     unsigned char dummy[MAX_SAFE_STACK];
@@ -591,6 +606,59 @@ void stack_prefault(void)
 
 /*****************************************************************************/
 
+/** Remove the PID file.
+ */
+void remove_pid_file()
+{
+    int ret;
+
+    ret = unlink(pidPath);
+    if (ret == -1) {
+        fprintf(stderr, "Failed to remove PID file \"%s\": %s\n",
+                strerror(errno));
+    }
+}
+
+/****************************************************************************/
+
+/** Create the PID file.
+ */
+void create_pid_file()
+{
+    int fd, ret, len;
+    char str[32];
+
+    fd = open(pidPath, O_WRONLY | O_TRUNC | O_CREAT, 0644);
+    if (fd == -1) {
+        fprintf(stderr, "Failed to create PID file \"%s\": %s\n",
+                strerror(errno));
+        return;
+    }
+
+    len = snprintf(str, sizeof(str), "%i\n", getpid());
+
+    ret = write(fd, str, len);
+    if (ret == -1) {
+        fprintf(stderr, "Failed to write to PID file \"%s\": %s\n",
+                strerror(errno));
+        goto out_unlink;
+    }
+
+    if (ret != len) {
+        fprintf(stderr, "Failed to write to PID file \"%s\"."
+                " Written %i of %i bytes.", ret, len);
+        goto out_unlink;
+    }
+
+out_unlink:
+    close(fd);
+    remove_pid_file();
+}
+
+/****************************************************************************/
+
+/** Output the usage.
+ */
 void usage(FILE *f)
 {
     fprintf(f,
@@ -598,6 +666,9 @@ void usage(FILE *f)
             "Options:\n"
             "  --priority       -p <PRIO>  Set task priority. Default: RT.\n"
             "  --pdserv-config  -c <PATH>  PdServ configuration file.\n"
+            "                              Default: None (use defaults).\n"
+            "  --pid-path       -i <PATH>  Write PID file. Default:\n"
+            "                              No PID file.\n"
             "  --daemon         -d         Become a daemon before cyclic\n"
             "                              operation.\n"
             "  --help           -h         Show this help.\n",
@@ -606,6 +677,8 @@ void usage(FILE *f)
 
 /*****************************************************************************/
 
+/** Get the command-line options.
+ */
 void get_options(int argc, char **argv)
 {
     int c, arg_count;
@@ -614,13 +687,14 @@ void get_options(int argc, char **argv)
         //name,           has_arg,           flag, val
         {"priority",      required_argument, NULL, 'p'},
         {"pdserv-config", required_argument, NULL, 'c'},
+        {"pid-file",      required_argument, NULL, 'i'},
         {"daemon",        no_argument,       NULL, 'd'},
         {"help",          no_argument,       NULL, 'h'},
         {}
     };
 
     do {
-        c = getopt_long(argc, argv, "p:c:dh", longOptions, NULL);
+        c = getopt_long(argc, argv, "p:c:i:dh", longOptions, NULL);
 
         switch (c) {
             case 'p':
@@ -638,6 +712,10 @@ void get_options(int argc, char **argv)
 
             case 'c':
                 pdserv_config = optarg;
+                break;
+
+            case 'i':
+                pidPath = optarg;
                 break;
 
             case 'd':
@@ -667,10 +745,9 @@ void get_options(int argc, char **argv)
     }
 }
 
-/* Function: main ============================================================
- *
- * Abstract:
- *      Execute model on a generic target such as a workstation.
+/****************************************************************************/
+
+/** Process main function.
  */
 int main(int argc, char **argv)
 {
@@ -754,6 +831,10 @@ int main(int argc, char **argv)
         }
     }
 
+    if (pidPath[0]) {
+        create_pid_file();
+    }
+
     clock_gettime(CLOCK_MONOTONIC, &task[0].time);
 
 #if defined(MULTITASKING)
@@ -801,6 +882,10 @@ int main(int argc, char **argv)
     pdserv_exit(pdserv);
     MdlTerminate();
 
+    if (pidPath[0]) {
+        remove_pid_file();
+    }
+
 out:
     if (err) {
         fprintf(stderr, "Fatal error: %s\n", err);
@@ -810,3 +895,5 @@ out:
         return 0;
     }
 }
+
+/****************************************************************************/
