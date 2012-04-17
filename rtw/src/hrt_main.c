@@ -1,3 +1,11 @@
+/*****************************************************************************
+ *
+ * $Id$
+ *
+ * vim: tw=78
+ *
+ ****************************************************************************/
+
 #include <stdio.h>
 #include <time.h>
 #include <pthread.h>
@@ -214,13 +222,11 @@ rt_OneStepMain(RT_MODEL *S)
     if (rtmGetSampleTime(S,0) == CONTINUOUS_SAMPLE_TIME) {
         rt_UpdateContinuousStates(S);
     } else {
-        rt_SimUpdateDiscreteTaskTime(rtmGetTPtr(S), 
-                                     rtmGetTimingData(S), 0);
+        rt_SimUpdateDiscreteTaskTime(rtmGetTPtr(S), rtmGetTimingData(S), 0);
     }
 
 #if FIRST_TID == 1
-    rt_SimUpdateDiscreteTaskTime(rtmGetTPtr(S), 
-                                 rtmGetTimingData(S),1);
+    rt_SimUpdateDiscreteTaskTime(rtmGetTPtr(S), rtmGetTimingData(S), 1);
 #endif
 
     return rtmGetErrorStatusFlag(S);
@@ -247,8 +253,7 @@ rt_OneStepTid(RT_MODEL *S, uint_T tid)
 
     MdlUpdate(tid);
 
-    rt_SimUpdateDiscreteTaskTime(rtmGetTPtr(S), 
-                                 rtmGetTimingData(S),tid);
+    rt_SimUpdateDiscreteTaskTime(rtmGetTPtr(S), rtmGetTimingData(S), tid);
 
     return rtmGetErrorStatusFlag(S);
 
@@ -367,14 +372,15 @@ const char *register_signal(const struct thread_task *task,
         tid >= 0 && *sampleTime ? *sampleTime / task[0].sample_time : 1;
 #else
     decimation = 1;
-    if (tid >= 0)
+    if (tid >= 0) {
         task += tid - (tid && FIRST_TID);
+    }
 #endif
 
     if (ndim == 1) {
         ndim = dimArray[dimArrayIndex];
     }
-    else if (ndim == 2 
+    else if (ndim == 2
             && min(dimArray[dimArrayIndex],
                 dimArray[dimArrayIndex + 1]) == 1) {
         ndim = max(dimArray[dimArrayIndex], dimArray[dimArrayIndex + 1]);
@@ -385,8 +391,9 @@ const char *register_signal(const struct thread_task *task,
             err = "No memory";
             goto out;
         }
-        for (i = 0; i < ndim; ++i)
+        for (i = 0; i < ndim; ++i) {
             dim[i] = dimArray[dimArrayIndex + i];
+        }
     }
 
 #if 0
@@ -398,14 +405,16 @@ const char *register_signal(const struct thread_task *task,
     signal = pdserv_signal(task->pdtask, decimation,
             path, data_type, address, ndim, dim);
 
-    if (signalName && *signalName)
+    if (signalName && *signalName) {
         pdserv_set_alias(signal, signalName);
-   
+    }
+
 out:
     free(path);
     free(dim);
-    if (err)
+    if (err) {
         printf("%s\n", err);
+    }
     return err;
 }
 
@@ -457,7 +466,7 @@ const char *register_parameter( struct pdserv *pdserv,
     if (ndim == 1) {
         ndim = dimArray[dimArrayIndex];
     }
-    else if (ndim == 2 
+    else if (ndim == 2
             && min(dimArray[dimArrayIndex], dimArray[dimArrayIndex+1]) == 1) {
         ndim = max(dimArray[dimArrayIndex], dimArray[dimArrayIndex+1]);
     }
@@ -467,8 +476,9 @@ const char *register_parameter( struct pdserv *pdserv,
             err = "No memory";
             goto out;
         }
-        for (i = 0; i < ndim; ++i)
+        for (i = 0; i < ndim; ++i) {
             dim[i] = dimArray[dimArrayIndex + i];
+        }
     }
 
     param = pdserv_parameter(pdserv, path, 0666,
@@ -477,8 +487,9 @@ const char *register_parameter( struct pdserv *pdserv,
 out:
     free(path);
     free(dim);
-    if (err)
+    if (err) {
         printf("%s\n", err);
+    }
     return err;
 }
 
@@ -507,12 +518,14 @@ rtw_capi_init(RT_MODEL *S,
     dataAddressMap = rtwCAPI_GetDataAddressMap(mmi);
 
     signals = rtwCAPI_GetSignals(mmi);
-    for (i = 0; signals && i < rtwCAPI_GetNumSignals(mmi); ++i)
+    for (i = 0; signals && i < rtwCAPI_GetNumSignals(mmi); ++i) {
         register_signal(task, signals, i);
+    }
 
     params = rtwCAPI_GetBlockParameters(mmi);
-    for (i = 0; params && i < rtwCAPI_GetNumBlockParameters(mmi); ++i)
+    for (i = 0; params && i < rtwCAPI_GetNumBlockParameters(mmi); ++i) {
         register_parameter(pdserv, params, i);
+    }
 
     return NULL;
 }
@@ -650,9 +663,9 @@ void get_options(int argc, char **argv)
  * Abstract:
  *      Execute model on a generic target such as a workstation.
  */
-int main (int argc, char **argv)
+int main(int argc, char **argv)
 {
-    RT_MODEL  *S = MODEL();
+    RT_MODEL *S = MODEL();
     struct thread_task task[NUMTASKS];
     struct pdserv *pdserv = NULL;
     unsigned int dt;
@@ -688,8 +701,9 @@ int main (int argc, char **argv)
     }
 
     /* Register signals and parameters */
-    if ((err = rtw_capi_init(S, pdserv, task)))
+    if ((err = rtw_capi_init(S, pdserv, task))) {
         goto out;
+    }
 
     /* Prepare process-data interface, create threads, etc. */
     pdserv_prepare(pdserv);
@@ -715,8 +729,9 @@ int main (int argc, char **argv)
     /* Provoke the first stack fault before cyclic operation. */
     stack_prefault();
 
-    if ((err = init_application(S)))
+    if ((err = init_application(S))) {
         goto out;
+    }
 
     clock_gettime(CLOCK_MONOTONIC, &task[0].time);
 
@@ -758,8 +773,9 @@ int main (int argc, char **argv)
 
     running = 0;
 
-    for (i = 1; i < NUMTASKS; ++i)
+    for (i = 1; i < NUMTASKS; ++i) {
         pthread_join(task[i].thread, 0);
+    }
 
     pdserv_exit(pdserv);
     MdlTerminate();
@@ -769,6 +785,7 @@ out:
         fprintf(stderr, "Fatal error: %s\n", err);
         return 1;
     }
-    else
+    else {
         return 0;
+    }
 }
