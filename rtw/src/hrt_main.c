@@ -795,7 +795,9 @@ int main(int argc, char **argv)
     pdserv_prepare(pdserv);
 
     /* Lock all memory forever. */
-    mlockall(MCL_CURRENT | MCL_FUTURE);
+    if (mlockall(MCL_CURRENT | MCL_FUTURE)) {
+        fprintf(stderr, "mlockall() failed: %s\n", strerror(errno));
+    }
 
     /* Set task priority. */
     {
