@@ -323,6 +323,8 @@ const char *register_signal(const struct thread_task *task,
     size_t dataTypeIndex   = rtwCAPI_GetSignalDataTypeIdx(signals, idx);
     size_t dimIndex        = rtwCAPI_GetSignalDimensionIdx(signals, idx);
     size_t sTimeIndex      = rtwCAPI_GetSignalSampleTimeIdx(signals, idx);
+    unsigned int isComplex = rtwCAPI_GetDataIsComplex(dTypeMap,
+            dataTypeIndex);
 
     const void *address =
         rtwCAPI_GetDataAddress(dataAddressMap, addrMapIndex);
@@ -347,11 +349,7 @@ const char *register_signal(const struct thread_task *task,
         goto out;
     }
 
-    /* Check that the data type is compatable */
-    if (rtwCAPI_GetDataIsComplex(dTypeMap, dataTypeIndex)) {
-        err = "Cannot interact with complex data types yet.";
-        goto out;
-    }
+    /* Check that the data type is compatible */
     if (rtwCAPI_GetDataIsPointer(dTypeMap, dataTypeIndex)) {
         err = "Cannot interact with pointer data types.";
         goto out;
@@ -417,11 +415,41 @@ const char *register_signal(const struct thread_task *task,
             decimation, data_type, address, ndim, dim);
 #endif
 
-    signal = pdserv_signal(task->pdtask, decimation,
-            path, data_type, address, ndim, dim);
+    if (isComplex) {
+        size_t cPathLen = pathLen + 3;
+        size_t imOffset = dTypeMap[dataTypeIndex].dataSize / 2;
+        char *cPath = malloc(cPathLen);
+        if (!cPath) {
+            goto out;
+        }
 
-    if (signalName && *signalName) {
-        pdserv_set_alias(signal, signalName);
+        snprintf(cPath, cPathLen, "%s/Re", path);
+
+        signal = pdserv_signal(task->pdtask, decimation,
+                cPath, data_type, address, ndim, dim);
+
+        if (signalName && *signalName) {
+            pdserv_set_alias(signal, signalName);
+        }
+
+        snprintf(cPath, cPathLen, "%s/Im", path);
+
+        signal = pdserv_signal(task->pdtask, decimation,
+                cPath, data_type, address + imOffset, ndim, dim);
+
+        if (signalName && *signalName) {
+            pdserv_set_alias(signal, signalName);
+        }
+
+        free(cPath);
+
+    } else {
+        signal = pdserv_signal(task->pdtask, decimation,
+                path, data_type, address, ndim, dim);
+
+        if (signalName && *signalName) {
+            pdserv_set_alias(signal, signalName);
+        }
     }
 
 out:
@@ -451,6 +479,8 @@ const char *register_parameter( struct pdserv *pdserv,
     unsigned int data_type = get_etl_data_type(dataTypeIndex);
     size_t pathLen = strlen(blockPath) + strlen(paramName) + 9;
     size_t ndim = rtwCAPI_GetNumDims(dimMap, dimIndex);
+    unsigned int isComplex = rtwCAPI_GetDataIsComplex(dTypeMap,
+            dataTypeIndex);
 
     struct pdvariable *param;
     char *path = malloc(pathLen);
@@ -464,11 +494,7 @@ const char *register_parameter( struct pdserv *pdserv,
         goto out;
     }
 
-    /* Check that the data type is compatable */
-    if (rtwCAPI_GetDataIsComplex(dTypeMap, dataTypeIndex)) {
-        err = "Cannot interact with complex data types yet.";
-        goto out;
-    }
+    /* Check that the data type is compatible */
     if (rtwCAPI_GetDataIsPointer(dTypeMap, dataTypeIndex)) {
         err = "Cannot interact with pointer data types.";
         goto out;
@@ -500,8 +526,29 @@ const char *register_parameter( struct pdserv *pdserv,
         }
     }
 
-    param = pdserv_parameter(pdserv, path, 0666,
-            data_type, address, ndim, dim, 0, 0);
+    if (isComplex) {
+        size_t cPathLen = pathLen + 3;
+        size_t imOffset = dTypeMap[dataTypeIndex].dataSize / 2;
+        char *cPath = malloc(cPathLen);
+        if (!cPath) {
+            goto out;
+        }
+
+        snprintf(cPath, cPathLen, "%s/Re", path);
+
+        param = pdserv_parameter(pdserv, cPath, 0666,
+                data_type, address, ndim, dim, 0, 0);
+
+        snprintf(cPath, cPathLen, "%s/Im", path);
+
+        param = pdserv_parameter(pdserv, cPath, 0666,
+                data_type, address + imOffset, ndim, dim, 0, 0);
+
+        free(cPath);
+    } else {
+        param = pdserv_parameter(pdserv, path, 0666,
+                data_type, address, ndim, dim, 0, 0);
+    }
 
 out:
     free(path);

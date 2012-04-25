@@ -3,4 +3,5 @@ $Id$
 Version 2.0:
 
 - New EtherLab target for PREEMPT-RT using the pdserv library.
+- Support for complex data types.
 
