@@ -386,9 +386,6 @@ pr_info(const struct ecat_slave *slave,
     va_list ap;
     char_T message[200];
 
-    if (slave->debug_level < 1)
-        return;
-
     va_start(ap, fmt);
     intro(slave, indent, parent_context, context);
     vsnprintf(message, sizeof(message), fmt, ap);
@@ -1646,7 +1643,7 @@ static void mdlSetInputPortDataType(SimStruct *S, int_T p, DTypeId id)
     struct ecat_slave *slave = ssGetUserData(S);
     struct io_port *port = slave->i_port + p;
 
-    /* Check whether the data type is compatable with the PDO data type or is
+    /* Check whether the data type is compatible with the PDO data type or is
      * SS_SINGLE or SS_DOUBLE */
     if (port->data_type->sl_type != id) {
         if (id != SS_DOUBLE && id != SS_SINGLE) {
@@ -1654,7 +1651,7 @@ static void mdlSetInputPortDataType(SimStruct *S, int_T p, DTypeId id)
                     "Trying to set data type of input port %i to %s,\n"
                     "whereas PDO has data type %s. Choose PDO data type\n"
                     "or SS_DOUBLE or SS_SINGLE",
-                    p+1, ssGetDataTypeName(S, id), port->data_type->name);
+                    p + 1, ssGetDataTypeName(S, id), port->data_type->name);
             ssSetErrorStatus(S, msg);
             return;
         }
