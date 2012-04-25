@@ -316,8 +316,11 @@
       %endroll
     %else
       %%
-      %assign max = GetMaxValue(port.PdoDataTypeId)
-      %assign min = GetMinValue(port.PdoDataTypeId)
+      %assign hasMinMax = HasMinMax(port.PdoDataTypeId)
+      %if hasMinMax
+        %assign max = GetMaxValue(port.PdoDataTypeId)
+        %assign min = GetMinValue(port.PdoDataTypeId)
+      %endif
       %%
       { real_T value;
       %%
@@ -348,9 +351,13 @@
           value *= %<port.FullScale>;
         %endif
         %%
-        %<LibBlockDWork(dwork,"",lcv,sigIdx)> = value > %<max>
-                ? %<max>
-                : (value < %<min> ? %<min> : value);
+        %if hasMinMax
+            %<LibBlockDWork(dwork,"",lcv,sigIdx)> = value > %<max>
+                    ? %<max>
+                    : (value < %<min> ? %<min> : value);
+        %else
+            %<LibBlockDWork(dwork,"",lcv,sigIdx)> = value;
+        %endif
       %endroll
       }
     %endif
@@ -467,6 +474,25 @@
     %endif
   %endroll
   }
+%endfunction
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function HasMinMax(dtype)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  %switch (dtype / 1000)
+    %case 1
+      %return 1
+      %break
+
+    %case 2
+      %return 1
+      %break
+
+    %case 3
+      %return 0
+      %break
+  %endswitch
 %endfunction
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
