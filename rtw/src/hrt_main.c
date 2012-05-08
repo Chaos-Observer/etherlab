@@ -338,12 +338,17 @@ const char *register_signal(const struct thread_task *task,
     uint_T decimation;
 
     struct pdvariable *signal;
-    char *path = malloc(pathLen);
+    char *path;
     size_t *dim = 0;
 
     size_t i;
     const char *err = 0;
 
+    /* Only allow built-in data types */
+    if (!data_type)
+        return NULL;
+
+    path = malloc(pathLen);
     if (!path) {
         err = "No memory";
         goto out;
@@ -483,12 +488,17 @@ const char *register_parameter( struct pdserv *pdserv,
             dataTypeIndex);
 
     struct pdvariable *param;
-    char *path = malloc(pathLen);
+    char *path;
     size_t *dim = 0;
 
     size_t i;
     const char *err = 0;
 
+    /* Only allow built-in data types */
+    if (!data_type)
+        return NULL;
+
+    path = malloc(pathLen);
     if (!path) {
         err = "No memory";
         goto out;
