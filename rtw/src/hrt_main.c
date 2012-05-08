@@ -422,7 +422,7 @@ const char *register_signal(const struct thread_task *task,
 
     if (isComplex) {
         size_t cPathLen = pathLen + 3;
-        size_t imOffset = dTypeMap[dataTypeIndex].dataSize / 2;
+        size_t imOffset = rtwCAPI_GetDataTypeSize(dTypeMap,dataTypeIndex) / 2;
         char *cPath = malloc(cPathLen);
         if (!cPath) {
             goto out;
@@ -538,7 +538,7 @@ const char *register_parameter( struct pdserv *pdserv,
 
     if (isComplex) {
         size_t cPathLen = pathLen + 3;
-        size_t imOffset = dTypeMap[dataTypeIndex].dataSize / 2;
+        size_t imOffset = rtwCAPI_GetDataTypeSize(dTypeMap,dataTypeIndex) / 2;
         char *cPath = malloc(cPathLen);
         if (!cPath) {
             goto out;
