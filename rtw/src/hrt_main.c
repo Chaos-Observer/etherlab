@@ -672,7 +672,7 @@ void remove_pid_file()
     ret = unlink(pidPath);
     if (ret == -1) {
         fprintf(stderr, "Failed to remove PID file \"%s\": %s\n",
-                strerror(errno));
+                pidPath, strerror(errno));
     }
 }
 
@@ -688,7 +688,7 @@ void create_pid_file()
     fd = open(pidPath, O_WRONLY | O_TRUNC | O_CREAT, 0644);
     if (fd == -1) {
         fprintf(stderr, "Failed to create PID file \"%s\": %s\n",
-                strerror(errno));
+                pidPath, strerror(errno));
         return;
     }
 
@@ -697,13 +697,13 @@ void create_pid_file()
     ret = write(fd, str, len);
     if (ret == -1) {
         fprintf(stderr, "Failed to write to PID file \"%s\": %s\n",
-                strerror(errno));
+                pidPath, strerror(errno));
         goto out_unlink;
     }
 
     if (ret != len) {
         fprintf(stderr, "Failed to write to PID file \"%s\"."
-                " Written %i of %i bytes.", ret, len);
+                " Written %i of %i bytes.", pidPath, ret, len);
         goto out_unlink;
     }
 
