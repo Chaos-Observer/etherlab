@@ -2,20 +2,21 @@
  *
  * SFunction to register output variables
  *
- * Copyright (c) 2007, Richard Hacker
+ * Copyright (c) 2012, Richard Hacker
  * License: GPL
  */
 
 
-#define S_FUNCTION_NAME  etherlab_out
+#define S_FUNCTION_NAME  rtipc_tx
 #define S_FUNCTION_LEVEL 2
 
 #include "simstruc.h"
 #include "get_string.h"
 
 #define ID                             (ssGetSFcnParam(S,0)) 
-#define TSAMPLE            (mxGetScalar(ssGetSFcnParam(S,1)))
-#define PARAM_COUNT                                      2
+#define FORCE              (mxGetScalar(ssGetSFcnParam(S,1)))
+#define TSAMPLE            (mxGetScalar(ssGetSFcnParam(S,2)))
+#define PARAM_COUNT                                      3
 
 
 /*====================*
@@ -30,6 +31,7 @@
 static void mdlInitializeSizes(SimStruct *S)
 {
     uint_T i;
+    DimsInfo_T dimsInfo;
 
     ssSetNumSFcnParams(S, PARAM_COUNT);  /* Number of expected parameters */
     if (ssGetNumSFcnParams(S) != ssGetSFcnParamsCount(S)) {
@@ -43,11 +45,21 @@ static void mdlInitializeSizes(SimStruct *S)
     ssSetInputPortWidth(S, 0, DYNAMICALLY_SIZED);
     ssSetInputPortDataType(S, 0, DYNAMICALLY_TYPED);
     ssSetInputPortDirectFeedThrough(S, 0, 1);
+    ssSetInputPortRequiredContiguous(S, 0, 1);
+    dimsInfo.width = DYNAMICALLY_SIZED;
+    dimsInfo.numDims = DYNAMICALLY_SIZED;
+    dimsInfo.dims = NULL;
+    if (!ssSetInputPortDimensionInfo(S, 0, &dimsInfo))
+        return;
 
     if (!ssSetNumOutputPorts(S, 0)) return;
 
     ssSetNumSampleTimes(S, 1);
-    ssSetNumPWork(S, 1);
+
+    if (FORCE && ssGetInputPortConnected(S,0)) {
+        ssSetNumIWork(S, 1);
+        ssSetNumPWork(S, 1);
+    }
 
     ssSetOptions(S, 
             SS_OPTION_WORKS_WITH_CODE_REUSE | 
@@ -64,6 +76,50 @@ static void mdlInitializeSampleTimes(SimStruct *S)
 {
     ssSetSampleTime(S, 0, TSAMPLE);
     ssSetOffsetTime(S, 0, 0.0);
+}
+
+/* Function: mdlSetWorkWidths =================================================
+ */
+#define MDL_SET_WORK_WIDTHS
+static void mdlSetWorkWidths(SimStruct *S)
+{
+    ssParamRec rtp;
+    int_T dimensions[] = {1};
+    uint8_T value[] = {0};
+
+    if (!ssGetNumIWork(S))
+        return;
+
+    ssSetNumRunTimeParams(S, 2);
+
+    rtp.name = "ForceOutput";
+    rtp.nDimensions = 1;
+    rtp.dimensions = dimensions;
+    rtp.dataTypeId = SS_UINT8;
+    rtp.complexSignal = 0;
+    rtp.data = mxCalloc(1, ssGetDataTypeSize(S,SS_UINT8));
+    rtp.dataAttributes = NULL;
+    rtp.nDlgParamIndices = 0;
+    rtp.dlgParamIndices = NULL;
+    rtp.transformed = RTPARAM_TRANSFORMED;
+    rtp.outputAsMatrix = 0;
+    mexMakeMemoryPersistent(rtp.data);
+    ssSetRunTimeParamInfo(S, 0, &rtp);
+
+    rtp.name = "ForceValue";
+    rtp.nDimensions = ssGetInputPortNumDimensions(S,0);
+    rtp.dimensions = ssGetInputPortDimensions(S,0);
+    rtp.dataTypeId = ssGetInputPortDataType(S,0);
+    rtp.complexSignal = 0;
+    rtp.data = mxCalloc(ssGetInputPortWidth(S,0),
+            ssGetDataTypeSize(S,rtp.dataTypeId));
+    rtp.dataAttributes = NULL;
+    rtp.nDlgParamIndices = 0;
+    rtp.dlgParamIndices = NULL;
+    rtp.transformed = RTPARAM_TRANSFORMED;
+    rtp.outputAsMatrix = 0;
+    mexMakeMemoryPersistent(rtp.data);
+    ssSetRunTimeParamInfo(S, 1, &rtp);
 }
 
 /* Function: mdlOutputs =======================================================
@@ -83,6 +139,11 @@ static void mdlOutputs(SimStruct *S, int_T tid)
  */
 static void mdlTerminate(SimStruct *S)
 {
+    if (!ssGetNumIWork(S))
+        return;
+
+    mxFree(ssGetRunTimeParamInfo(S, 0)->data);
+    mxFree(ssGetRunTimeParamInfo(S, 1)->data);
 }
 
 #define MDL_RTW
@@ -92,8 +153,13 @@ static void mdlRTW(SimStruct *S)
 
     if (!ssWriteRTWStrParam(S, "VarName", id))
         return;
-    if (!ssWriteRTWWorkVect(S, "PWork", 1, "DstAddr", 1))
-        return;
+    if (ssGetNumIWork(S)) {
+        if (!ssWriteRTWWorkVect(S, "PWork", 1, "Pdo", 1))
+            return;
+
+        if (!ssWriteRTWWorkVect(S, "IWork", 1, "Force", 1))
+            return;
+    }
 }
 
 

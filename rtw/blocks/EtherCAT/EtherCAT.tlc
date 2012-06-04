@@ -38,12 +38,6 @@
               }
 
   %with CompiledModel
-    %assign NumSt = LibNumDiscreteSampleTimes()
-    %if FEVAL("verLessThan","simulinkcoder","7.3")
-      %% In releases prior to 7.3, LibNumDiscreteSampleTimes() incorrectly
-      %% reported the number of sample times.
-      %assign NumSt = NumSt - LibGetTID01EQ()
-    %endif
 
     %% EtherCAT header
     %<LibAddToCommonIncludes("ecrt_support.h")>
@@ -52,8 +46,8 @@
     const struct ec_slave *slave_head;
     const struct ec_slave **slave_list = &slave_head;
     /* Zero terminated list of sample times for EtherCAT */
-    unsigned int ec_st[%<NumSt>] = {
-    %foreach tid = NumSt
+    unsigned int ec_st[%<ETL.NumSt>] = {
+    %foreach tid = ETL.NumSt
         %assign EtherCAT.MasterSampleTime = EtherCAT.MasterSampleTime + 0.0
         %assign StepSize = LibGetClockTickStepSize(tid + LibGetTID01EQ())
         %<CAST("Unsigned", StepSize*1000000000 + 0.5)>,
@@ -65,7 +59,7 @@
     %openfile buf
   
     /* Starting EtherCAT subsystem */
-    if ((%<ETL.ErrStr> = ecs_start(slave_head, ec_st, %<NumSt>, \
+    if ((%<ETL.ErrStr> = ecs_start(slave_head, ec_st, %<ETL.NumSt>, \
                 %<LibIsSingleTasking()>))) {
           snprintf(%<ETL.ErrMsg>, sizeof(%<ETL.ErrMsg>), 
              "Starting EtherCAT subsystem failed: %s", %<ETL.ErrStr>);
@@ -78,7 +72,7 @@
     %openfile buf
   
     /* Shutting down EtherCAT subsystem */
-    ecs_end(%<NumSt>);
+    ecs_end(%<ETL.NumSt>);
     %closefile buf
     %<LibMdlTerminateCustomCode(buf, "execution")>
   

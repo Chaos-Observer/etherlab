@@ -1,5 +1,6 @@
 syntax: glob
 
+**~
 CMakeCache.txt
 CMakeFiles
 CPackConfig.cmake

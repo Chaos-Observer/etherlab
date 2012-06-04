@@ -218,6 +218,11 @@ CPPFLAGS = $(DEP) $(CPP_OPTS) $(CC_OPTS) $(CPP_REQ_DEFINES) $(RTW_OPTS) $(INCLUD
 
 SYSLIBS = $(EXT_LIB) -lm -lrt -lpdserv -L$(ETHERLAB_DIR)/lib -Wl,--rpath $(ETHERLAB_DIR)/lib
 
+ifneq ($(findstring rtipc.c,$(S_FUNCTIONS)),)
+    SYSLIBS += -lrtipc
+    S_FUNCTIONS := $(filter-out rtipc.c,$(S_FUNCTIONS))
+endif
+
 ifneq ($(findstring ecrt_support.c,$(S_FUNCTIONS)),)
     SYSLIBS += -lethercat
 endif

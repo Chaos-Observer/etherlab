@@ -8,8 +8,8 @@ end
 disp(['Precompiling functions in ' pwd]);
 mex world_time.c
 mex raise.c
-mex etherlab_in.c
-mex etherlab_out.c
+mex rtipc_tx.c
+mex rtipc_rx.c
 mex event.c
 mex findidx.c
 

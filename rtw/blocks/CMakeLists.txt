@@ -33,8 +33,8 @@ INSTALL (FILES
     setup.m 
 
     EtherLAB_IO.tlc 
-    etherlab_in.c etherlab_in.tlc 
-    etherlab_out.c etherlab_out.tlc 
+    rtipc_tx.c rtipc_tx.tlc 
+    rtipc_rx.c rtipc_rx.tlc 
     world_time.c world_time.tlc
     raise.c raise.tlc RaiseCatch.tlc 
     get_string.h test_var.m
