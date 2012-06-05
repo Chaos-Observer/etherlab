@@ -41,6 +41,8 @@ static void mdlInitializeSizes(SimStruct *S)
     for( i = 0; i < PARAM_COUNT; i++) 
         ssSetSFcnParamTunable(S,i,SS_PRM_NOT_TUNABLE);
 
+    ssAllowSignalsWithMoreThan2D(S);
+
     if (!ssSetNumInputPorts(S, 1)) return;
     ssSetInputPortWidth(S, 0, DYNAMICALLY_SIZED);
     ssSetInputPortDataType(S, 0, DYNAMICALLY_TYPED);

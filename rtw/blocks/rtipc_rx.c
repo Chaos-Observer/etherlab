@@ -67,6 +67,8 @@ static void mdlInitializeSizes(SimStruct *S)
         return;
     }
     
+    ssAllowSignalsWithMoreThan2D(S);
+
     if (!ssSetNumInputPorts(S, 0)) return;
 
     if (!mxIsDouble(lenArray)) {
