@@ -273,11 +273,28 @@ void *run_task(void *p)
 {
     struct thread_task *thread = p;
     unsigned int dt = thread->sample_time * 1.0e9 + 0.5;
+    uint32_t exec_ns = 0, period_ns = 0;
+    struct timespec start_time, last_start_time = {0, 0},
+                    end_time = last_start_time, world_time;
 
     do {
+        clock_gettime(CLOCK_MONOTONIC, &start_time);
+        clock_gettime(CLOCK_REALTIME, &world_time);
+
         thread->err = rt_OneStepTid(thread->S, thread->tid);
-        pdserv_update(thread->pdtask, &thread->time);
+
+        pdserv_update(thread->pdtask, &world_time);
+
+        period_ns = DIFF_NS(last_start_time, start_time);
+        exec_ns = DIFF_NS(last_start_time, end_time);
+        last_start_time = start_time;
+        pdserv_update_statistics(thread->pdtask,
+                exec_ns / 1e9, period_ns / 1e9, 0);
+
         timeradd(&thread->time, dt);
+
+        clock_gettime(CLOCK_MONOTONIC, &end_time);
+
         clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &thread->time, 0);
     } while(!thread->err && *thread->running);
 
@@ -819,7 +836,8 @@ int main(int argc, char **argv)
     const char *err = NULL;
     size_t i;
     uint32_t exec_ns = 0, period_ns = 0;
-    struct timespec start_time, last_start_time, end_time;
+    struct timespec start_time, last_start_time = {0, 0},
+                    end_time = last_start_time, world_time;
 
     /* Set defaults for command-line options. */
     base_name = basename(argv[0]);
@@ -915,12 +933,13 @@ int main(int argc, char **argv)
     /* Main thread running here */
     do {
         clock_gettime(CLOCK_MONOTONIC, &start_time);
+        clock_gettime(CLOCK_REALTIME, &world_time);
 
         pdserv_get_parameters(pdserv, task[0].pdtask, &task[0].time);
 
         err = rt_OneStepMain(S);
 
-        pdserv_update(task[0].pdtask, &task[0].time);
+        pdserv_update(task[0].pdtask, &world_time);
 
         period_ns = DIFF_NS(last_start_time, start_time);
         exec_ns = DIFF_NS(last_start_time, end_time);
