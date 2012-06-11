@@ -828,7 +828,7 @@ void get_options(int argc, char **argv)
  */
 int main(int argc, char **argv)
 {
-    RT_MODEL *S = MODEL();
+    RT_MODEL *S;
     struct thread_task task[NUMTASKS];
     struct pdserv *pdserv = NULL;
     unsigned int dt;
@@ -855,6 +855,9 @@ int main(int argc, char **argv)
             goto out;
         }
     }
+
+    /* Initialize model */
+    S = MODEL();
 
     /* Create necessary pdserv tasks */
     for (i = 0; i < NUMTASKS; ++i) {
