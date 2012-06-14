@@ -852,6 +852,7 @@ int main(int argc, char **argv)
     if (pdserv_config) {
         if (pdserv_config_file(pdserv, pdserv_config)) {
             err = "Invalid pdserv config file.";
+            pdserv_exit(pdserv);
             goto out;
         }
     }
@@ -869,6 +870,7 @@ int main(int argc, char **argv)
 
     /* Register signals and parameters */
     if ((err = rtw_capi_init(S, pdserv, task))) {
+        pdserv_exit(pdserv);
         goto out;
     }
 
@@ -910,6 +912,7 @@ int main(int argc, char **argv)
         if (ret != 0) {
             fprintf(stderr, "Failed to become daemon: %s\n", strerror(errno));
             pdserv_exit(pdserv);
+            err = "daemon() failed.";
             goto out;
         }
     }
