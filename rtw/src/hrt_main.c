@@ -305,24 +305,47 @@ void *run_task(void *p)
 
 #endif /* MULTITASKING */
 
+
 /****************************************************************************/
 
 /** Get the data type as expected by EtherLab.
  */
-unsigned int get_etl_data_type(size_t dataTypeIdx)
+int get_etl_data_type(uint16_T dataTypeIndex, unsigned int isComplex)
 {
-    switch (rtwCAPI_GetDataTypeSLId(dTypeMap, dataTypeIdx)) {
-        case SS_DOUBLE:  return pd_double_T;
-        case SS_SINGLE:  return pd_single_T;
-        case SS_INT8:    return pd_sint8_T;
-        case SS_UINT8:   return pd_uint8_T;
-        case SS_INT16:   return pd_sint16_T;
-        case SS_UINT16:  return pd_uint16_T;
-        case SS_INT32:   return pd_sint32_T;
-        case SS_UINT32:  return pd_uint32_T;
-        case SS_BOOLEAN: return pd_boolean_T;
-        default:         return 0;
+    static int pd_complex[pd_datatype_end];
+    uint8_T slDataId = rtwCAPI_GetDataTypeSLId(dTypeMap, dataTypeIndex);
+
+    int pd_type;
+    switch (slDataId) {
+        case SS_DOUBLE:  pd_type = pd_double_T;        break;
+        case SS_SINGLE:  pd_type = pd_single_T;        break;
+        case SS_INT8:    pd_type = pd_sint8_T;         break;
+        case SS_UINT8:   pd_type = pd_uint8_T;         break;
+        case SS_INT16:   pd_type = pd_sint16_T;        break;
+        case SS_UINT16:  pd_type = pd_uint16_T;        break;
+        case SS_INT32:   pd_type = pd_sint32_T;        break;
+        case SS_UINT32:  pd_type = pd_uint32_T;        break;
+        case SS_BOOLEAN: pd_type = pd_boolean_T;       break;
+        default:         pd_type = 0;                  break;
     }
+
+    if (!isComplex)
+        return pd_type;
+
+//    printf("complex type %i %i %i\n",
+//            dataTypeIndex, pd_type, pd_complex[pd_type]);
+    if (pd_complex[pd_type])
+        return pd_complex[pd_type];
+
+    size_t size = rtwCAPI_GetDataTypeSize(dTypeMap, dataTypeIndex);
+    pd_complex[pd_type] = pdserv_create_compound(
+            rtwCAPI_GetDataTypeMWName(dTypeMap, dataTypeIndex), size);
+    pdserv_compound_add_field( pd_complex[pd_type],
+            "Re", pd_type, 0, 1, NULL);
+    pdserv_compound_add_field( pd_complex[pd_type],
+            "Im", pd_type, size / 2, 1, NULL);
+
+    return pd_complex[pd_type];
 }
 
 /****************************************************************************/
@@ -332,26 +355,26 @@ unsigned int get_etl_data_type(size_t dataTypeIdx)
 const char *register_signal(const struct thread_task *task,
         const rtwCAPI_Signals* signals, size_t idx)
 {
-    size_t addrMapIndex    = rtwCAPI_GetSignalAddrIdx(signals, idx);
+    uint_T addrMapIndex    = rtwCAPI_GetSignalAddrIdx(signals, idx);
     /* size_t sysNum = rtwCAPI_GetSignalSysNum(signals, idx); */
     const char *blockPath  = rtwCAPI_GetSignalBlockPath(signals, idx);
     const char *signalName = rtwCAPI_GetSignalName(signals, idx);
-    uint_T portNumber      = rtwCAPI_GetSignalPortNumber(signals, idx);
-    size_t dataTypeIndex   = rtwCAPI_GetSignalDataTypeIdx(signals, idx);
-    size_t dimIndex        = rtwCAPI_GetSignalDimensionIdx(signals, idx);
-    size_t sTimeIndex      = rtwCAPI_GetSignalSampleTimeIdx(signals, idx);
+    uint16_T portNumber      = rtwCAPI_GetSignalPortNumber(signals, idx);
+    uint16_T dataTypeIndex   = rtwCAPI_GetSignalDataTypeIdx(signals, idx);
+    uint16_T dimIndex        = rtwCAPI_GetSignalDimensionIdx(signals, idx);
+    uint8_T  sTimeIndex      = rtwCAPI_GetSignalSampleTimeIdx(signals, idx);
     unsigned int isComplex = rtwCAPI_GetDataIsComplex(dTypeMap,
             dataTypeIndex);
 
     const void *address =
         rtwCAPI_GetDataAddress(dataAddressMap, addrMapIndex);
-    size_t dimArrayIndex = rtwCAPI_GetDimArrayIndex(dimMap, dimIndex);
-    unsigned int data_type = get_etl_data_type(dataTypeIndex);
+    uint_T dimArrayIndex = rtwCAPI_GetDimArrayIndex(dimMap, dimIndex);
+    int data_type = get_etl_data_type(dataTypeIndex, isComplex);
     size_t pathLen = strlen(blockPath) + strlen(signalName) + 9;
-    size_t ndim = rtwCAPI_GetNumDims(dimMap, dimIndex);
+    uint8_T ndim = rtwCAPI_GetNumDims(dimMap, dimIndex);
     const real_T *sampleTime =
         rtwCAPI_GetSamplePeriodPtr(sampleTimeMap, sTimeIndex);
-    int tid = rtwCAPI_GetSampleTimeTID(sampleTimeMap, sTimeIndex);
+    int8_T tid = rtwCAPI_GetSampleTimeTID(sampleTimeMap, sTimeIndex);
     uint_T decimation;
 
     struct pdvariable *signal;
@@ -437,44 +460,11 @@ const char *register_signal(const struct thread_task *task,
             decimation, data_type, address, ndim, dim);
 #endif
 
-    if (isComplex) {
-        size_t cPathLen = pathLen + 3;
-        size_t imOffset =
-            rtwCAPI_GetDataTypeSize(dTypeMap, dataTypeIndex) / 2;
+    signal = pdserv_signal(task->pdtask, decimation,
+            path, data_type, address, ndim, dim);
 
-        char *cPath = malloc(cPathLen);
-        if (!cPath) {
-            goto out;
-        }
-
-        snprintf(cPath, cPathLen, "%s/Re", path);
-
-        signal = pdserv_signal(task->pdtask, decimation,
-                cPath, data_type, address, ndim, dim);
-
-        if (signalName && *signalName) {
-            pdserv_set_alias(signal, signalName);
-        }
-
-        snprintf(cPath, cPathLen, "%s/Im", path);
-
-        signal = pdserv_signal(task->pdtask, decimation,
-                cPath, data_type, address + imOffset, ndim, dim);
-
-        if (signalName && *signalName) {
-            pdserv_set_alias(signal, signalName);
-        }
-
-        free(cPath);
-
-    } else {
-        signal = pdserv_signal(task->pdtask, decimation,
-                path, data_type, address, ndim, dim);
-
-        if (signalName && *signalName) {
-            pdserv_set_alias(signal, signalName);
-        }
-    }
+    if (signalName && *signalName)
+        pdserv_set_alias(signal, signalName);
 
 out:
     free(path);
@@ -492,19 +482,20 @@ out:
 const char *register_parameter( struct pdserv *pdserv,
         const rtwCAPI_BlockParameters* params, size_t idx)
 {
-    size_t addrMapIndex = rtwCAPI_GetBlockParameterAddrIdx(params, idx);
+    uint_T addrMapIndex = rtwCAPI_GetBlockParameterAddrIdx(params, idx);
     const char *blockPath = rtwCAPI_GetBlockParameterBlockPath(params, idx);
     const char *paramName = rtwCAPI_GetBlockParameterName(params, idx);
-    size_t dataTypeIndex = rtwCAPI_GetBlockParameterDataTypeIdx(params, idx);
-    size_t dimIndex = rtwCAPI_GetBlockParameterDimensionIdx(params, idx);
+    uint16_T dataTypeIndex = rtwCAPI_GetBlockParameterDataTypeIdx(params, idx);
+    uint16_T dimIndex = rtwCAPI_GetBlockParameterDimensionIdx(params, idx);
 
     void *address = rtwCAPI_GetDataAddress(dataAddressMap, addrMapIndex);
-    size_t dimArrayIndex = rtwCAPI_GetDimArrayIndex(dimMap, dimIndex);
-    unsigned int data_type = get_etl_data_type(dataTypeIndex);
+    uint_T dimArrayIndex = rtwCAPI_GetDimArrayIndex(dimMap, dimIndex);
     size_t pathLen = strlen(blockPath) + strlen(paramName) + 9;
-    size_t ndim = rtwCAPI_GetNumDims(dimMap, dimIndex);
+    uint8_T ndim = rtwCAPI_GetNumDims(dimMap, dimIndex);
     unsigned int isComplex = rtwCAPI_GetDataIsComplex(dTypeMap,
             dataTypeIndex);
+
+    int data_type = get_etl_data_type(dataTypeIndex, isComplex);
 
     struct pdvariable *param;
     char *path;
@@ -555,30 +546,8 @@ const char *register_parameter( struct pdserv *pdserv,
         }
     }
 
-    if (isComplex) {
-        size_t cPathLen = pathLen + 3;
-        size_t imOffset =
-            rtwCAPI_GetDataTypeSize(dTypeMap,dataTypeIndex) / 2;
-        char *cPath = malloc(cPathLen);
-        if (!cPath) {
-            goto out;
-        }
-
-        snprintf(cPath, cPathLen, "%s/Re", path);
-
-        param = pdserv_parameter(pdserv, cPath, 0666,
-                data_type, address, ndim, dim, 0, 0);
-
-        snprintf(cPath, cPathLen, "%s/Im", path);
-
-        param = pdserv_parameter(pdserv, cPath, 0666,
-                data_type, address + imOffset, ndim, dim, 0, 0);
-
-        free(cPath);
-    } else {
-        param = pdserv_parameter(pdserv, path, 0666,
-                data_type, address, ndim, dim, 0, 0);
-    }
+    param = pdserv_parameter(pdserv, path, 0666,
+            data_type, address, ndim, dim, 0, 0);
 
 out:
     free(path);
