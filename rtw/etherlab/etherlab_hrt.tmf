@@ -217,6 +217,7 @@ CPPFLAGS = $(DEP) $(CPP_OPTS) $(CC_OPTS) $(CPP_REQ_DEFINES) $(RTW_OPTS) $(INCLUD
 #-------------------------- Additional Libraries ------------------------------
 
 SYSLIBS = $(EXT_LIB) -lm -lrt -lpdserv -L$(ETHERLAB_DIR)/lib -Wl,--rpath $(ETHERLAB_DIR)/lib
+DYNAMIC = -rdynamic
 
 ifneq ($(findstring rtipc.c,$(S_FUNCTIONS)),)
     SYSLIBS += -lrtipc
@@ -318,7 +319,8 @@ all : Makefile $(PRODUCT)
 
 ifeq ($(MODELREF_TARGET_TYPE),NONE)
 $(PRODUCT) : $(OBJS) $(SHARED_LIB) $(LIBS) $(MODELREF_LINK_LIBS)
-	LD_LIBRARY_PATH= $(BIN_SETTING) $(LINK_OBJS) $(MODELREF_LINK_LIBS) $(SHARED_LIB) $(LIBS)
+	LD_LIBRARY_PATH= $(BIN_SETTING) $(LINK_OBJS) 
+	        $(DYNAMIC) $(MODELREF_LINK_LIBS) $(SHARED_LIB) $(LIBS)
 	@echo "### Created $(BUILD_PRODUCT_TYPE): $@"
 else
 $(PRODUCT) : $(OBJS) $(SHARED_LIB)

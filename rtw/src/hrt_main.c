@@ -4,6 +4,93 @@
  *
  * vim: tw=78
  *
+ * Note about creating new Simulink data types:
+ * In Simulink, new data types can be created. These named data types are
+ * available in pdserv. These data types are C structures.
+ *
+ * PdServ detects these data types and searches the symbol table for a symbol
+ * called "<name>_description". This symbol must be a zero terminated
+ * structure vector with the following elements:
+ * struct compound_desc {
+ *     const char   *fieldName;   // Name of field
+ *     uint8_T       slDataId;    // enumerated data type
+ *                                // from simstruc_types.h
+ *                                // Can also be SS_STRUCT, in which case
+ *                                // ->next must be used
+ *     size_t        dataSize;    // data size in Bytes
+ *     uint8_T       isComplex;   // Used only for primary data types
+ *     size_t        numDims;     // number of elements in dimMap that
+ *                                // specifies how many dimensions
+ *                                // If dimMap == NULL, this value directly
+ *                                // specifies the number of elements
+ *     const size_t  *dimMap;     // Dimension list. If NULL, numDims
+ *                                // specifies number of elements
+ *     const struct compound_desc *next; // Pointer to another zero terminated
+ *                                       // field set when
+ *                                       // slDataId == SS_STRUCT
+ * };
+ *
+ * To explain the mechanism behind numDims and dimMap:
+ * For:              numDims=   dimMap=
+ *      Scalars         1       NULL              double d
+ *      Vectors         n       NULL              double h[6]
+ *      N-Dim array     N       {d1,d2,...,dN}    double v[2][3][4]
+ *
+ *
+ * For example, suppose you have a new data type called PRIV_TYPE, defined
+ * as:
+ *
+   // In file <privtype.h>
+   #ifdef __cplusplus
+   extern "C" {
+   #endif
+  
+   struct priv_type {
+          double dbl[4],
+          int16_t i16[5][6];
+          char c;
+          struct inner {
+              int32_t i32;
+              char b[40];
+          } inner[2];
+   };
+  
+   #ifdef __cplusplus
+   }
+   #endif
+   
+ * Include the following code in the executable:
+ * =========================================================================
+ *
+   #include "privtype.h"
+  
+   // Definition for struct priv_type
+  
+   const size_t dimMap[] = {
+       5, 6,    // for i16
+   };
+  
+   struct compound_desc {
+       const char   *fieldName;
+       uint8_T       slDataId;
+       size_t        dataSize;
+       uint8_T       isComplex;
+       size_t        numDims;
+       const size_t  *dimMap;
+       const struct compound_desc *next;
+   } PRIV_TYPE_description[] = {
+       {"dbl",   SS_DOUBLE, sizeof(real_T),        0, 4, NULL},
+       {"i16",   SS_INT16,  sizeof(int16_T),       0, 2, dimMap},
+       {"c",     SS_INT8,   sizeof(char_T),        0, 1, NULL},
+       {"inner", SS_STRUCT, sizeof(struct inner),  0, 2, NULL,
+                                                PRIV_TYPE_description + 5},
+       {0,}, // Zero terminator
+       {"i32",   SS_INT32,  sizeof(int32_T),       0, 1,  NULL},
+       {"b",     SS_INT32,  sizeof(char_T),        0, 40, NULL},
+       {0,}, // Zero terminator
+   };
+ * =========================================================================
+ *
  ****************************************************************************/
 
 #include <stdio.h>
@@ -18,6 +105,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <stdlib.h>     // malloc
+#include <string.h>
+#include <dlfcn.h>
 
 #include <pdserv.h>
 
@@ -99,6 +189,19 @@ extern void rt_ODEUpdateContinuousStates(RTWSolverInfo *si);
       rtmSetT(S, rtsiGetSolverStopTime(rtmGetRTWSolverInfo(S)));
 #endif
 
+
+/* See comment at the top of the file for registering new data types */
+struct compound_desc {
+    const char   *fieldName;
+    uint8_T       slDataId;
+    size_t        dataSize;
+    uint8_T       isComplex;
+    size_t        numDims;
+    const size_t  *dimMap;
+    const struct compound_desc *next;
+};
+
+
 #ifdef __cplusplus
 }
 #endif
@@ -117,9 +220,12 @@ static const rtwCAPI_DataTypeMap* dTypeMap;
 static const rtwCAPI_SampleTimeMap* sampleTimeMap;
 static const uint_T* dimArray;
 static void ** dataAddressMap;
+static void *exe;      /* Pointer to this executable. */
 
 const char* rt_OneStepMain(RT_MODEL *s);
 const char* rt_OneStepTid(RT_MODEL *s, uint_T);
+int get_etl_data_type (const char *mwName,
+        uint8_T slDataId, size_t size, unsigned int isComplex);
 
 struct thread_task {
     RT_MODEL *S;
@@ -308,12 +414,95 @@ void *run_task(void *p)
 
 /****************************************************************************/
 
+/** Create a new compound data type
+ */
+size_t make_compound(int compound,
+        const struct compound_desc* compound_desc, size_t offset)
+{
+    int dt;
+    //printf("%s() compound=%i, offset=%zu\n", __func__, compound, offset);
+
+    for (; compound_desc->fieldName; compound_desc++) {
+        if (compound_desc->slDataId == SS_STRUCT) {
+            dt = pdserv_create_compound(
+                    compound_desc->fieldName, compound_desc->dataSize);
+            make_compound(dt, compound_desc->next, offset);
+        }
+        else
+            dt = get_etl_data_type(
+                    compound_desc->fieldName,
+                    compound_desc->slDataId,
+                    compound_desc->dataSize,
+                    compound_desc->isComplex);
+
+        pdserv_compound_add_field( compound,
+                compound_desc->fieldName, dt, offset,
+                compound_desc->numDims, compound_desc->dimMap);
+        offset += compound_desc->dataSize;
+    }
+
+    return offset;
+}
+
+/** Get the compound data type as expected by EtherLab.
+ */
+int get_compound_data_type(const char *mwName, size_t size)
+{
+    struct compound_list {
+        struct compound_list *next;
+        const char *mwName;
+        int dtype;
+    };
+    static struct compound_list compound_list_head = {
+        &compound_list_head
+    };
+    struct compound_list *list;
+    const void *compound_desc;
+    char *compound_name;
+    size_t n, offset;
+
+    /* Try to find the compound in the list */
+    for (list = &compound_list_head;
+            list->next != &compound_list_head; list = list->next) {
+        //printf("diff=, name=%s\n", list->mwName);
+        if (!strcmp(mwName, list->mwName))
+            return list->dtype;
+    }
+
+    /* Look for a symbol <mwName>_description */
+    if (!exe) {
+        exe = dlopen(NULL, RTLD_LAZY);
+        if (!exe)
+            return 0;
+    }
+    n = strlen(mwName);
+    compound_name = malloc(n + 20);
+    strcpy(compound_name, mwName);
+    strcpy(compound_name+n, "_description");
+    compound_desc = dlsym(exe, compound_name);
+    free(compound_name);
+    if (!compound_desc)
+        return 0;
+
+    /* Append to end of list */
+    list->next = calloc(1, sizeof(struct compound_list));
+    list->mwName = mwName;
+    list->dtype = pdserv_create_compound(mwName, size);
+
+    list->next->next = &compound_list_head;
+
+    make_compound(list->dtype, compound_desc, 0);
+
+    //printf("%s exe=%p desc=%p\n", compound_name, exe, compound_desc);
+    return list->dtype;
+}
+
 /** Get the data type as expected by EtherLab.
  */
-int get_etl_data_type(uint16_T dataTypeIndex, unsigned int isComplex)
+int get_etl_data_type (const char *mwName,
+        uint8_T slDataId, size_t size, unsigned int isComplex)
 {
     static int pd_complex[pd_datatype_end];
-    uint8_T slDataId = rtwCAPI_GetDataTypeSLId(dTypeMap, dataTypeIndex);
 
     int pd_type;
     switch (slDataId) {
@@ -326,10 +515,13 @@ int get_etl_data_type(uint16_T dataTypeIndex, unsigned int isComplex)
         case SS_INT32:   pd_type = pd_sint32_T;        break;
         case SS_UINT32:  pd_type = pd_uint32_T;        break;
         case SS_BOOLEAN: pd_type = pd_boolean_T;       break;
+        case SS_STRUCT:
+                         pd_type = get_compound_data_type(mwName, size); break;
         default:         pd_type = 0;                  break;
     }
 
-    if (!isComplex)
+    //printf("new datat type %i\n", pd_type);
+    if (!isComplex || !pd_type || slDataId == SS_STRUCT)
         return pd_type;
 
 //    printf("complex type %i %i %i\n",
@@ -337,9 +529,7 @@ int get_etl_data_type(uint16_T dataTypeIndex, unsigned int isComplex)
     if (pd_complex[pd_type])
         return pd_complex[pd_type];
 
-    size_t size = rtwCAPI_GetDataTypeSize(dTypeMap, dataTypeIndex);
-    pd_complex[pd_type] = pdserv_create_compound(
-            rtwCAPI_GetDataTypeMWName(dTypeMap, dataTypeIndex), size);
+    pd_complex[pd_type] = pdserv_create_compound( mwName, size);
     pdserv_compound_add_field( pd_complex[pd_type],
             "Re", pd_type, 0, 1, NULL);
     pdserv_compound_add_field( pd_complex[pd_type],
@@ -363,13 +553,15 @@ const char *register_signal(const struct thread_task *task,
     uint16_T dataTypeIndex   = rtwCAPI_GetSignalDataTypeIdx(signals, idx);
     uint16_T dimIndex        = rtwCAPI_GetSignalDimensionIdx(signals, idx);
     uint8_T  sTimeIndex      = rtwCAPI_GetSignalSampleTimeIdx(signals, idx);
-    unsigned int isComplex = rtwCAPI_GetDataIsComplex(dTypeMap,
-            dataTypeIndex);
 
     const void *address =
         rtwCAPI_GetDataAddress(dataAddressMap, addrMapIndex);
     uint_T dimArrayIndex = rtwCAPI_GetDimArrayIndex(dimMap, dimIndex);
-    int data_type = get_etl_data_type(dataTypeIndex, isComplex);
+    int data_type = get_etl_data_type(
+            rtwCAPI_GetDataTypeMWName(dTypeMap, dataTypeIndex),
+            rtwCAPI_GetDataTypeSLId(dTypeMap, dataTypeIndex),
+            rtwCAPI_GetDataTypeSize(dTypeMap, dataTypeIndex), 
+            rtwCAPI_GetDataIsComplex(dTypeMap, dataTypeIndex));
     size_t pathLen = strlen(blockPath) + strlen(signalName) + 9;
     uint8_T ndim = rtwCAPI_GetNumDims(dimMap, dimIndex);
     const real_T *sampleTime =
@@ -460,6 +652,7 @@ const char *register_signal(const struct thread_task *task,
             decimation, data_type, address, ndim, dim);
 #endif
 
+    //printf("Reg with dt=%i\n", data_type);
     signal = pdserv_signal(task->pdtask, decimation,
             path, data_type, address, ndim, dim);
 
@@ -492,10 +685,12 @@ const char *register_parameter( struct pdserv *pdserv,
     uint_T dimArrayIndex = rtwCAPI_GetDimArrayIndex(dimMap, dimIndex);
     size_t pathLen = strlen(blockPath) + strlen(paramName) + 9;
     uint8_T ndim = rtwCAPI_GetNumDims(dimMap, dimIndex);
-    unsigned int isComplex = rtwCAPI_GetDataIsComplex(dTypeMap,
-            dataTypeIndex);
 
-    int data_type = get_etl_data_type(dataTypeIndex, isComplex);
+    int data_type = get_etl_data_type(
+            rtwCAPI_GetDataTypeMWName(dTypeMap, dataTypeIndex),
+            rtwCAPI_GetDataTypeSLId(dTypeMap, dataTypeIndex),
+            rtwCAPI_GetDataTypeSize(dTypeMap, dataTypeIndex), 
+            rtwCAPI_GetDataIsComplex(dTypeMap, dataTypeIndex));
 
     struct pdvariable *param;
     char *path;
