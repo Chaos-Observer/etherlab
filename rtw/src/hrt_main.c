@@ -8,11 +8,16 @@
  * In Simulink, new data types can be created. These named data types are
  * available in pdserv. These data types are C structures.
  *
+ * IMPORTANT: Use this interface carefully. If you mess up, your application
+ * will crash!
+ *
  * PdServ detects these data types and searches the symbol table for a symbol
  * called "<name>_description". This symbol must be a zero terminated
  * structure vector with the following elements:
  * struct compound_desc {
  *     const char   *fieldName;   // Name of field
+ *     size_t        offset;      // Offset of field in the structure
+ *                                // Use offsetof() to get this value
  *     uint8_T       slDataId;    // enumerated data type
  *                                // from simstruc_types.h
  *                                // Can also be SS_STRUCT, in which case
@@ -30,6 +35,9 @@
  *                                       // slDataId == SS_STRUCT
  * };
  *
+ * The symbol name must also have "C" linkage, so add 'extern "C" {}' around
+ * this definition (see below)
+ *
  * To explain the mechanism behind numDims and dimMap:
  * For:              numDims=   dimMap=
  *      Scalars         1       NULL              double d
@@ -41,9 +49,6 @@
  * as:
  *
    // In file <privtype.h>
-   #ifdef __cplusplus
-   extern "C" {
-   #endif
   
    struct priv_type {
           double dbl[4],
@@ -55,9 +60,6 @@
           } inner[2];
    };
   
-   #ifdef __cplusplus
-   }
-   #endif
    
  * Include the following code in the executable:
  * =========================================================================
@@ -70,8 +72,12 @@
        5, 6,    // for i16
    };
   
+   #ifdef __cplusplus
+   extern "C" {
+   #endif
    struct compound_desc {
        const char   *fieldName;
+       size_t        offset;
        uint8_T       slDataId;
        size_t        dataSize;
        uint8_T       isComplex;
@@ -79,16 +85,31 @@
        const size_t  *dimMap;
        const struct compound_desc *next;
    } PRIV_TYPE_description[] = {
-       {"dbl",   SS_DOUBLE, sizeof(real_T),        0, 4, NULL},
-       {"i16",   SS_INT16,  sizeof(int16_T),       0, 2, dimMap},
-       {"c",     SS_INT8,   sizeof(char_T),        0, 1, NULL},
-       {"inner", SS_STRUCT, sizeof(struct inner),  0, 2, NULL,
-                                                PRIV_TYPE_description + 5},
+       {"dbl",   offsetof(struct priv_type, dbl), SS_DOUBLE,
+           sizeof(real_T),        0, 4, NULL},
+
+       {"i16",   offsetof(struct priv_type, i16), SS_INT16,
+           sizeof(int16_T),       0, 2, dimMap},
+
+       {"c",     offsetof(struct priv_type, c), SS_INT8,
+           sizeof(char_T),        0, 1, NULL},
+
+       {"inner", offsetof(struct priv_type, inner), SS_STRUCT,
+                sizeof(struct inner),  0, 2, NULL, PRIV_TYPE_description + 5},
+
        {0,}, // Zero terminator
-       {"i32",   SS_INT32,  sizeof(int32_T),       0, 1,  NULL},
-       {"b",     SS_INT32,  sizeof(char_T),        0, 40, NULL},
+
+       {"i32",   offsetof(struct inner, i32), SS_INT32,
+           sizeof(int32_T),       0, 1,  NULL},
+
+       {"b",     offsetof(struct inner, b), SS_INT32,
+           sizeof(char_T),        0, 40, NULL},
+
        {0,}, // Zero terminator
    };
+   #ifdef __cplusplus
+   }
+   #endif
  * =========================================================================
  *
  ****************************************************************************/
@@ -193,6 +214,7 @@ extern void rt_ODEUpdateContinuousStates(RTWSolverInfo *si);
 /* See comment at the top of the file for registering new data types */
 struct compound_desc {
     const char   *fieldName;
+    size_t        offset;
     uint8_T       slDataId;
     size_t        dataSize;
     uint8_T       isComplex;
@@ -426,7 +448,8 @@ size_t make_compound(int compound,
         if (compound_desc->slDataId == SS_STRUCT) {
             dt = pdserv_create_compound(
                     compound_desc->fieldName, compound_desc->dataSize);
-            make_compound(dt, compound_desc->next, offset);
+            make_compound(dt, compound_desc->next,
+                    offset + compound_desc->offset);
         }
         else
             dt = get_etl_data_type(
@@ -436,9 +459,8 @@ size_t make_compound(int compound,
                     compound_desc->isComplex);
 
         pdserv_compound_add_field( compound,
-                compound_desc->fieldName, dt, offset,
+                compound_desc->fieldName, dt, offset + compound_desc->dataSize,
                 compound_desc->numDims, compound_desc->dimMap);
-        offset += compound_desc->dataSize;
     }
 
     return offset;
