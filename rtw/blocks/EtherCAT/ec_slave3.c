@@ -120,9 +120,10 @@
  *                   The vector can have none, 1 or the same
  *                   number of elements as there are pdo's
  *
- *      PdoSpec   := [SmIdx, PdoIdx, PdoEntryIdx, DataIdx]  (nx5 Matrix)
+ *      PdoSpec   := [SmIdx, PdoIdx, PdoEntryIdx, DataIdx]  (nx4 Matrix)
  *
- *      SmIdx, PdoIdx, PdoEntryIdx := Index into the slave configuration
+ *      SmIdx, PdoIdx, PdoEntryIdx := Zero based index into the
+ *                                    slave configuration
  *      DataIdx := index of the PdoEntry value, e.g. DataIdx = 3
  *                 means take the fourth bit out of the bit vector
  *                 when PdoEntry has BitLen = 64 and
@@ -1363,14 +1364,14 @@ get_section_config(struct ecat_slave *slave, const char_T *section,
                     return -1;
                 }
 
-                if (port->pdo[j].entry->data_type->mant_bits
+                if (port->pdo[j].entry->bitlen
                         % port->data_type->mant_bits) {
                     snprintf(element, sizeof(element), "pdo(%zu,3)", j+1);
                     pr_error(slave, ctxt, element, __LINE__,
                             "Data type specified for port (%s) does not "
                             "match the pdo's bit length (%u)",
                             port->data_type->name,
-                            port->pdo[j].entry->data_type->mant_bits);
+                            port->pdo[j].entry->bitlen);
                     return -1;
                 }
 
@@ -1378,13 +1379,13 @@ get_section_config(struct ecat_slave *slave, const char_T *section,
                 if (val[j + 3*width] < 0
                         || (port->data_type->mant_bits
                             * (port->pdo[j].element_idx + 1)
-                            > port->data_type->mant_bits)) {
+                            > port->pdo[j].entry->bitlen)) {
                     snprintf(element, sizeof(element), "pdo(%zu,4)", j+1);
                     pr_error(slave, ctxt, element, __LINE__,
                             "Element index %zi out of range [0,%u)",
                             (ssize_t)val[j + 3*width],
                             (port->pdo[j].entry->bitlen
-                             / port->pdo[j].entry->data_type->mant_bits));
+                             / port->data_type->mant_bits));
                     return -1;
                 }
 
