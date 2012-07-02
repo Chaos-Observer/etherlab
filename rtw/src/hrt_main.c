@@ -459,7 +459,7 @@ size_t make_compound(int compound,
                     compound_desc->isComplex);
 
         pdserv_compound_add_field( compound,
-                compound_desc->fieldName, dt, offset + compound_desc->dataSize,
+                compound_desc->fieldName, dt, offset + compound_desc->offset,
                 compound_desc->numDims, compound_desc->dimMap);
     }
 
