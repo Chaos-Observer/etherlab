@@ -60,6 +60,8 @@ INSTALL (FILES
     ethercatinfo_check.m
     SoeConfig.m
 
+    update_lebrary.m update_devices.m
+
     el1xxx.m  el2xxx_check.m  el2xxx.m  el31xx.m
     el4xxx.m ep3xxx.m ep1xxx.m ep4374.m ep2xxx.m
     ep4xxx.m

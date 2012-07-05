@@ -15,9 +15,9 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "rich"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Mon Jun  4 17:48:32 2012"
-  RTWModifiedTimeStamp	  260732888
-  ModelVersionFormat	  "1.%<AutoIncrement:876>"
+  LastModifiedDate	  "Thu Jul  5 18:00:10 2012"
+  RTWModifiedTimeStamp	  263411817
+  ModelVersionFormat	  "1.%<AutoIncrement:897>"
   ConfigurationManager	  "rcs"
   SampleTimeColors	  off
   SampleTimeAnnotations	  off
@@ -636,7 +636,7 @@ Library {
   }
   System {
     Name		    "etherlab_lib"
-    Location		    [291, 216, 663, 380]
+    Location		    [294, 239, 666, 403]
     Open		    on
     ModelBrowserVisibility  off
     ModelBrowserWidth	    200
@@ -650,7 +650,7 @@ Library {
     ShowPageBoundaries	    off
     ZoomFactor		    "100"
     ReportName		    "simulink-default.rpt"
-    SIDHighWatermark	    "75"
+    SIDHighWatermark	    "80"
     Block {
       BlockType		      SubSystem
       Name		      "EtherCAT"
@@ -672,7 +672,7 @@ Library {
       MaskIconUnits	      "pixels"
       System {
 	Name			"EtherCAT"
-	Location		[92, 166, 549, 575]
+	Location		[95, 189, 552, 598]
 	Open			off
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
@@ -805,7 +805,7 @@ Library {
 	  MaskIconUnits		  "autoscale"
 	  System {
 	    Name		    "Beckhoff"
-	    Location		    [34, 143, 1116, 584]
+	    Location		    [421, 74, 1503, 515]
 	    Open		    off
 	    ModelBrowserVisibility  off
 	    ModelBrowserWidth	    200
@@ -885,6 +885,73 @@ Library {
 	      MaskPortRotate	      "default"
 	      MaskIconUnits	      "autoscale"
 	      MaskValueString	      "0|1|EL3142|Vector Output|1|0|Double|off|off|0.1|0|0"
+	    }
+	    Block {
+	      BlockType		      S-Function
+	      Name		      "AIN_1"
+	      SID		      "76"
+	      Ports		      [0, 1]
+	      Position		      [400, 185, 465, 225]
+	      BackgroundColor	      "yellow"
+	      FunctionName	      "ec_slave3"
+	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
+	      SFunctionModules	      "'ecrt_support'"
+	      EnableBusSupport	      off
+	      MaskType		      "EL31xx"
+	      MaskDescription	      "Beckhoff 2,4,8-Channel 16-Bit Analog Input"
+	      MaskHelp		      "This block generically implements the EtherCAT 16-Bit Analog Input Terminal for various models"
+	      ".\n<p/>\nThe following Terminals are supported:\n<center>\n<table width=\"80%\">\n<tr><td>EL3102,4,8</td><td>-1"
+	      "0..10V Voltage Input</td></tr>\n<tr><td>EL3112,4   </td><td>0..20mA Current Input</td></tr>\n<tr><td>EL3122,4  "
+	      " </td><td>4..20mA Current Input</td></tr>\n<tr><td>EL3142,4,8</td><td>0..20mA Current Input</td></tr>\n<tr><td>"
+	      "EL3152,4,8</td><td>4..20mA Current Input</td></tr>\n<tr><td>EL3162,4,8</td><td>0..10V Voltage Input</td></tr>\n"
+	      "</table>\n</center>\n<p/>\nChoose and set the following options:\n<h4>Master:</h4>\nSet the EtherCAT Master of "
+	      "this terminal.\n\n<h4>Slave Index:</h4>\nSet the EtherCAT slave index. Following address formats are allowed:\n"
+	      "<ol>\n<li> Absolute addressing: a scalar number <<b><tt>n</tt></b>> representing the (zero based) absolute posi"
+	      "tion in the bus.\n<li> SSId addressing: the Secondary Slave (or 'Alias') Addressing has the form <<b><tt>[alias"
+	      " position]</tt></b>> where <b><tt>alias</tt></b> is the Secondary Slave Id of the EtherCAT slave and <b><tt>pos"
+	      "ition</tt></b> is the offset after the slave with the given <b><tt>alias</tt></b>. The SSId has to be preprogra"
+	      "mmed into the slave with other service tools (see 'ethercat alias --help').\n</ol>\n\n<h4>Device Model:</h4>\nC"
+	      "hoose the model at the Indexed position of the master.\n\n<h4>Output Type:</h4>\n<ul>\n<li>Choose <b>Vector Out"
+	      "put</b> to have a single output as a vector\nwith a size corresponding to the channel count of the terminal. Th"
+	      "is mode also allows a status output port to be displayed. <br/>\n<li>Choose <b>Separate Outputs</b> to have one"
+	      " output for every channel.\n</ul>\n<h4>Output Full Scale</h4>\nWhen <b>Output Data Type</b> is set to <b>Double"
+	      " with scale and offset</b>, the block's output value at full scale terminal input can be set here.\n\n<h4>Outpu"
+	      "t Offset</h4>\nWhen <b>Output Data Type</b> is set to <b>Double with scale and offset</b>, the blocks output at"
+	      " zero terminal input can be set here. Note that the Full Scale above is also increased by this amount. Note fur"
+	      "thermore that this corresponds to the minimum input for terminals such as 4..20mA.\n\n<h4>Output Data Type</h4>"
+	      "\nChoose the block's output data type for the output signal. Available are:\n<ul>\n<li><b><tt>Raw</tt></b> outp"
+	      "utting the internal raw value as <tt>int16_T</tt> or <tt>uint16_T</tt> as appropriate\n<li><b><tt>Double</tt></"
+	      "b> outputting 0..10, -10..10, 0..0.02 and 0.004..0.02 depending on the Model as appropriate\n<li><b><tt>Double "
+	      "with scale and offset</tt></b>, allowing the output to be scaled with an offset.\n</ul>\n\n<p>\nChoosing <b>Sta"
+	      "tus Output</b> provides a port of type <tt>uint8_T</tt> where the status is presented. This is only enabled whe"
+	      "n <b>Vector Output</b> is selected. Terminal input over- and underrange can be detected using this output. See "
+	      "the terminal's documentation.\n\n<h4>Output Filter</h4>\nWhen not in <b>Raw</b> mode, the <b>Output Filter</b> "
+	      "checkbox becomes available, allowing the use of an internal low pass filter. Enter the <b>LPF Time Constant</b>"
+	      " for the filter in the field below.\n<br>For continuous sample time systems (0 in Sample Time), the filter is a"
+	      "lso continuous. Discrete samples systems (Sample Time > 0) uses an equivalent discrete low pass filter with a s"
+	      "imilar time constant.\n\n<p>\nSet the <b>Sample Time</b> for the block. <tt>0</tt> is continuous sample time (r"
+	      "uns at the model's base rate). Setting <tt>-1</tt> will try to set the time using back propagation.\n"
+	      MaskPromptString	      "Master|Slave Index|Device Model |Output Type |Output Scale|Output Offset|Output Data Ty"
+	      "pe|Status Output|Output Filter|LPF Time Constant (sec)|Sample Time|Debug"
+	      MaskStyleString	      "edit,edit,popup(EL3022),popup(Vector Output|Separate Outputs),edit,edit,popup(Raw bits|D"
+	      "ouble|Double with scale and offset),checkbox,checkbox,edit,edit,edit"
+	      MaskVariables	      "master=@1;index=@2;model=&3;output_type=&4;scale=@5;offset=@6;dtype=&7;status=@8;filter=@9"
+	      ";tau=@10;tsample=@11;debug=@12;"
+	      MaskTunableValueString  "off,off,off,off,off,off,off,off,off,off,off,off"
+	      MaskCallbackString      "|||el31xx_check('output_type');\n|||el31xx_check('dtype');||el31xx_check('filter');|||"
+	      MaskEnableString	      "on,on,on,on,off,off,on,on,on,off,on,on"
+	      MaskVisibilityString    "on,on,on,on,on,on,on,on,on,on,on,off"
+	      MaskToolTipString	      "on,on,on,on,on,on,on,on,on,on,on,on"
+	      MaskInitialization      "masterStr = '';\npositionStr = '';\n[Address masterStr positionStr] = getEtherCATAddre"
+	      "ss(gcb, master, index);\n\nrv = el30xx(model, output_type, status, dtype, scale, offset, filter, tau);"
+	      MaskDisplay	      "fprintf('%s\\n%s AIn\\nM:%s Idx:%s', ...\n    model, rv.output_unit, masterStr, positionStr)"
+	      "\n\n"
+	      MaskIconFrame	      on
+	      MaskIconOpaque	      on
+	      MaskIconRotate	      "none"
+	      MaskPortRotate	      "default"
+	      MaskIconUnits	      "autoscale"
+	      MaskValueString	      "0|1|EL3022|Vector Output|1|0|Double|off|off|0.1|0|0"
 	    }
 	    Block {
 	      BlockType		      S-Function
@@ -1330,6 +1397,9 @@ Library {
 	      Ports		      [0, 1]
 	      Position		      [60, 205, 130, 245]
 	      BackgroundColor	      "yellow"
+	      UserDataPersistent      on
+	      UserData		      "DataTag0"
+	      LoadFcn		      "el1xxx('check')"
 	      FunctionName	      "ec_slave3"
 	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
 	      SFunctionModules	      "'ecrt_support'"
@@ -1351,23 +1421,27 @@ Library {
 	      "ple Time</h4>\nSelect the correct sample time. Setting this to 0 makes for a sample time at the model's base ra"
 	      "te. If another block can set the sample time, choose -1 for inherited sample time."
 	      MaskPromptString	      "Master|Slave Index|Device Model |Output Type|Sample Time|Deug Level"
-	      MaskStyleString	      "edit,edit,popup(EL1004v2|EL1014v2|EL1034|EL1008|EL1018|--Obsolete--|EL1004|EL1014),popup"
-	      "(Vector Output|Separate Output),edit,edit"
+	      MaskStyleString	      "edit,edit,popup(EL1002|EL1004|EL1008|EL1012|EL1014|EL1018|EL1024|EL1034|EL1084|EL1088|EL"
+	      "1094|EL1098|EL1104|EL1114|EL1124|EL1134|EL1144|EL1202|EL1702|EL1712|EL1722|EL1804|EL1808|EL1809|EL1814|EL1819|E"
+	      "L1862|EL1872|EL1889|EL1004_0010000A|EL1014_00000000|--- obsolete names ---|EL1004v2|EL1014v2),popup(Vector Outp"
+	      "ut|Separate Output),edit,edit"
 	      MaskVariables	      "master=@1;index=@2;model=&3;output_type=&4;tsample=@5;debug=@6;"
 	      MaskTunableValueString  "off,off,off,off,off,off"
-	      MaskCallbackString      "|||||"
+	      MaskCallbackString      "||el1xxx('set')|||"
 	      MaskEnableString	      "on,on,on,on,on,on"
 	      MaskVisibilityString    "on,on,on,on,on,off"
 	      MaskToolTipString	      "on,on,on,on,on,on"
 	      MaskInitialization      "masterStr = '';\npositionStr = '';\n[Address masterStr positionStr] = getEtherCATAddre"
-	      "ss(gcb, master, index);\n\nrv = el1xxx(model, output_type);\n"
+	      "ss(gcb, master, index);\n\nud = get_param(gcb,'UserData');\nif isfield(ud,'SlaveFault')\n    rv.SlaveConfig = ["
+	      "];\n    rv.PortConfig = [];\n    errordlg('This slave has a fatal error. Delete it', gcb);\nelse\n    rv.SlaveC"
+	      "onfig = ud.SlaveConfig;\n    rv.PortConfig = ud.PortConfig;\nend\n"
 	      MaskDisplay	      "fprintf('%s\\nM:%s Idx:%s', ...\n    model, masterStr, positionStr)\n\n"
 	      MaskIconFrame	      on
 	      MaskIconOpaque	      on
 	      MaskIconRotate	      "none"
 	      MaskPortRotate	      "default"
 	      MaskIconUnits	      "autoscale"
-	      MaskValueString	      "0|1|EL1008|Vector Output|0|0"
+	      MaskValueString	      "0|1|EL1004|Vector Output|0|0"
 	    }
 	    Block {
 	      BlockType		      S-Function
@@ -2005,6 +2079,45 @@ Library {
 	      MaskIconUnits	      "autoscale"
 	      MaskValueString	      "0|1|03f90000|1|0|Double|Binary|1250k|Multiturn (25 bits)|25|24|off|off|1|off|off|0.1|0|0"
 	    }
+	    Block {
+	      BlockType		      SubSystem
+	      Name		      "update"
+	      SID		      "78"
+	      Ports		      []
+	      Position		      [745, 304, 845, 346]
+	      BackgroundColor	      "magenta"
+	      ShowName		      off
+	      OpenFcn		      "update_library"
+	      MinAlgLoopOccurrences   off
+	      PropExecContextOutsideSubsystem off
+	      RTWSystemCode	      "Auto"
+	      FunctionWithSeparateData off
+	      Opaque		      off
+	      RequestExecContextInheritance off
+	      MaskHideContents	      off
+	      MaskDisplay	      "disp('Update slaves')"
+	      MaskIconFrame	      on
+	      MaskIconOpaque	      on
+	      MaskIconRotate	      "none"
+	      MaskPortRotate	      "default"
+	      MaskIconUnits	      "autoscale"
+	      System {
+		Name			"update"
+		Location		[433, 403, 931, 703]
+		Open			off
+		ModelBrowserVisibility	off
+		ModelBrowserWidth	200
+		ScreenColor		"white"
+		PaperOrientation	"landscape"
+		PaperPositionMode	"auto"
+		PaperType		"usletter"
+		PaperUnits		"inches"
+		TiledPaperMargins	[0.500000, 0.500000, 0.500000, 0.500000]
+		TiledPageScale		1
+		ShowPageBoundaries	off
+		ZoomFactor		"100"
+	      }
+	    }
 	    Annotation {
 	      Name		      "Analog I/O (16 bit)"
 	      Position		      [276, 34]
@@ -2556,5 +2669,42 @@ Library {
       Name		      "$Id$"
       Position		      [188, 141]
     }
+  }
+}
+MatData {
+  NumRecords		  1
+  DataRecord {
+    Tag			    DataTag0
+    Data		    "  %)30     .    $ H   8    (     @         %    \"     $    !     0         %  0 #     $    D    4VQA=F"
+    "5#;VYF:6< 4&]R=$-O;F9I9P  57!D871E              X   \"H!0  !@    @    \"          4    (     0    $    !          "
+    "4 !  ,     0   #P   !V96YD;W(       !D97-C<FEP=&EO;@!P<F]D=6-T      !R979I<VEO;@    !S;0                  #@   #@ "
+    "   &    \"     8         !0    @    !     0    $         \"0    @             0 X    X    !@    @    $          4 "
+    "   (     0    8    !         !     &    14PQ,# T   .    .     8    (    !@         %    \"     $    !     0       "
+    "  )    \"        )\"\"88]!#@   #@    &    \"     8         !0    @    !     0    $         \"0    @            P00"
+    "X    H!   !@    @    !          4    (     0    $    !          X   #X P  !@    @    !          4    (     0    , "
+    "   !          X    X    !@    @    &          4    (     0    $    !          D    (               .    .     8   "
+    " (    !@         %    \"     $    !     0         )    \"            / _#@   $@#   &    \"     $         !0    @  "
+    "  !    !     $         #@   ,     &    \"     $         !0    @    !     @    $         #@   #@    &    \"     8  "
+    "       !0    @    !     0    $         \"0    @           \"Z0 X   !0    !@    @    &          4    (     0    0  "
+    "  !          D    @            V$        #P/P       / _      !(CT .    P     8    (     0         %    \"     $   "
+    " \"     0         .    .     8    (    !@         %    \"     $    !     0         )    \"            ;I #@   %   "
+    "  &    \"     8         !0    @    !    !     $         \"0   \"            380        / _        \\#\\      $B/0 "
+    "X   #     !@    @    !          4    (     0    (    !          X    X    !@    @    &          4    (     0    $ "
+    "   !          D    (           \"ND .    4     8    (    !@         %    \"     $    $     0         )    (       "
+    "    \"-A         \\#\\       #P/P      2(] #@   ,     &    \"     $         !0    @    !     @    $         #@   #"
+    "@    &    \"     8         !0    @    !     0    $         \"0    @           .Z0 X   !0    !@    @    &          "
+    "4    (     0    0    !          D    @           ,V$        #P/P       / _      !(CT .    0 $   8    (     @      "
+    "   %    \"     $    !     0         %  0 !P    $    '    ;W5T<'5T   .    ^     8    (     @         %    \"     $ "
+    "   !     0         %  0 !0    $    %    <&1O       .    L     8    (    !@         %    \"     0    $     0       "
+    "  )    @                                                                 #P/P        !         \"$                "
+    "                                                                      #@   + \"   &    \"    !          !0    @   "
+    " !     0    $         #@   ( \"   &    \"     (         !0    @    !     0    $         !0 $ !     !    0    &UA=&"
+    "QA8G)O;W0       !S97!A<F%T;W(         <V5N=&EN96P          &9U;F-T:6]N7VAA;F1L90 .    2     8    (    !          %"
+    "    \"     $    5     0         0    %0   \"]V;VPO;W!T+TUA=&QA8BTR,#$Q80    X    P    !@    @    $          4    ("
+    "     0    $    !         !   0 O    #@   #     &    \"     0         !0    @    !     0    $         $  ! $     . "
+    "   0 $   8    (     @         %    \"     $    !     0         %  0 \"0    $    ;    9G5N8W1I;VX ='EP90      9FEL9"
+    "0             .    .     8    (    !          %    \"     $    &     0         0    !@   &5L,7AX>   #@   #@    &  "
+    "  \"     0         !0    @    !    !@    $         $     8   !S:6UP;&4   X   !@    !@    @    $          4    (   "
+    "  0   \"H    !         !     J    +V]P=\"]E=&AE<FQA8B]R='<O8FQO8VMS+T5T:&5R0T%4+V5L,7AX>\"YM        "
   }
 }
