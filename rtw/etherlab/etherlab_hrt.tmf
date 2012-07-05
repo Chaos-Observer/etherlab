@@ -216,7 +216,7 @@ CFLAGS   = $(DEP) $(CC_OPTS) $(CPP_REQ_DEFINES) $(RTW_OPTS) $(INCLUDES)
 CPPFLAGS = $(DEP) $(CPP_OPTS) $(CC_OPTS) $(CPP_REQ_DEFINES) $(RTW_OPTS) $(INCLUDES)
 #-------------------------- Additional Libraries ------------------------------
 
-SYSLIBS = $(EXT_LIB) -lm -lrt -lpdserv -L$(ETHERLAB_DIR)/lib -Wl,--rpath $(ETHERLAB_DIR)/lib
+SYSLIBS = $(EXT_LIB) -lm -ldl -lrt -lpdserv -L$(ETHERLAB_DIR)/lib -Wl,--rpath $(ETHERLAB_DIR)/lib
 DYNAMIC = -rdynamic
 
 ifneq ($(findstring rtipc.c,$(S_FUNCTIONS)),)
