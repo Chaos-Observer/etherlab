@@ -1,13 +1,13 @@
 function rv = el31xx(model,output_type, status, dtype, scale, offset, filter, tau)
 
 entries = [...
-           hex2dec('3101'),  2, 16, 2016; ... 
-           hex2dec('3101'),  1,  8, 1008; ...  
+           hex2dec('3101'),  2, 16, 2016; ...
+           hex2dec('3101'),  1,  8, 1008; ...
            hex2dec('3102'),  2, 16, 2016; ...
            hex2dec('3102'),  1,  8, 1008; ...
            hex2dec('6401'),  1, 16, 2016; ... %Channel outputs without states
            hex2dec('6401'),  2, 16, 2016; ... %Channel outputs without states
-          
+
            hex2dec('6000'), 17, 16, 2016; ...
            hex2dec('6010'), 17, 16, 2016; ...
            hex2dec('6020'), 17, 16, 2016; ...
@@ -16,13 +16,13 @@ entries = [...
 
           ];
 
-        
+
 
 pdo = [...
         hex2dec('1a00'),  1,  2;...       %TxPdo Sm3 El3102, El3142, EL3152, EL3162
         hex2dec('1a01'),  3,  4;...       %TxPdo Sm3 El3102, El3142, EL3152, EL3162
-        hex2dec('1a10'),  5,  6;...       %TxPdo Sm3 El3102, El3142, EL3152, EL3162 
- 
+        hex2dec('1a10'),  5,  6;...       %TxPdo Sm3 El3102, El3142, EL3152, EL3162
+
         hex2dec('1a01'),  7,  7;...
         hex2dec('1a03'),  8,  8;...
         hex2dec('1a05'),  9,  9;...
@@ -61,8 +61,8 @@ rv.SlaveConfig.product = product(1);
 % RxPdo SyncManager
 rv.SlaveConfig.sm = { {3 1 {}} };
 
-% Choose required pdos 
-if  status 
+% Choose required pdos
+if  status
     pdoindex = product(3):product(4);
 else
     pdoindex = product(5):product(6);
@@ -85,27 +85,27 @@ number_elements = pdo(pdoindex(end),3)-pdo(pdoindex(1),2)+1;
 if ~strcmp(dtype, 'Raw Bits')
     if strcmp(output_type, 'Separate Outputs')
         for k = 1:number_elements
-            rv.PortConfig.output(k).full_scale = scale_int; 
+            rv.PortConfig.output(k).full_scale = scale_int;
         end
     else
-            rv.PortConfig.output(1).full_scale = scale_int; 
+            rv.PortConfig.output(1).full_scale = scale_int;
     end
 end
 
 % Fill in Offsets
 if filter
     if (isempty(tau) || numel(tau)==1 || numel(tau) == number_elements)
-        if isempty(find(tau <= 0))   
-            if strcmp(output_type,'Separate Outputs')        
+        if isempty(find(tau <= 0))
+            if strcmp(output_type,'Separate Outputs')
                 for k = 1:number_elements
                     if numel(tau) == 1
                         rv.PortConfig.output(k).filter = {'Filter', tau};
-                    elseif numel(tau) == number_elements 
+                    elseif numel(tau) == number_elements
                         rv.PortConfig.output(k).filter = {'Filter', tau(k)};
                     else
                         rv.PortConfig.output(k).filter = [];
                     end
-                end 
+                end
             else
                 rv.PortConfig.output.filter = {'Filter', tau};
             end
@@ -114,7 +114,7 @@ if filter
                      'for the output filter'],'Filter Error');
         end
      % if input is wrong, fill with emptys
-    else 
+    else
         if strcmp(output_type,'Separate Outputs')
             for k = 1:number_elements
                 rv.PortConfig.output(k).filter = [];
@@ -129,15 +129,15 @@ if filter
 end
 
 
-% set scale and offset 
+% set scale and offset
 if strcmp(dtype, 'Double with scale and offset')
 % Fill in Scale
-    if (isempty(scale) || numel(scale)==1 || numel(scale) == number_elements)   
-        if strcmp(output_type,'Separate Outputs')        
+    if (isempty(scale) || numel(scale)==1 || numel(scale) == number_elements)
+        if strcmp(output_type,'Separate Outputs')
             for k = 1:number_elements
                 if numel(scale) == 1
                     rv.PortConfig.output(k).gain = {'Gain', scale};
-                elseif numel(scale) == number_elements 
+                elseif numel(scale) == number_elements
                     rv.PortConfig.output(k).gain = {'Gain', scale(k)};
                 else
                     rv.PortConfig.output(k).gain = {'Gain', []};
@@ -147,7 +147,7 @@ if strcmp(dtype, 'Double with scale and offset')
             rv.PortConfig.output.gain = {'Gain', scale};
         end
          % if input is wrong, fill with emptys
-    else 
+    else
         if strcmp(output_type,'Separate Outputs')
             for k = 1:number_elements
                 rv.PortConfig.output(k).gain = [];
@@ -159,14 +159,14 @@ if strcmp(dtype, 'Double with scale and offset')
         ' scale output does not match to the number of elements of the'...
         ' terminal. Please choose a valid output, or the scale is being ignored'])
     end
-     
+
     % Fill in Offsets
-    if (isempty(offset) || numel(offset)==1 || numel(offset) == number_elements)   
-        if strcmp(output_type,'Separate Outputs')        
+    if (isempty(offset) || numel(offset)==1 || numel(offset) == number_elements)
+        if strcmp(output_type,'Separate Outputs')
             for k = 1:number_elements
                 if numel(offset) == 1
                     rv.PortConfig.output(k).offset = {'Offset', offset};
-                elseif numel(offset) == number_elements 
+                elseif numel(offset) == number_elements
                     rv.PortConfig.output(k).offset = {'Offset', offset(k)};
                 else
                     rv.PortConfig.output(k).offset = [];
@@ -176,7 +176,7 @@ if strcmp(dtype, 'Double with scale and offset')
             rv.PortConfig.output.offset = {'Offset', offset};
         end
          % if input is wrong, fill with emptys
-    else 
+    else
         if strcmp(output_type,'Separate Outputs')
             for k = 1:number_elements
                 rv.PortConfig.output(k).offset = [];
