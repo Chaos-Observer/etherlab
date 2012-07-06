@@ -1,217 +1,178 @@
-function rv = el31xx(model,output_type, status, dtype, scale, offset, filter, tau)
+function rv = el31xx(model, output_type, status, dtype, scale, offset, ...
+    filter, tau)
 
 entries = [...
-           hex2dec('3101'),  2, 16, 2016; ...
-           hex2dec('3101'),  1,  8, 1008; ...
-           hex2dec('3102'),  2, 16, 2016; ...
-           hex2dec('3102'),  1,  8, 1008; ...
-           hex2dec('6401'),  1, 16, 2016; ... %Channel outputs without states
-           hex2dec('6401'),  2, 16, 2016; ... %Channel outputs without states
+    hex2dec('3101'),  1,  8, 1008; ...
+    hex2dec('3101'),  2, 16, 2016; ...
+    hex2dec('3102'),  1,  8, 1008; ...
+    hex2dec('3102'),  2, 16, 2016; ...
+    hex2dec('6401'),  1, 16, 2016; ... % Channel outputs without states
+    hex2dec('6401'),  2, 16, 2016; ... % Channel outputs without states
 
-           hex2dec('6000'), 17, 16, 2016; ...
-           hex2dec('6010'), 17, 16, 2016; ...
-           hex2dec('6020'), 17, 16, 2016; ...
-           hex2dec('6030'), 17, 16, 2016; ...
-
-
-          ];
-
-
+    hex2dec('6000'), 17, 16, 2016; ...
+    hex2dec('6010'), 17, 16, 2016; ...
+    hex2dec('6020'), 17, 16, 2016; ...
+    hex2dec('6030'), 17, 16, 2016; ...
+    ];
 
 pdo = [...
-        hex2dec('1a00'),  1,  2;...       %TxPdo Sm3 El3102, El3142, EL3152, EL3162
-        hex2dec('1a01'),  3,  4;...       %TxPdo Sm3 El3102, El3142, EL3152, EL3162
-        hex2dec('1a10'),  5,  6;...       %TxPdo Sm3 El3102, El3142, EL3152, EL3162
+    hex2dec('1a00'),  1,  2; ... % TxPdo Sm3 EL3102, EL3142, EL3152, EL3162
+    hex2dec('1a01'),  3,  4; ... % TxPdo Sm3 EL3102, EL3142, EL3152, EL3162
+    hex2dec('1a10'),  5,  6; ... % TxPdo Sm3 EL3102, EL3142, EL3152, EL3162
 
-        hex2dec('1a01'),  7,  7;...
-        hex2dec('1a03'),  8,  8;...
-        hex2dec('1a05'),  9,  9;...
-        hex2dec('1a07'), 10, 10;...
+    hex2dec('1a01'),  7,  7; ...
+    hex2dec('1a03'),  8,  8; ...
+    hex2dec('1a05'),  9,  9; ...
+    hex2dec('1a07'), 10, 10; ...
+    ];
 
-      ];
+output_unit = struct (...
+        'EL3102', '-10..10 V', ...
+        'EL3142', '0..20 mA', ...
+        'EL3152', '4..20 mA', ...
+        'EL3162', '0..10 V', ...
+        'EL3164', '0..10 V'...
+        );
 
-output_unit  = struct (...
-                       'EL3102', '-10..10V',...
-                       'EL3142', '0..20mA',...
-                       'El3152', '4..20mA',...
-                       'EL3162', '0-10V',...
-                       'EL3164', '0-10V'...
-                       );
-
-%   Model       ProductCode          Revision       TxStart|TxEnd|TxStart | TxEnd
-%                                                     with   with without  without
-%                                                              State
-models = struct(...
-  'EL3102'  ,[hex2dec('0C1E3052'), hex2dec('00000000'), 1,    2,     3,      3 ],...
-  'EL3142'  ,[hex2dec('0C463052'), hex2dec('00000000'), 1,    2,     3,      3 ],...
-  'EL3152'  ,[hex2dec('0C503052'), hex2dec('00000000'), 1,    2,     3,      3 ],...
-  'EL3162'  ,[hex2dec('0C5A3052'), hex2dec('00000000'), 1,    2,     3,      3 ],...
-  'EL3164'  ,[hex2dec('0C5C3052'), hex2dec('00100000'), 4,    7,     4,      7 ]...
+%
+% Model ProductCode Revision | TxStart | TxEnd | TxStart | TxEnd
+%                            | with status     | without status
+%
+models = struct( ...
+    'EL3102', [hex2dec('0c1e3052'), hex2dec('00000000'), 1, 2, 3, 3], ...
+    'EL3142', [hex2dec('0c463052'), hex2dec('00000000'), 1, 2, 3, 3], ...
+    'EL3152', [hex2dec('0c503052'), hex2dec('00000000'), 1, 2, 3, 3], ...
+    'EL3162', [hex2dec('0c5a3052'), hex2dec('00000000'), 1, 2, 3, 3], ...
+    'EL3164', [hex2dec('0c5c3052'), hex2dec('00100000'), 0, 0, 4, 7] ...
     );
-
 
 rv.output_unit = output_unit.(model);
 rv.SlaveConfig.vendor = 2;
 rv.SlaveConfig.description = model;
 
-
 product = models.(model);
 rv.SlaveConfig.product = product(1);
+rv.SlaveConfig.revision = product(2);
 
 % RxPdo SyncManager
 rv.SlaveConfig.sm = { {3 1 {}} };
 
 % Choose required pdos
-if  status
-    pdoindex = product(3):product(4);
+if status
+    pdoindex = product(3) : product(4);
 else
-    pdoindex = product(5):product(6);
+    pdoindex = product(5) : product(6);
 end
 
 % Populate the RxPDO Inputs structure
-rv.SlaveConfig.sm{1}{3} = arrayfun(...
-        @(x) {pdo(x,1), entries(pdo(x,2):pdo(x,3),:)}, ...
+rv.SlaveConfig.sm{1}{3} = arrayfun( ...
+        @(x) {pdo(x, 1), entries(pdo(x, 2) : pdo(x, 3), :)}, ...
         pdoindex, ...
-        'UniformOutput',0 ...
+        'UniformOutput', 0 ...
 );
 
 % set scale for double outputs
 scale_int = 2^15;
 
-number_elements = pdo(pdoindex(end),3)-pdo(pdoindex(1),2)+1;
-
+range = 1 : product(4) - product(3) + 1;
+status_mapped = status && product(3);
 
 % Set data type scale
 if ~strcmp(dtype, 'Raw Bits')
-    if strcmp(output_type, 'Separate Outputs')
-        for k = 1:number_elements
-            rv.PortConfig.output(k).full_scale = scale_int;
-        end
-    else
-            rv.PortConfig.output(1).full_scale = scale_int;
-    end
 end
 
-% Fill in Offsets
-if filter
-    if (isempty(tau) || numel(tau)==1 || numel(tau) == number_elements)
-        if isempty(find(tau <= 0))
-            if strcmp(output_type,'Separate Outputs')
-                for k = 1:number_elements
-                    if numel(tau) == 1
-                        rv.PortConfig.output(k).filter = {'Filter', tau};
-                    elseif numel(tau) == number_elements
-                        rv.PortConfig.output(k).filter = {'Filter', tau(k)};
-                    else
-                        rv.PortConfig.output(k).filter = [];
-                    end
-                end
-            else
-                rv.PortConfig.output.filter = {'Filter', tau};
-            end
-        else
-            errodlg(['Specify a nonzero time constant '...
-                     'for the output filter'],'Filter Error');
-        end
-     % if input is wrong, fill with emptys
-    else
-        if strcmp(output_type,'Separate Outputs')
-            for k = 1:number_elements
-                rv.PortConfig.output(k).filter = [];
-            end
-        else
-           rv.PortConfig.output.filter = {'Filter', tau};
-        end
-           warning('EtherLAB:Beckhoff:EL31xx:filter', ['The dimension of the'...
-           ' filter output does not match to the number of elements of the'...
-           ' terminal. Please choose a valid output, or the filter is being ignored'])
-    end
+% Fill in filter constants
+
+filter_value = [];
+
+is_scale_and_offset = strcmp(lower(dtype), 'double with scale and offset');
+is_double = is_scale_and_offset || strcmp(lower(dtype), 'double');
+
+% check parameter dimensions
+
+if numel(tau) && numel(tau) ~= 1 && numel(tau) ~= numel(range)
+    errordlg('Filter dimension invalid', gcb)
 end
 
-
-% set scale and offset
-if strcmp(dtype, 'Double with scale and offset')
-% Fill in Scale
-    if (isempty(scale) || numel(scale)==1 || numel(scale) == number_elements)
-        if strcmp(output_type,'Separate Outputs')
-            for k = 1:number_elements
-                if numel(scale) == 1
-                    rv.PortConfig.output(k).gain = {'Gain', scale};
-                elseif numel(scale) == number_elements
-                    rv.PortConfig.output(k).gain = {'Gain', scale(k)};
-                else
-                    rv.PortConfig.output(k).gain = {'Gain', []};
-                end
-             end
-        else
-            rv.PortConfig.output.gain = {'Gain', scale};
-        end
-         % if input is wrong, fill with emptys
-    else
-        if strcmp(output_type,'Separate Outputs')
-            for k = 1:number_elements
-                rv.PortConfig.output(k).gain = [];
-            end
-        else
-            rv.PortConfig.output.gain = {'Gain', scale};
-        end
-        warning('EtherLAB:Beckhoff:EL31xx:scale', ['The dimension of the'...
-        ' scale output does not match to the number of elements of the'...
-        ' terminal. Please choose a valid output, or the scale is being ignored'])
+if is_scale_and_offset
+    if numel(scale) && numel(scale) ~= 1 && numel(scale) ~= numel(range)
+        errordlg('Scale dimension invalid', gcb)
     end
-
-    % Fill in Offsets
-    if (isempty(offset) || numel(offset)==1 || numel(offset) == number_elements)
-        if strcmp(output_type,'Separate Outputs')
-            for k = 1:number_elements
-                if numel(offset) == 1
-                    rv.PortConfig.output(k).offset = {'Offset', offset};
-                elseif numel(offset) == number_elements
-                    rv.PortConfig.output(k).offset = {'Offset', offset(k)};
-                else
-                    rv.PortConfig.output(k).offset = [];
-                end
-             end
-        else
-            rv.PortConfig.output.offset = {'Offset', offset};
-        end
-         % if input is wrong, fill with emptys
-    else
-        if strcmp(output_type,'Separate Outputs')
-            for k = 1:number_elements
-                rv.PortConfig.output(k).offset = [];
-            end
-        else
-            rv.PortConfig.output.offset = {'Offset', offset};
-        end
-        warning('EtherLAB:Beckhoff:EL31xx:offset', ['The dimension of the'...
-        ' offset output does not match to the number of elements of the'...
-        ' terminal. Please choose a valid output, or the offset is being ignored'])
+    if numel(offset) && numel(offset) ~= 1 && numel(offset) ~= numel(range)
+        errordlg('Offset dimension invalid', gcb)
     end
-end
-
-if status && strcmp(model,'EL3164')
-        warning('EtherLAB:Beckhoff:EL3164:status', ['The status port for '...
-        'the EL3164 is not available, so your status configuration is'...
-        ' beeing ignored'])
 end
 
 % Populate the block's output port(s)
-r = 0:number_elements;
+
+% pdo indices
+if numel(rv.SlaveConfig.sm{1}{3}) > 1
+    pdo_idx = range - 1;
+    entry_idx = zeros(numel(range), 1);
+else
+    pdo_idx = zeros(numel(range), 1);
+    entry_idx = range - 1;
+end
 
 if strcmp(output_type, 'Vector Output')
-    if status && ~strcmp(model,'EL3164')
-        for k = 0:1
-        rv.PortConfig.output(k+1).pdo = [zeros(numel(r),4)];
-        rv.PortConfig.output(k+1).pdo(:,2) = [r];
-        rv.PortConfig.output(k+1).pdo(:,3) = k;
+
+    % value port
+    rv.PortConfig.output.pdo = zeros(numel(range), 4);
+    rv.PortConfig.output.pdo(:, 2) = pdo_idx;
+    rv.PortConfig.output.pdo(:, 3) = entry_idx + status_mapped;
+
+    if is_double
+        rv.PortConfig.output.full_scale = scale_int;
+
+        if ~isempty(tau)
+            rv.PortConfig.output.filter = {'Filter', tau};
         end
-    else
-        rv.PortConfig.output.pdo = [zeros(numel(r),4)];
-        rv.PortConfig.output.pdo(:,3) = [r];
+    end
+
+    if is_scale_and_offset
+        if ~isempty(scale)
+            rv.PortConfig.output.gain = {'Gain', scale};
+        end
+        if ~isempty(offset)
+            rv.PortConfig.output.offset = {'Offset', offset};
+        end
+    end
+
+    if status_mapped
+        % status port
+        rv.PortConfig.output(2).pdo = zeros(numel(range), 4);
+        rv.PortConfig.output(2).pdo(:, 2) = pdo_idx;
+        rv.PortConfig.output(2).pdo(:, 3) = entry_idx;
     end
 else
-    for k = 1:number_elements
-        rv.PortConfig.output(k).pdo = [0, 0, r(k), 0];
+    rv.PortConfig.output = [];
+    for k = range
+        p = numel(rv.PortConfig.output) + 1;
+        rv.PortConfig.output(p).pdo = ...
+            [0, pdo_idx(k), entry_idx(k) + status_mapped, 0];
+
+        if is_double
+            rv.PortConfig.output(p).full_scale = scale_int;
+
+            filter_name = ['Filter', num2str(k)];
+            if numel(tau) > 1
+                rv.PortConfig.output(p).filter = {filter_name, tau(k)};
+            elseif numel(tau) == 1
+                rv.PortConfig.output(p).filter = {filter_name, tau};
+            end
+        end
+
+        if is_scale_and_offset
+            if ~isempty(scale)
+                rv.PortConfig.output(p).gain = {'Gain', scale};
+            end
+            if ~isempty(offset)
+                rv.PortConfig.output(p).offset = {'Offset', offset};
+            end
+        end
+
+        if status_mapped
+            rv.PortConfig.output(p+1).pdo = [0, pdo_idx(k), entry_idx(k), 0];
+        end
     end
 end
