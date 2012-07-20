@@ -15,9 +15,9 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "rich"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Fri Jul 20 08:25:19 2012"
+  LastModifiedDate	  "Fri Jul 20 14:02:02 2012"
   RTWModifiedTimeStamp	  264554269
-  ModelVersionFormat	  "1.%<AutoIncrement:963>"
+  ModelVersionFormat	  "1.%<AutoIncrement:964>"
   ConfigurationManager	  "rcs"
   SampleTimeColors	  off
   SampleTimeAnnotations	  off
@@ -1499,6 +1499,8 @@ Library {
 	      Position		      [245, 201, 315, 239]
 	      BackgroundColor	      "yellow"
 	      LibraryVersion	      "1.845"
+	      UserDataPersistent      on
+	      UserData		      "DataTag8"
 	      LoadFcn		      "ep31xx('check')"
 	      FunctionName	      "ec_slave3"
 	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
@@ -1658,7 +1660,7 @@ Library {
 	      BackgroundColor	      "yellow"
 	      LibraryVersion	      "1.846"
 	      UserDataPersistent      on
-	      UserData		      "DataTag8"
+	      UserData		      "DataTag9"
 	      LoadFcn		      "ekxxxx('check')"
 	      FunctionName	      "ec_slave3"
 	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
@@ -2430,9 +2432,9 @@ Library {
   }
 }
 MatData {
-  NumRecords		  9
+  NumRecords		  10
   DataRecord {
-    Tag			    DataTag8
+    Tag			    DataTag9
     Data		    "  %)30     .    $ 4   8    (     @         %    \"     $    !     0         %  0 #     $    D    57!D87"
     "1E        4VQA=F5#;VYF:6< 4&]R=$-O;F9I9P        X   \"X @  !@    @    0          4    (     0    $    !          X"
     "   \"( @  !@    @    \"          4    (     0    $    !          4 !  0     0   $    !M871L86)R;V]T        <V5P87)"
@@ -2449,6 +2451,71 @@ MatData {
     "       4    (     0    $    !          D    (        2+$PD4$.    .     8    (    !@         %    \"     $    !    "
     " 0         )    \"            #%!#@   #     &    \"     8         !0    @               $         \"0         .   "
     " ,     8    (    !@         %    \"                0         )          "
+  }
+  DataRecord {
+    Tag			    DataTag8
+    Data		    "  %)30     .    .!0   8    (     @         %    \"     $    !     0         %  0 #     $    D    4VQA=F"
+    "5#;VYF:6< 4&]R=$-O;F9I9P  57!D871E              X   \"P!0  !@    @    \"          4    (     0    $    !          "
+    "4 !  ,     0   #P   !V96YD;W(       !D97-C<FEP=&EO;@!P<F]D=6-T      !R979I<VEO;@    !S;0                  #@   #@ "
+    "   &    \"     8         !0    @    !     0    $         \"0    @             0 X   !     !@    @    $          4 "
+    "   (     0    L    !         !     +    15 S,3<T+3 P,#(       X    X    !@    @    &          4    (     0    $   "
+    " !          D    (        I(#,J$$.    .     8    (    !@         %    \"     $    !     0         )    \"         "
+    " \" #)!#@   \"@$   &    \"     $         !0    @    !     0    $         #@   /@#   &    \"     $         !0    @ "
+    "   !     P    $         #@   #@    &    \"     8         !0    @    !     0    $         \"0    @            (0 X "
+    "   X    !@    @    &          4    (     0    $    !          D    (            \\#\\.    2 ,   8    (     0      "
+    "   %    \"     $    $     0         .    P     8    (     0         %    \"     $    \"     0         .    .     8"
+    "    (    !@         %    \"     $    !     0         )    \"            ;I #@   %     &    \"     8         !0    "
+    "@    !    !     $         \"0   \"            #80        #%         ,$       (\"?0 X   #     !@    @    !         "
+    " 4    (     0    (    !          X    X    !@    @    &          4    (     0    $    !          D    (           "
+    "#ND .    4     8    (    !@         %    \"     $    $     0         )    (           !-A         ,4         P0   "
+    "    @)] #@   ,     &    \"     $         !0    @    !     @    $         #@   #@    &    \"     8         !0    @ "
+    "   !     0    $         \"0    @           6Z0 X   !0    !@    @    &          4    (     0    0    !          D  "
+    "  @           (V$         Q0        #!       \" GT .    P     8    (     0         %    \"     $    \"     0      "
+    "   .    .     8    (    !@         %    \"     $    !     0         )    \"           ![I #@   %     &    \"     8"
+    "         !0    @    !    !     $         \"0   \"            S80        #%         ,$       (\"?0 X   !8\"P  !@   "
+    " @    \"          4    (     0    $    !          4 !  '     0    <   !O=71P=70   X    0\"P  !@    @    \"        "
+    "  4    (     0    0    !          4 !  +     0   #<   !P9&\\          &9U;&Q?<V-A;&4 9V%I;@        !O9F9S970      "
+    "'1A=0            X   !0    !@    @    &          4    (     0    0    !          D    @                           "
+    "                    .    .     8    (    !@         %    \"     $    !     0         )    \"            .! #@   *@"
+    "    &    \"     $         !0    @    !     @    $         #@   #@    &    \"     0         !0    @    !    !0    $"
+    "         $     4   !'86EN,0    X    X    !@    @    &          4    (     0    $    !          D    (            \\"
+    "#\\.    J     8    (     0         %    \"     $    \"     0         .    .     8    (    !          %    \"     $"
+    "    '     0         0    !P   $]F9G-E=#$ #@   #@    &    \"     8         !0    @    !     0    $         \"0    @"
+    "               X   \"H    !@    @    !          4    (     0    (    !          X    X    !@    @    $          4 "
+    "   (     0    <    !         !     '    1FEL=&5R,0 .    .     8    (    !@         %    \"     $    !     0       "
+    "  )    \"            / _#@   %     &    \"     8         !0    @    !    !     $         \"0   \"                 "
+    "      / _                      X    X    !@    @    &          4    (     0    $    !          D    (            X"
+    "$ .    J     8    (     0         %    \"     $    \"     0         .    .     8    (    !          %    \"     $ "
+    "   %     0         0    !0   $=A:6XR    #@   #@    &    \"     8         !0    @    !     0    $         \"0    @ "
+    "          #P/PX   \"H    !@    @    !          4    (     0    (    !          X    X    !@    @    $          4  "
+    "  (     0    <    !         !     '    3V9F<V5T,@ .    .     8    (    !@         %    \"     $    !     0        "
+    " )    \"               #@   *@    &    \"     $         !0    @    !     @    $         #@   #@    &    \"     0  "
+    "       !0    @    !    !P    $         $     <   !&:6QT97(R  X    X    !@    @    &          4    (     0    $    "
+    "!          D    (            \\#\\.    4     8    (    !@         %    \"     $    $     0         )    (         "
+    "               $                      #@   #@    &    \"     8         !0    @    !     0    $         \"0    @   "
+    "        #@0 X   \"H    !@    @    !          4    (     0    (    !          X    X    !@    @    $          4    "
+    "(     0    4    !         !     %    1V%I;C,    .    .     8    (    !@         %    \"     $    !     0         )"
+    "    \"            / _#@   *@    &    \"     $         !0    @    !     @    $         #@   #@    &    \"     0    "
+    "     !0    @    !    !P    $         $     <   !/9F9S970S  X    X    !@    @    &          4    (     0    $    ! "
+    "         D    (               .    J     8    (     0         %    \"     $    \"     0         .    .     8    ( "
+    "   !          %    \"     $    '     0         0    !P   $9I;'1E<C, #@   #@    &    \"     8         !0    @    ! "
+    "    0    $         \"0    @           #P/PX   !0    !@    @    &          4    (     0    0    !          D    @  "
+    "                     (0                      .    .     8    (    !@         %    \"     $    !     0         )   "
+    " \"            .! #@   *@    &    \"     $         !0    @    !     @    $         #@   #@    &    \"     0       "
+    "  !0    @    !    !0    $         $     4   !'86EN-     X    X    !@    @    &          4    (     0    $    !    "
+    "      D    (            \\#\\.    J     8    (     0         %    \"     $    \"     0         .    .     8    (  "
+    "  !          %    \"     $    '     0         0    !P   $]F9G-E=#0 #@   #@    &    \"     8         !0    @    !  "
+    "   0    $         \"0    @               X   \"H    !@    @    !          4    (     0    (    !          X    X  "
+    "  !@    @    $          4    (     0    <    !         !     '    1FEL=&5R-  .    .     8    (    !@         %    "
+    "\"     $    !     0         )    \"            / _#@   +@\"   &    \"    !          !0    @    !     0    $       "
+    "  #@   (@\"   &    \"     (         !0    @    !     0    $         !0 $ !     !    0    &UA=&QA8G)O;W0       !S97"
+    "!A<F%T;W(         <V5N=&EN96P          &9U;F-T:6]N7VAA;F1L90 .    2     8    (    !          %    \"     $    5   "
+    "  0         0    %0   \"]V;VPO;W!T+TUA=&QA8BTR,#$Q80    X    P    !@    @    $          4    (     0    $    !    "
+    "     !   0 O    #@   #     &    \"     0         !0    @    !     0    $         $  ! $     .    2 $   8    (     "
+    "@         %    \"     $    !     0         %  0 \"0    $    ;    9G5N8W1I;VX ='EP90      9FEL90             .    ."
+    "     8    (    !          %    \"     $    &     0         0    !@   &5P,S%X>   #@   #@    &    \"     0         !"
+    "0    @    !    !@    $         $     8   !S:6UP;&4   X   !H    !@    @    $          4    (     0   #8    !       "
+    "  !     V    +VAO;64O<FEC:\"]W8R]E=&AE<FQA8BUH9R]R='<O8FQO8VMS+T5T:&5R0T%4+V5P,S%X>\"YM   "
   }
   DataRecord {
     Tag			    DataTag7
