@@ -9,14 +9,6 @@ function el31xx_check(section)
             );
 
     switch section
-    case 'output_type'
-        % When not in vector output, no control and status outputs
-        if strcmp(values.output_type, 'Vector Output')
-            en.status = 'on';
-        else
-            en.status = 'off';
-            set_param(gcb, 'status', 'off');
-        end
     case 'dtype'
         % Gain and Offset are only allowed with this Data Type
         if strcmp(values.dtype, 'Double with scale and offset');

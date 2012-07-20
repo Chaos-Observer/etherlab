@@ -141,7 +141,7 @@ entries = [...
            hex2dec('7020'),  2,  1, 1001; ...
           ];
 
-%                   TxPdoSt TxPdoEnd StatusStart StatusEnd
+% TxPdoSt TxPdoEnd StatusStart StatusEnd
 pdo = [...
         hex2dec('1a01'),  5,    5 ;...
         hex2dec('1a03'),  6,    6 ;...
@@ -160,21 +160,37 @@ pdo = [...
         hex2dec('1600'),  8,    9 ;...
       ];
 
-
-%   Model       ProductCode          Revision      			TxStart|TxEnd|TxStart | TxEnd | func
-                                %		          			  with	 with without  without|
-%												   				        Status            |
+%
+% Model ProductCode Rev. | TxStart | TxEnd | TxStart | TxEnd | Func | Has f800
+%                        | with status     |  without status |
+%
 models = struct(...
-	 'EP31740002r00100002' ,[hex2dec('c664052'), hex2dec('00100002'),  1,  8,  1,  4, 1],...
-	 'EP31740002r00110002' ,[hex2dec('c664052'), hex2dec('00110002'),  1,  8,  1,  4, 1],...
-	 'EP31740002r00120002' ,[hex2dec('c664052'), hex2dec('00120002'),  1,  8,  1,  4, 1],...
-	 'EP31821002r001103ea' ,[hex2dec('c6e4052'), hex2dec('001103ea'),  9, 12,  9, 10, 2],...
-	 'EP31821002r001203ea' ,[hex2dec('c6e4052'), hex2dec('001203ea'),  9, 12,  9, 10, 2],...
-	 'EP31840002r00100002' ,[hex2dec('C704052'), hex2dec('00100002'),  1,  8,  1,  4, 2],...
-	 'EP31840002r00110002' ,[hex2dec('c704052'), hex2dec('00110002'),  1,  8,  1,  4, 2],...
-	 'EP31841002r001003EA' ,[hex2dec('c704052'), hex2dec('001003EA'),  1,  8,  1,  4, 2],...
-	 'EP31841002r001103EA' ,[hex2dec('c704052'), hex2dec('001103EA'),  1,  8,  1,  4, 2],...
-	 'EP31841002r001203ea' ,[hex2dec('c704052'), hex2dec('001203ea'),  1,  8,  1,  4, 2]...
+	 'EP31740002r00100002', ...
+        [hex2dec('c664052'), hex2dec('00100002'),  1,  8,  1,  4, 1, 0], ...
+	 'EP31740002r00110002', ...
+        [hex2dec('c664052'), hex2dec('00110002'),  1,  8,  1,  4, 1, 1], ...
+	 'EP31740002r00120002', ...
+        [hex2dec('c664052'), hex2dec('00120002'),  1,  8,  1,  4, 1, 1], ...
+	 'EP31821002r001103ea', ...
+        [hex2dec('c6e4052'), hex2dec('001103ea'),  9, 12,  9, 10, 2, 1], ...
+	 'EP31821002r001203ea', ...
+        [hex2dec('c6e4052'), hex2dec('001203ea'),  9, 12,  9, 10, 2, 1], ...
+	 'EP31821002r001303ea', ...
+        [hex2dec('c6e4052'), hex2dec('001303ea'),  9, 12,  9, 10, 2, 1], ...
+	 'EP31840002r00100002', ...
+        [hex2dec('c704052'), hex2dec('00100002'),  1,  8,  1,  4, 2, 1], ...
+	 'EP31840002r00110002', ...
+        [hex2dec('c704052'), hex2dec('00110002'),  1,  8,  1,  4, 2, 1], ...
+	 'EP31840002r00120002', ...
+        [hex2dec('c704052'), hex2dec('00120002'),  1,  8,  1,  4, 2, 1], ...
+	 'EP31841002r001003ea', ...
+        [hex2dec('c704052'), hex2dec('001003ea'),  1,  8,  1,  4, 2, 0], ...
+	 'EP31841002r001103ea', ...
+        [hex2dec('c704052'), hex2dec('001103ea'),  1,  8,  1,  4, 2, 1], ...
+	 'EP31841002r001203ea', ...
+        [hex2dec('c704052'), hex2dec('001203ea'),  1,  8,  1,  4, 2, 1], ...
+	 'EP31841002r001303ea', ...
+        [hex2dec('c704052'), hex2dec('001203ea'),  1,  8,  1,  4, 2, 1] ...
 	   );
 
 
@@ -184,63 +200,65 @@ product = models.(model);
 rv.SlaveConfig.product = product(1);
 rv.SlaveConfig.description = model;
 
+% Choose required pdos
+if  status
+    pdoindex = product(3) : product(4);
+else
+    pdoindex = product(5) : product(6);
+end
+
 % Determine Function Output
 func = {'differential', 'single end'};
 rv.output_func = func{product(7)};
+has_f800 = product(8);
 
-% Choose required pdos
-if  status
-    pdoindex = product(3):product(4);
-else
-    pdoindex = product(5):product(6);
-end
-
-% Set Number of pdo's and channels
+% Set number of PDOs and channels
 number_pdo = numel(pdoindex);
 number_elements = number_pdo;
 
 if status
-    number_elements = number_elements/2;
+    number_elements = number_elements / 2;
 end
 
 % Set the output type for each port
-basetype = [type_1-1; type_2-1; type_3-1; type_4-1];
-for i=1:number_elements
-    if basetype(i)==3
-        basetype(i) = 6; %0-10V
+basetype = [type_1; type_2; type_3; type_4] - 1;
+for i = 1 : number_elements
+    if basetype(i) == 3
+        basetype(i) = 6; % 0..10 V
     end
 end
 
-% Configure Sdo's for output types
+% Configure SDOs for output types
 
-rv.slaveConfig.sdo = cell(number_elements,4);
-for k = 1:number_elements
-    rv.SlaveConfig.sdo{k,1} = hex2dec('F800');
-    rv.SlaveConfig.sdo{k,2} = k;
-    rv.SlaveConfig.sdo{k,3} = 16;
-    rv.SlaveConfig.sdo{k,4} = basetype(k);
+if has_f800
+    rv.slaveConfig.sdo = cell(number_elements, 4);
+    for k = 1 : number_elements
+        rv.SlaveConfig.sdo{k, 1} = hex2dec('f800');
+        rv.SlaveConfig.sdo{k, 2} = k;
+        rv.SlaveConfig.sdo{k, 3} = 16;
+        rv.SlaveConfig.sdo{k, 4} = basetype(k);
+    end
 end
-
 
 % set DC mode
 %
-%[AssignActivate, CycleTimeSync0, CycleTimeSync0Factor, ShiftTimeSync0,...
-% ShiftTimeSync0Factor, ShiftTimeSync0Input, CycleTimeSync1, CycleTimeSync1Factor,...
-% ShiftTimeSync1, ShiftTimeSync1Factor]
-
+% [AssignActivate, CycleTimeSync0, CycleTimeSync0Factor, ShiftTimeSync0, ...
+% ShiftTimeSync0Factor, ShiftTimeSync0Input, CycleTimeSync1, ...
+% CycleTimeSync1Factor, ShiftTimeSync1, ShiftTimeSync1Factor]
+%
 dcstate = [              0, 0, 0, 0, 0, 0, 0, 1,     0, 0;...
             hex2dec('700'), 0, 1, 0, 0, 0, 0, 1, 10000, 0;...
             hex2dec('700'), 0, 1, 0, 0, 1, 0, 1, 10000, 0;...
 ];
 
-
-if dcmode == 4 % DC Customer
+if dcmode == 4 % Custom DC settings
     rv.SlaveConfig.dc = dccustomer;
 else
-     %Set Index of DC Mode or set [Index AssignActivate cycletimesync0 factor0 cycletimeshift0 input0 cycletimesync1 factor1 cylcetimeshit1]
-    rv.SlaveConfig.dc = dcstate(dcmode,:);
+    % Set Index of DC Mode or set
+    % [Index AssignActivate cycletimesync0 factor0 cycletimeshift0 input0
+    %   cycletimesync1 factor1 cycletimeshift1]
+    rv.SlaveConfig.dc = dcstate(dcmode, :);
 end
-
 
 % RxPdo SyncManager
 rv.SlaveConfig.sm = { {3 1 {}} };
@@ -248,20 +266,18 @@ rv.SlaveConfig.sm = { {3 1 {}} };
 
 % Populate the RxPDO Inputs structure
 rv.SlaveConfig.sm{1}{3} = arrayfun(...
-        @(x) {pdo(x,1), entries(pdo(x,2):pdo(x,3),:)}, ...
+        @(x) {pdo(x, 1), entries(pdo(x, 2) : pdo(x, 3), :)}, ...
         pdoindex, ...
-        'UniformOutput',0 ...
+        'UniformOutput', 0 ...
 );
-
 
 % set scale for double outputs
 scale_int = 2^15;
 
-
 % Set data type scale
 if ~strcmp(dtype, 'Raw Bits')
     if strcmp(output_type, 'Separate Outputs')
-        for k = 1:number_pdo
+        for k = 1 : number_pdo
             rv.PortConfig.output(k).full_scale = scale_int;
         end
     else
@@ -271,7 +287,7 @@ end
 
 % Fill in Offsets
 if filter
-    if (isempty(tau) || numel(tau)==1 || numel(tau) == number_elements)
+    if (isempty(tau) || numel(tau) == 1 || numel(tau) == number_elements)
         if isempty(find(tau <= 0, 1))
             if strcmp(output_type,'Separate Outputs')
                 for k = 1:number_elements
@@ -287,19 +303,19 @@ if filter
                 rv.PortConfig.output.filter = {'Filter', tau};
             end
         else
-            errodlg(['Specify a nonzero time constant '...
-                     'for the output filter'],'Filter Error');
+            errodlg(['Specify a nonzero time constant ' ...
+                     'for the output filter'], 'Filter Error');
         end
-     % if input is wrong, fill with emptys
+     % if input is wrong, fill with empties
     else
-        if strcmp(output_type,'Separate Outputs')
-            for k = 1:number_elements
+        if strcmp(output_type, 'Separate Outputs')
+            for k = 1 : number_elements
                 rv.PortConfig.output(k).filter = [];
             end
         else
            rv.PortConfig.output.filter = {'Filter', tau};
         end
-           warning('EtherLAB:Beckhoff:EL31xx:filter', ['The dimension of' ...
+           warning('EtherLab:Beckhoff:EP3xxx:filter', ['The dimension of' ...
            ' the filter output does not match to the number of elements' ...
            ' of the terminal. Please choose a valid output, or the' ...
            ' filter is being ignored'])
@@ -323,7 +339,7 @@ if strcmp(dtype, 'Double with scale and offset')
         else
             rv.PortConfig.output.gain = {'Gain', scale};
         end
-         % if input is wrong, fill with emptys
+         % if input is wrong, fill with empties
     else
         if strcmp(output_type,'Separate Outputs')
             for k = 1 : number_elements
@@ -332,7 +348,7 @@ if strcmp(dtype, 'Double with scale and offset')
         else
             rv.PortConfig.output.gain = {'Gain', scale};
         end
-        warning('EtherLAB:Beckhoff:EL31xx:scale', ['The dimension of the'...
+        warning('EtherLab:Beckhoff:EP3xxx:scale', ['The dimension of the'...
         ' scale output does not match to the number of elements of the'...
         ' terminal. Please choose a valid output, or the scale is being' ...
         ' ignored'])
@@ -354,7 +370,7 @@ if strcmp(dtype, 'Double with scale and offset')
         else
             rv.PortConfig.output.offset = {'Offset', offset};
         end
-         % if input is wrong, fill with emptys
+         % if input is wrong, fill with empties
     else
         if strcmp(output_type, 'Separate Outputs')
             for k = 1 : number_elements
@@ -363,7 +379,7 @@ if strcmp(dtype, 'Double with scale and offset')
         else
             rv.PortConfig.output.offset = {'Offset', offset};
         end
-        warning('EtherLAB:Beckhoff:EL31xx:offset', ['The dimension of the' ...
+        warning('EtherLab:Beckhoff:EP3xxx:offset', ['The dimension of the' ...
         ' offset output does not match to the number of elements of the' ...
         ' terminal. Please choose a valid output, or the offset is being' ...
         ' ignored'])
