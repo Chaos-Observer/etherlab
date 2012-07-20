@@ -1,4 +1,4 @@
-function update_devices(block, active, obsolete)
+function update_devices(block, models)
 
 style = split(get_param(block,'MaskStyleString'),',');
 vars =  split(get_param(block,'MaskVariables'),';');
@@ -7,8 +7,6 @@ pos = find(strncmp(vars,'model=',6));
 if isempty(pos)
     return;
 end
-
-models = vertcat(active,'--- obsolete names ---',obsolete);
 
 modelstr = ['popup(', join(models,'|'), ')'];
 

@@ -1,0 +1,125 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+"http://www.w3.org/TR/1999/REC-html401-19991224/loose.dtd">
+<!--
+vim:tw=78
+-->
+<html lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title>EtherLab :: Common slave options</title>
+        <link rel="stylesheet" href="docstyle.css" type="text/css"/>
+        <meta name="generator" content="DocBook XSL Stylesheets V1.52.2"/>
+        <meta http-equiv="Content-Script-Type" content="text/javascript"/>
+        <meta name="toctype" content="ug"/>
+        <script language="JavaScript" src="docscripts.js"></script>
+    </head>
+    <body>
+        <a name="top_of_page"></a>
+        <p style="font-size:1px;">&nbsp;</p>
+        <h2>Common EtherCAT slave options</h2>
+
+        Many slave options are common for all slaves. In this section the
+        following options are discussed:
+        <ul>
+            <li><a href="#master">Master</a></li>
+            <li><a href="#slave">Slave Index</a></li>
+            <li><a href="#model">Device Model</a></li>
+            <li><a href="#vector">Vector Outputs/Inputs</a></li>
+            <li><a href="#sampletime">Sample Time</a></li>
+        </ul>
+
+        <a name="master"/><h3>Master</h3>
+        A numeric scalar representing the master that the slave is
+        connected to.
+
+        <a name="slave"/> <h3>Slave Index</h3>
+        A slave can be identified by its absolute position in the EtherCAT
+        bus or by its position relative to another slave.
+
+        <p/>The absolute position counter is incremented with every slave
+        starting from zero with the first slave. If the bus topology changes,
+        a slave's absolute position will be affected if the change was closer
+        to the master.
+
+        <p/>Slaves can also be addressed relative to each other. For this
+        purpose, a slave's alias is used. This alias is a number that is
+        permanently stored in a slave's non-volatile memory (see the
+        <tt>ethercat alias</tt> command). Thus it is possible to identify a
+        slave even after a power reset.
+
+        <p/>Every time a slave with an alias is encountered during bus
+        scanning, the alias counter is reset. Subsequent slaves can be
+        addressed relative to this one.
+
+        <p/>To enter an absolute address, simply enter the slave position as a
+        numeric scalar. A relative address is entered as a vector
+        <tt>[alias&nbsp;position]</tt>.
+
+        <p/>Example:<br/>
+        The <tt>ethercat slaves</tt> command can be used to show all
+        slaves attached to a master device:
+        <pre class="programlisting">
+user@host:~$ ethercat slaves
+0  0:0   OP     +  EK1101 ...
+1  0:1   OP     +  EL4004 ...
+2  0:2   OP     +  EL2624 ...
+3  100:0   OP     +  EL4004 ...
+4  100:1   OP     +  EL2624 ...
+5  100:2   OP     +  EL1144 ...
+6  100:3   OP     +  EL2624 ...
+        </pre>
+
+        In column 1 the slave's absolute position is shown. Column 2 shows a
+        slave's relative addressing using the alias. Slave 3 has an alias of
+        100 set.
+
+        <p/>The slave at absolute position 5 (EL1144) can also be addressed
+        relative to slave 3 that has an alias set. In this case, its address
+        is <tt>[100 2]</tt>.  This relative address will not change if slave
+        at position 2 (EL2624) is removed, for example. It will obviously
+        change if slave 4 is removed.
+
+        <p/>Examples of addressing slave 5 in the block's mask:
+        <table>
+            <tr>
+                <td>Absolute Addressing:</td>
+                <td><img src="abs-address.png"/></td>
+            </tr>
+            <tr>
+                <td>Relative Addressing:</td>
+                <td><img src="rel-address.png"/></td>
+            </tr>
+        </table>
+
+        <a name="model"/><h3>Device Model</h3>
+        Select a device from the drop down list.
+
+        <a name="vector"/><h3>Vector Inputs/Outputs</h3>
+        Checking this option groups the block's inputs and/or outputs to fewer
+        ports.
+
+        <a name="sampletime"/>
+        <h3>Sample Time</h3>
+        Choose the slave's sample time.
+        <table>
+            <tr><td>-1</td><td>Inherited sample rate</td></tr>
+            <tr><td>0</td><td>Continuous sample rate</td></tr>
+            <tr><td>T</td><td>Discrete sample rate with period T</td></tr>
+        </table>
+
+        Data exchanged with slaves is organized in groups called domains. By
+        default, all slaves in the same sample time are together in one
+        domain.
+
+        <p/>To place one or more slaves in a domain of their own, enter a
+        vector for the sample time, the second element being the domain
+        identifier, a number greater than zero, e.g. <tt>[-1 10]</tt>. All
+        slaves with this sample time and domain identifier will be in the same
+        domain.
+
+        <p/>Advanced topic: If you are careful, you can even create an input
+        or output domain exclusively using this technique. This is required in
+        the rare occasion that a slave cannot cope with an IO domain that has
+        both input and output data.
+    </body>
+</html>

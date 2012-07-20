@@ -42,3 +42,8 @@ INSTALL (FILES
     DESTINATION rtw/blocks)
 
 ADD_SUBDIRECTORY (EtherCAT)
+
+INSTALL (DIRECTORY html
+    DESTINATION rtw/blocks
+    FILES_MATCHING PATTERN "*.html" PATTERN "*.png"
+)
