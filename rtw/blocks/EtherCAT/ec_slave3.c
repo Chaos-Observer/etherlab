@@ -1703,8 +1703,7 @@ static void mdlSetDefaultPortDataTypes(SimStruct *S)
         return;
 
     for (port = slave->i_port; port != slave->i_port_end; port++, i++) {
-        if (!ssGetInputPortConnected(S, i)
-            && ssGetInputPortDataType(S, i) == DYNAMICALLY_TYPED) {
+        if (ssGetInputPortDataType(S, i) == DYNAMICALLY_TYPED) {
             ssSetInputPortDataType(S, i, port->data_type->sl_type);
         }
     }
