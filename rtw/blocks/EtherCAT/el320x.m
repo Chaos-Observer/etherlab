@@ -168,7 +168,6 @@ if vector
     rv.output.pdo(:,2) = 0:pdo_count-1;
     rv.output.pdo(:,3) = repmat(8,pdo_count,1);
     rv.output.gain     = gain;
-    rv.output.full_scale = 1.0;
 
     if strcmp(get_param(gcbh,'enable_status'),'on')
         rv.output(2).pdo = rv.output(1).pdo;
@@ -176,8 +175,7 @@ if vector
     end
 else
     rv.output  = arrayfun(@(x) struct('pdo', [0 x 8 0],...
-                                      'gain', gain, ...
-                                      'full_scale', 1.0),...
+                                      'gain', gain), ...
                           0:pdo_count-1);
 end
 
