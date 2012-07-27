@@ -25,14 +25,17 @@ vim:tw=78
             <li><a href="#slave">Slave Index</a></li>
             <li><a href="#model">Device Model</a></li>
             <li><a href="#vector">Vector Outputs/Inputs</a></li>
+            <li><a href="#i_scale">Input Scale</a></li>
+            <li><a href="#o_scale">Output Scale/Offset/Filter</a></li>
+            <li><a href="#dc">Distributed Clocks</a></li>
             <li><a href="#sampletime">Sample Time</a></li>
         </ul>
 
-        <a name="master"/><h3>Master</h3>
+        <a name="master"><h3>Master</h3></a>
         A numeric scalar representing the master that the slave is
         connected to.
 
-        <a name="slave"/> <h3>Slave Index</h3>
+        <a name="slave"> <h3>Slave Index</h3></a>
         A slave can be identified by its absolute position in the EtherCAT
         bus or by its position relative to another slave.
 
@@ -91,35 +94,111 @@ user@host:~$ ethercat slaves
             </tr>
         </table>
 
-        <a name="model"/><h3>Device Model</h3>
+        <a name="model"><h3>Device Model</h3></a>
         Select a device from the drop down list.
 
-        <a name="vector"/><h3>Vector Inputs/Outputs</h3>
+        <a name="vector"><h3>Vector Inputs/Outputs</h3></a>
         Checking this option groups the block's inputs and/or outputs to fewer
         ports.
 
-        <a name="sampletime"/>
-        <h3>Sample Time</h3>
-        Choose the slave's sample time.
+        <a name="i_scale"><h3>Input Scale</h3></a>
+        This value will prescale the input before it is written to the PDO.
+        The effect of setting this is:
+        <ul>
+
+            <li><b>Completely empty</b>: If nothing is entered in this field, the
+            value is written to the PDO directly. The data type can be
+            float32, float64 or the PDO's integer data type</li>
+
+            <li><b>Empty vector</b> (e.g. <tt>[]</tt>): The input is forced to double
+            and must be within the range [0,1) or [-1,1) for unipolar and
+            bipolar PDO's respectively. This range is automatically mapped to
+            the PDO's domain [MinInt,MaxInt]. </li>
+
+            <li><b>Scalar</b> (e.g. <tt>0.1</tt>): The input port data type is
+            forced to double. All inputs are premultiplied by the scalar
+            value, where the result should be in the range [0,1) or [-1,1).
+            This result is mapped to the PDO's domain [IntMin,IntMax]. The
+            scaling value is available as a run-time parameter.</li>
+
+            <li><b>Vector</b> (e.g. <tt>[0.1 0.5]</tt>): The input port data type is
+            forced to double. The inputs are vector multiplied with the value,
+            where the result should be in the range [0,1) or [-1,1). The
+            scaling value is available as a run-time parameter.</li>
+        
+        </ul>
+
+        Note: When the input is of type <tt>double</tt>, the PDO
+        value is limited between its maximum and minimum values. There is thus
+        no need to worry about the value wrapping.
+
+        <a name="o_scale"><h3>Output Scale/Offset/Filter</h3></a>
+        This setting is similar to <a href="#i_scale">Input Scale</a> 
+
+        <p/>Setting any one of these values will cause the output to be of type
+        <tt>double</tt>. The PDO value is then scaled to a value in the range
+        [0,1) or [-1,1) for unipolar or bipolar outputs respectively,
+        multiplied by the scalar value and adding the offset. The result is
+        then filtered with the time constant given in filter.
+
+        <p/>All these parameter values are available as run-time parameters.
+        
+        <p/>If any one of these parameters are empty (<tt>[]</tt>), the
+        specific operation is ignored. The corresponding run-time parameter is
+        also not generated.
+
+        <p/>Leaving all these fields completely empty (i.e. not even
+        <tt>[]</tt>!) causes the raw PDO data to be output, including its data
+        type.
+
+        <a name="dc"><h3>Distributed Clocks</h3></a>
+        Select the correct Distributed Clocks mode from the selection list.
+        The last item <tt>DC Customized</tt> allows a custom 10-element vector
+        to be entered on a separate <b>DC Customer</b> field:<br/>
+        <pre>[AssignActivate ...
+        CycleTimeSync0 CycleTimeSync0Factor ...
+        ShiftTimeSync0 ShiftTimeSync0Factor ShiftTimeSync0Input ...
+        CycleTimeSync1 CycleTimeSync1Factor ...
+        ShiftTimeSync1 ShiftTimeSync1Factor]</pre>
+
+        Consult the EtherCAT documentation regarding the meaning of these
+        values.
+
+        <a name="sampletime"><h3>Sample Time</h3></a>
+        The <tt>Sample Time</tt> is either a scalar or a vector with two
+        elements.
+
+        <p/>The first value of a vector or the scalar value sets the block's
+        sample time as follows:
         <table>
             <tr><td>-1</td><td>Inherited sample rate</td></tr>
-            <tr><td>0</td><td>Continuous sample rate</td></tr>
+            <tr><td>0</td><td>Continuous/fastest sample rate</td></tr>
             <tr><td>T</td><td>Discrete sample rate with period T</td></tr>
         </table>
 
-        Data exchanged with slaves is organized in groups called domains. By
-        default, all slaves in the same sample time are together in one
+        <p/>Data exchanged with slaves is organized in groups called domains.
+        Every sample time in a Simulink diagram has at least one domain,
+        domain<&nbsp;>0.
+
+        <p/>The second element of a vector in this field specifies the domain
+        identifier where a slave's data is grouped into.  The domain
+        identifier is any positive number.  The domain is 0 if a scalar is
+        entered for <tt>Sample Time</tt>.  The number of domains are
+        practically unlimited.  However, a small overhead is caused by every
         domain.
 
-        <p/>To place one or more slaves in a domain of their own, enter a
-        vector for the sample time, the second element being the domain
-        identifier, a number greater than zero, e.g. <tt>[-1 10]</tt>. All
-        slaves with this sample time and domain identifier will be in the same
-        domain.
+        <p/>All slaves having the same key <tt>[SampleTime Domain]</tt> reside
+        in the same domain.
 
-        <p/>Advanced topic: If you are careful, you can even create an input
-        or output domain exclusively using this technique. This is required in
-        the rare occasion that a slave cannot cope with an IO domain that has
-        both input and output data.
+        <p/>Domains can be used to manage slaves. The <b>Domain State</b>
+        block in <tt>etherlab_lib/EtherCAT</tt> can be used to monitor if all
+        slaves in a domain are present or not.
+
+        <p/>Very rarely, some very simple unintelligent EtherCAT slaves cannot
+        handle domains having both input and output PDOs (from other slaves of
+        coarse). If the domain identifier is chosen carefully, a domain will
+        only consist of the one or other PDO direction, enabling these slaves
+        to be used.
+
     </body>
 </html>

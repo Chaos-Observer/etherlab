@@ -15,9 +15,9 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "rich"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Fri Jul 27 00:20:40 2012"
+  LastModifiedDate	  "Fri Jul 27 15:57:10 2012"
   RTWModifiedTimeStamp	  265248801
-  ModelVersionFormat	  "1.%<AutoIncrement:976>"
+  ModelVersionFormat	  "1.%<AutoIncrement:979>"
   ConfigurationManager	  "rcs"
   SampleTimeColors	  off
   SampleTimeAnnotations	  off
@@ -674,7 +674,7 @@ Library {
       System {
 	Name			"EtherCAT"
 	Location		[421, 74, 878, 483]
-	Open			off
+	Open			on
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
 	ScreenColor		"white"
@@ -819,94 +819,6 @@ Library {
 	    TiledPageScale	    1
 	    ShowPageBoundaries	    off
 	    ZoomFactor		    "100"
-	    Block {
-	      BlockType		      S-Function
-	      Name		      "AIN_EP1"
-	      SID		      "8"
-	      Ports		      [1, 1]
-	      Position		      [245, 351, 315, 389]
-	      BackgroundColor	      "yellow"
-	      LibraryVersion	      "1.846"
-	      FunctionName	      "ec_slave3"
-	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
-	      SFunctionModules	      "'ecrt_support'"
-	      EnableBusSupport	      off
-	      MaskType		      "EP4374"
-	      MaskDescription	      "Beckhoff Analog Input/Output 16-Bit Fieldbus Box"
-	      MaskHelp		      "This block generically implements the EtherCAT 16-Bit Analog Input/Output Fieldbus box Termina"
-	      "l for various models.\n<p/>\nThe block input is generally a <tt>double</tt> from the range 0..1 for unipolar te"
-	      "rminals and -1..1 for bipolar terminals, where 1 is the highest possible output of the terminal.\n<p/>\nExceedi"
-	      "ng the input range simply saturates the terminal's output.\n<p/>\nThe following Terminals are supported:\n<cent"
-	      "er>\n<table width=\"80%\">\n<tr><td>EP4374</td><td>2 port differential input, 2 port differential input</td></t"
-	      "r>\n</center>\n<p/>\nChoose and set the following options:\n<h4>Master:</h4>\nSet the EtherCAT Master of this t"
-	      "erminal.\n\n<h4>Slave Index:</h4>\nSet the EtherCAT slave index. Following address formats are allowed:\n<ol>\n"
-	      "<li> Absolute addressing: a scalar number <<b><tt>n</tt></b>> representing the (zero based) absolute position i"
-	      "n the bus.\n<li> SSId addressing: the Secondary Slave (or 'Alias') Addressing has the form <<b><tt>[alias posit"
-	      "ion]</tt></b>> where <b><tt>alias</tt></b> is the Secondary Slave Id of the EtherCAT slave and <b><tt>position<"
-	      "/tt></b> is the offset after the slave with the given <b><tt>alias</tt></b>. The SSId has to be preprogrammed i"
-	      "nto the slave with other service tools (see 'ethercat alias --help').\n</ol>\n\n<h4>Device Model:</h4>\nChoose "
-	      "the device at the Indexed position of the master.\n\n<h4>Channel 1-4 Type:</h4>\nChoose the output type of the "
-	      "channel.\n\n<h4>DC Mode:</h4>\nChoose the DC Mode for the module.\n\n<h4>DC Customer:</h4>\nDo customized DC Se"
-	      "ttings in a vector\n<<b><tt>[AssignActivate, CycleTimeSync0, CycleTimeSync0Factor, ShiftTimeSync0, ShiftTimeSyn"
-	      "c0Factor, ...\nShiftTimeSync0Input, CycleTimeSync1, CycleTimeSync1Factor, ShiftTimeSync1, ShiftTimeSync1Factor]"
-	      "</tt></b>>\n\n<ul>\n<li><<b><tt>AssignActivate:</tt></b>> Value for DC-mode setting\n<li><<b><tt>CycleTimeSync0"
-	      ":</tt></b>> CycleTimeSync0 Value \n<li><<b><tt>CycleTimeSync0Factor:</tt></b>> 1 or 0. If CycleTimeSync0Factor "
-	      "equals one the cycletimesync0 value is internally set to the process cycletime.\n<li><<b><tt>ShiftTimeSync0:</t"
-	      "t></b>> ShiftTimeSync0 Value\n<li><<b><tt>ShiftTimeSync0Factor:</tt></b>> 1 or 0. If ShiftTimeSync0Factor equal"
-	      "s one the Slave is synced on the input event\n<li><<b><tt>ShiftTimeSync0Input:</tt></b>> 1 or 0. If ShiftTimeSy"
-	      "nc0Input equals one the Slave is synced on the input event\n<li><<b><tt>CycleTimeSync1:</tt></b>> CycleTimeSync"
-	      "1 Value\n<li><<b><tt>CycleTimeSync1Factor:</tt></b>> 1 or 0. If CycleTimeSync1Factor equals one the CycletTimes"
-	      "Sync1 value is internally set to the process cycletime.\n<li><<b><tt>ShiftTimeSync1:</tt></b>>ShiftTimeSync1 Va"
-	      "lue\n<li><<b><tt>ShiftTimeSync1Factor:</tt></b>> ShiftTimeSync1Factor Value\n</ul>\n\n\n<h4>IO Type:</h4>\n<ul>"
-	      "\n<li>Choose <b>Vector Output</b> to have a single output as a vector\nwith a size corresponding to the channel"
-	      " count of the terminal. This mode also allows a status output port to be displayed. <br/>\n<li>Choose <b>Separa"
-	      "te Outputs</b> to have one output for every channel.\n</ul>\n<h4>Output Full Scale</h4>\nWhen <b>Output Data Ty"
-	      "pe</b> is set to <b>Double with scale and offset</b>, the block's output value at full scale terminal input can"
-	      " be set here.\n\n<h4>Output Offset</h4>\nWhen <b>Output Data Type</b> is set to <b>Double with scale and offset"
-	      "</b>, the blocks output at zero terminal input can be set here. Note that the Full Scale above is also increase"
-	      "d by this amount. Note furthermore that this corresponds to the minimum input for terminals such as 4..20mA.\n\n"
-	      "<h4>Output Data Type</h4>\nChoose the block's output data type for the output signal. Available are:\n<ul>\n<li"
-	      "><b><tt>Raw</tt></b> outputting the internal raw value as <tt>int16_T</tt> or <tt>uint16_T</tt> as appropriate\n"
-	      "<li><b><tt>Double</tt></b> outputting 0..10, -10..10, 0..0.02 and 0.004..0.02 depending on the Model as appropr"
-	      "iate\n<li><b><tt>Double with scale and offset</tt></b>, allowing the output to be scaled with an offset.\n</ul>"
-	      "\n<h4>Input Scale</h4>\nAll input signals are multiplied with the factor <b>Input Scale</b>.\n\n<h4>Output Filt"
-	      "er</h4>\nWhen not in <b>Raw</b> mode, the <b>Output Filter</b> checkbox becomes available, allowing the use of "
-	      "an internal low pass filter. Enter the <b>LPF Time Constant</b> for the filter in the field below.\n<br>For con"
-	      "tinuous sample time systems (0 in Sample Time), the filter is also continuous. Discrete samples systems (Sample"
-	      " Time > 0) uses an equivalent discrete low pass filter with a similar time constant.\n\n<p>\nSet the <b>Sample "
-	      "Time</b> for the block. <tt>0</tt> is continuous sample time (runs at the model's base rate). Setting <tt>-1</t"
-	      "t> will try to set the time using back propagation.\n\n\n"
-	      MaskPromptString	      "Master|Slave Index|Device Model |Channel 1 Type|Channel 2 Type|Channel 3 Type|Channel 4"
-	      " Type|DC Mode|Dc Customer|IO Type |Output Scale (empty for none)|Output Offset (empty for none)|Output Data Typ"
-	      "e|Output Filter|LPF Time Constant (sec)|Input Scale|Sample Time (-1 for inherited)|Debug|UpdateFcn"
-	      MaskStyleString	      "edit,edit,popup(EP43740002r00100002),popup(-10...+10 V|0...20 mA|4...20 mA|0...10 V),pop"
-	      "up(-10...+10 V|0...20 mA|4...20 mA|0...10 V),popup(-10...+10 V|0...20 mA|4...20 mA|0...10 V),popup(-10...+10 V|"
-	      "0...20 mA|4...20 mA|0...10 V),popup(FreeRun/SM-Synchron|DC-Synchron|DC-Customized),edit,popup(Vector Output|Sep"
-	      "arate Outputs),edit,edit,popup(Raw bits|Double|Double with scale and offset),checkbox,edit,edit,edit,edit,edit"
-	      MaskVariables	      "master=@1;index=@2;model=&3;type_1=@4;type_2=@5;type_3=@6;type_4=@7;dcmode=@8;dccustomer=@"
-	      "9;io_type=&10;input_scale=@11;input_offset=@12;dtype=@13;filter=@14;tau=@15;output_scale=@16;tsample=@17;debug="
-	      "@18;updatefcn=&19;"
-	      MaskTunableValueString  "off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off"
-	      MaskCallbackString      "|||||||ep4374('dc');|||||ep4374('dtype');|ep4374('filter');|||||"
-	      MaskEnableString	      "on,on,on,on,on,on,on,on,off,on,off,off,on,on,on,on,on,on,off"
-	      MaskVisibilityString    "on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,off,off"
-	      MaskToolTipString	      "on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on"
-	      MaskInitialization      "masterStr = '';\npositionStr = '';\n[Address masterStr positionStr] = getEtherCATAddre"
-	      "ss(gcb, master, index);\n\n% Due to required compatibility to older Etherlab versions, the\n% name of the input"
-	      " and output variables (input_scale, input_offset,\n% output_scale) had to remain transposed. \n% In the ep4374."
-	      "m file, the names are equal to the corresponded \n% io direction.\n\nrv = ep4374('process', model, io_type, dty"
-	      "pe, input_scale, ...\n            input_offset, filter, tau, type_1, type_2, type_3, type_4, ...\n            o"
-	      "utput_scale, dcmode, dccustomer);"
-	      MaskDisplay	      "fprintf('%s\\n%s AIn\\nM:%s Idx:%s', ...\n    model, rv.output_func, masterStr, positionStr)"
-	      ";\n"
-	      MaskIconFrame	      on
-	      MaskIconOpaque	      on
-	      MaskIconRotate	      "none"
-	      MaskPortRotate	      "default"
-	      MaskIconUnits	      "autoscale"
-	      MaskValueString	      "0|1|EP43740002r00100002|0...10 V|0...10 V|0...10 V|0...10 V|FreeRun/SM-Synchron|[hex2dec"
-	      "('700') 0 0 0 0 0 0 0 0 0]|Vector Output|[}|[]|Double|on|[]|[]|-1|0|beckhoff_ep4374"
-	    }
 	    Block {
 	      BlockType		      S-Function
 	      Name		      "EL1xxx"
@@ -1563,6 +1475,49 @@ Library {
 	      MaskIconUnits	      "autoscale"
 	      MaskValueString	      "0|1|EP4174-0002|0...10 V|0...10 V|0...10 V|0...10 V|FreeRun/SM-Synchron|[hex2dec('730'),"
 	      "0,1,0,0,0,0,1,140000,0]|on||-1|0"
+	    }
+	    Block {
+	      BlockType		      S-Function
+	      Name		      "EP43xx"
+	      SID		      "8"
+	      Ports		      [1, 1]
+	      Position		      [245, 351, 315, 389]
+	      BackgroundColor	      "yellow"
+	      LibraryVersion	      "1.846"
+	      FunctionName	      "ec_slave3"
+	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
+	      SFunctionModules	      "'ecrt_support'"
+	      EnableBusSupport	      off
+	      MaskType		      "EP4374"
+	      MaskDescription	      "Beckhoff Analog Input/Output 16-Bit Fieldbus Box"
+	      MaskHelp		      "web(etherlab_help_path('ep43xx.html'), '-helpbrowser')\n\n"
+	      MaskPromptString	      "Master|Slave Index|Device Model |Input type Ch1|Input type Ch2|Output type Ch3|Output t"
+	      "ype Ch4|Status Output|Vector IO|DC Mode|DC Customer|Input Scale|Output Scale|Output Offset|LPF Time Constant (s"
+	      "ec)|IO Force|Sample Time (-1 for inherited)|Debug"
+	      MaskStyleString	      "edit,edit,popup(EP4374-0002),popup(-10...+10 V|0...20 mA|4...20 mA|0...10 V),popup(-10.."
+	      ".+10 V|0...20 mA|4...20 mA|0...10 V),popup(-10...+10 V|0...20 mA|4...20 mA|0...10 V),popup(-10...+10 V|0...20 m"
+	      "A|4...20 mA|0...10 V),checkbox,checkbox,popup(FreeRun/SM-Synchron|DC-Synchron|DC-Customized),edit,edit,edit,edi"
+	      "t,edit,checkbox,edit,edit"
+	      MaskVariables	      "master=@1;index=@2;model=&3;type_1=@4;type_2=@5;type_3=@6;type_4=@7;status=&8;vector=&9;dc"
+	      "mode=&10;dccustom=&11;i_scale=&12;o_scale=&13;o_offset=&14;tau=&15;force=&16;tsample=@17;debug=@18;"
+	      MaskTunableValueString  "off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off"
+	      MaskCallbackString      "||ep43xx('set');|||||ep43xx('set');|ep43xx('set');|ep43xx('ui');||||||||"
+	      MaskEnableString	      "on,on,on,on,on,on,on,on,on,on,off,on,on,on,on,on,on,on"
+	      MaskVisibilityString    "on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,off"
+	      MaskToolTipString	      "on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on"
+	      MaskInitialization      "masterStr = '';\npositionStr = '';\n[Address masterStr positionStr] = getEtherCATAddre"
+	      "ss(gcb, master, index);\n\nep43xx('set');\n\nrv = get_param(gcbh,'UserData');\n\nrowcount = numel(rv.SlaveConfi"
+	      "g.sm{1}{3}) ...\n         + numel(rv.SlaveConfig.sm{2}{3});\n\nrv.SlaveConfig.sdo = num2cell(horzcat(...\n    h"
+	      "ex2dec('F800')*ones(rowcount,1),...\n    (1:rowcount)',...\n    16*ones(rowcount,1),...\n    [type_1; type_2; t"
+	      "ype_3; type_4] - 1));\n"
+	      MaskDisplay	      "fprintf('%s\\nAnalog IO\\nM:%s Idx:%s', ...\n    model, masterStr, positionStr);\n"
+	      MaskIconFrame	      on
+	      MaskIconOpaque	      on
+	      MaskIconRotate	      "none"
+	      MaskPortRotate	      "default"
+	      MaskIconUnits	      "autoscale"
+	      MaskValueString	      "0|1|EP4374-0002|0...10 V|0...10 V|0...10 V|0...10 V|off|on|FreeRun/SM-Synchron|[hex2dec("
+	      "'700') 0 1 0 0 0 0 1 80000 0]|[]|[]|[]|[]|off|0|0"
 	    }
 	    Block {
 	      BlockType		      S-Function
