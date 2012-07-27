@@ -98,8 +98,6 @@ models = {...
   'EP4374-0002',  hex2dec('11164052'), hex2dec('00100002'); ...
 };
 
-status = strcmp(get_param(gcbh,'status'), 'on');
-
 switch nargin
 case 2
     pos = cell2mat(models(:,2)) == varargin{1}...
@@ -113,8 +111,11 @@ otherwise
     fields = models(:,1);
     obsolete = cellfun(@length, fields) > 11;
     rv = vertcat(sort(fields(~obsolete)), sort(fields(obsolete)));
+    status = [];
     return
 end
+
+status = strcmp(get_param(gcbh,'status'), 'on');
 
 if isempty(product)
     rv = [];
@@ -186,8 +187,10 @@ if vector
     rv.output(1).pdo(:,2) = 0:pdo_count-1;
 
     if status
-        rv.output(2).pdo = rv.output(1).pdo;
         rv.output(1).pdo(:,3) = 10*ones(pdo_count,1);
+
+        rv.output(2).pdo = rv.output(1).pdo;
+        rv.output(2).pdo(:,3) = 5*ones(pdo_count,1);
     end
 
     if isnumeric(o_scale) || isnumeric(o_offset) || isnumeric(tau)
@@ -230,6 +233,7 @@ else
         rv.output = [rv.output, rv.output];
         for i = 1:pdo_count
             rv.output(i).pdo(:,3) = 10;
+            rv.output(i+pdo_count).pdo(:,3) = 5;
         end
     end
 

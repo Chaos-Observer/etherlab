@@ -15,9 +15,9 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "rich"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Fri Jul 27 15:57:10 2012"
-  RTWModifiedTimeStamp	  265248801
-  ModelVersionFormat	  "1.%<AutoIncrement:979>"
+  LastModifiedDate	  "Fri Jul 27 16:40:01 2012"
+  RTWModifiedTimeStamp	  265307515
+  ModelVersionFormat	  "1.%<AutoIncrement:982>"
   ConfigurationManager	  "rcs"
   SampleTimeColors	  off
   SampleTimeAnnotations	  off
@@ -1220,7 +1220,7 @@ Library {
 	      Name		      "EP1xxx"
 	      SID		      "11"
 	      Ports		      [0, 1]
-	      Position		      [60, 201, 130, 239]
+	      Position		      [60, 196, 130, 234]
 	      BackgroundColor	      "yellow"
 	      LibraryVersion	      "1.837"
 	      UserDataPersistent      on
@@ -1270,7 +1270,7 @@ Library {
 	      Name		      "EP2xxx"
 	      SID		      "39"
 	      Ports		      [1]
-	      Position		      [60, 266, 130, 304]
+	      Position		      [60, 261, 130, 299]
 	      BackgroundColor	      "yellow"
 	      UserDataPersistent      on
 	      UserData		      "DataTag7"
@@ -1320,7 +1320,7 @@ Library {
 	      Name		      "EP31xx"
 	      SID		      "40"
 	      Ports		      [0, 1]
-	      Position		      [245, 201, 315, 239]
+	      Position		      [245, 196, 315, 234]
 	      BackgroundColor	      "yellow"
 	      LibraryVersion	      "1.845"
 	      UserDataPersistent      on
@@ -1408,7 +1408,7 @@ Library {
 	      Name		      "EP41xx"
 	      SID		      "41"
 	      Ports		      [1]
-	      Position		      [245, 276, 315, 314]
+	      Position		      [245, 261, 315, 299]
 	      BackgroundColor	      "yellow"
 	      LibraryVersion	      "1.846"
 	      UserDataPersistent      on
@@ -1481,9 +1481,12 @@ Library {
 	      Name		      "EP43xx"
 	      SID		      "8"
 	      Ports		      [1, 1]
-	      Position		      [245, 351, 315, 389]
+	      Position		      [245, 326, 315, 364]
 	      BackgroundColor	      "yellow"
 	      LibraryVersion	      "1.846"
+	      UserDataPersistent      on
+	      UserData		      "DataTag10"
+	      LoadFcn		      "ep43xx('check');"
 	      FunctionName	      "ec_slave3"
 	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
 	      SFunctionModules	      "'ecrt_support'"
@@ -1600,7 +1603,7 @@ Library {
 	      BackgroundColor	      "yellow"
 	      LibraryVersion	      "1.846"
 	      UserDataPersistent      on
-	      UserData		      "DataTag10"
+	      UserData		      "DataTag11"
 	      LoadFcn		      "ekxxxx('check')"
 	      FunctionName	      "ec_slave3"
 	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
@@ -2372,9 +2375,9 @@ Library {
   }
 }
 MatData {
-  NumRecords		  11
+  NumRecords		  12
   DataRecord {
-    Tag			    DataTag10
+    Tag			    DataTag11
     Data		    "  %)30     .    $ 4   8    (     @         %    \"     $    !     0         %  0 #     $    D    57!D87"
     "1E        4VQA=F5#;VYF:6< 4&]R=$-O;F9I9P        X   \"X @  !@    @    0          4    (     0    $    !          X"
     "   \"( @  !@    @    \"          4    (     0    $    !          4 !  0     0   $    !M871L86)R;V]T        <V5P87)"
@@ -2391,6 +2394,47 @@ MatData {
     "       4    (     0    $    !          D    (        2+$PD4$.    .     8    (    !@         %    \"     $    !    "
     " 0         )    \"            #%!#@   #     &    \"     8         !0    @               $         \"0         .   "
     " ,     8    (    !@         %    \"                0         )          "
+  }
+  DataRecord {
+    Tag			    DataTag10
+    Data		    "  %)30     .    * P   8    (     @         %    \"     $    !     0         %  0 #     $    D    4VQA=F"
+    "5#;VYF:6< 4&]R=$-O;F9I9P  57!D871E              X   \"0!@  !@    @    \"          4    (     0    $    !          "
+    "4 !  ,     0   #P   !V96YD;W(       !D97-C<FEP=&EO;@!P<F]D=6-T      !R979I<VEO;@    !S;0                  #@   #@ "
+    "   &    \"     8         !0    @    !     0    $         \"0    @             0 X   !     !@    @    $          4 "
+    "   (     0    L    !         !     +    15 T,S<T+3 P,#(       X    X    !@    @    &          4    (     0    $   "
+    " !          D    (        4D 6L4$.    .     8    (    !@         %    \"     $    !     0         )    \"         "
+    " \" #!!#@    @%   &    \"     $         !0    @    !     @    $         #@   &@\"   &    \"     $         !0    @ "
+    "   !     P    $         #@   #@    &    \"     8         !0    @    !     0    $         \"0    @             0 X "
+    "   X    !@    @    &          4    (     0    $    !          D    (               .    N $   8    (     0        "
+    " %    \"     $    \"     0         .    P     8    (     0         %    \"     $    \"     0         .    .     8 "
+    "   (    !@         %    \"     $    !     0         )    \"            +9 #@   %     &    \"     8         !0    @"
+    "    !    !     $         \"0   \"            C<0        #%         ,$       (\"?0 X   #     !@    @    !          "
+    "4    (     0    (    !          X    X    !@    @    &          4    (     0    $    !          D    (           !"
+    "MD .    4     8    (    !@         %    \"     $    $     0         )    (           #-Q         ,4         P0    "
+    "   @)] #@   &@\"   &    \"     $         !0    @    !     P    $         #@   #@    &    \"     8         !0    @ "
+    "   !     0    $         \"0    @            (0 X    X    !@    @    &          4    (     0    $    !          D  "
+    "  (            \\#\\.    N $   8    (     0         %    \"     $    \"     0         .    P     8    (     0     "
+    "    %    \"     $    \"     0         .    .     8    (    !@         %    \"     $    !     0         )    \"    "
+    "        ;I #@   %     &    \"     8         !0    @    !    !     $         \"0   \"            #80        #%     "
+    "    ,$       (\"?0 X   #     !@    @    !          4    (     0    (    !          X    X    !@    @    &         "
+    " 4    (     0    $    !          D    (           #ND .    4     8    (    !@         %    \"     $    $     0    "
+    "     )    (           !-A         ,4         P0       @)] #@   &@\"   &    \"     (         !0    @    !     0    "
+    "$         !0 $  <    !    #@   &EN<'5T  !O=71P=70    .    \" $   8    (     @         %    \"     $    !     0    "
+    "     %  0 \"P    $    6    <&1O          !F=6QL7W-C86QE    #@   '     &    \"     8         !0    @    \"    !    "
+    " $         \"0   $                                            #P/P                                          #@   #"
+    "@    &    \"     8         !0    @    !     0    $         \"0    @           #@0 X    ( 0  !@    @    \"         "
+    " 4    (     0    $    !          4 !  +     0   !8   !P9&\\          &9U;&Q?<V-A;&4    .    <     8    (    !@    "
+    "     %    \"     (    $     0         )    0            / _        \\#\\                  / _                     "
+    "                      .    .     8    (    !@         %    \"     $    !     0         )    \"            .! #@   "
+    "+@\"   &    \"    !          !0    @    !     0    $         #@   (@\"   &    \"     (         !0    @    !     0 "
+    "   $         !0 $ !     !    0    &UA=&QA8G)O;W0       !S97!A<F%T;W(         <V5N=&EN96P          &9U;F-T:6]N7VAA;"
+    "F1L90 .    2     8    (    !          %    \"     $    5     0         0    %0   \"]V;VPO;W!T+TUA=&QA8BTR,#$Q80   "
+    " X    P    !@    @    $          4    (     0    $    !         !   0 O    #@   #     &    \"     0         !0    "
+    "@    !     0    $         $  ! $     .    2 $   8    (     @         %    \"     $    !     0         %  0 \"0    "
+    "$    ;    9G5N8W1I;VX ='EP90      9FEL90             .    .     8    (    !          %    \"     $    &     0     "
+    "    0    !@   &5P-#-X>   #@   #@    &    \"     0         !0    @    !    !@    $         $     8   !S:6UP;&4   X "
+    "  !H    !@    @    $          4    (     0   #8    !         !     V    +VAO;64O<FEC:\"]W8R]E=&AE<FQA8BUH9R]R='<O8"
+    "FQO8VMS+T5T:&5R0T%4+V5P-#-X>\"YM   "
   }
   DataRecord {
     Tag			    DataTag9
