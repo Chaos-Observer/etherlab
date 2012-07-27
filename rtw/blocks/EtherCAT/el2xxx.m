@@ -19,6 +19,7 @@ case 'set'
     ud.SlaveConfig = slave_config(model);
     ud.PortConfig = port_config(ud.SlaveConfig);
     set_param(gcbh, 'UserData', ud);
+    update_gui(numel(ud.SlaveConfig.sm) > 1);
 
 case 'check'
     % If UserData.SlaveConfig does not exist, this is an update
@@ -207,3 +208,18 @@ if diag_port && numel(SlaveConfig.sm) > 1 && SlaveConfig.sm{2}{2} == 1
 end
 
 return
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function update_gui(have_diag)
+mask_enables = cell2struct(...
+    get_param(gcbh,'MaskEnables'),...
+    get_param(gcbh,'MaskNames')...
+);
+
+choice = {'off','on'};
+value = choice{have_diag + 1};
+
+if ~strcmp(mask_enables.diag,value)
+    mask_enables.diag = value;
+    set_param(gcbh,'MaskEnables',struct2cell(mask_enables));
+end

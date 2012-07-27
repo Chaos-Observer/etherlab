@@ -147,9 +147,7 @@ end
 rv = evalin('base',str);
 if ~isnumeric(rv)
     rv = [];
-    ME = MException(['el30xx:' field],...
-        [gcb ':' field ': Value is not numeric']);
-    throw(ME);
+    error(['el320x:', field], 'Value is not numeric');
 end
 
 return
