@@ -223,7 +223,7 @@ return
 function port = get_entries(Sm, dir)
 outputs = cellfun(@(x) x{2}, Sm) == dir;
 
-if isempty(find(outputs))
+if ~any(outputs)
     port = [];
     return
 end
