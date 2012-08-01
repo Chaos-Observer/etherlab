@@ -191,61 +191,6 @@ case 'PortConfig'
             count = count + 1;
         end
     end
-
-case 'Visibility'
-    names = get_param(gcbh,'MaskNames');
-
-    % Variables that are allways visible, these do not begin with 'x' or 'n'
-    base_enable = ~ismember(cellfun(@(n) n(1), names), {'x','n'});
-
-    % PDO's that are visible
-    pdo_enable = ismember(names,strcat('x',dec2hex(config{1})));
-
-    % CoE's that are visible
-    if size(config{3},2) == 2
-        % Matrix with allowed CoE's in rows
-        coe = arrayfun(...
-            @(x) sprintf('%c%04X_%02X', ...
-                         config{2}, config{3}(x,1), config{3}(x,2)),...
-            1:size(config{3},1), 'UniformOutput', false);
-        coe_enable = ismember(names, coe);
-    else
-        % Numeric value with CoE index only
-        coe = sprintf('%c%04X_', config{2}, config{3});
-        coe_enable = strncmp(names, coe, numel(coe));
-    end
-
-    % Now join all the enables
-    enables = (pdo_enable + coe_enable + 2) .* ~base_enable + base_enable;
-
-    % visible is a matrix with three rows:
-    % row 1: original enalbes
-    % row 2: row containing 'off'
-    % row 3: row containing 'on'
-    visible = get_param(gcbh,'MaskVisibilities')';
-    visible = vertcat(visible, ...
-                      repmat({'off'},size(visible)), ...
-                      repmat({'on'},size(visible)));
-
-    i = (0:numel(enables)-1)' * 3 + enables;
-    rv = visible(i);
-
-case 'MaskText'
-    dir = 'RT';
-    for i = 1:numel(config{1})
-        idx = config{1}(i);
-        pdo_str = sprintf('%04X', config{1}(i));
-        x = intersect(pdo{find([pdo{:,1}] == idx),2}, config{1});
-        d = dir((idx >= hex2dec('1a00')) + 1);
-        if isempty(x)
-            rv.(['x',pdo_str]) = sprintf('%cxPdo #x%s', d, pdo_str);
-        else
-            excl = strjoin(cellstr(dec2hex(x)),',');
-            rv.(['x',pdo_str]) = ...
-                    sprintf('%cxPdo #x%s (Excl. %s)', d, pdo_str, excl);
-        end
-    end
-
 end
 
 return
