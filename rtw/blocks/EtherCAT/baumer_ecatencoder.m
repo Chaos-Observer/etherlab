@@ -1,138 +1,131 @@
 function output = baumer_ecatencoder(command,varargin)
-    models = struct(...
-        'BTATD4r00000001'          ,{{hex2dec('00000001'), hex2dec('00000001'), 'BT ATD4 EtherCAT Encoder', 'EtherCATInfo_baumerecatencoder', 0, 1 }}, ...
-        'BTATD4r00000002'          ,{{hex2dec('00000001'), hex2dec('00000002'), 'BT ATD4 EtherCAT Encoder', 'EtherCATInfo_baumerecatencoder', 0, 1 }}, ...
-        'BTATD2r00000001'          ,{{hex2dec('00000002'), hex2dec('00000001'), 'BT ATD2 EtherCAT Encoder', 'EtherCATInfo_baumerecatencoder', 0, 1 }}, ...
-        'BTATD2r00000002'          ,{{hex2dec('00000002'), hex2dec('00000002'), 'BT ATD2 EtherCAT Encoder', 'EtherCATInfo_baumerecatencoder', 0, 1 }}, ...
-        'BTATD2POEr00000001'       ,{{hex2dec('00000003'), hex2dec('00000001'), 'BT ATD2 PoE EtherCAT Encoder', 'EtherCATInfo_baumerecatencoder', 0, 1 }}, ...
-        'BTATD2POEr00000002'       ,{{hex2dec('00000003'), hex2dec('00000002'), 'BT ATD2 PoE EtherCAT Encoder', 'EtherCATInfo_baumerecatencoder', 0, 1 }} ...
-);
-    
-    switch command
-        case 'update'
-            set_modelname(models,varargin{1});
-            output = [];
-        case 'getmodel'
-            if isfield(models,varargin{1})
-                output = models.(varargin{1}); 
-            else
-                output = [];
-                errordlg([gcb ': Slave model "' varargin{1} '" is not implemented'])
-            end
-        case 'loaddescription' 
-            selection = varargin{1};
-            EtherCATInfoFile = selection{4};
-            try 
-                Infodata = load(EtherCATInfoFile);
-            catch
-                errordlg([gcb ': Could not load EtherCATInfo MAT file '...
-                        selection{4}]);
-            end
-            Infonames = fieldnames(Infodata);
-            description = getfield(Infodata,Infonames{1});
-            device = description(selection{1},selection{2});
-            if isempty(device)
-                errordlg(sprintf(...
-                ['%s: Could not find device with\n'...
-                'ProductCode \t#x%08X\n'...
-                'RevisionNo \t#x%08X\n'...
-                'in file %s.'],...
-                gcs, selection{1}, selection{2}, EtherCATInfoFile));
-            end
-            output = device;
-        case 'process'
-            %                       selection  , device    , dcmode     ,
-            %                       direction
-            output = prepare_config(varargin{1},varargin{2},varargin{3},...
-                                    varargin{4},varargin{5});
-        case 'model'
-            en = cell2struct(...
-                get_param(gcb,'MaskEnables'),...
-                get_param(gcb,'MaskNames')...
-                );
-            values = cell2struct(...
-                get_param(gcb,'MaskValues'),...
-                get_param(gcb,'MaskNames')...
-                );
-            if str2double(values.model(end)) == 1
-                en.dcmode='off';
-            else
-                en.dcmode='on';
-            end    
-            set_param(gcb,'MaskEnables',struct2cell(en));
-            set_param(gcb,'MaskValues',struct2cell(values)); 
-            output = [];
-        case 'dc'
-            en = cell2struct(...
-                get_param(gcb,'MaskEnables'),...
-                get_param(gcb,'MaskNames')...
-                );
-            values = cell2struct(...
-                get_param(gcb,'MaskValues'),...
-                get_param(gcb,'MaskNames')...
-                );
-            if strcmp(values.dcmode, 'DC-Customized');
-                en.dccustom = 'on';
-            else
-                en.dccustom = 'off';
-            end;
-            set_param(gcb,'MaskEnables',struct2cell(en));
-            set_param(gcb,'MaskValues',struct2cell(values));                                              
-            output=[];
-        otherwise
-            disp('Unknown method.')
-            output = [];
+
+if ~nargin
+    return
+end
+
+%display([gcb ' ' method]);
+
+switch lower(command)
+case 'set'
+    model = get_param(gcbh, 'model');
+
+    if model(1) ~= 'B'
+        errordlg('Please choose a correct slave', gcb);
+        return
     end
-end
 
-%%
-function set_modelname(models,block)
-     stylestr_model= textscan(get_param(block,'MaskStyleString'),'%s','Delimiter',',');
-     names = fieldnames(models);
-     namearray = strjoin(names,'|');
-     modelstr = strcat('popup(',namearray,')');
-     stylestr_model{1}(3) = cellstr(modelstr);
-     stylestr_new = strjoin(stylestr_model{1},',');
-     set_param(block,'MaskStyleString',stylestr_new);
-end
+    ud = get_param(gcbh,'UserData');
+    ud.SlaveConfig = slave_config(model);
+    ud.PortConfig = port_config(ud.SlaveConfig);
+    set_param(gcbh, 'UserData', ud);
 
-%%
-function config = prepare_config(selection,device,dcmode,dccustom, direction)
-    config.SdoConfig = [];
-    config.SoeConfig = [];
-    config.IO = [];
-    config.SlaveConfig = genSlaveConfig(device);
-    SdoConfig = [];
-    
-    
-   
-    SdoConfig = [...
-            SdoConfig;...
-            hex2dec('6000'), hex2dec('0'),  16, (direction-1)+4;...% Disable Hardware Filter
-            %Note the Scaling (Bit 2) function has to be to be enabled,
-            %Firmwarebug!!!!
-            ]; 
-   
-    
-    
-    PdoEntries = [hex2dec('6004'); hex2dec('0')]';
-    
-    %config.IO.Pdo.Exclude = [hex2dec('1A01') + 2*(0:(channels-1))];
+case 'check'
+    % If UserData.SlaveConfig does not exist, this is an update
+    % Convert this block and return
+    model = get_param(gcbh,'model');
 
-    config.IO.SlaveConfig = genSlaveConfig(device);
-   
-    config.IO.Port(1).PdoEntry = PdoEntries;
-    
-    if selection{2} == 2
-        if dcmode == 3 %DC-Custom
-             %Set Index of DC Mode or set [Index AssignActivate cycletimesync0 factor0 cycletimeshift0 input0 cycletimesync1 factor1 cylcetimeshit1]
-             config.IO.DcOpMode = dccustom;
-        else
-            config.IO.DcOpMode = dcmode-1; 
-        end
+    ud = get_param(gcbh, 'UserData');
+
+    % Get slave and port configuration based on product code and revision
+    sc = slave_config(ud.SlaveConfig.product, ud.SlaveConfig.revision);
+    pc = port_config(sc);
+
+    if isequal(sc.sm, ud.SlaveConfig.sm) && ~isequal(sc, ud.SlaveConfig)
+        % The slave has a new name
+        warning('BaumerEncoder:NewName', ...
+                '%s: Renaming device from %s to %s', ...
+                gcb, get_param(gcbh,'model'), sc.description)
+        set_param(gcbh, 'model', sc.description)
+        return;
     end
-    config.SdoConfig = cell2struct(...
-    num2cell(SdoConfig),...
-    {'Index' 'SubIndex' 'BitLen' 'Value'}, 2);
 
+    if ~isequal(pc, ud.PortConfig)
+        errordlg('Configuration error. Please replace this block', gcb);
+    end
+
+case 'ui'
+    update_gui;
+
+case 'update'
+    update_devices(varargin{1}, slave_config());
+
+otherwise
+    display([gcb, ': Unknown method ', command])
 end
+
+return
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function rv = slave_config(varargin)
+
+%   Model       ProductCode Revision 
+models = {...
+    'BT ATD4',     1,          2;
+    'BT ATD2',     2,          2;
+    'BT ATD2_PoE', 3,          2;
+    };
+
+switch nargin
+case 2
+    pos = cell2mat(models(:,2)) == varargin{1}...
+        & cell2mat(models(:,3)) == varargin{2};
+    product = models(pos,:);
+
+case 1
+    product = models(strcmp(models(:,1),varargin{1}),:);
+
+otherwise
+    fields = models(:,1);
+    obsolete = cellfun(@length, fields) > 12;
+    rv = vertcat(sort(fields(~obsolete)), sort(fields(obsolete)));
+    return
+end
+
+if isempty(product)
+    rv = [];
+    return;
+end
+
+rv.vendor = hex2dec('516');
+rv.description = product{1};
+rv.product = product{2};
+rv.revision = product{3};
+
+% Only 1 input SyncManager
+rv.sm = {...
+        {3, 1, {{hex2dec('1A00') [hex2dec('6004') 0 32 1032]}}}, ...
+};
+
+switch get_param(gcbh,'dcmode')
+case 'DC On'
+    rv.dc = [hex2dec('300') ,0,0,0,0,0,0,0,0,0];
+case 'DC Customized'
+    rv.dc = evalin('base',get_param(gcbh,'dccustom'));
+end
+
+return
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function rv = port_config(SlaveConfig)
+% Populate the blocks output port(s)
+
+rv.output.pdo = [0 0 0 0];
+
+return;
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function checked = update_gui
+
+mask_names = get_param(gcbh,'MaskNames');
+mask_enables = cell2struct(get_param(gcbh,'MaskEnables'), mask_names);
+
+setting = {'off','on'};
+setting = setting{strcmp(get_param(gcbh,'dcmode'),'DC Customized') + 1};
+
+if ~strcmp(mask_enables.dccustom,setting)
+    mask_enables.dccustom = setting;
+    set_param(gcbh,'MaskEnables',struct2cell(mask_enables));
+end
+
+return
