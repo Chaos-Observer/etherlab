@@ -351,11 +351,13 @@ rv.sm = {...
         {3, 1, pdo_config('TxPdo')},...
 };
 
+assign_activate = pdo_config('AssignActivate');
+
 switch get_param(gcbh,'dcmode')
 case 'DC-Synchron'
-    rv.dc = [hex2dec('320'),0,1,0,0,0,0,1,0,0];
+    rv.dc = [assign_activate,0,1,0,0,0,0,1,0,0];
 case 'DC-Synchron (input based)'
-    rv.dc = [hex2dec('320'),0,1,0,0,1,0,1,0,0];
+    rv.dc = [assign_activate,0,1,0,0,1,0,1,0,0];
 case 'DC-Customized'
     %rv.dc = evalin('base',get_param(gcbh,'dccustom'));
 end
