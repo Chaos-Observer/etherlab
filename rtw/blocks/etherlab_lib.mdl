@@ -15,9 +15,9 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "rich"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Wed Aug  1 13:57:48 2012"
+  LastModifiedDate	  "Wed Aug  1 14:11:24 2012"
   RTWModifiedTimeStamp	  265725762
-  ModelVersionFormat	  "1.%<AutoIncrement:1017>"
+  ModelVersionFormat	  "1.%<AutoIncrement:1018>"
   ConfigurationManager	  "rcs"
   SampleTimeColors	  off
   SampleTimeAnnotations	  off
@@ -821,7 +821,7 @@ Library {
 	    ZoomFactor		    "100"
 	    Block {
 	      BlockType		      S-Function
-	      Name		      "EL1xxx"
+	      Name		      "EL1xxx_0"
 	      SID		      "37"
 	      Ports		      [0, 1]
 	      Position		      [60, 66, 130, 104]
@@ -860,7 +860,7 @@ Library {
 	    }
 	    Block {
 	      BlockType		      S-Function
-	      Name		      "EL2xxx"
+	      Name		      "EL2xxx_0"
 	      SID		      "12"
 	      Ports		      [1]
 	      Position		      [60, 131, 130, 169]
@@ -898,7 +898,7 @@ Library {
 	    }
 	    Block {
 	      BlockType		      S-Function
-	      Name		      "EL30xx"
+	      Name		      "EL30xx_0"
 	      SID		      "76"
 	      Ports		      [0, 1]
 	      Position		      [385, 66, 455, 104]
@@ -937,7 +937,7 @@ Library {
 	    }
 	    Block {
 	      BlockType		      S-Function
-	      Name		      "EL31xx"
+	      Name		      "EL31xx_0"
 	      SID		      "5"
 	      Ports		      [0, 1]
 	      Position		      [245, 66, 315, 104]
@@ -1010,7 +1010,7 @@ Library {
 	    }
 	    Block {
 	      BlockType		      S-Function
-	      Name		      "EL320x"
+	      Name		      "EL320x_0"
 	      SID		      "17"
 	      Ports		      [0, 2]
 	      Position		      [525, 66, 595, 104]
@@ -1057,7 +1057,7 @@ Library {
 	    }
 	    Block {
 	      BlockType		      S-Function
-	      Name		      "EL4xxx"
+	      Name		      "EL4xxx_0"
 	      SID		      "9"
 	      Ports		      [1]
 	      Position		      [245, 131, 315, 169]
@@ -1120,7 +1120,7 @@ Library {
 	    }
 	    Block {
 	      BlockType		      S-Function
-	      Name		      "EL500x"
+	      Name		      "EL500x_0"
 	      SID		      "44"
 	      Ports		      [0, 3]
 	      Position		      [660, 66, 730, 104]
@@ -1187,7 +1187,7 @@ Library {
 	    }
 	    Block {
 	      BlockType		      S-Function
-	      Name		      "EL5021"
+	      Name		      "EL5021_0"
 	      SID		      "113"
 	      Ports		      [2, 3]
 	      Position		      [660, 265, 730, 305]
@@ -1230,7 +1230,7 @@ Library {
 	    }
 	    Block {
 	      BlockType		      S-Function
-	      Name		      "EL5101"
+	      Name		      "EL5101_0"
 	      SID		      "83"
 	      Ports		      [2, 3]
 	      Position		      [660, 130, 730, 170]
@@ -1302,7 +1302,7 @@ Library {
 	    }
 	    Block {
 	      BlockType		      S-Function
-	      Name		      "EL5101_0010"
+	      Name		      "EL5101_0010_0"
 	      SID		      "111"
 	      Ports		      [2, 3]
 	      Position		      [660, 200, 730, 240]
@@ -1361,7 +1361,7 @@ Library {
 	    }
 	    Block {
 	      BlockType		      S-Function
-	      Name		      "EP1xxx"
+	      Name		      "EP1xxx_0"
 	      SID		      "11"
 	      Ports		      [0, 1]
 	      Position		      [60, 196, 130, 234]
@@ -1411,7 +1411,7 @@ Library {
 	    }
 	    Block {
 	      BlockType		      S-Function
-	      Name		      "EP2xxx"
+	      Name		      "EP2xxx_0"
 	      SID		      "39"
 	      Ports		      [1]
 	      Position		      [60, 261, 130, 299]
@@ -1461,7 +1461,7 @@ Library {
 	    }
 	    Block {
 	      BlockType		      S-Function
-	      Name		      "EP31xx"
+	      Name		      "EP31xx_0"
 	      SID		      "40"
 	      Ports		      [0, 1]
 	      Position		      [245, 196, 315, 234]
@@ -1549,7 +1549,7 @@ Library {
 	    }
 	    Block {
 	      BlockType		      S-Function
-	      Name		      "EP41xx"
+	      Name		      "EP41xx_0"
 	      SID		      "41"
 	      Ports		      [1]
 	      Position		      [245, 261, 315, 299]
@@ -1622,7 +1622,7 @@ Library {
 	    }
 	    Block {
 	      BlockType		      S-Function
-	      Name		      "EP43xx"
+	      Name		      "EP43xx_0"
 	      SID		      "8"
 	      Ports		      [1, 1]
 	      Position		      [245, 326, 315, 364]
