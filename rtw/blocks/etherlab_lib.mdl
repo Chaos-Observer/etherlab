@@ -15,9 +15,9 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "rich"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Wed Aug  1 10:26:47 2012"
-  RTWModifiedTimeStamp	  265686838
-  ModelVersionFormat	  "1.%<AutoIncrement:1011>"
+  LastModifiedDate	  "Wed Aug  1 12:54:36 2012"
+  RTWModifiedTimeStamp	  265725762
+  ModelVersionFormat	  "1.%<AutoIncrement:1014>"
   ConfigurationManager	  "rcs"
   SampleTimeColors	  off
   SampleTimeAnnotations	  off
@@ -638,7 +638,7 @@ Library {
   System {
     Name		    "etherlab_lib"
     Location		    [303, 308, 675, 472]
-    Open		    on
+    Open		    off
     ModelBrowserVisibility  off
     ModelBrowserWidth	    200
     ScreenColor		    "white"
@@ -651,7 +651,7 @@ Library {
     ShowPageBoundaries	    off
     ZoomFactor		    "100"
     ReportName		    "simulink-default.rpt"
-    SIDHighWatermark	    "83"
+    SIDHighWatermark	    "111"
     Block {
       BlockType		      SubSystem
       Name		      "EtherCAT"
@@ -806,7 +806,7 @@ Library {
 	  MaskIconUnits		  "autoscale"
 	  System {
 	    Name		    "Beckhoff"
-	    Location		    [439, 74, 1521, 515]
+	    Location		    [442, 97, 1524, 538]
 	    Open		    on
 	    ModelBrowserVisibility  off
 	    ModelBrowserWidth	    200
@@ -1251,11 +1251,70 @@ Library {
 	      MaskPortRotate	      "default"
 	      MaskIconUnits	      "autoscale"
 	      MaskValueString	      "0|1|EL5101|FreeRun/SM-Synchron|off|off|on|off|off|on|off|off|off|off|off|0|0|off|off|off"
-	      "|on|off|100|65535|off|off|off|Enable pos. gate|on|off|on|on|on|off|on|10000|100|100|100|500|1600"
+	      "|on|off|100|65535|off|off|off|Enable pos. gate|on|off|on|on|off|off|on|10000|100|100|100|500|1600"
 	      MaskTabNameString	      "Main,Main,Main,Main,Main,Main,Main,Main,Main,Main,Main,Main,Main,Main,Main,Main,Main,C"
 	      "oE #x8000,CoE #x8000,CoE #x8000,CoE #x8000,CoE #x8000,CoE #x8001,CoE #x8001,CoE #x8010,CoE #x8010,CoE #x8010,Co"
 	      "E #x8010,CoE #x8010,CoE #x8010,CoE #x8010,CoE #x8010,CoE #x8010,CoE #x8010,CoE #x8010,CoE #x8010,CoE #x8010,CoE"
 	      " #x8010,CoE #x8010,CoE #x8010,CoE #x8010"
+	    }
+	    Block {
+	      BlockType		      S-Function
+	      Name		      "EL5101_0010"
+	      SID		      "111"
+	      Ports		      [2, 3]
+	      Position		      [660, 200, 730, 240]
+	      BackgroundColor	      "yellow"
+	      UserDataPersistent      on
+	      UserData		      "DataTag8"
+	      FunctionName	      "ec_slave3"
+	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
+	      SFunctionModules	      "'ecrt_support'"
+	      EnableBusSupport	      off
+	      MaskType		      "EL5101-0010"
+	      MaskDescription	      "Beckhoff EtherCAT Incremental Encoder Input"
+	      MaskHelp		      "web(etherlab_help_path('el5101-0010.html'), '-helpbrowser');"
+	      MaskPromptString	      "Master|Slave Index|Device Model|DC Mode|RxPdo #x1600 (Excl 1601)|RxPdo #x1601 (Excl 160"
+	      "0)|TxPdo #x1a00 (Excl 1a01)|TxPdo #x1a01 (Excl 1a00)|TxPdo #x1a02 (Excl 1a03)|TxPdo #x1a03 (Excl 1a02)|TxPdo #x"
+	      "1a04 (Excl 1a05)|TxPdo #x1a05 (Excl 1a04)|Sample Time (-1 inherited)|Debug|8000:01 - Enable C reset|8000:02 - E"
+	      "nable extern reset|8000:04 - Gate polarity|8000:0B - Open cct det A|8000:0C - Open cct det B|8000:0D - Open cct"
+	      " det C|8000:0E - Reversion of rotation|8000:10 - Extern Reset polarity|8000:11 - Frequency window|8000:13 - Fre"
+	      "quency scaling|8000:14 - Period scaling|8000:15 - Frequency resolution|8000:16 - Period resolution|8000:17 - Fr"
+	      "equency Wait Time"
+	      MaskStyleString	      "edit,edit,popup(EL5101-0010),popup(FreeRun/SM-Synchron|DC-Synchron|DC-Synchron (input ba"
+	      "sed)),checkbox,checkbox,checkbox,checkbox,checkbox,checkbox,checkbox,checkbox,edit,edit,checkbox,checkbox,popup"
+	      "(Disable gate|Enable pos. gate|Enable neg. gate),checkbox,checkbox,checkbox,checkbox,checkbox,edit,edit,edit,ed"
+	      "it,edit,edit"
+	      MaskVariables	      "master=@1;index=@2;model=&3;dcmode=&4;x1600=&5;x1601=&6;x1A00=&7;x1A01=&8;x1A02=&9;x1A03=&"
+	      "10;x1A04=&11;x1A05=&12;tsample=@13;debug=@14;x8000_01=@15;x8000_02=@16;x8000_04=@17;x8000_0B=@18;x8000_0C=@19;x"
+	      "8000_0D=@20;x8000_0E=@21;x8000_10=@22;x8000_11=@23;x8000_13=@24;x8000_14=@25;x8000_15=@26;x8000_16=@27;x8000_17"
+	      "=@28;"
+	      MaskTunableValueString  "off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,of"
+	      "f,off,off,off,off,off,off"
+	      MaskCallbackString      "||||el5101_0010('ui')|el5101_0010('ui')|el5101_0010('ui')|el5101_0010('ui')|el5101_001"
+	      "0('ui')|el5101_0010('ui')|el5101_0010('ui')|el5101_0010('ui')||||||||||||||||"
+	      MaskEnableString	      "on,on,on,on,on,off,on,off,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on"
+	      MaskVisibilityString    "on,on,on,on,on,on,on,on,on,on,off,on,on,off,on,on,on,on,on,on,on,on,on,on,on,on,on,on"
+	      MaskToolTipString	      "on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on"
+	      MaskInitialization      "masterStr = '';\npositionStr = '';\n[Address masterStr positionStr] = getEtherCATAddre"
+	      "ss(gcb,master,index);\n\nel5101_0010('set');\nrv = get_param(gcbh,'UserData');\nrv.SlaveConfig.sdo = {...\n    "
+	      "hex2dec('1011'), 1,32,hex2dec('64616f6c');\n    hex2dec('8000'), 1, 8,x8010_01;\n    hex2dec('8000'), 2, 8,x801"
+	      "0_02;\n    hex2dec('8000'), 4, 8,x8010_04-1;\n    hex2dec('8000'),11, 8,x8010_0B;\n    hex2dec('8000'),12, 8,x8"
+	      "010_0C;\n    hex2dec('8000'),13, 8,x8010_0D;\n    hex2dec('8000'),14, 8,x8010_0E;\n    hex2dec('8000'),16, 8,x8"
+	      "010_10;\n    hex2dec('8000'),17,16,x8010_11;\n    hex2dec('8000'),19,16,x8010_13;\n    hex2dec('8000'),20,16,x8"
+	      "010_14;\n    hex2dec('8000'),21,16,x8010_15;\n    hex2dec('8000'),22,16,x8010_16;\n    hex2dec('8000'),23,16,x8"
+	      "010_17;\n};\n"
+	      MaskSelfModifiable      on
+	      MaskDisplay	      "fprintf('%s\\nIncr.-Enc\\nM:%s Idx:%s',...\n    model, masterStr, positionStr)\n"
+	      MaskIconFrame	      on
+	      MaskIconOpaque	      on
+	      MaskIconRotate	      "none"
+	      MaskPortRotate	      "default"
+	      MaskIconUnits	      "autoscale"
+	      MaskValueString	      "0|1|EL5101-0010|FreeRun/SM-Synchron|on|off|on|off|off|off|off|off|0|0|off|off|Enable pos"
+	      ". gate|on|on|off|off|on|10000|100|100|100|100|400"
+	      MaskTabNameString	      "Main,Main,Main,Main,Main,Main,Main,Main,Main,Main,Main,Main,Main,Main,CoE #x8000,CoE #"
+	      "x8000,CoE #x8000,CoE #x8000,CoE #x8000,CoE #x8000,CoE #x8000,CoE #x8000,CoE #x8000,CoE #x8000,CoE #x8000,CoE #x"
+	      "8000,CoE #x8000,CoE #x8000"
 	    }
 	    Block {
 	      BlockType		      S-Function
@@ -1266,7 +1325,7 @@ Library {
 	      BackgroundColor	      "yellow"
 	      LibraryVersion	      "1.837"
 	      UserDataPersistent      on
-	      UserData		      "DataTag8"
+	      UserData		      "DataTag9"
 	      LoadFcn		      "ep1xxx('check')"
 	      FunctionName	      "ec_slave3"
 	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
@@ -1315,7 +1374,7 @@ Library {
 	      Position		      [60, 261, 130, 299]
 	      BackgroundColor	      "yellow"
 	      UserDataPersistent      on
-	      UserData		      "DataTag9"
+	      UserData		      "DataTag10"
 	      LoadFcn		      "ep2xxx('check')"
 	      FunctionName	      "ec_slave3"
 	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
@@ -1366,7 +1425,7 @@ Library {
 	      BackgroundColor	      "yellow"
 	      LibraryVersion	      "1.845"
 	      UserDataPersistent      on
-	      UserData		      "DataTag10"
+	      UserData		      "DataTag11"
 	      LoadFcn		      "ep31xx('check')"
 	      FunctionName	      "ec_slave3"
 	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
@@ -1454,7 +1513,7 @@ Library {
 	      BackgroundColor	      "yellow"
 	      LibraryVersion	      "1.846"
 	      UserDataPersistent      on
-	      UserData		      "DataTag11"
+	      UserData		      "DataTag12"
 	      LoadFcn		      "ep41xx('check')"
 	      FunctionName	      "ec_slave3"
 	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
@@ -1527,7 +1586,7 @@ Library {
 	      BackgroundColor	      "yellow"
 	      LibraryVersion	      "1.846"
 	      UserDataPersistent      on
-	      UserData		      "DataTag12"
+	      UserData		      "DataTag13"
 	      LoadFcn		      "ep43xx('check');"
 	      FunctionName	      "ec_slave3"
 	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
@@ -1569,7 +1628,7 @@ Library {
 	      Name		      "INC_IN1"
 	      SID		      "14"
 	      Ports		      [5, 9]
-	      Position		      [645, 200, 715, 240]
+	      Position		      [660, 260, 730, 300]
 	      BackgroundColor	      "yellow"
 	      FunctionName	      "ec_slave2"
 	      Parameters	      "Address,config.SlaveConfig,config.SdoConfig,config.SoeConfig,config.IO,debug,tsample"
@@ -1645,7 +1704,7 @@ Library {
 	      BackgroundColor	      "yellow"
 	      LibraryVersion	      "1.846"
 	      UserDataPersistent      on
-	      UserData		      "DataTag13"
+	      UserData		      "DataTag14"
 	      LoadFcn		      "ekxxxx('check')"
 	      FunctionName	      "ec_slave3"
 	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
@@ -1734,7 +1793,7 @@ Library {
 	      Name		      "update"
 	      SID		      "78"
 	      Ports		      []
-	      Position		      [745, 304, 845, 346]
+	      Position		      [820, 294, 920, 336]
 	      BackgroundColor	      "magenta"
 	      ShowName		      off
 	      OpenFcn		      "update_library"
@@ -2322,9 +2381,9 @@ Library {
   }
 }
 MatData {
-  NumRecords		  14
+  NumRecords		  15
   DataRecord {
-    Tag			    DataTag13
+    Tag			    DataTag14
     Data		    "  %)30     .    $ 4   8    (     @         %    \"     $    !     0         %  0 #     $    D    57!D87"
     "1E        4VQA=F5#;VYF:6< 4&]R=$-O;F9I9P        X   \"X @  !@    @    0          4    (     0    $    !          X"
     "   \"( @  !@    @    \"          4    (     0    $    !          4 !  0     0   $    !M871L86)R;V]T        <V5P87)"
@@ -2343,7 +2402,7 @@ MatData {
     " ,     8    (    !@         %    \"                0         )          "
   }
   DataRecord {
-    Tag			    DataTag12
+    Tag			    DataTag13
     Data		    "  %)30     .    * P   8    (     @         %    \"     $    !     0         %  0 #     $    D    4VQA=F"
     "5#;VYF:6< 4&]R=$-O;F9I9P  57!D871E              X   \"0!@  !@    @    \"          4    (     0    $    !          "
     "4 !  ,     0   #P   !V96YD;W(       !D97-C<FEP=&EO;@!P<F]D=6-T      !R979I<VEO;@    !S;0                  #@   #@ "
@@ -2384,7 +2443,7 @@ MatData {
     "FQO8VMS+T5T:&5R0T%4+V5P-#-X>\"YM   "
   }
   DataRecord {
-    Tag			    DataTag11
+    Tag			    DataTag12
     Data		    "  %)30     .    ( H   8    (     @         %    \"     $    !     0         %  0 #     $    D    4VQA=F"
     "5#;VYF:6< 4&]R=$-O;F9I9P  57!D871E              X   \"P!0  !@    @    \"          4    (     0    $    !          "
     "4 !  ,     0   #P   !V96YD;W(       !D97-C<FEP=&EO;@!P<F]D=6-T      !R979I<VEO;@    !S;0                  #@   #@ "
@@ -2419,7 +2478,7 @@ MatData {
     "FT   "
   }
   DataRecord {
-    Tag			    DataTag10
+    Tag			    DataTag11
     Data		    "  %)30     .    F P   8    (     @         %    \"     $    !     0         %  0 #     $    D    4VQA=F"
     "5#;VYF:6< 4&]R=$-O;F9I9P  57!D871E              X   \"P!0  !@    @    \"          4    (     0    $    !          "
     "4 !  ,     0   #P   !V96YD;W(       !D97-C<FEP=&EO;@!P<F]D=6-T      !R979I<VEO;@    !S;0                  #@   #@ "
@@ -2461,7 +2520,7 @@ MatData {
     "I8V@O=V,O971H97)L86(M:&<O<G1W+V)L;V-K<R]%=&AE<D-!5\"]E<#,Q>'@N;0  "
   }
   DataRecord {
-    Tag			    DataTag9
+    Tag			    DataTag10
     Data		    "  %)30     .    $ H   8    (     @         %    \"     $    !     0         %  0 #     $    D    57!D87"
     "1E        4VQA=F5#;VYF:6< 4&]R=$-O;F9I9P        X   \"X @  !@    @    0          4    (     0    $    !          X"
     "   \"( @  !@    @    \"          4    (     0    $    !          4 !  0     0   $    !M871L86)R;V]T        <V5P87)"
@@ -2495,7 +2554,7 @@ MatData {
     "         \"$                                                                                      "
   }
   DataRecord {
-    Tag			    DataTag8
+    Tag			    DataTag9
     Data		    "  %)30     .    P T   8    (     @         %    \"     $    !     0         %  0 #     $    D    4VQA=F"
     "5#;VYF:6< 4&]R=$-O;F9I9P  57!D871E              X   #0\"   !@    @    \"          4    (     0    $    !          "
     "4 !  ,     0   #P   !V96YD;W(       !D97-C<FEP=&EO;@!P<F]D=6-T      !R979I<VEO;@    !S;0                  #@   #@ "
@@ -2539,6 +2598,56 @@ MatData {
     ">   #@   #@    &    \"     0         !0    @    !    !@    $         $     8   !S:6UP;&4   X   !H    !@    @    $ "
     "         4    (     0   #8    !         !     V    +VAO;64O<FEC:\"]W8R]E=&AE<FQA8BUH9R]R='<O8FQO8VMS+T5T:&5R0T%4+V"
     "5P,7AX>\"YM   "
+  }
+  DataRecord {
+    Tag			    DataTag8
+    Data		    "  %)30     .    $ \\   8    (     @         %    \"     $    !     0         %  0 #     $    D    4VQA="
+    "F5#;VYF:6< 4&]R=$-O;F9I9P  57!D871E              X   # !P  !@    @    \"          4    (     0    $    !          "
+    "4 !  ,     0   #P   !V96YD;W(       !D97-C<FEP=&EO;@!P<F]D=6-T      !R979I<VEO;@    !S;0                  #@   #@ "
+    "   &    \"     8         !0    @    !     0    $         \"0    @             0 X   !     !@    @    $          4 "
+    "   (     0    L    !         !     +    14PU,3 Q+3 P,3        X    X    !@    @    &          4    (     0    $   "
+    " !          D    (        4C#MLT$.    .     8    (    !@         %    \"     $    !     0         )    \"         "
+    " * #%!#@   #@&   &    \"     $         !0    @    !     @    $         #@   & \"   &    \"     $         !0    @  "
+    "  !     P    $         #@   #@    &    \"     8         !0    @    !     0    $         \"0    @             0 X  "
+    "  X    !@    @    &          4    (     0    $    !          D    (               .    L $   8    (     0         "
+    "%    \"     $    !     0         .    @ $   8    (     0         %    \"     $    \"     0         .    .     8   "
+    " (    !@         %    \"     $    !     0         )    \"            +9 #@   ! !   &    \"     8         !0    @  "
+    "  '    !     $         \"0   .            #<0        -Q         W$        #<0                             #<0     "
+    "   / _         $         (0        !!                              #%         \\#\\       #P/P       / _        \\"
+    "#\\        00        \"!         0$       $B/0       2(]       !(CT       $B/0                            \"\"00 X"
+    "   \"@ P  !@    @    !          4    (     0    ,    !          X    X    !@    @    &          4    (     0    $ "
+    "   !          D    (            \"$ .    .     8    (    !@         %    \"     $    !     0         )    \"      "
+    "      / _#@   / \"   &    \"     $         !0    @    !     0    $         #@   , \"   &    \"     $         !0   "
+    " @    !     @    $         #@   #@    &    \"     8         !0    @    !     0    $         \"0    @           \"Z"
+    "0 X   !0 @  !@    @    &          4    (    $0    0    !          D    @ @          V$        #80        -A       "
+    "            #80        -A                   #80        -A         V$        #80        -A        RO$        \"X0  "
+    "      +A         V$        #80        / _         $         (0                   &$         <0                   ("
+    "D         D0        \"9         *$         J0        $!         '$         B0        #%         ,D        #P/P    "
+    "   / _        \\#\\         0        / _        \\#\\       #P/P       / _        \\#\\       #P/P       / _      "
+    "  \\#\\       #P/P       / _        \\#\\       ! 0        $!       !(CT       $B/0       2(]                  $B/"
+    "0       2(]                  $B/0       2(]       !(CT       $B/0       2(]       !(CT       $B/0       2(]       "
+    " @D$       \"\"00 X    0!   !@    @    \"          4    (     0    $    !          4 !  '     0    X   !I;G!U=   ;"
+    "W5T<'5T    #@   % !   &    \"     (         !0    @    !     @    $         !0 $  4    !    !0   '!D;P      #@   +"
+    "     &    \"     8         !0    @    $    !     $         \"0   (                                                "
+    "                                                            #P/P        !         \"$                             "
+    "               X   !0    !@    @    &          4    (     0    0    !          D    @                             "
+    "    !A            .    : (   8    (     @         %    \"     $    #     0         %  0 !0    $    %    <&1O      "
+    " .    < $   8    (    !@         %    \"     H    $     0         )    0 $          / _        \\#\\       #P/P   "
+    "    / _        \\#\\       #P/P       / _        \\#\\       #P/P       / _                                       "
+    "                                                                                      / _         $         00    "
+    "    !1         '$         @0        \")         )$         F0                                                     "
+    "                                                      #@   %     &    \"     8         !0    @    !    !     $    "
+    "     \"0   \"            #P/P                  +D            X   !0    !@    @    &          4    (     0    0    "
+    "!          D    @            \\#\\                  #!            .    R (   8    (    $          %    \"     $   "
+    " !     0         .    F (   8    (     @         %    \"     $    !     0         %  0 $     $   !     ;6%T;&%B<F]"
+    "O=        '-E<&%R871O<@        !S96YT:6YE;           9G5N8W1I;VY?:&%N9&QE  X   !(    !@    @    $          4    ( "
+    "    0   !4    !         !     5    +W9O;\"]O<'0O36%T;&%B+3(P,3%A    #@   #     &    \"     0         !0    @    ! "
+    "    0    $         $  ! \"\\    .    ,     8    (    !          %    \"     $    !     0         0  $ 0     X   !8"
+    " 0  !@    @    \"          4    (     0    $    !          4 !  )     0   !L   !F=6YC=&EO;@!T>7!E      !F:6QE     "
+    "         X   !     !@    @    $          4    (     0    L    !         !     +    96PU,3 Q7S P,3        X    X   "
+    " !@    @    $          4    (     0    8    !         !     &    <VEM<&QE   .    <     8    (    !          %    \""
+    "     $    [     0         0    .P   \"]H;VUE+W)I8V@O=V,O971H97)L86(M:&<O<G1W+V)L;V-K<R]%=&AE<D-!5\"]E;#4Q,#%?,# Q,"
+    "\"YM       "
   }
   DataRecord {
     Tag			    DataTag7
