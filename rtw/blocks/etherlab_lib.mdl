@@ -15,9 +15,9 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "rich"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Wed Aug  1 22:57:14 2012"
-  RTWModifiedTimeStamp	  265725762
-  ModelVersionFormat	  "1.%<AutoIncrement:1039>"
+  LastModifiedDate	  "Sat Sep  8 02:16:24 2012"
+  RTWModifiedTimeStamp	  268854386
+  ModelVersionFormat	  "1.%<AutoIncrement:1057>"
   ConfigurationManager	  "rcs"
   SampleTimeColors	  off
   SampleTimeAnnotations	  off
@@ -637,8 +637,8 @@ Library {
   }
   System {
     Name		    "etherlab_lib"
-    Location		    [445, 120, 817, 284]
-    Open		    off
+    Location		    [1171, 234, 1543, 398]
+    Open		    on
     ModelBrowserVisibility  off
     ModelBrowserWidth	    200
     ScreenColor		    "white"
@@ -673,8 +673,8 @@ Library {
       MaskIconUnits	      "pixels"
       System {
 	Name			"EtherCAT"
-	Location		[421, 74, 878, 483]
-	Open			on
+	Location		[1140, 407, 1597, 816]
+	Open			off
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
 	ScreenColor		"white"
@@ -707,8 +707,8 @@ Library {
 	  MaskIconUnits		  "autoscale"
 	  System {
 	    Name		    "Baumer"
-	    Location		    [3, 80, 457, 246]
-	    Open		    on
+	    Location		    [6, 103, 460, 269]
+	    Open		    off
 	    ModelBrowserVisibility  off
 	    ModelBrowserWidth	    200
 	    ScreenColor		    "white"
@@ -781,8 +781,8 @@ Library {
 	  MaskIconUnits		  "autoscale"
 	  System {
 	    Name		    "Beckhoff"
-	    Location		    [448, 143, 1530, 584]
-	    Open		    on
+	    Location		    [451, 166, 1533, 607]
+	    Open		    off
 	    ModelBrowserVisibility  off
 	    ModelBrowserWidth	    200
 	    ScreenColor		    "white"
@@ -1102,6 +1102,7 @@ Library {
 	      BackgroundColor	      "yellow"
 	      UserDataPersistent      on
 	      UserData		      "DataTag7"
+	      LoadFcn		      "el500x('check')"
 	      FunctionName	      "ec_slave3"
 	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
 	      SFunctionModules	      "'ecrt_support'"
@@ -1169,6 +1170,7 @@ Library {
 	      BackgroundColor	      "yellow"
 	      UserDataPersistent      on
 	      UserData		      "DataTag8"
+	      LoadFcn		      "el5021('check')"
 	      FunctionName	      "ec_slave3"
 	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
 	      SFunctionModules	      "'ecrt_support'"
@@ -1212,6 +1214,7 @@ Library {
 	      BackgroundColor	      "yellow"
 	      UserDataPersistent      on
 	      UserData		      "DataTag9"
+	      LoadFcn		      "el5101('check')"
 	      FunctionName	      "ec_slave3"
 	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
 	      SFunctionModules	      "'ecrt_support'"
@@ -1284,6 +1287,7 @@ Library {
 	      BackgroundColor	      "yellow"
 	      UserDataPersistent      on
 	      UserData		      "DataTag10"
+	      LoadFcn		      "el5101_0010('check')"
 	      FunctionName	      "ec_slave3"
 	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
 	      SFunctionModules	      "'ecrt_support'"
@@ -1343,6 +1347,7 @@ Library {
 	      BackgroundColor	      "yellow"
 	      UserDataPersistent      on
 	      UserData		      "DataTag11"
+	      LoadFcn		      "el515x('check')"
 	      FunctionName	      "ec_slave3"
 	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
 	      SFunctionModules	      "'ecrt_support'"
@@ -1756,61 +1761,6 @@ Library {
 	      MaskValueString	      "0|0|EK1100|0|0"
 	    }
 	    Block {
-	      BlockType		      S-Function
-	      Name		      "K-Bus"
-	      SID		      "16"
-	      Ports		      []
-	      Position		      [795, 53, 875, 106]
-	      BackgroundColor	      "yellow"
-	      FunctionName	      "ec_slave2"
-	      Parameters	      "Address,SlaveConfig,SdoConfig,[],IOSpec,debug,tsample"
-	      EnableBusSupport	      off
-	      MaskType		      "K-Bus Coupler"
-	      MaskDescription	      "Beckhoff EK1110 K-Bus to EtherCAT Coupler"
-	      MaskHelp		      "This block provides an interface to the K-Bus process image for the EK1120 Coupler.\n<p>\nChoo"
-	      "se and set the following options:\n<h4>Master:</h4>\nSet the EtherCAT Master of this terminal.\n\n<h4>Slave Ind"
-	      "ex:</h4>\nSet the EtherCAT slave index. Following address formats are allowed:\n<ol>\n<li> Absolute addressing:"
-	      " a scalar number <<b><tt>n</tt></b>> representing the (zero based) absolute position in the bus.\n<li> SSId add"
-	      "ressing: the Secondary Slave (or 'Alias') Addressing has the form <<b><tt>[alias position]</tt></b>> where <b><"
-	      "tt>alias</tt></b> is the Secondary Slave Id of the EtherCAT slave and <b><tt>position</tt></b> is the offset af"
-	      "ter the slave with the given <b><tt>alias</tt></b>. The SSId has to be preprogrammed into the slave with other "
-	      "service tools (see 'ethercat alias --help').\n</ol>\n\n<h4>Group Pdo Entries</h4>\n<ol>\n<li>Data Types in PDO:"
-	      " This option groups all Pdo Entries in a \n	PDO with the same data type together</li>\n<li>All Data Types: All "
-	      "Pdo Entries with the same data typ\n	are grouped together.</li>\n</ol>\n\n<h4>EtherCATInfo XML File:</h4>\nA st"
-	      "ring path pointing to the XML description of the k-Bus Coupler\n\n<h4>Sample Time:</h4>\nSet the <b>Sample Time"
-	      "</b> for the block. <tt>0</tt> is continuous sample time (runs at the model's base rate). Setting <tt>-1</tt> w"
-	      "ill try to set the time using back propagation.\n\n"
-	      MaskPromptString	      "Master|Slave Index|EtherCATInfo XML file|Group Pdo Entries|Sample Time (-1 inherited)|D"
-	      "ebug"
-	      MaskStyleString	      "edit,edit,edit,popup(No Grouping|Group Data Types in PDO|Group Data Types),edit,edit"
-	      MaskVariables	      "master=@1;index=@2;ethercatinfo=@3;group=&4;tsample=@5;debug=@6;"
-	      MaskTunableValueString  "off,off,off,off,off,off"
-	      MaskCallbackString      "|||||"
-	      MaskEnableString	      "on,on,on,on,on,on"
-	      MaskVisibilityString    "on,on,on,on,on,off"
-	      MaskToolTipString	      "on,on,on,on,on,on"
-	      MaskInitialization      "masterStr = '';\npositionStr = '';\ndisplay_name = '';\n[Address masterStr positionStr"
-	      "] = getEtherCATAddress(gcb,master,index);\n\nSdoConfig = [];\n\n% Generate a LayoutVersion that is unique for e"
-	      "very slave\n% of this type to enure that a separate slave config is generated\n% for every slave\nLayoutVersion"
-	      " = Address.Domain * 2^16 + Address.Position;\n\nfname = '';\n\ntry\n    fname = char(ethercatinfo);\ncatch\n   "
-	      " errordlg([gcb ':File name for EtherCAT Info not a valid string']);\nend\n    \nIOSpec = [];\nSlaveConfig = [];"
-	      "\n\nif isempty(fname)\n    IOSpec = [];\n    SlaveConfig = [];\nelseif isempty(dir(fname))\n    warndlg([gcb ':"
-	      "File ''' fname ''' not found']);\nelse\n    switch lower(group)\n        case 'group data types in pdo'\n      "
-	      "      type = 'PDO';\n        case 'group data types'\n            type = 'ALL';\n        otherwise\n           "
-	      " type = 'None';\n    end\n    \n    ei = EtherCATInfo(fname);\n    SlaveConfig = genSlaveConfig(ei{1});\n    Pd"
-	      "oEntries = getEntries(ei{1},'GroupType',type);\n    IOSpec.Port = struct('PdoEntry', PdoEntries);\n%     IOSpec"
-	      ".Pdo.SmAssignment = [6911 3];\n%     IOSpec.Pdo.Selection = [6911];\n%     IOSpec.Pdo.Variant = 4;\n    IOSpec."
-	      "Pdo.Unique = 1;\n\n    [p f e] = fileparts(fname);\n    display_name = [f e];\nend"
-	      MaskDisplay	      "fprintf('BK1120\\nK-Bus Coupler\\n%s\\nM:%s Idx:%s', ...\n    display_name, masterStr, posit"
-	      "ionStr);\n"
-	      MaskIconFrame	      on
-	      MaskIconOpaque	      on
-	      MaskIconRotate	      "none"
-	      MaskPortRotate	      "default"
-	      MaskIconUnits	      "autoscale"
-	      MaskValueString	      "0|1|''|No Grouping|0|0"
-	    }
-	    Block {
 	      BlockType		      SubSystem
 	      Name		      "update"
 	      SID		      "78"
@@ -1872,11 +1822,6 @@ Library {
 	    Annotation {
 	      Name		      "Special I/O"
 	      Position		      [696, 34]
-	      FontSize		      12
-	    }
-	    Annotation {
-	      Name		      "KBus"
-	      Position		      [831, 34]
 	      FontSize		      12
 	    }
 	    Annotation {
@@ -1967,7 +1912,7 @@ Library {
 	  MaskIconUnits		  "autoscale"
 	  System {
 	    Name		    "Mts"
-	    Location		    [313, 292, 575, 458]
+	    Location		    [319, 338, 581, 504]
 	    Open		    off
 	    ModelBrowserVisibility  off
 	    ModelBrowserWidth	    200
@@ -2060,7 +2005,7 @@ Library {
 	  MaskIconUnits		  "autoscale"
 	  System {
 	    Name		    "Murr"
-	    Location		    [121, 188, 575, 354]
+	    Location		    [1112, 151, 1566, 339]
 	    Open		    off
 	    ModelBrowserVisibility  off
 	    ModelBrowserWidth	    200
@@ -2077,51 +2022,35 @@ Library {
 	      BlockType		      S-Function
 	      Name		      "DIDO_Murr0"
 	      SID		      "25"
-	      Ports		      [1]
-	      Position		      [115, 42, 225, 118]
+	      Ports		      [1, 3]
+	      Position		      [115, 53, 225, 107]
 	      BackgroundColor	      "yellow"
-	      FunctionName	      "ec_slave2"
-	      Parameters	      "Address,conf.SlaveConfig,conf.SdoConfig,conf.SoeConfig,conf.IO,debug,tsample"
+	      UserDataPersistent      on
+	      UserData		      "DataTag18"
+	      FunctionName	      "ec_slave3"
+	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
+	      SFunctionModules	      "'ecrt_support'"
 	      EnableBusSupport	      off
 	      MaskType		      "Murr Impact67 EC"
 	      MaskDescription	      "Murr Impact67 EC\nDigital  IO-Terminal"
-	      MaskHelp		      "This block generically implements the Murr Impact67 EtherCAT Digital Input and Output Terminal"
-	      " for various models.\n\n<p/>\nThe following Terminals are supported:\n<center>\n<table width=\"80%\">\n<tr><td>"
-	      "DI8DO8</td><td> 8 Input 8 Output Ports</td></tr>\n<tr><td>DO16</td><td> 16 Output Ports</td></tr>\n<tr><td>DO8<"
-	      "/td><td> 8 Output Ports</td></tr>\n<tr><td>DI16</td><td> 16 Input Ports</td></tr>\n</table>\n</center>\n<p/>\nC"
-	      "hoose and set the following options:\n<h4>Master:</h4>\nSet the EtherCAT Master of this terminal.\n\n<h4>Slave "
-	      "Index:</h4>\nSet the EtherCAT slave index. Following address formats are allowed:\n<ol>\n<li> Absolute addressi"
-	      "ng: a scalar number <<b><tt>n</tt></b>> representing the (zero based) absolute position in the bus.\n<li> SSId "
-	      "addressing: the Secondary Slave (or 'Alias') Addressing has the form <<b><tt>[alias position]</tt></b>> where <"
-	      "b><tt>alias</tt></b> is the Secondary Slave Id of the EtherCAT slave and <b><tt>position</tt></b> is the offset"
-	      " after the slave with the given <b><tt>alias</tt></b>. The SSId has to be preprogrammed into the slave with oth"
-	      "er service tools (see 'ethercat alias --help').\n</ol>\n\n<h4>Device Model:</h4>\nChoose the device at the Inde"
-	      "xed position of the master.\n\n\n<p>\nChoosing <b>Status Output</b> provides a port of type <tt>uint8_T</tt> wh"
-	      "ere the status is presented. \n\n\n<p>\nSet the <b>Sample Time</b> for the block. <tt>0</tt> is continuous samp"
-	      "le time (runs at the model's base rate). Setting <tt>-1</tt> will try to set the time using back propagation.\n"
-	      MaskPromptString	      "Master|Slave Index|Device Model |Status Information|Input type|Sample Time (-1 for inhe"
-	      "rited)|Debug|UpdateFcn"
-	      MaskStyleString	      "edit,edit,popup(DI8DO8r00000001|DO16r00000001|DO8r00000001|DI16r00000001),checkbox,popup"
-	      "(Vector|seperate),edit,edit,edit"
-	      MaskVariables	      "master=@1;index=@2;model=&3;status=@4;dtype=@5;tsample=@6;debug=@7;updatefcn=&8;"
-	      MaskTunableValueString  "off,off,off,off,off,off,off,off"
-	      MaskCallbackString      "|||||||"
-	      MaskEnableString	      "on,on,on,on,on,on,on,off"
-	      MaskVisibilityString    "on,on,on,on,on,on,off,off"
-	      MaskToolTipString	      "on,on,on,on,on,on,on,on"
+	      MaskHelp		      "web(etherlab_help_path('murr_dio.html'), '-helpbrowser');"
+	      MaskPromptString	      "Master|Slave Index|Device Model |Vector IO|Sample Time (-1 for inherited)|Debug"
+	      MaskStyleString	      "edit,edit,popup(DI16|DI8DO8|DO16|DO8),checkbox,edit,edit"
+	      MaskVariables	      "master=@1;index=@2;model=&3;vector=&4;tsample=@5;debug=@6;"
+	      MaskTunableValueString  "off,off,off,off,off,off"
+	      MaskCallbackString      "||murr_dio('set');|murr_dio('set');||"
+	      MaskEnableString	      "on,on,on,on,on,on"
+	      MaskVisibilityString    "on,on,on,on,on,off"
+	      MaskToolTipString	      "on,on,on,on,on,on"
 	      MaskInitialization      "masterStr = '';\npositionStr = '';\n[Address masterStr positionStr] = getEtherCATAddre"
-	      "ss(gcb,master,index);\n\nselection = murr_impact67('getmodel',model);\nif isempty(selection)\n    return;\nend\n"
-	      "\nfunc = selection{3};\n\ndevice = murr_impact67('loaddescription',selection);\nif isempty(device)\n   return; "
-	      "\nend\n\n\n%Prepare S-Funtion structure\n\nconf = murr_impact67('process',selection,device,status,dtype);\n   \n"
-	      "\n\n"
-	      MaskDisplay	      "fprintf('Murr Impact 67 EC\\n%s\\n%s\\nM:%s Idx:%s',...\n    model,func,masterStr,positionSt"
-	      "r)\n"
+	      "ss(gcb,master,index);\n\nrv = get_param(gcbh,'UserData');\n"
+	      MaskDisplay	      "fprintf('Murr Impact 67 EC\\n%s\\nM:%s Idx:%s',...\n    model,masterStr,positionStr)\n"
 	      MaskIconFrame	      on
 	      MaskIconOpaque	      on
 	      MaskIconRotate	      "none"
 	      MaskPortRotate	      "default"
 	      MaskIconUnits	      "autoscale"
-	      MaskValueString	      "0|1|DO16r00000001|off|Vector|-1|0|murr_impact67"
+	      MaskValueString	      "0|1|DI8DO8|on|0|0"
 	    }
 	  }
 	}
@@ -2184,16 +2113,16 @@ Library {
 	  MaskVisibilityString	  "on,on,on,on,off"
 	  MaskToolTipString	  "on,on,on,on,on"
 	  MaskInitialization	  "masterStr = '';\npositionStr = '';\n\n[Address masterStr positionStr] = getEtherCATAddress(gc"
-	  "b,master,index);\n\n\nif ~isfield(rv,'PortConfig')||isempty(rv)\n   rv.PortConfig = [];\nend\n\nif ~isfield(rv,'Sla"
-	  "veConfig')||isempty(rv)\n   rv.SlaveConfig = [];\nend\n\nif ~isfield(rv.SlaveConfig,'description')||isempty(rv)\n  "
-	  " slave_name = 'unknown';\nelse\n   slave_name = rv.SlaveConfig.description;\nend\n\n"
-	  MaskDisplay		  "fprintf(     'Template Slave\\n%s \\n%s Idx:%s',     slave_name,     masterStr,     positionStr )\n"
+	  "b,master,index);\n\n\nif ~isfield(rv,'PortConfig') || isempty(rv)\n   rv.PortConfig = [];\nend\n\nif ~isfield(rv,'S"
+	  "laveConfig') || isempty(rv)\n   rv.SlaveConfig = [];\nend\n\nif ~isfield(rv.SlaveConfig,'description') || isempty(r"
+	  "v)\n   slave_name = 'unknown';\nelse\n   slave_name = rv.SlaveConfig.description;\nend\n\n"
+	  MaskDisplay		  "fprintf('Template Slave\\n%s \\n%s Idx:%s',...\n    slave_name, masterStr, positionStr)\n"
 	  MaskIconFrame		  on
 	  MaskIconOpaque	  on
 	  MaskIconRotate	  "none"
 	  MaskPortRotate	  "default"
 	  MaskIconUnits		  "autoscale"
-	  MaskValueString	  "0|0|[]|0|0"
+	  MaskValueString	  "0|1|[]|0|0"
 	}
       }
     }
@@ -2402,7 +2331,55 @@ Library {
   }
 }
 MatData {
-  NumRecords		  18
+  NumRecords		  19
+  DataRecord {
+    Tag			    DataTag18
+    Data		    "  %)30     .    > X   8    (     @         %    \"     $    !     0         %  0 #     $    8    4VQA=F"
+    "5#;VYF:6< 4&]R=$-O;F9I9P  #@   . (   &    \"     (         !0    @    !     0    $         !0 $  P    !    /    '9"
+    "E;F1O<@       &1E<V-R:7!T:6]N '!R;V1U8W0      ')E=FES:6]N     '-M                   .    .     8    (    !@       "
+    "  %    \"     $    !     0         )    \"           P%- #@   #@    &    \"     0         !0    @    !    !@    $ "
+    "        $     8   !$23A$3S@   X    X    !@    @    &          4    (     0    $    !          D    (         $#EZD"
+    " .    .     8    (    !@         %    \"     $    !     0         )    \"            / _#@   & '   &    \"     $  "
+    "       !0    @    !     @    $         #@   ( \"   &    \"     $         !0    @    !     P    $         #@   #@  "
+    "  &    \"     8         !0    @    !     0    $         \"0    @             0 X    X    !@    @    &          4  "
+    "  (     0    $    !          D    (               .    T $   8    (     0         %    \"     $    !     0        "
+    " .    H $   8    (     0         %    \"     $    \"     0         .    .     8    (    !@         %    \"     $  "
+    "  !     0         )    \"            +9 #@   # !   &    \"     8         !0    @    (    !     $         \"0     !"
+    "         (#80       @-A       \" V$       (#80       @-A       \" V$       (#80       @-A         \\#\\         0 "
+    "        A         $$         40        !A         '$         @0        / _        \\#\\       #P/P       / _      "
+    "  \\#\\       #P/P       / _        \\#\\      $B/0       2(]       !(CT       $B/0       2(]       !(CT       $B/"
+    "0       2(] #@   *@$   &    \"     $         !0    @    !     P    $         #@   #@    &    \"     8         !0  "
+    "  @    !     0    $         \"0    @            (0 X    X    !@    @    &          4    (     0    $    !         "
+    " D    (            \\#\\.    ^ ,   8    (     0         %    \"     $    \"     0         .    H $   8    (     0 "
+    "        %    \"     $    \"     0         .    .     8    (    !@         %    \"     $    !     0         )    \""
+    "            +I #@   # !   &    \"     8         !0    @    (    !     $         \"0     !          #80        -A  "
+    "       V$        #80        -A         V$        #80        -A         \\#\\         0         A         $$       "
+    "  40        !A         '$         @0        / _        \\#\\       #P/P       / _        \\#\\       #P/P       / "
+    "_        \\#\\      $B/0       2(]       !(CT       $B/0       2(]       !(CT       $B/0       2(] #@   \" \"   & "
+    "   \"     $         !0    @    !     @    $         #@   #@    &    \"     8         !0    @    !     0    $      "
+    "   \"0    @           &Z0 X   \"P 0  !@    @    &          4    (    #     0    !          D   \"  0         !L$  "
+    "      &P0        ;!        !L$        *P0        K!        \"L$        *P0        K!        \"L$        *P0       "
+    " K!         \\#\\         0         A         $$        #P/P        !         \"$         00        !1         &$ "
+    "        <0        \"!         \\#\\       #P/P       / _        \\#\\       #P/P       / _        \\#\\       #P/P"
+    "       / _        \\#\\       #P/P       / _      !(CT       $B/0       2(]       !(CT       $B/0       2(]       "
+    "!(CT       $B/0       2(]       !(CT       $B/0       2(] #@   #@%   &    \"     (         !0    @    !     0    $"
+    "         !0 $  <    !    #@   &EN<'5T  !O=71P=70    .    > $   8    (     @         %    \"     $    !     0      "
+    "   %  0 !0    $    %    <&1O       .    , $   8    (    !@         %    \"     @    $     0         )      $      "
+    "                                                                                                                  "
+    "                                                                       #P/P        !         \"$         00       "
+    " !1         &$         <0                                                                                      .  "
+    "  : ,   8    (     @         %    \"     $    #     0         %  0 !0    $    %    <&1O       .    , $   8    (   "
+    " !@         %    \"     @    $     0         )      $          / _        \\#\\       #P/P       / _        \\#\\ "
+    "      #P/P       / _        \\#\\                                                                                 "
+    "                      #P/P        !         \"$         00        !1         &$         <0                        "
+    "                                                              .    L     8    (    !@         %    \"     0    $  "
+    "   0         )    @            / _        \\#\\       #P/P       / _        \\#\\       #P/P       / _        \\#\\"
+    "                  / _         $         (0                                           #@   # !   &    \"     8     "
+    "    !0    @    (    !     $         \"0     !          #P/P       / _        \\#\\       #P/P       / _        \\#"
+    "\\       #P/P       / _        \\#\\       #P/P       / _        \\#\\       #P/P       / _        \\#\\       #P/"
+    "P       !!         %$         80        !Q         ($         B0        \"1         )D                            "
+    "                                                          "
+  }
   DataRecord {
     Tag			    DataTag17
     Data		    "  %)30     .    $ 4   8    (     @         %    \"     $    !     0         %  0 #     $    D    57!D87"

@@ -60,6 +60,7 @@ INSTALL (FILES
     ethercatinfo_check.m
     SoeConfig.m
 
+    murr_dio.m
     update_library.m update_devices.m
 
     el1xxx.m  el2xxx_check.m  el2xxx.m  el31xx.m
@@ -72,6 +73,10 @@ INSTALL (FILES
     DESTINATION rtw/blocks/EtherCAT)
 
 INSTALL (DIRECTORY @EtherCATInfo
+    DESTINATION rtw/blocks
+    FILES_MATCHING PATTERN "*.m")
+
+INSTALL (DIRECTORY @SlaveConfig
     DESTINATION rtw/blocks
     FILES_MATCHING PATTERN "*.m")
 
