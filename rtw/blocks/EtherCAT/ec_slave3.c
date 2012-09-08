@@ -1238,6 +1238,9 @@ get_section_config(struct ecat_slave *slave, const char_T *section,
     const mxArray *port_spec;
     const char_T *param = "PORT_CONFIG";
     uint_T count = 0;
+    struct io_port *port = 0;
+
+    *port_begin = 0;
 
     if (!io_spec) {
         pr_info(slave, NULL, NULL, 0,
@@ -1249,7 +1252,6 @@ get_section_config(struct ecat_slave *slave, const char_T *section,
     port_spec = mxGetField(io_spec, 0, section);
 
     if (port_spec && (count = mxGetNumberOfElements(port_spec))) {
-        struct io_port *port;
         size_t i;
 
         pr_debug(slave, NULL, NULL, 0,
@@ -1259,7 +1261,7 @@ get_section_config(struct ecat_slave *slave, const char_T *section,
         *port_begin = port;
 
         pr_debug(slave, NULL, "", 1, "Port count %u\n", count);
-        for (i = 0; i < count; i++, port++) {
+        for (i = 0; i < count; i++) {
             char_T ctxt[50];
             const mxArray *pdo_spec;
             real_T *val, real;
@@ -1292,9 +1294,11 @@ get_section_config(struct ecat_slave *slave, const char_T *section,
             port->big_endian = real != 0.0;
 
             pdo_spec = mxGetField(port_spec, i, "pdo");
+            if (pdo_spec && !(width = mxGetM(pdo_spec)))
+                continue;
+
             if (!pdo_spec
                     || !(val = mxGetPr(pdo_spec))
-                    || !(width = mxGetM(pdo_spec))
                     || mxGetN(pdo_spec) != 4) {
                 pr_error(slave, ctxt, "pdo", __LINE__,
                         "Pdo specification is not a [Mx4] array");
@@ -1424,16 +1428,19 @@ get_section_config(struct ecat_slave *slave, const char_T *section,
                 /* Temporary storage will be needed for data */
                 port->dwork_idx = ++slave->dwork_count;
             }
-            else
+            else {
                 /* Input ports (with PDO dir = EC_SM_OUTPUT) have their port
                  * data types set dynamically, output port data types are
                  * fixed to PDO's data type */
                 port->sl_port_data_type = dir == EC_SM_OUTPUT
                     ? DYNAMICALLY_TYPED : port->data_type->sl_type;
+            }
+
+            port++;
         }
     }
 
-    return count;
+    return port - *port_begin;
 }
 
 /****************************************************************************/
