@@ -5,8 +5,9 @@ function switch_etherlab(el_path)
 %   
 %   switch_etherlab('/new/etherlab/path')
 
+p = strjoin({el_path; 'rtw';'etherlab';'Contents.m'}, filesep);
 try
-    run(strjoin({el_path, 'rtw','etherlab','Contents.m'}, filesep));
+    run(p);
 catch
     error('%s is not a valid EtherLab path', el_path);
     return
@@ -29,3 +30,14 @@ for i = v
         
     addpath([el_path,filesep,strjoin(x(j:end),filesep)]);
 end
+
+return
+
+%%
+function s = strjoin(x,delim)
+
+% Delimiter cell array aufbauen
+b = repmat({delim},size(x));
+b{numel(b)} = ''; % Leztes element leeren
+
+s = cell2mat(strcat(x,b)');

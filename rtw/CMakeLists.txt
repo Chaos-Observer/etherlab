@@ -23,7 +23,7 @@
 #############################################################################
 
 
-INSTALL (FILES setup_etherlab.m
+INSTALL (FILES setup_etherlab.m switch_etherlab.m
     DESTINATION rtw)
 
 ADD_SUBDIRECTORY (bin)
