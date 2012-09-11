@@ -795,12 +795,12 @@ get_slave_sdo(struct ecat_slave *slave, const mxArray* array,
 
     for (i = 0; i < rows; i++) {
         struct sdo_config *sdo_config = slave->sdo_config_end;
-        char_T sdo_value_ctxt[20];
+        char_T value_ctxt[20];
         char_T ctxt[50];
         real_T *pval;
 
         snprintf(ctxt, sizeof(ctxt), "%s.sdo{Row=%zu}", context, i+1);
-        snprintf(sdo_value_ctxt, sizeof(sdo_value_ctxt), "sdo{%zu,4}", i+1);
+        snprintf(value_ctxt, sizeof(value_ctxt), "sdo{%zu,4}", i+1);
 
         /* Index */
         RETURN_ON_ERROR (get_numeric_scalar(slave, ctxt, __LINE__,
@@ -816,7 +816,7 @@ get_slave_sdo(struct ecat_slave *slave, const mxArray* array,
         if (!valueCell
                 || !(sdo_config->value = mxGetNumberOfElements(valueCell))) {
 
-            pr_error(slave, context, sdo_value_ctxt, __LINE__,
+            pr_error(slave, context, value_ctxt, __LINE__,
                     "SDO value is corrupt or empty");
             return -1;
         }
@@ -835,14 +835,14 @@ get_slave_sdo(struct ecat_slave *slave, const mxArray* array,
             if (mxIsChar(valueCell)) {
                 if (!mxGetString(valueCell, (char*) sdo_config->byte_array,
                             sdo_config->value)) {
-                    pr_error(slave, context, sdo_value_ctxt, __LINE__,
+                    pr_error(slave, context, value_ctxt, __LINE__,
                             "SDO string value is invalid");
                     return -1;
                 }
             }
             else {
-                if (!pval) {
-                    pr_error(slave, context, sdo_value_ctxt, __LINE__,
+                if (!pval || !mxIsDouble(valueCell)) {
+                    pr_error(slave, context, value_ctxt, __LINE__,
                             "SDO value array is not numeric");
                     return -1;
                 }
@@ -886,8 +886,8 @@ get_slave_sdo(struct ecat_slave *slave, const mxArray* array,
                     return -1;
             }
 
-            if (!pval) {
-                pr_error(slave, context, sdo_value_ctxt, __LINE__,
+            if (!pval || !mxIsDouble(valueCell)) {
+                pr_error(slave, context, value_ctxt, __LINE__,
                         "SDO Value not a valid number");
                 return -1;
             }
@@ -925,13 +925,107 @@ get_slave_sdo(struct ecat_slave *slave, const mxArray* array,
 
 /****************************************************************************/
 static int_T
+get_slave_soe(struct ecat_slave *slave, const mxArray* array,
+        const char_T *context)
+{
+    const mxArray *valueCell;
+    size_t rows, i, j;
+    real_T val;
+
+    if (!array || !(rows = mxGetM(array)))
+        return 0;
+
+    if (!mxIsCell(array) || mxGetN(array) != 2) {
+        pr_error(slave, context, "soe", __LINE__,
+                "SoE configuration is not a Mx2 cell array");
+        return -1;
+    }
+
+    CHECK_CALLOC(slave->S, rows,
+            sizeof(struct soe_config), slave->soe_config);
+    slave->soe_config_end = slave->soe_config;
+
+    for (i = 0; i < rows; i++) {
+        struct soe_config *soe_config = slave->soe_config_end;
+        char_T value_ctxt[20];
+        char_T ctxt[50];
+        size_t n;
+
+        snprintf(ctxt, sizeof(ctxt), "%s.soe{Row=%zu}", context, i+1);
+        snprintf(value_ctxt, sizeof(value_ctxt), "soe{%zu,2}", i+1);
+
+        /* Index */
+        RETURN_ON_ERROR (get_numeric_scalar(slave, ctxt, __LINE__,
+                    i, array, &val));
+        soe_config->index = val;
+
+        /* Value */
+        valueCell = mxGetCell(array, i + rows);
+        if (!valueCell
+                || !(n = mxGetNumberOfElements(valueCell))) {
+
+            pr_error(slave, context, value_ctxt, __LINE__,
+                    "SoE value is corrupt or empty");
+            return -1;
+        }
+
+        CHECK_CALLOC(slave->S, n, sizeof(uint8_T),
+                soe_config->octet_string);
+
+        if (mxIsChar(valueCell)) {
+            if (!mxGetString(valueCell,
+                        (char*)soe_config->octet_string, n)) {
+
+                pr_error(slave, context, value_ctxt, __LINE__,
+                        "SoE string value is invalid");
+                return -1;
+            }
+            soe_config->octet_string_len = n - 1;
+        }
+        else if (mxIsDouble(valueCell)) {
+            real_T *pval;
+
+            if (!(pval = mxGetPr(valueCell))) {
+                pr_error(slave, context, value_ctxt, __LINE__,
+                        "SoE value not a valid number");
+                return -1;
+            }
+            for (j = 0; j < n; j++)
+                soe_config->octet_string[j] = pval[j];
+            soe_config->octet_string_len = n;
+        }
+        else {
+            pr_error(slave, context, value_ctxt, __LINE__,
+                    "SoE value is neither a string nor numeric array");
+            return -1;
+        }
+
+        slave->soe_config_end++;
+    }
+
+    rows = slave->soe_config_end - slave->soe_config;
+    pr_debug(slave, NULL, "", 1, "SoE count %zu\n", rows);
+    for (i  = 0; i < rows; i++) {
+        pr_debug(slave, NULL, "", 2,
+                "Index=#x%04X Value=", slave->soe_config[i].index);
+        for (j = 0; j < slave->soe_config[i].octet_string_len; j++)
+            pr_debug(slave, NULL, NULL, 0,
+                    "%02x, ", slave->soe_config[i].octet_string[j]);
+        pr_debug(slave, NULL, NULL, 0, "\n");
+    }
+
+    return 0;
+}
+
+/****************************************************************************/
+static int_T
 get_slave_config(struct ecat_slave *slave)
 {
     const mxArray *slave_config = ssGetSFcnParam(slave->S, SLAVE_CONFIG);
     const mxArray *array;
     const char_T *context = "SLAVE_CONFIG";
     real_T val;
-    size_t i, m, n;
+    size_t i;
     uint_T sm_count;
 
     if (!slave_config || !mxIsStruct(slave_config)
@@ -964,92 +1058,8 @@ get_slave_config(struct ecat_slave *slave)
     /***********************
      * Get SoE
      ***********************/
-    if ((array = mxGetField( slave_config, 0, "soe"))
-            && mxGetNumberOfElements(array)) {
-        const mxArray *valueCell;
-        uint_T j;
-
-        if (!mxIsCell(array)
-                || !(m = mxGetM(array)) || (n = mxGetN(array)) != 2) {
-            pr_error(slave, context, "soe", __LINE__,
-                    "SoE configuration is not a Mx2 cell array");
-            return -1;
-        }
-
-        CHECK_CALLOC(slave->S, m,
-                sizeof(struct soe_config), slave->soe_config);
-        slave->soe_config_end = slave->soe_config + m;
-
-        for (i = 0; i < m; i++) {
-            char_T ctxt[20];
-            real_T val, *pval;
-
-            snprintf(ctxt, sizeof(ctxt), "%s.soe{%zu,1}", context, i+1);
-
-            /* Index */
-            RETURN_ON_ERROR (get_numeric_scalar(slave, ctxt, __LINE__,
-                        i, array, &val));
-            slave->soe_config[i].index = val;
-
-            /* Value */
-            valueCell = mxGetCell(array, i + m);
-            if (!valueCell || !(n = mxGetNumberOfElements(valueCell))) {
-                char_T ctxt[20];
-
-                snprintf(ctxt, sizeof(ctxt), "soe{%zu,1}", i+1);
-                pr_error(slave, context, ctxt, __LINE__,
-                        "SoE value is empty");
-                return -1;
-            }
-
-            CHECK_CALLOC(slave->S, n, sizeof(uint8_T),
-                    slave->soe_config[i].octet_string);
-
-            if (mxIsChar(valueCell)) {
-                if (!mxGetString(valueCell,
-                            (char*)slave->soe_config[i].octet_string, n)) {
-                    char_T ctxt[20];
-
-                    snprintf(ctxt, sizeof(ctxt), "soe{%zu,2}", i+1);
-                    pr_error(slave, context, ctxt, __LINE__,
-                            "SoE string value is invalid");
-                    return -1;
-                }
-                slave->soe_config[i].octet_string_len = n - 1;
-            }
-            else if (mxIsDouble(valueCell)) {
-                if (!(pval = mxGetPr(valueCell))) {
-                    char_T ctxt[30];
-
-                    snprintf(ctxt, sizeof(ctxt), "soe{%zu,2}", i+1);
-                    pr_error(slave, context, ctxt, __LINE__,
-                            "SoE value not a valid number");
-                    return -1;
-                }
-                for (j = 0; j < n; j++)
-                    slave->soe_config[i].octet_string[j] = pval[j];
-                slave->soe_config[i].octet_string_len = n;
-            }
-            else {
-                char_T ctxt[30];
-
-                snprintf(ctxt, sizeof(ctxt), "soe{%zu,2}", i+1);
-                pr_error(slave, context, ctxt, __LINE__,
-                        "SoE value is neither a string nor numeric array");
-                return -1;
-            }
-        }
-
-        pr_debug(slave, NULL, "", 1, "SoE count %zu\n", m);
-        for (i  = 0; i < m; i++) {
-            pr_debug(slave, NULL, "", 2,
-                    "Index=#x%04X Value=", slave->soe_config[i].index);
-            for (j = 0; j < slave->soe_config[i].octet_string_len; j++)
-                pr_debug(slave, NULL, NULL, 0,
-                        "%02x, ", slave->soe_config[i].octet_string[j]);
-            pr_debug(slave, NULL, NULL, 0, "\n");
-        }
-    }
+    RETURN_ON_ERROR (get_slave_soe(slave,
+                mxGetField(slave_config, 0, "soe"), context));
 
     /***********************
      * Get DC
