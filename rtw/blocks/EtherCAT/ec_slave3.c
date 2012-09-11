@@ -40,13 +40,16 @@
  *          Row 1 configures a variable array of uint8
  *          Row 2 configures a string array
  *
- *      dc: Distributed Clocks Configuration: OPTIONAL; Vector[10]
- *          Vector [ AssignActivate, ...
+ *      dc: Distributed Clocks Configuration: OPTIONAL; Vector[10] | Value
+ *          Value:   Single value AssignActivate
+ *          Vector[10]: [ AssignActivate, ...
  *                   CycleTimeSync0, CycleTimeSync0Factor, ...
  *                   ShiftTimeSync0, ShiftTimeSync0Factor,
  *                   ShiftTimeSync0Input, ...
  *                   CycleTimeSync1, CycleTimeSync1Factor, ...
  *                   ShiftTimeSync1, ShiftTimeSync1Factor]
+ *
+ *          Setting AssignActivate to zero disables DC
  *
  *      sm: Optional slave SyncManager definition. This definition has 3 level
  *                  of indirections Sm <- Pdos <- Entries
@@ -1033,35 +1036,41 @@ get_slave_config(struct ecat_slave *slave)
     if ((array = mxGetField( slave_config, 0, "dc"))
             && mxGetNumberOfElements(array)) {
         const real_T *val;
+        int_T count = mxGetNumberOfElements(array);
 
-        if (!mxIsDouble(array)
-                || mxGetNumberOfElements(array) != 10
-                || !(val = mxGetPr(array))) {
-            pr_error(slave, context, "dc", __LINE__,
-                    "DC configuration is not a vector[10]");
-            return -1;
+        if (count > 0) {
+            if (!mxIsDouble(array)
+                    || (count != 1 && count != 10)
+                    || !(val = mxGetPr(array))) {
+                pr_error(slave, context, "dc", __LINE__,
+                        "DC configuration is not a vector[10]");
+                return -1;
+            }
+
+            slave->dc_opmode.assign_activate            = val[0];
+
+            if (count > 1 && slave->dc_opmode.assign_activate) {
+                slave->dc_opmode.shift_time_sync0_input     = val[5] != 0.0;
+
+                slave->dc_opmode.value[0]                   = val[1];
+                slave->dc_opmode.value[1]                   = val[3];
+                slave->dc_opmode.value[2]                   = val[6];
+                slave->dc_opmode.value[3]                   = val[8];
+
+                slave->dc_opmode.factor[0]                  = val[2];
+                slave->dc_opmode.factor[1]                  = val[4];
+                slave->dc_opmode.factor[2]                  = val[7];
+                slave->dc_opmode.factor[3]                  = val[9];
+            }
         }
-
-        slave->dc_opmode.assign_activate            = val[0];
-        slave->dc_opmode.shift_time_sync0_input     = val[5] != 0.0;
-
-        slave->dc_opmode.value[0]                   = val[1];
-        slave->dc_opmode.value[1]                   = val[3];
-        slave->dc_opmode.value[2]                   = val[6];
-        slave->dc_opmode.value[3]                   = val[8];
-
-        slave->dc_opmode.factor[0]                  = val[2];
-        slave->dc_opmode.factor[1]                  = val[4];
-        slave->dc_opmode.factor[2]                  = val[7];
-        slave->dc_opmode.factor[3]                  = val[9];
 
         pr_debug(slave, NULL, "", 1,
                 "DC AssignActivate=%u "
-                "CycleTimeSync0=%i, CycleTimeSync0Factor=%i, "
-                "ShiftTimeSync0=%i, ShiftTimeSync0Factor=%i, "
-                "ShiftTimeSync0Input=%i, "
-                "CycleTimeSync1=%i, CycleTimeSync1Factor=%i, "
-                "ShiftTimeSync1=%i, ShiftTimeSync1Factor=%i\n",
+                "CycleTimeSync0=%i, Factor=%i; "
+                "ShiftTimeSync0=%i, Factor=%i, "
+                "Input=%i; "
+                "CycleTimeSync1=%i, Factor=%i; "
+                "ShiftTimeSync1=%i, Factor=%i\n",
                 slave->dc_opmode.assign_activate,
                 slave->dc_opmode.value[0],
                 slave->dc_opmode.factor[0],
