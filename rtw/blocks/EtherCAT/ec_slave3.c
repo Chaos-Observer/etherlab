@@ -1019,6 +1019,62 @@ get_slave_soe(struct ecat_slave *slave, const mxArray* array,
 
 /****************************************************************************/
 static int_T
+get_slave_dc(struct ecat_slave *slave, const mxArray* array,
+        const char_T *context)
+{
+    const real_T *val;
+    size_t count;
+
+    if (!array || !(count = mxGetNumberOfElements(array)))
+        return 0;
+
+    if (!mxIsDouble(array)
+            || (count != 1 && count != 10)
+            || !(val = mxGetPr(array))) {
+        pr_error(slave, context, "dc", __LINE__,
+                "DC configuration is not a vector[10]");
+        return -1;
+    }
+
+    slave->dc_opmode.assign_activate            = val[0];
+
+    if (count > 1 && slave->dc_opmode.assign_activate) {
+        slave->dc_opmode.shift_time_sync0_input     = val[5] != 0.0;
+
+        slave->dc_opmode.value[0]                   = val[1];
+        slave->dc_opmode.value[1]                   = val[3];
+        slave->dc_opmode.value[2]                   = val[6];
+        slave->dc_opmode.value[3]                   = val[8];
+
+        slave->dc_opmode.factor[0]                  = val[2];
+        slave->dc_opmode.factor[1]                  = val[4];
+        slave->dc_opmode.factor[2]                  = val[7];
+        slave->dc_opmode.factor[3]                  = val[9];
+    }
+
+    pr_debug(slave, NULL, "", 1,
+            "DC AssignActivate=%u "
+            "CycleTimeSync0=%i, Factor=%i; "
+            "ShiftTimeSync0=%i, Factor=%i, "
+            "Input=%i; "
+            "CycleTimeSync1=%i, Factor=%i; "
+            "ShiftTimeSync1=%i, Factor=%i\n",
+            slave->dc_opmode.assign_activate,
+            slave->dc_opmode.value[0],
+            slave->dc_opmode.factor[0],
+            slave->dc_opmode.value[1],
+            slave->dc_opmode.factor[1],
+            slave->dc_opmode.shift_time_sync0_input,
+            slave->dc_opmode.value[2],
+            slave->dc_opmode.factor[2],
+            slave->dc_opmode.value[3],
+            slave->dc_opmode.factor[3]);
+
+    return 0;
+}
+
+/****************************************************************************/
+static int_T
 get_slave_config(struct ecat_slave *slave)
 {
     const mxArray *slave_config = ssGetSFcnParam(slave->S, SLAVE_CONFIG);
@@ -1049,70 +1105,18 @@ get_slave_config(struct ecat_slave *slave)
             "ProductCode #x%08X, Type '%s'\n",
             slave->product_code, slave->type);
 
-    /***********************
-     * Get SDO
-     ***********************/
+    /* SDO */
     RETURN_ON_ERROR (get_slave_sdo(slave,
                 mxGetField(slave_config, 0, "sdo"), context));
 
-    /***********************
-     * Get SoE
-     ***********************/
+    /* SoE */
     RETURN_ON_ERROR (get_slave_soe(slave,
                 mxGetField(slave_config, 0, "soe"), context));
 
-    /***********************
-     * Get DC
-     ***********************/
-    if ((array = mxGetField( slave_config, 0, "dc"))
-            && mxGetNumberOfElements(array)) {
-        const real_T *val;
-        int_T count = mxGetNumberOfElements(array);
+    /* DC */
+    RETURN_ON_ERROR (get_slave_dc(slave,
+                mxGetField(slave_config, 0, "dc"), context));
 
-        if (count > 0) {
-            if (!mxIsDouble(array)
-                    || (count != 1 && count != 10)
-                    || !(val = mxGetPr(array))) {
-                pr_error(slave, context, "dc", __LINE__,
-                        "DC configuration is not a vector[10]");
-                return -1;
-            }
-
-            slave->dc_opmode.assign_activate            = val[0];
-
-            if (count > 1 && slave->dc_opmode.assign_activate) {
-                slave->dc_opmode.shift_time_sync0_input     = val[5] != 0.0;
-
-                slave->dc_opmode.value[0]                   = val[1];
-                slave->dc_opmode.value[1]                   = val[3];
-                slave->dc_opmode.value[2]                   = val[6];
-                slave->dc_opmode.value[3]                   = val[8];
-
-                slave->dc_opmode.factor[0]                  = val[2];
-                slave->dc_opmode.factor[1]                  = val[4];
-                slave->dc_opmode.factor[2]                  = val[7];
-                slave->dc_opmode.factor[3]                  = val[9];
-            }
-        }
-
-        pr_debug(slave, NULL, "", 1,
-                "DC AssignActivate=%u "
-                "CycleTimeSync0=%i, Factor=%i; "
-                "ShiftTimeSync0=%i, Factor=%i, "
-                "Input=%i; "
-                "CycleTimeSync1=%i, Factor=%i; "
-                "ShiftTimeSync1=%i, Factor=%i\n",
-                slave->dc_opmode.assign_activate,
-                slave->dc_opmode.value[0],
-                slave->dc_opmode.factor[0],
-                slave->dc_opmode.value[1],
-                slave->dc_opmode.factor[1],
-                slave->dc_opmode.shift_time_sync0_input,
-                slave->dc_opmode.value[2],
-                slave->dc_opmode.factor[2],
-                slave->dc_opmode.value[3],
-                slave->dc_opmode.factor[3]);
-    }
 
     /***********************
      * Get PDO's
