@@ -773,13 +773,165 @@ get_sync_manager(struct ecat_slave *slave, struct sync_manager *sm,
 
 /****************************************************************************/
 static int_T
+get_slave_sdo(struct ecat_slave *slave, const mxArray* array,
+        const char_T *context)
+{
+    const mxArray *valueCell;
+    size_t rows, i, j;
+    real_T val;
+
+    if (!array || !(rows = mxGetM(array)))
+        return 0;
+
+    if (!mxIsCell(array) || mxGetN(array) != 4) {
+        pr_error(slave, context, "sdo", __LINE__,
+                "SDO configuration is not a Mx4 cell array");
+        return -1;
+    }
+
+    CHECK_CALLOC(slave->S, rows,
+            sizeof(struct sdo_config), slave->sdo_config);
+    slave->sdo_config_end = slave->sdo_config;
+
+    for (i = 0; i < rows; i++) {
+        struct sdo_config *sdo_config = slave->sdo_config_end;
+        char_T sdo_value_ctxt[20];
+        char_T ctxt[50];
+        real_T *pval;
+
+        snprintf(ctxt, sizeof(ctxt), "%s.sdo{Row=%zu}", context, i+1);
+        snprintf(sdo_value_ctxt, sizeof(sdo_value_ctxt), "sdo{%zu,4}", i+1);
+
+        /* Index */
+        RETURN_ON_ERROR (get_numeric_scalar(slave, ctxt, __LINE__,
+                    i, array, &val));
+        sdo_config->index = val;
+
+        /* Test for zero index */
+        if (!sdo_config->index)
+            continue;
+
+        /* Value */
+        valueCell = mxGetCell(array, i + 3*rows);
+        if (!valueCell
+                || !(sdo_config->value = mxGetNumberOfElements(valueCell))) {
+
+            pr_error(slave, context, sdo_value_ctxt, __LINE__,
+                    "SDO value is corrupt or empty");
+            return -1;
+        }
+
+        pval = mxGetPr(valueCell);
+
+        if (mxIsChar(valueCell) || sdo_config->value > 1) {
+            /* SDO value is a string or a char array.
+             * So use ecrt_slave_config_complete_sdo().
+             * Data type is allways uint8 and SubIndex = 0.
+             * The length of data is stored in sdo_config->value */
+
+            CHECK_CALLOC(slave->S, sdo_config->value, 1,
+                    sdo_config->byte_array);
+
+            if (mxIsChar(valueCell)) {
+                if (!mxGetString(valueCell, (char*) sdo_config->byte_array,
+                            sdo_config->value)) {
+                    pr_error(slave, context, sdo_value_ctxt, __LINE__,
+                            "SDO string value is invalid");
+                    return -1;
+                }
+            }
+            else {
+                if (!pval) {
+                    pr_error(slave, context, sdo_value_ctxt, __LINE__,
+                            "SDO value array is not numeric");
+                    return -1;
+                }
+
+                for (j = 0; j < sdo_config->value; j++)
+                    sdo_config->byte_array[j] = *pval++;
+            }
+        }
+        else {
+            /* SubIndex */
+            RETURN_ON_ERROR (get_numeric_scalar(slave, ctxt, __LINE__,
+                        i+rows, array, &val));
+            sdo_config->subindex = val;
+
+
+            /* BitLen */
+            RETURN_ON_ERROR (get_numeric_scalar(slave, ctxt, __LINE__,
+                        i + 2*rows, array, &val));
+            switch ((int)val) {
+                case 8:
+                    sdo_config->datatype = type_uint8_info;
+                    break;
+
+                case 16:
+                    sdo_config->datatype = type_uint16_info;
+                    break;
+
+                case 32:
+                    sdo_config->datatype = type_uint32_info;
+                    break;
+
+                default:
+                    {
+                        char_T sdo_ctxt[20];
+
+                        snprintf(sdo_ctxt, sizeof(sdo_ctxt), "sdo{%zu,3} = %i",
+                                i+1, (int)val);
+                        pr_error(slave, context, sdo_ctxt, __LINE__,
+                                "SDO BitLen must be one of 8,16,32");
+                    }
+                    return -1;
+            }
+
+            if (!pval) {
+                pr_error(slave, context, sdo_value_ctxt, __LINE__,
+                        "SDO Value not a valid number");
+                return -1;
+            }
+
+            sdo_config->value = *pval;
+        }
+
+        slave->sdo_config_end++;
+    }
+
+    rows = slave->sdo_config_end - slave->sdo_config;
+    pr_debug(slave, NULL, "", 1, "SDO count %zu\n", rows);
+
+    for (i  = 0; i < rows; i++) {
+        if (slave->sdo_config[i].byte_array) {
+            pr_debug(slave, NULL, "", 2,
+                    "Index=#x%04X ValueArray=", slave->sdo_config[i].index);
+            for (j = 0; j < slave->sdo_config[i].value; j++)
+                pr_debug(slave, NULL, NULL, 0,
+                        "%02x,", slave->sdo_config[i].byte_array[j]);
+            pr_debug(slave, NULL, NULL, 0, "\n");
+        }
+        else {
+            pr_debug(slave, NULL, "", 2,
+                    "Index=#x%04X SubIndex=%u BitLen=%u Value=%u\n",
+                    slave->sdo_config[i].index,
+                    slave->sdo_config[i].subindex,
+                    slave->sdo_config[i].datatype->mant_bits,
+                    slave->sdo_config[i].value);
+        }
+    }
+
+    return 0;
+}
+
+/****************************************************************************/
+static int_T
 get_slave_config(struct ecat_slave *slave)
 {
     const mxArray *slave_config = ssGetSFcnParam(slave->S, SLAVE_CONFIG);
     const mxArray *array;
     const char_T *context = "SLAVE_CONFIG";
     real_T val;
-    size_t i, m,n;
+    size_t i, m, n;
     uint_T sm_count;
 
     if (!slave_config || !mxIsStruct(slave_config)
@@ -806,139 +958,8 @@ get_slave_config(struct ecat_slave *slave)
     /***********************
      * Get SDO
      ***********************/
-    if ((array = mxGetField( slave_config, 0, "sdo"))
-            && mxGetNumberOfElements(array)) {
-        const mxArray *cell, *valueCell;
-        uint_T j;
-
-        if (!mxIsCell(array)
-                || !(m = mxGetM(array)) || (n = mxGetN(array)) != 4) {
-            pr_error(slave, context, "sdo", __LINE__,
-                    "SDO configuration is not a Mx4 cell array");
-            return -1;
-        }
-
-        CHECK_CALLOC(slave->S, m,
-                sizeof(struct sdo_config), slave->sdo_config);
-        slave->sdo_config_end = slave->sdo_config + m;
-
-        for (i = 0; i < m; i++) {
-            real_T *pval;
-            char_T ctxt[50];
-
-            snprintf(ctxt, sizeof(ctxt), "%s.sdo{Row=%zu}", context, i+1);
-
-            /* Index */
-            RETURN_ON_ERROR (get_numeric_scalar(slave, ctxt, __LINE__,
-                        i, array, &val));
-            slave->sdo_config[i].index = val;
-
-            /* SubIndex */
-            RETURN_ON_ERROR (get_numeric_scalar(slave, ctxt, __LINE__,
-                        i+m, array, &val));
-            slave->sdo_config[i].subindex = val;
-
-            /* Value */
-            valueCell = mxGetCell(array, i + 3*m);
-            if (valueCell && mxIsChar(valueCell)) {
-                slave->sdo_config[i].value = mxGetNumberOfElements(valueCell);
-                if (!slave->sdo_config[i].value) {
-                    char_T sdo_ctxt[20];
-
-                    snprintf(sdo_ctxt, sizeof(sdo_ctxt), "sdo{%zu,4}", i+1);
-                    pr_error(slave, context, sdo_ctxt, __LINE__,
-                            "SDO string value is empty");
-                    return -1;
-                }
-
-                CHECK_CALLOC(slave->S, slave->sdo_config[i].value, 1,
-                        slave->sdo_config[i].byte_array);
-
-                slave->sdo_config[i].datatype = type_uint8_info;
-
-                if (!mxGetString(valueCell,
-                            (char*) slave->sdo_config[i].byte_array,
-                            slave->sdo_config[i].value)) {
-                    char_T sdo_ctxt[20];
-
-                    snprintf(sdo_ctxt, sizeof(sdo_ctxt), "sdo{%zu,4}", i+1);
-                    pr_error(slave, context, sdo_ctxt, __LINE__,
-                            "SDO string value is invalid");
-                    return -1;
-                }
-
-                /* String does not need BitLen */
-                continue;
-            }
-
-            /* BitLen */
-            RETURN_ON_ERROR (get_numeric_scalar(slave, ctxt, __LINE__,
-                        i + 2*m, array, &val));
-            switch ((int)val) {
-                case 8:
-                    slave->sdo_config[i].datatype = type_uint8_info;
-                    break;
-
-                case 16:
-                    slave->sdo_config[i].datatype = type_uint16_info;
-                    break;
-
-                case 32:
-                    slave->sdo_config[i].datatype = type_uint32_info;
-                    break;
-
-                default:
-                    {
-                        char_T sdo_ctxt[20];
-
-                        snprintf(sdo_ctxt, sizeof(sdo_ctxt), "sdo{%zu,3} = %i",
-                                i+1, (int)val);
-                        pr_error(slave, context, sdo_ctxt, __LINE__,
-                                "SDO BitLen must be one of 8,16,32");
-                    }
-                    return -1;
-            }
-
-            if (!(cell = mxGetCell(array, i + 3*m))
-                    || !(pval = mxGetPr(cell))) {
-                char_T sdo_ctxt[30];
-
-                snprintf(sdo_ctxt, sizeof(sdo_ctxt), "sdo{%zu,4}", i+1);
-                pr_error(slave, context, sdo_ctxt, __LINE__,
-                        "SDO BitLen not a valid number");
-                return -1;
-            }
-
-            if ((n = mxGetNumberOfElements(cell)) == 1)
-                slave->sdo_config[i].value = *pval;
-            else {
-                slave->sdo_config[i].value = n;
-                CHECK_CALLOC(slave->S, n,
-                        sizeof(uint8_T), slave->sdo_config[i].byte_array);
-
-                for (j = 0; j < n; j++)
-                    slave->sdo_config[i].byte_array[j] = pval[j];
-            }
-        }
-
-        pr_debug(slave, NULL, "", 1, "SDO count %zu\n", m);
-        for (i  = 0; i < m; i++) {
-            pr_debug(slave, NULL, "", 2,
-                    "Index=#x%04X SubIndex=%u BitLen=%u Value=",
-                    slave->sdo_config[i].index, slave->sdo_config[i].subindex,
-                    slave->sdo_config[i].datatype->mant_bits);
-            if (slave->sdo_config[i].byte_array) {
-                for (j = 0; j < slave->sdo_config[i].value; j++)
-                    pr_debug(slave, NULL, NULL, 0,
-                            "%02x, ", slave->sdo_config[i].byte_array[j]);
-            }
-            else {
-                pr_debug(slave, NULL, NULL, 0,
-                        "%u", slave->sdo_config[i].value);
-            }
-            pr_debug(slave, NULL, NULL, 0, "\n");
-        }
-    }
+    RETURN_ON_ERROR (get_slave_sdo(slave,
+                mxGetField(slave_config, 0, "sdo"), context));
 
     /***********************
      * Get SoE
@@ -2020,13 +2041,10 @@ static void mdlRTW(SimStruct *S)
     for (sdo = slave->sdo_config, n = 0;
             sdo != slave->sdo_config_end; sdo++, n++) {
         if (sdo->byte_array) {
-            if (!ssWriteRTWParamSettings(slave->S, 3,
+            if (!ssWriteRTWParamSettings(slave->S, 2,
 
                     SSWRITE_VALUE_DTYPE_NUM, "Index",
                     &sdo->index, DTINFO(SS_UINT16, 0),
-
-                    SSWRITE_VALUE_DTYPE_NUM, "SubIndex",
-                    &sdo->subindex, DTINFO(SS_UINT16, 0),
 
                     SSWRITE_VALUE_DTYPE_VECT, "ByteArray",
                     sdo->byte_array, sdo->value, DTINFO(SS_UINT8, 0)))

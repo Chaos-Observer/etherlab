@@ -615,7 +615,8 @@
         %% This is a configuration byte array
         %%
         %assign datatype = 1008U
-        %assign value = 0
+        %assign subindex = 0U
+        %assign value = 0U
         %%
         %assign data_array = "\""
         %foreach j = SIZE(sdo.ByteArray,1)
@@ -625,11 +626,12 @@
         %assign data_array = "%<data_array>\""
       %else
         %assign datatype = sdo.DataTypeId
+        %assign subindex = sdo.SubIndex
         %assign value = sdo.Value
         %assign data_array = "NULL"
       %endif
       %%
-      { %<datatype>, %<sdo.Index>, %<sdo.SubIndex>, %<value>,
+      { %<datatype>, %<sdo.Index>, %<subindex>, %<value>, \
       %<data_array> }, /* */ \
     %endforeach
   };
