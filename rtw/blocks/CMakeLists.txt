@@ -30,6 +30,7 @@ INSTALL (FILES
     findidx.c findidx.tlc 
     event.c event.tlc 
     etherlab_lib.mdl 
+    etherlab_help_path.m
     setup.m 
 
     EtherLAB_IO.tlc 
