@@ -109,7 +109,7 @@ end
 
 % Only 1 input SyncManager
 rv.sm = {...
-        {0, 1, {{pdo(1,1) [pdo(1,2),pdo(1,3),1,1016]}}} ...
+        {0, 1, {{pdo(1,1) [pdo(1,2),pdo(1,3),1]}}} ...
 };
 
 return
@@ -122,6 +122,7 @@ if isempty(SlaveConfig.sm)
     rv = [];
 else
     rv.output.pdo = [0,0,0,0];
+    rv.output.pdo_data_type = 1001;
 end
 
 return

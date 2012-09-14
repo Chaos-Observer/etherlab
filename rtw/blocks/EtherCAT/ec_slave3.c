@@ -64,35 +64,11 @@
  *          Pdo:        {PdoIndex, Entries}
  *          PdoIndex:   Index of Pdo
  *
- *          Entries:    [Entry*]        (Nx4 array)
- *          Entry:      [EntryIndex, EntrySubIndex, BitLen, DataType]
+ *          Entries:    [Entry*]        (Nx3 array)
+ *          Entry:      [EntryIndex, EntrySubIndex, BitLen]
  *          EntryIndex: Index of Pdo Entry (If 0, only BitLen is considered)
  *          EntrySubIndex: SubIndex of Pdo Entry ( >= 0 )
  *          BitLen:     number of bits (>0)
- *          DataType:   0:    Unspecified
- *                      1001: Boolean
- *                      1002: Bit2
- *                      1003: Bit3
- *                      1004: Bit4
- *                      1005: Bit5
- *                      1006: Bit6
- *                      1007: Bit7
- *                      1008: Unsigned8
- *                      1016: Unsigned16
- *                      1024: Unsigned24
- *                      1032: Unsigned32
- *                      1040: Unsigned40
- *                      1048: Unsigned48
- *                      1056: Unsigned56
- *                      1064: Unsigned64
- *
- *                      2008: Integer8
- *                      2016: Integer16
- *                      2032: Integer32
- *                      2064: Integer64
- *
- *                      3032: Real32
- *                      3064: Real64
  *
  * PORT_CONFIG:      Vector structure with fields
  *      .output := outputspec*     Block outputs; The number of elements
@@ -110,11 +86,32 @@
  *                        output = filter((PDO / full_scale) * gain + offset)
  *
  *          .pdo = PdoSpec
- *          .pdo_data_type = specifies the data type of the PDO.
- *                              The data type specified in the pdo is only a
- *                              hint, and is used if the value in PORT_CONFIG
- *                              is zero or unspecified
  *          .big_endian = True for big endian data type
+ *          .pdo_data_type = specifies the data type of the PDO.
+ *                           The following data types are allowed:
+ *                                1001: Boolean
+ *                                1002: Bit2
+ *                                1003: Bit3
+ *                                1004: Bit4
+ *                                1005: Bit5
+ *                                1006: Bit6
+ *                                1007: Bit7
+ *                                1008: Unsigned8
+ *                                1016: Unsigned16
+ *                                1024: Unsigned24
+ *                                1032: Unsigned32
+ *                                1040: Unsigned40
+ *                                1048: Unsigned48
+ *                                1056: Unsigned56
+ *                                1064: Unsigned64
+ *
+ *                                2008: Integer8
+ *                                2016: Integer16
+ *                                2032: Integer32
+ *                                2064: Integer64
+ *
+ *                                3032: Real32
+ *                                3064: Real64
  *
  *      ParamSpec  := {'Name', vector}   Named value, will be a parameter
  *                   | vector          Constant anonymous real_T value
@@ -262,7 +259,6 @@ struct ecat_slave {
                 uint16_T index;
                 uint8_T subindex;
                 uint_T bitlen;
-                struct datatype_info *data_type;
             } *entry, *entry_end;
         } *pdo, *pdo_end;
 
@@ -652,12 +648,12 @@ get_sync_manager_pdo(struct ecat_slave *slave, struct pdo *pdo,
 {
     char_T ctxt[50];
     const mxArray *pdo_cell;
-    uint_T entry_count, i, data_type_id;
+    uint_T entry_count, i;
     const real_T *pval;
     real_T val;
 
     if (!mxIsCell(pdo_def) || mxGetNumberOfElements(pdo_def) != 2) {
-        pr_error(slave, NULL, p_ctxt, __LINE__,
+        pr_error(slave, p_ctxt, NULL, __LINE__,
                 "PDO configuration is not a cell array with 2 elements");
         return -1;
     }
@@ -672,12 +668,12 @@ get_sync_manager_pdo(struct ecat_slave *slave, struct pdo *pdo,
     if (!pdo_cell || !(entry_count = mxGetM(pdo_cell)))
         return 0;
 
-    /* Check that Pdo Entry is a Nx4 array */
-    if (mxGetN(pdo_cell) != 4
+    /* Check that Pdo Entry is a Nx3 array */
+    if (mxGetN(pdo_cell) != 3
             || !mxIsDouble(pdo_cell) || !(pval = mxGetPr(pdo_cell))) {
-        snprintf(ctxt, sizeof(ctxt), "%s{3}", p_ctxt);
-        pr_error(slave, NULL, ctxt, __LINE__,
-                "Value is not a Nx4 numeric array");
+        snprintf(ctxt, sizeof(ctxt), "%s{2}", p_ctxt);
+        pr_error(slave, ctxt, NULL, __LINE__,
+                "Value is not a Nx3 numeric array");
         return -1;
     }
 
@@ -691,28 +687,8 @@ get_sync_manager_pdo(struct ecat_slave *slave, struct pdo *pdo,
         pdo_entry->pdo = pdo;
 
         pdo_entry->index = pval[i];
-        pdo_entry->bitlen = pval[i + 2*entry_count];
-
-        /* Without a PdoEntryIndex, the rest is irrelevant */
-        if (!pdo_entry->index)
-            continue;
-
         pdo_entry->subindex = pval[i + entry_count];
-
-        data_type_id = pval[i + 3*entry_count];
-        if (!data_type_id)
-            continue;
-
-        for (pdo_entry->data_type = datatype_info;
-                data_type_id != pdo_entry->data_type->id;
-                pdo_entry->data_type++) {
-            if (!pdo_entry->data_type->id) {
-                snprintf(ctxt, sizeof(ctxt), "%s{3}(%u,4) = %i",
-                        p_ctxt, i+1, (int_T)data_type_id);
-                pr_error(slave, ctxt, NULL, __LINE__, "Unknown data type");
-                return -1;
-            }
-        }
+        pdo_entry->bitlen = pval[i + 2*entry_count];
     }
     slave->pdo_entry_count += entry_count;
 
@@ -731,7 +707,7 @@ get_sync_manager(struct ecat_slave *slave, struct sync_manager *sm,
 
     if (!mxIsCell(sync_manager_def)
             || mxGetNumberOfElements(sync_manager_def) != 3) {
-        pr_error(slave, NULL, p_ctxt, __LINE__,
+        pr_error(slave, p_ctxt, NULL, __LINE__,
                 "SyncManager configuration is not a\n"
                 "cell array with 3 elements");
         return -1;
@@ -1162,12 +1138,10 @@ get_slave_config(struct ecat_slave *slave)
 
                 for (entry = pdo->entry; entry != pdo->entry_end; entry++) {
                     pr_debug(slave, NULL, "", 4,
-                            "Index=#x%04X SubIndex=%u BitLen=%2u DT=%s\n",
+                            "Index=#x%04X SubIndex=%u BitLen=%2u\n",
                             entry->index,
                             entry->subindex,
-                            entry->bitlen,
-                            (entry->data_type
-                             ?  entry->data_type->name : "none"));
+                            entry->bitlen);
                 }
             }
         }
@@ -1319,7 +1293,7 @@ get_section_config(struct ecat_slave *slave, const char_T *section,
         /* Read the PDO data type if specified */
         real = 0;
         RETURN_ON_ERROR(get_numeric_field(slave, ctxt, __LINE__,
-                    port_spec, i, 1, 1, 0, "pdo_data_type", &real));
+                    port_spec, i, 0, 0, 0, "pdo_data_type", &real));
         if (real > 0) {
             uint_T dt_id = real;
             for (port->data_type = datatype_info;
@@ -1400,16 +1374,6 @@ get_section_config(struct ecat_slave *slave, const char_T *section,
                 snprintf(element, sizeof(element), "pdo(%zu,3)", j+1);
                 pr_error(slave, ctxt, element, __LINE__,
                         "Cannot choose Pdo Entry #x0000");
-                return -1;
-            }
-
-            if (!port->data_type)
-                port->data_type = port->pdo[0].entry->data_type;
-
-            if (port->pdo[0].entry->data_type
-                    != port->pdo[j].entry->data_type) {
-                pr_error(slave, ctxt, "pdo", __LINE__,
-                        "Cannot mix PDO data types on the same port");
                 return -1;
             }
 
@@ -2007,7 +1971,7 @@ static void mdlRTW(SimStruct *S)
 
     /* General assignments of array indices that form the basis for
      * the S-Function <-> TLC communication
-     * DO NOT CHANGE THESE without updating the TLC ec_test2.tlc
+     * DO NOT CHANGE THESE without updating the TLC ec_slave3.tlc
      * as well */
     enum {
         SM_Index = 0,

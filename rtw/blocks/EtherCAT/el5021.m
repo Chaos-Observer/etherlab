@@ -62,26 +62,26 @@ function rv = pdo_config(arg,varargin)
 % each cell contains: {PdoIndex, Excludes, PdoEntryArray}
 pdo = {...
         hex2dec('1600'),...
-           [ hex2dec('7000'), 1, 1, 1001;
-             0              , 0, 1, 0   ;
-             hex2dec('7000'), 3, 1, 1001;
-             0              , 0,13, 0   ;
-             hex2dec('7000'),17,32, 1032],...
+           [ hex2dec('7000'), 1, 1;
+             0              , 0, 1;
+             hex2dec('7000'), 3, 1;
+             0              , 0,13;
+             hex2dec('7000'),17,32],...
            { [0,2], 4 };
         hex2dec('1a00'),...
-           [ hex2dec('6000'), 1, 1, 1001;
-             0              , 0, 1,    0;
-             hex2dec('6000'), 3, 1, 1001;
-             hex2dec('6001'), 4, 1, 1001;
-             hex2dec('6001'), 5, 1, 1001;
-             0              , 0, 5,    0;
-             hex2dec('6000'),11, 1, 1001;
-             0              , 0, 2,    0;
-             hex2dec('1c32'),32, 1, 1001;
-             hex2dec('1800'), 7, 1, 1001;
-             hex2dec('1800'), 9, 1, 1001;
-             hex2dec('6000'),17,32, 1032;
-             hex2dec('6000'),18,32, 1032],...
+           [ hex2dec('6000'), 1, 1;
+             0              , 0, 1;
+             hex2dec('6000'), 3, 1;
+             hex2dec('6001'), 4, 1;
+             hex2dec('6001'), 5, 1;
+             0              , 0, 5;
+             hex2dec('6000'),11, 1;
+             0              , 0, 2;
+             hex2dec('1c32'),32, 1;
+             hex2dec('1800'), 7, 1;
+             hex2dec('1800'), 9, 1;
+             hex2dec('6000'),17,32;
+             hex2dec('6000'),18,32],...
            { [0,2:4,6], 9, 10 };
 };
 
@@ -95,7 +95,7 @@ case 'RxPdo'
 case 'PortConfig'
     idx = cellfun(@(x) find([pdo{:,1}] == x{1}), varargin{1});
     count = sum(arrayfun(@(x) numel(pdo{x,3}), idx));
-    rv = repmat(struct('pdo', []), 1, count);
+    rv = repmat(struct('pdo', [], 'pdo_data_type', 0), 1, count);
     count = 1;
     for i = 1:numel(idx)
         spec = pdo{idx(i),3};
@@ -103,6 +103,7 @@ case 'PortConfig'
             n = numel(spec{j});
             rv(count).pdo = repmat([varargin{2},i-1,0,0], numel(spec{j}), 1);
             rv(count).pdo(:,3) = spec{j};
+            rv(count).pdo_data_type = 1000 + pdo{idx(i),2}(spec{i}(1)+1,3);
             count = count + 1;
         end
     end

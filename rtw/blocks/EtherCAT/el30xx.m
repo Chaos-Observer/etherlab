@@ -133,7 +133,7 @@ rows = 1:str2double(rv.description(6));
 % Populate the PDO structure
 rv.sm = {{SmIdx, 1, {}}};
 rv.sm{1}{3} = arrayfun(...
-    @(x) {pdo(x,1), [pdo(x,2), PdoSubIdx, 16, 2016]}, rows, 'UniformOutput', 0);
+    @(x) {pdo(x,1), [pdo(x,2), PdoSubIdx, 16]}, rows, 'UniformOutput', 0);
 
 return
 
@@ -166,6 +166,7 @@ tau    = get_val('tau');
 
 if (vector)
     rv.output.pdo      = zeros(pdo_count, 4);
+    rv.output.pdo_data_type = 2016;
     rv.output.pdo(:,2) = 0:pdo_count-1;
 
     if ~raw
@@ -184,7 +185,7 @@ if (vector)
 
 else
 
-    rv.output  = repmat(struct('pdo',[0 0 0 0]), 1, pdo_count);
+    rv.output  = repmat(struct('pdo',[0 0 0 0], 'pdo_data_type', 2016), 1, pdo_count);
 
     if ~raw
         if (numel(gain) == 1)

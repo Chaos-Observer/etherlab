@@ -161,7 +161,7 @@ rv.sm = repmat({{0, 0, {}}}, 1, numel(sm));
 for i = 1:numel(sm)
     rv.sm{i}{1} = sm(i);
     rv.sm{i}{3} = arrayfun(...
-                @(x) {pdo(x,2), [pdo(x,3), pdo(x,4), 1, 1001]}, ...
+                @(x) {pdo(x,2), [pdo(x,3), pdo(x,4), 1]}, ...
                 rows(pdo(rows,1) == sm(i)), ...
                 'UniformOutput',0);
 end
@@ -187,8 +187,9 @@ if (vector)
     rv.input.pdo      = zeros(len, 4);
     rv.input.pdo(:,1) = reshape(repmat(0:sm_count-1, pdo_count, 1),[],1);
     rv.input.pdo(:,2) = reshape(repmat(pdo_idx', 1, sm_count), [], 1);
+    rv.input.pdo_data_type = 1001;
 else
-    rv.input  = repmat(struct('pdo',[0 0 0 0]), 1, len);
+    rv.input  = repmat(struct('pdo',[0 0 0 0], 'pdo_data_type', 1001), 1, len);
 
     for i = 1:len
         rv.input(i).pdo(2)  = i-1;

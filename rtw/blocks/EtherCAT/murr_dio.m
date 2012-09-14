@@ -166,12 +166,15 @@ if ~isempty(product{4})
     rows = product{4}{2};
     n = numel(rows);
 
-    sc.sm{end+1} = {pdo{idx,1}, 0, { {pdo{idx,2}, horzcat(pdo{idx,3}(rows,:), repmat([1 1001], n, 1)) } }};
+    RxPdo = {pdo{idx,2}, horzcat(pdo{idx,3}(rows,:), ones(n, 1)) };
+    sc.sm{end+1} = {pdo{idx,1}, 0, { RxPdo }};
     if vector
         pc.input.pdo = repmat(0,n,4);
         pc.input.pdo(:,3) = 0:n-1;
+        pc.input.pdo_data_type = 1001;
     else
-        pc.input = arrayfun(@(x) struct('pdo', [0 0 x 0]), 0:n-1);
+        pc.input = arrayfun(@(x) struct('pdo', [0 0 x 0], ...
+                                        'pdo_data_type', 1001), 0:n-1);
     end
 end
 
@@ -182,12 +185,15 @@ if ~isempty(product{5})
     n = numel(rows);
     smidx = numel(sc.sm);
 
-    sc.sm{end+1} = {pdo{idx,1}, 1, { {pdo{idx,2}, horzcat(pdo{idx,3}(rows,:), repmat([1 1001], n, 1)) } }};
+    TxPdo = {pdo{idx,2}, horzcat(pdo{idx,3}(rows,:), ones(n, 1)) };
+    sc.sm{end+1} = {pdo{idx,1}, 1, { TxPdo }};
     if vector
         pc.output.pdo = repmat([smidx,0,0,0],n,1);
         pc.output.pdo(:,3) = 0:n-1;
+        pc.output.pdo_data_type = 1001;
     else
-        pc.output = arrayfun(@(x) struct('pdo', [smidx,0,x,0]), 0:n-1);
+        pc.output = arrayfun(@(x) struct('pdo', [smidx,0,x,0], ...
+                                         'pdo_data_type', 1001), 0:n-1);
     end
 end
 
@@ -202,23 +208,30 @@ if ~isempty(product{6})
         smidx = numel(sc.sm)+1;
         sc.sm{end+1} = {pdo{idx,1}, 1, {}};
 
-        pc.output = [];
+        pc.output = repmat(struct('pdo',[],'pdo_data_type',[]), 0, 1);
     end
 
     pdoidx = numel(sc.sm{smidx}{3});
-    sc.sm{smidx}{3}{end+1} = {pdo{idx,2}, horzcat(pdo{idx,3}(cell2mat(rows),:), repmat([1,1001], n, 1))};
+    sc.sm{smidx}{3}{end+1} = {pdo{idx,2}, ...
+                              horzcat(pdo{idx,3}(cell2mat(rows),:), ...
+                                      ones(n, 1))};
 
     if vector
         x = 0:numel(rows{1})-1;
-        pc.output(end+1).pdo = repmat([smidx-1,pdoidx,0,0], numel(x), 1);
+        pc.output(end+1) = struct('pdo', repmat([smidx-1,pdoidx,0,0], ...
+                                                numel(x), 1), ...
+                                  'pdo_data_type', 1001);
         pc.output(end).pdo(:,3) = x;
 
         x = numel(x) + (0:numel(rows{2})-1);
-        pc.output(end+1).pdo = repmat([smidx-1,pdoidx,0,0], numel(x), 1);
+        pc.output(end+1) = struct('pdo', repmat([smidx-1,pdoidx,0,0], ...
+                                                numel(x), 1), ...
+                                  'pdo_data_type', 1001);
         pc.output(end).pdo(:,3) = x;
     else
         for i = 0:size(sc.sm{smidx}{3}{end}{2},1)-1
-            pc.output(end+1).pdo = [smidx-1,pdoidx,i,0];
+            pc.output(end+1) = struct('pdo', [smidx-1,pdoidx,i,0], ...
+                                      'pdo_data_type', 1001);
         end
     end
 end

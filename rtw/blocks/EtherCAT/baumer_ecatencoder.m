@@ -94,7 +94,7 @@ rv.revision = product{3};
 
 % Only 1 input SyncManager
 rv.sm = {...
-        {3, 1, {{hex2dec('1A00') [hex2dec('6004') 0 32 1032]}}}, ...
+        {3, 1, {{hex2dec('1A00') [hex2dec('6004') 0 32]}}}, ...
 };
 
 switch get_param(gcbh,'dcmode')
@@ -111,6 +111,7 @@ function rv = port_config(SlaveConfig)
 % Populate the blocks output port(s)
 
 rv.output.pdo = [0 0 0 0];
+rv.output.pdo_data_type = 1032;
 
 return;
 

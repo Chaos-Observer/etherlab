@@ -140,7 +140,7 @@ rows = 0:str2double(rv.description(6))-1;
 % Populate the PDO structure
 rv.sm = {{2, 0, {}}};
 rv.sm{1}{3} = arrayfun(...
-    @(x) {pdo(x,1) [pdo(x,2), pdo(x,3), 16, 2016]},...
+    @(x) {pdo(x,1) [pdo(x,2), pdo(x,3), 16]},...
     rows + product{4}, 'UniformOutput', 0);
 
 dc_idx = find(strcmp(get_param(gcbh,'dc'), dc(:,1)));
@@ -178,6 +178,7 @@ gain   = get_val('scale');
 if (vector)
     rv.input.pdo      = zeros(pdo_count, 4);
     rv.input.pdo(:,2) = 0:pdo_count-1;
+    rv.input.pdo_data_type = 2016;
 
     if ~raw
         rv.input.full_scale = 2^15;
@@ -189,7 +190,8 @@ if (vector)
 
 else
 
-    rv.input  = repmat(struct('pdo',[0 0 0 0]), 1, pdo_count);
+    rv.input = repmat(struct('pdo',[0 0 0 0],...
+                             'pdo_data_type', 2016), 1, pdo_count);
 
     if ~raw
         if (numel(gain) == 1)

@@ -148,11 +148,8 @@ rows = 1:str2double(rv.description(6));
 
 % Populate the PDO structure
 rv.sm = {{3, 1, {}}};
-rv.sm{1}{3} = arrayfun(...
-    @(x) {pdo{x,1},...
-          horzcat(pdo{x,2},...
-                  1000*(1 + (pdo{x,2}(:,3) > 8)) + pdo{x,2}(:,3))},...
-    rows, 'UniformOutput', false);
+rv.sm{1}{3} = ...
+        arrayfun(@(x) {pdo{x,1}, pdo{x,2}}, rows, 'UniformOutput', false);
 
 return
 
@@ -167,15 +164,18 @@ if vector
     rv.output.pdo      = zeros(pdo_count, 4);
     rv.output.pdo(:,2) = 0:pdo_count-1;
     rv.output.pdo(:,3) = repmat(8,pdo_count,1);
+    rv.output.pdo_data_type = 2016;
     rv.output.gain     = gain;
 
     if strcmp(get_param(gcbh,'enable_status'),'on')
         rv.output(2).pdo = rv.output(1).pdo;
         rv.output(2).pdo(:,3) = repmat(4,pdo_count,1);
+        rv.output(2).pdo_data_type = 1001;
     end
 else
     rv.output  = arrayfun(@(x) struct('pdo', [0 x 8 0],...
-                                      'gain', gain), ...
+                                      'gain', gain, ...
+                                      'pdo_data_type', 2016), ...
                           0:pdo_count-1);
 end
 
