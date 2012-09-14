@@ -125,6 +125,12 @@
     %% And the Step Size thereof
     %assign Ts = LibGetClockTickStepSize(tid)
 
+    %if !LibNumDiscreteSampleTimes()
+      %assign msg = "Sample Time: There are no discrete sample times defined\n" + \
+        "Check Fixed-step size in the Solver pane of Configuration Parameters"
+      %exit %<msg>
+    %endif
+
     %if MasterSampleTime[ETL_tid]
       %return ETL_tid
     %endif
