@@ -27,8 +27,8 @@
  *
  *      sdo: SDO configuration; OPTIONAL; CellArray{n,4}
  *          { Index, SubIndex, BitLen, Value;...
- *            Index, SubIndex,      0, 'string' }; ...
- *            Index, SubIndex, BitLen, [Value, Value, ...] }
+ *            Index,        0,      0, 'string'; ...
+ *            Index,        0,      0, [Value, Value, ...] }
  *          BitLen = one of 8, 16, 32
  *          Row 1 configures a single value
  *          Row 2 configures a string array
@@ -832,7 +832,6 @@ get_slave_sdo(struct ecat_slave *slave, const mxArray* array,
             RETURN_ON_ERROR (get_numeric_scalar(slave, ctxt, __LINE__,
                         i+rows, array, &val));
             sdo_config->subindex = val;
-
 
             /* BitLen */
             RETURN_ON_ERROR (get_numeric_scalar(slave, ctxt, __LINE__,
