@@ -1,5 +1,6 @@
 syntax: glob
 
+**.mexa64
 **.orig
 **.sw?
 **/bak/
@@ -12,3 +13,4 @@ CMakeCache.txt
 CPackConfig.cmake
 CPackSourceConfig.cmake
 install_manifest.txt
+rtw/etherlab/Contents.m
