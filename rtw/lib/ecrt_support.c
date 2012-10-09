@@ -936,21 +936,33 @@ init_slave(size_t nst, const struct ec_slave *slave)
     }
 
     /* Send SDO configuration to the slave */
-    for (sdo = slave->sdo_config; 
+    for (sdo = slave->sdo_config;
             sdo != &slave->sdo_config[slave->sdo_config_count]; sdo++) {
         if (sdo->byte_array) {
-            if (ecrt_slave_config_complete_sdo(slave_config, 
-                        sdo->sdo_index, (const uint8_t*)sdo->byte_array,
-                        sdo->sdo_attribute)) {
-                failed_method = "ecrt_slave_config_complete_sdo";
-                goto out_slave_failed;
+            if (sdo->sdo_subindex >= 0) {
+                if (ecrt_slave_config_sdo(slave_config, 
+                            sdo->sdo_index, sdo->sdo_subindex,
+                            (const uint8_t*)sdo->byte_array,
+                            sdo->value)) {
+                    failed_method = "ecrt_slave_config_complete_sdo";
+                    goto out_slave_failed;
+                }
+            }
+            else {
+                if (ecrt_slave_config_complete_sdo(slave_config,
+                            sdo->sdo_index,
+                            (const uint8_t*)sdo->byte_array,
+                            sdo->value)) {
+                    failed_method = "ecrt_slave_config_complete_sdo";
+                    goto out_slave_failed;
+                }
             }
         }
         else {
             switch (sdo->datatype) {
                 case 1008U:
-                    if (ecrt_slave_config_sdo8(slave_config, 
-                                sdo->sdo_index, sdo->sdo_attribute,
+                    if (ecrt_slave_config_sdo8(slave_config,
+                                sdo->sdo_index, sdo->sdo_subindex,
                                 (uint8_t)sdo->value)) {
                         failed_method = "ecrt_slave_config_sdo8";
                         goto out_slave_failed;
@@ -958,8 +970,8 @@ init_slave(size_t nst, const struct ec_slave *slave)
                     break;
 
                 case 1016U:
-                    if (ecrt_slave_config_sdo16(slave_config, 
-                                sdo->sdo_index, sdo->sdo_attribute,
+                    if (ecrt_slave_config_sdo16(slave_config,
+                                sdo->sdo_index, sdo->sdo_subindex,
                                 (uint16_t)sdo->value)) {
                         failed_method = "ecrt_slave_config_sdo16";
                         goto out_slave_failed;
@@ -967,8 +979,8 @@ init_slave(size_t nst, const struct ec_slave *slave)
                     break;
 
                 case 1032U:
-                    if (ecrt_slave_config_sdo32(slave_config, 
-                                sdo->sdo_index, sdo->sdo_attribute,
+                    if (ecrt_slave_config_sdo32(slave_config,
+                                sdo->sdo_index, sdo->sdo_subindex,
                                 sdo->value)) {
                         failed_method = "ecrt_slave_config_sdo32";
                         goto out_slave_failed;

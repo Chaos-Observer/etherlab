@@ -26,13 +26,15 @@
  *      description: (optional) Description string
  *
  *      sdo: SDO configuration; OPTIONAL; CellArray{n,4}
- *          { Index, SubIndex, BitLen, Value;...
- *            Index,        0,      0, 'string'; ...
- *            Index,        0,      0, [Value, Value, ...] }
- *          BitLen = one of 8, 16, 32
+ *          { Index, SubIndex, BitLen, Value;
+ *            Index, SubIndex,      0, [Byte, Byte, ...];
+ *            Index,       -1,      0, [Byte, Byte, ...] }
+ *
+ *          Value and Byte must be double-typed.
  *          Row 1 configures a single value
- *          Row 2 configures a string array
- *          Row 3 configures a variable array of uint8
+ *                BitLen = one of 8, 16, 32
+ *          Row 2 configures a variable array intepreted as uint8
+ *          Row 3 configures a variable array using complete access
  *
  *      soe: SOE configuration; OPTIONAL; CellArray of vectors
  *          { Index, [Value, Value, ...];...
@@ -216,7 +218,7 @@ struct ecat_slave {
 
     struct sdo_config {
         uint16_T index;
-        uint16_T subindex;
+        int16_T  subindex; /* may be negative to indicate complete access */
 
         /* Data type. One of SS_UINT8, SS_UINT16, SS_UINT32 */
         struct datatype_info *datatype;
@@ -774,6 +776,8 @@ get_slave_sdo(struct ecat_slave *slave, const mxArray* array,
         char_T value_ctxt[20];
         char_T ctxt[50];
         real_T *pval;
+        size_t nelem;
+        size_t bitlen;
 
         snprintf(ctxt, sizeof(ctxt), "%s.sdo{Row=%zu}", context, i+1);
         snprintf(value_ctxt, sizeof(value_ctxt), "sdo{%zu,4}", i+1);
@@ -783,60 +787,41 @@ get_slave_sdo(struct ecat_slave *slave, const mxArray* array,
                     i, array, &val));
         sdo_config->index = val;
 
-        /* Test for zero index */
-        if (!sdo_config->index)
-            continue;
+        /* SubIndex */
+        RETURN_ON_ERROR (get_numeric_scalar(slave, ctxt, __LINE__,
+                    i + rows, array, &val));
+        sdo_config->subindex = val;
+        if (sdo_config->subindex < -1 || sdo_config->subindex > 255) {
+            pr_error(slave, context, NULL, __LINE__,
+                    "SDO SubIndex is out of range [-1..255]");
+            return -1;
+        }
+
+        /* BitLen */
+        RETURN_ON_ERROR (get_numeric_scalar(slave, ctxt, __LINE__,
+                    i + 2*rows, array, &val));
+        bitlen = val;
 
         /* Value */
         valueCell = mxGetCell(array, i + 3*rows);
         if (!valueCell
-                || !(sdo_config->value = mxGetNumberOfElements(valueCell))) {
-
+                || !mxIsDouble(valueCell)
+                || !(pval = mxGetPr(valueCell))
+                || !(nelem = mxGetNumberOfElements(valueCell))) {
             pr_error(slave, context, value_ctxt, __LINE__,
-                    "SDO value is corrupt or empty");
+                    "SDO value is corrupt, not double or empty");
             return -1;
         }
 
-        pval = mxGetPr(valueCell);
-
-        if (mxIsChar(valueCell) || sdo_config->value > 1) {
-            /* SDO value is a string or a char array.
-             * So use ecrt_slave_config_complete_sdo().
-             * Data type is allways uint8 and SubIndex = 0.
-             * The length of data is stored in sdo_config->value */
-
-            CHECK_CALLOC(slave->S, sdo_config->value, 1,
-                    sdo_config->byte_array);
-
-            if (mxIsChar(valueCell)) {
-                if (!mxGetString(valueCell, (char*) sdo_config->byte_array,
-                            sdo_config->value)) {
-                    pr_error(slave, context, value_ctxt, __LINE__,
-                            "SDO string value is invalid");
-                    return -1;
-                }
+        if (bitlen) {
+            /* Single value */
+            if (nelem > 1) {
+                pr_error(slave, context, value_ctxt, __LINE__,
+                        "SDO BitLen must be zero when using value array");
+                return -1;
             }
-            else {
-                if (!pval || !mxIsDouble(valueCell)) {
-                    pr_error(slave, context, value_ctxt, __LINE__,
-                            "SDO value array is not numeric");
-                    return -1;
-                }
 
-                for (j = 0; j < sdo_config->value; j++)
-                    sdo_config->byte_array[j] = *pval++;
-            }
-        }
-        else {
-            /* SubIndex */
-            RETURN_ON_ERROR (get_numeric_scalar(slave, ctxt, __LINE__,
-                        i+rows, array, &val));
-            sdo_config->subindex = val;
-
-            /* BitLen */
-            RETURN_ON_ERROR (get_numeric_scalar(slave, ctxt, __LINE__,
-                        i + 2*rows, array, &val));
-            switch ((int)val) {
+            switch (bitlen) {
                 case 8:
                     sdo_config->datatype = type_uint8_info;
                     break;
@@ -861,13 +846,19 @@ get_slave_sdo(struct ecat_slave *slave, const mxArray* array,
                     return -1;
             }
 
-            if (!pval || !mxIsDouble(valueCell)) {
-                pr_error(slave, context, value_ctxt, __LINE__,
-                        "SDO Value not a valid number");
-                return -1;
-            }
-
             sdo_config->value = *pval;
+        }
+        else {
+            /* SDO value is an array */
+
+            sdo_config->datatype = type_uint8_info;
+            sdo_config->value = nelem; /* Value is misused as number of
+                                          elements */
+
+            CHECK_CALLOC(slave->S, nelem, 1, sdo_config->byte_array);
+
+            for (j = 0; j < sdo_config->value; j++)
+                sdo_config->byte_array[j] = *pval++;
         }
 
         slave->sdo_config_end++;
@@ -2018,10 +2009,13 @@ static void mdlRTW(SimStruct *S)
     for (sdo = slave->sdo_config, n = 0;
             sdo != slave->sdo_config_end; sdo++, n++) {
         if (sdo->byte_array) {
-            if (!ssWriteRTWParamSettings(slave->S, 2,
+            if (!ssWriteRTWParamSettings(slave->S, 3,
 
                     SSWRITE_VALUE_DTYPE_NUM, "Index",
                     &sdo->index, DTINFO(SS_UINT16, 0),
+
+                    SSWRITE_VALUE_DTYPE_NUM, "SubIndex",
+                    &sdo->subindex, DTINFO(SS_INT16, 0),
 
                     SSWRITE_VALUE_DTYPE_VECT, "ByteArray",
                     sdo->byte_array, sdo->value, DTINFO(SS_UINT8, 0)))
@@ -2033,7 +2027,7 @@ static void mdlRTW(SimStruct *S)
                     &sdo->index, DTINFO(SS_UINT16, 0),
 
                     SSWRITE_VALUE_DTYPE_NUM, "SubIndex",
-                    &sdo->subindex, DTINFO(SS_UINT16, 0),
+                    &sdo->subindex, DTINFO(SS_INT16, 0),
 
                     SSWRITE_VALUE_DTYPE_NUM, "DataTypeId",
                     &sdo->datatype->id, DTINFO(SS_UINT32, 0),

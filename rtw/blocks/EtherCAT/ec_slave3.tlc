@@ -615,23 +615,21 @@
         %% This is a configuration byte array
         %%
         %assign datatype = 1008U
-        %assign subindex = 0U
-        %assign value = 0U
+        %assign value = SIZE(sdo.ByteArray,1)
         %%
         %assign data_array = "\""
-        %foreach j = SIZE(sdo.ByteArray,1)
+        %foreach j = value
           %assign data_array = SPRINTF("%s\\x%02x", data_array, \
                                     sdo.ByteArray[j])
         %endforeach
         %assign data_array = "%<data_array>\""
       %else
         %assign datatype = sdo.DataTypeId
-        %assign subindex = sdo.SubIndex
         %assign value = sdo.Value
         %assign data_array = "NULL"
       %endif
       %%
-      { %<datatype>, %<sdo.Index>, %<subindex>, %<value>, \
+      { %<datatype>, %<sdo.Index>, %<sdo.SubIndex>, %<value>, \
       %<data_array> }, /* */ \
     %endforeach
   };
