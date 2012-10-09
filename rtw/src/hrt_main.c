@@ -1036,11 +1036,7 @@ int main(int argc, char **argv)
     }
 
     if (pdserv_config) {
-        if (pdserv_config_file(pdserv, pdserv_config)) {
-            err = "Invalid pdserv config file.";
-            pdserv_exit(pdserv);
-            goto out;
-        }
+        pdserv_config_file(pdserv, pdserv_config);
     }
 
     /* Initialize model */

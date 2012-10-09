@@ -1,7 +1,14 @@
 syntax: glob
 
-**~
-**.sw?
-./build/*
-**/bak/
 **.orig
+**.sw?
+**/bak/
+**CMakeFiles
+**Makefile
+**cmake_install.cmake
+**~
+./build/*
+CMakeCache.txt
+CPackConfig.cmake
+CPackSourceConfig.cmake
+install_manifest.txt
