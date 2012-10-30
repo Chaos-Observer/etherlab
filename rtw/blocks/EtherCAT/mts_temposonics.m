@@ -83,7 +83,7 @@ end
 if velocity_output
     rv.PortConfig.output(2).pdo = [zeros(numel(r), 4)];
     rv.PortConfig.output(2).pdo(:, 3) = [3 * r + 2];
-    rv.PortConfig.output(1).pdo_data_type = 2032;
+    rv.PortConfig.output(2).pdo_data_type = 2032;
     rv.PortConfig.output(2).gain = 1e-6;
 end
 
