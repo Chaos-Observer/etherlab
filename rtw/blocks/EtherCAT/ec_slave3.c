@@ -158,7 +158,7 @@ enum {
     PARAM_COUNT
 };
 
-static struct datatype_info {
+static const struct datatype_info {
     uint_T id;
     char *name;
     int_T mant_bits;
@@ -187,14 +187,15 @@ static struct datatype_info {
 
     { 3032, "Real32",     32, SS_SINGLE  }, /* 19 */
     { 3064, "Real64",     64, SS_DOUBLE  }, /* 20 */
+
     {    0,                                           },
 };
 
-static struct datatype_info *type_uint8_info  = &datatype_info[7];
-static struct datatype_info *type_uint16_info = &datatype_info[8];
-static struct datatype_info *type_uint32_info = &datatype_info[9];
-/* static struct datatype_info *type_single_info = &datatype_info[19]; */
-/* static struct datatype_info *type_double_info = &datatype_info[20]; */
+static const struct datatype_info *type_uint8  = &datatype_info[7];
+static const struct datatype_info *type_uint16 = &datatype_info[8];
+static const struct datatype_info *type_uint32 = &datatype_info[9];
+/* static struct datatype_info *type_single = &datatype_info[19]; */
+/* static struct datatype_info *type_double = &datatype_info[20]; */
 
 static char errmsg[256];
 
@@ -221,7 +222,7 @@ struct ecat_slave {
         int16_T  subindex; /* may be negative to indicate complete access */
 
         /* Data type. One of SS_UINT8, SS_UINT16, SS_UINT32 */
-        struct datatype_info *datatype;
+        const struct datatype_info *datatype;
 
         /* Configuration value or array length if it is used */
         uint_T value;
@@ -252,12 +253,8 @@ struct ecat_slave {
         struct pdo {
             uint16_T index;
 
-            struct sync_manager *sm;
-
             /* PDO Entries */
             struct pdo_entry {
-                struct pdo *pdo;
-
                 uint16_T index;
                 uint8_T subindex;
                 uint_T bitlen;
@@ -290,7 +287,7 @@ struct ecat_slave {
         } *gain, *offset, *filter;
 
         struct port_pdo {
-            struct pdo_entry *entry;
+            const struct pdo_entry *entry;
             size_t element_idx;
         } *pdo, *pdo_end;
 
@@ -300,12 +297,8 @@ struct ecat_slave {
         real_T fullscale;
 
         /* Data type how to interpret PDO */
-        struct datatype_info *data_type;
-
-        /* Switches for manually setting port values */
+        const struct datatype_info *data_type;
         boolean_T big_endian;
-
-        boolean_T port_debug;
 
         /* Simulink port data type */
         DTypeId sl_port_data_type;
@@ -686,8 +679,6 @@ get_sync_manager_pdo(struct ecat_slave *slave, struct pdo *pdo,
     for (i = 0; i < entry_count; i++) {
         struct pdo_entry *pdo_entry = pdo->entry + i;
 
-        pdo_entry->pdo = pdo;
-
         pdo_entry->index = pval[i];
         pdo_entry->subindex = pval[i + entry_count];
         pdo_entry->bitlen = pval[i + 2*entry_count];
@@ -738,7 +729,6 @@ get_sync_manager(struct ecat_slave *slave, struct sync_manager *sm,
 
         snprintf(ctxt, sizeof(ctxt), "%s{3}{%u}", p_ctxt, i + 1);
 
-        sm->pdo[i].sm = sm;
         if (get_sync_manager_pdo(slave,
                     sm->pdo + i, ctxt, mxGetCell(sm_cell, i)))
             return -1;
@@ -823,23 +813,23 @@ get_slave_sdo(struct ecat_slave *slave, const mxArray* array,
 
             switch (bitlen) {
                 case 8:
-                    sdo_config->datatype = type_uint8_info;
+                    sdo_config->datatype = type_uint8;
                     break;
 
                 case 16:
-                    sdo_config->datatype = type_uint16_info;
+                    sdo_config->datatype = type_uint16;
                     break;
 
                 case 32:
-                    sdo_config->datatype = type_uint32_info;
+                    sdo_config->datatype = type_uint32;
                     break;
 
                 default:
                     {
                         char_T sdo_ctxt[20];
 
-                        snprintf(sdo_ctxt, sizeof(sdo_ctxt), "sdo{%zu,3} = %i",
-                                i+1, (int)val);
+                        snprintf(sdo_ctxt, sizeof(sdo_ctxt),
+                                "sdo{%zu,3} = %i", i+1, (int)val);
                         pr_error(slave, context, sdo_ctxt, __LINE__,
                                 "SDO BitLen must be one of 8,16,32");
                     }
@@ -851,7 +841,7 @@ get_slave_sdo(struct ecat_slave *slave, const mxArray* array,
         else {
             /* SDO value is an array */
 
-            sdo_config->datatype = type_uint8_info;
+            sdo_config->datatype = type_uint8;
             sdo_config->value = nelem; /* Value is misused as number of
                                           elements */
 
@@ -1111,16 +1101,17 @@ get_slave_config(struct ecat_slave *slave)
         pr_debug(slave, NULL, "", 1, "SM count %u\n", sm_count);
         for (i  = 0; i < sm_count; i++) {
             struct sync_manager *sm = slave->sync_manager + i;
-            struct pdo *pdo;
+            const struct pdo *pdo;
 
             pr_debug(slave, NULL, "", 2,
                     "SMIndex=%u Dir=%s PdoCount=%zi\n",
                     sm->index,
-                    sm->direction == EC_SM_OUTPUT ? "OP (RxPdo)" : "IP (TxPdo)",
+                    (sm->direction == 
+                     EC_SM_OUTPUT ? "OP (RxPdo)" : "IP (TxPdo)"),
                     sm->pdo_end - sm->pdo);
 
             for (pdo = sm->pdo; pdo != sm->pdo_end; pdo++) {
-                struct pdo_entry *entry;
+                const struct pdo_entry *entry;
 
                 pr_debug(slave, NULL, "", 3,
                         "PdoIndex=#x%04X EntryCount=%zu\n",
@@ -1238,8 +1229,228 @@ get_port_parameter(struct ecat_slave *slave, const char_T *p_ctxt,
 }
 
 /****************************************************************************/
+static int
+get_port_raw_pdo_spec (struct ecat_slave *slave, const char_T *p_ctxt,
+        const mxArray *port_spec, struct io_port *port, size_t idx,
+        real_T *val, enum sm_direction dir)
+{
+    size_t i, rows;
+    const struct sync_manager *sm;
+    const struct pdo *pdo;
+    const struct pdo_entry *entry;
+    const char_T *element;
+
+    /* First element is SM index */
+    element = "pdo(1,1)";
+    sm = slave->sync_manager + (size_t)val[0];
+    if (sm < slave->sync_manager || sm >= slave->sync_manager_end) {
+        pr_error(slave, p_ctxt, element, __LINE__,
+                "SyncManager row index %zi out of range [0,%zu)",
+                sm - slave->sync_manager,
+                slave->sync_manager_end - slave->sync_manager);
+        return -1;
+    }
+
+    if (sm->direction != dir) {
+        pr_warn(slave, p_ctxt, element, __LINE__,
+                "SyncManager direction is incorrect\n");
+    }
+
+    /* Second element is PDO index */
+    element = "pdo(1,2)";
+    pdo = sm->pdo + (size_t)val[1];
+    if (pdo < sm->pdo || pdo >= sm->pdo_end) {
+        pr_error(slave, p_ctxt, element, __LINE__,
+                "Pdo row index %zi out of range [0,%zu)",
+                pdo - sm->pdo,
+                sm->pdo_end - sm->pdo);
+        return -1;
+    }
+
+    /* Add up the bits in the PDO */
+    rows = 0;
+    for (entry = pdo->entry; entry != pdo->entry_end; entry++)
+        rows += entry->bitlen;
+
+    if (rows % 8) {
+        pr_warn(slave, p_ctxt, element, __LINE__,
+                "PDO BitLen is not byte aligned\n");
+    }
+
+    /* One row for every byte */
+    rows = (rows + 7) / 8;
+
+    CHECK_CALLOC(slave->S, rows, sizeof(struct port_pdo), port->pdo);
+    port->pdo_end = port->pdo + rows;
+
+    for (i = 0; i < rows; i++) {
+        port->pdo[i].entry = pdo->entry;
+        port->pdo[i].element_idx = i;
+    }
+
+    /* Set data types for port and PDO */
+    port->sl_port_data_type = SS_UINT8;
+    port->data_type = type_uint8;
+
+    return 0;
+}
+
+
+/****************************************************************************/
+static int
+get_port_pdo_spec (struct ecat_slave *slave, const char_T *p_ctxt,
+        const mxArray *port_spec, struct io_port *port, size_t idx,
+        real_T *val, size_t rows, enum sm_direction dir)
+{
+    size_t j;
+    real_T real;
+    uint_T dt_id;
+
+    /* Read the PDO data type */
+    real = 0;
+    RETURN_ON_ERROR(get_numeric_field(slave, p_ctxt, __LINE__,
+                port_spec, idx, 0, 0, 0, "pdo_data_type", &real));
+    dt_id = real;
+    for (port->data_type = datatype_info;
+            port->data_type->id != dt_id; port->data_type++) {
+        if (!port->data_type->id) {
+            pr_error(slave, p_ctxt, "pdo_data_type", __LINE__,
+                    "Unknown data type %u", dt_id);
+            return -1;
+        }
+    }
+
+    CHECK_CALLOC(slave->S, rows, sizeof(struct port_pdo), port->pdo);
+    port->pdo_end = port->pdo + rows;
+    for (j = 0; j < rows; j++) {
+        const struct sync_manager *sm;
+        const struct pdo *pdo;
+        char_T element[20];
+
+        sm = slave->sync_manager + (size_t)val[j];
+        if (sm < slave->sync_manager
+                || sm >= slave->sync_manager_end) {
+            snprintf(element, sizeof(element), "pdo(%zu,1)", j+1);
+            pr_error(slave, p_ctxt, element, __LINE__,
+                    "SyncManager row index %zi out of range [0,%zu)",
+                    (ssize_t)val[j],
+                    slave->sync_manager_end - slave->sync_manager);
+            return -1;
+        }
+
+        if (sm->direction != dir) {
+            snprintf(element, sizeof(element), "pdo(%zu,1)", j+1);
+            pr_warn(slave, p_ctxt, element, __LINE__,
+                    "SyncManager direction is incorrect\n");
+        }
+
+        pdo = sm->pdo + (size_t)val[j + rows];
+        if (pdo < sm->pdo
+                || pdo >= sm->pdo_end) {
+            snprintf(element, sizeof(element), "pdo(%zu,2)", j+1);
+            pr_error(slave, p_ctxt, element, __LINE__,
+                    "Pdo row index %zi out of range [0,%zu)",
+                    (ssize_t)val[j + rows],
+                    sm->pdo_end - sm->pdo);
+            return -1;
+        }
+
+        port->pdo[j].entry = pdo->entry + (size_t)val[j + 2*rows];
+        if (port->pdo[j].entry < pdo->entry
+                || port->pdo[j].entry >= pdo->entry_end) {
+            snprintf(element, sizeof(element), "pdo(%zu,3)", j+1);
+            pr_error(slave, p_ctxt, element, __LINE__,
+                    "PdoEntry row index %zi out of range [0,%zu)",
+                    (ssize_t)val[j + 2*rows],
+                    pdo->entry_end - pdo->entry);
+            return -1;
+        }
+
+        if (!port->pdo[j].entry->index) {
+            snprintf(element, sizeof(element), "pdo(%zu,3)", j+1);
+            pr_error(slave, p_ctxt, element, __LINE__,
+                    "Cannot choose Pdo Entry #x0000");
+            return -1;
+        }
+
+        if (port->pdo[j].entry->bitlen % port->data_type->mant_bits) {
+            snprintf(element, sizeof(element), "pdo(%zu,3)", j+1);
+            pr_error(slave, p_ctxt, element, __LINE__,
+                    "Data type specified for port (%s) does not "
+                    "match the pdo's bit length (%u)",
+                    port->data_type->name,
+                    port->pdo[j].entry->bitlen);
+            return -1;
+        }
+
+        port->pdo[j].element_idx = val[j + 3*rows];
+        if (port->data_type->mant_bits * (port->pdo[j].element_idx + 1)
+                > port->pdo[j].entry->bitlen) {
+            snprintf(element, sizeof(element), "pdo(%zu,4)", j+1);
+            pr_error(slave, p_ctxt, element, __LINE__,
+                    "Element index %zi out of range [0,%u)",
+                    (ssize_t)val[j + 3*rows],
+                    (port->pdo[j].entry->bitlen
+                     / port->data_type->mant_bits));
+            return -1;
+        }
+
+        pr_debug(slave, NULL, "", 3,
+                "Pdo Entry #x%04X.%u element %s[%zu]\n",
+                port->pdo[j].entry->index,
+                port->pdo[j].entry->subindex,
+                port->data_type->name,
+                port->pdo[j].element_idx);
+    }
+
+    /* Read the endianness if specified */
+    real = 0;
+    RETURN_ON_ERROR(get_numeric_field(slave, p_ctxt, __LINE__,
+                port_spec, idx, 1, 1, 0, "big_endian", &real));
+    port->big_endian = real != 0.0;
+
+    RETURN_ON_ERROR (get_port_parameter(slave, p_ctxt, port_spec,
+                port, rows, idx, &port->gain, "gain"));
+    RETURN_ON_ERROR (get_port_parameter(slave, p_ctxt, port_spec,
+                port, rows, idx, &port->offset, "offset"));
+
+    if (dir == EC_SM_INPUT) {
+        RETURN_ON_ERROR (get_port_parameter(slave, p_ctxt, port_spec,
+                    port, rows, idx, &port->filter, "filter"));
+        if (port->filter) {
+            port->filter_idx = slave->filter_count;
+            slave->filter_count += port->pdo_end - port->pdo;
+        }
+    }
+
+    RETURN_ON_ERROR(get_numeric_field(slave, p_ctxt, __LINE__,
+                port_spec, idx, 0, 1, 0,
+                "full_scale", &port->fullscale));
+
+    if (port->gain || port->offset || port->filter
+            || port->fullscale) {
+        /* Data type is always double if gain, offset, filter
+         * or fullscale is used */
+        port->sl_port_data_type = SS_DOUBLE;
+
+        /* Temporary storage will be needed for data */
+        port->dwork_idx = ++slave->dwork_count;
+    }
+    else {
+        /* Input ports (with PDO dir = EC_SM_OUTPUT) have their port
+         * data types set dynamically, output port data types are
+         * fixed to PDO's data type */
+        port->sl_port_data_type = dir == EC_SM_OUTPUT
+            ? DYNAMICALLY_TYPED : port->data_type->sl_type;
+    }
+
+    return 0;
+}
+
+
+/****************************************************************************/
 static int_T
-get_section_config(struct ecat_slave *slave, const char_T *section,
+get_port_config(struct ecat_slave *slave, const char_T *section,
         enum sm_direction dir, struct io_port **port_begin)
 {
     const mxArray * const io_spec = ssGetSFcnParam(slave->S, PORT_CONFIG);
@@ -1273,168 +1484,44 @@ get_section_config(struct ecat_slave *slave, const char_T *section,
     for (i = 0; i < count; i++) {
         char_T ctxt[50];
         const mxArray *pdo_spec;
-        real_T *val, real;
-        size_t width, j;
+        real_T *val;
+        size_t rows, cols, numel;
 
         snprintf(ctxt, sizeof(ctxt), "%s.%s(%zu)", param, section, i+1);
 
         pr_debug(slave, NULL, "", 2, "Port %zu\n", i+1);
 
-        /* Read the PDO data type if specified */
-        real = 0;
-        RETURN_ON_ERROR(get_numeric_field(slave, ctxt, __LINE__,
-                    port_spec, i, 0, 0, 0, "pdo_data_type", &real));
-        if (real > 0) {
-            uint_T dt_id = real;
-            for (port->data_type = datatype_info;
-                    port->data_type->id != dt_id; port->data_type++) {
-                if (!port->data_type->id) {
-                    pr_error(slave, ctxt, "pdo_data_type", __LINE__,
-                            "Unknown data type %u", dt_id);
-                    return -1;
-                }
-            }
-        }
-
-        /* Read the endianness if specified */
-        real = 0;
-        RETURN_ON_ERROR(get_numeric_field(slave, ctxt, __LINE__,
-                    port_spec, i, 1, 1, 0, "big_endian", &real));
-        port->big_endian = real != 0.0;
-
         pdo_spec = mxGetField(port_spec, i, "pdo");
-        if (!pdo_spec || !(width = mxGetM(pdo_spec)))
+        if (!pdo_spec
+                || !(rows = mxGetM(pdo_spec))
+                || !(cols = mxGetN(pdo_spec))
+                || !(numel = mxGetNumberOfElements(pdo_spec)))
             continue;
 
         if (!mxIsDouble(pdo_spec)
-                || !(val = mxGetPr(pdo_spec))
-                || mxGetN(pdo_spec) != 4) {
+                || !(val = mxGetPr(pdo_spec))) {
             pr_error(slave, ctxt, "pdo", __LINE__,
-                    "Pdo specification is not a [Mx4] array");
+                    "Pdo specification is not a valid numeric array");
             return -1;
         }
 
-        CHECK_CALLOC(slave->S, width, sizeof(struct port_pdo), port->pdo);
-        port->pdo_end = port->pdo + width;
-        for (j = 0; j < width; j++) {
-            struct sync_manager *sm;
-            struct pdo *pdo;
-            char_T element[20];
-
-            sm = slave->sync_manager + (size_t)val[j];
-            if (val[j] < 0
-                    || sm >= slave->sync_manager_end) {
-                snprintf(element, sizeof(element), "pdo(%zu,1)", j+1);
-                pr_error(slave, ctxt, element, __LINE__,
-                        "SyncManager row index %zi out of range [0,%zu)",
-                        (ssize_t)val[j],
-                        slave->sync_manager_end - slave->sync_manager);
-                return -1;
-            }
-
-            if (sm->direction != dir) {
-                snprintf(element, sizeof(element), "pdo(%zu,1)", j+1);
-                pr_warn(slave, ctxt, element, __LINE__,
-                        "SyncManager direction is incorrect\n");
-            }
-
-            pdo = sm->pdo + (size_t)val[j + width];
-            if (val[j + width] < 0
-                    || pdo >= sm->pdo_end) {
-                snprintf(element, sizeof(element), "pdo(%zu,2)", j+1);
-                pr_error(slave, ctxt, element, __LINE__,
-                        "Pdo row index %zi out of range [0,%zu)",
-                        (ssize_t)val[j + width],
-                        sm->pdo_end - sm->pdo);
-                return -1;
-            }
-
-            port->pdo[j].entry = pdo->entry + (size_t)val[j + 2*width];
-            if (val[j + 2*width] < 0
-                    || port->pdo[j].entry >= pdo->entry_end) {
-                snprintf(element, sizeof(element), "pdo(%zu,3)", j+1);
-                pr_error(slave, ctxt, element, __LINE__,
-                        "PdoEntry row index %zi out of range [0,%zu)",
-                        (ssize_t)val[j + 2*width],
-                        pdo->entry_end - pdo->entry);
-                return -1;
-            }
-
-            if (!port->pdo[j].entry->index) {
-                snprintf(element, sizeof(element), "pdo(%zu,3)", j+1);
-                pr_error(slave, ctxt, element, __LINE__,
-                        "Cannot choose Pdo Entry #x0000");
-                return -1;
-            }
-
-            if (port->pdo[j].entry->bitlen
-                    % port->data_type->mant_bits) {
-                snprintf(element, sizeof(element), "pdo(%zu,3)", j+1);
-                pr_error(slave, ctxt, element, __LINE__,
-                        "Data type specified for port (%s) does not "
-                        "match the pdo's bit length (%u)",
-                        port->data_type->name,
-                        port->pdo[j].entry->bitlen);
-                return -1;
-            }
-
-            port->pdo[j].element_idx = val[j + 3*width];
-            if (val[j + 3*width] < 0
-                    || (port->data_type->mant_bits
-                        * (port->pdo[j].element_idx + 1)
-                        > port->pdo[j].entry->bitlen)) {
-                snprintf(element, sizeof(element), "pdo(%zu,4)", j+1);
-                pr_error(slave, ctxt, element, __LINE__,
-                        "Element index %zi out of range [0,%u)",
-                        (ssize_t)val[j + 3*width],
-                        (port->pdo[j].entry->bitlen
-                         / port->data_type->mant_bits));
-                return -1;
-            }
-
-            pr_debug(slave, NULL, "", 3,
-                    "Pdo Entry #x%04X.%u element %s[%zu]\n",
-                    port->pdo[j].entry->index,
-                    port->pdo[j].entry->subindex,
-                    port->data_type->name,
-                    port->pdo[j].element_idx);
+        if (numel == 2) {
+            /* When there are only 2 elements, use PDO Raw mode.
+             * The whole PDO is presented as a byte array */
+            RETURN_ON_ERROR(get_port_raw_pdo_spec(slave, ctxt,
+                        port_spec, port, i, val, dir));
         }
-
-        RETURN_ON_ERROR (get_port_parameter(slave, ctxt, port_spec,
-                    port, width, i, &port->gain, "gain"));
-        RETURN_ON_ERROR (get_port_parameter(slave, ctxt, port_spec,
-                    port, width, i, &port->offset, "offset"));
-
-        if (dir == EC_SM_INPUT) {
-            RETURN_ON_ERROR (get_port_parameter(slave, ctxt, port_spec,
-                        port, width, i, &port->filter, "filter"));
-            if (port->filter) {
-                port->filter_idx = slave->filter_count;
-                slave->filter_count += port->pdo_end - port->pdo;
-            }
-        }
-
-        RETURN_ON_ERROR(get_numeric_field(slave, ctxt, __LINE__,
-                    port_spec, i, 0, 1, 0,
-                    "full_scale", &port->fullscale));
-
-        if (port->gain || port->offset || port->filter
-                || port->fullscale) {
-            /* Data type is always double if gain, offset, filter
-             * or fullscale is used */
-            port->sl_port_data_type = SS_DOUBLE;
-
-            /* Temporary storage will be needed for data */
-            port->dwork_idx = ++slave->dwork_count;
+        else if (cols == 4) {
+            /* PDO specification is an Nx4 numeric matrix */
+            RETURN_ON_ERROR(get_port_pdo_spec(slave, ctxt,
+                        port_spec, port, i, val, rows, dir));
         }
         else {
-            /* Input ports (with PDO dir = EC_SM_OUTPUT) have their port
-             * data types set dynamically, output port data types are
-             * fixed to PDO's data type */
-            port->sl_port_data_type = dir == EC_SM_OUTPUT
-                ? DYNAMICALLY_TYPED : port->data_type->sl_type;
+            pr_error(slave, ctxt, "pdo", __LINE__,
+                    "Pdo specification is not a [Mx4] array"
+                    " or 2 element vector");
+            return -1;
         }
-
         port++;
     }
 
@@ -1449,11 +1536,11 @@ get_ioport_config(struct ecat_slave *slave)
 
     /* Note: a simulink's output port corresponds to an input for
      * the master */
-    RETURN_ON_ERROR ( n = get_section_config(slave,
+    RETURN_ON_ERROR (n = get_port_config(slave,
                 "output", EC_SM_INPUT, &slave->o_port));
     slave->o_port_end = slave->o_port + n;
 
-    RETURN_ON_ERROR (n = get_section_config(slave,
+    RETURN_ON_ERROR (n = get_port_config(slave,
                 "input", EC_SM_OUTPUT, &slave->i_port));
     slave->i_port_end = slave->i_port + n;
 
@@ -1466,11 +1553,11 @@ get_ioport_config(struct ecat_slave *slave)
 static void
 slave_mem_op(struct ecat_slave *slave, void (*method)(void*))
 {
-    struct io_port *port;
-    struct sync_manager *sm;
-    struct pdo *pdo;
-    struct soe_config *soe;
-    struct sdo_config *sdo;
+    const struct io_port *port;
+    const struct sync_manager *sm;
+    const struct pdo *pdo;
+    const struct soe_config *soe;
+    const struct sdo_config *sdo;
 
     (*method)(slave->type);
 
@@ -1551,7 +1638,7 @@ static void mdlInitializeSizes(SimStruct *S)
 {
     uint_T i;
     struct ecat_slave *slave;
-    struct io_port *port;
+    const struct io_port *port;
 
     ssSetNumSFcnParams(S, PARAM_COUNT);  /* Number of expected parameters */
     if (ssGetNumSFcnParams(S) != ssGetSFcnParamsCount(S)) {
@@ -1578,7 +1665,8 @@ static void mdlInitializeSizes(SimStruct *S)
     /* Process input ports */
     if (!ssSetNumInputPorts(S, slave->i_port_end - slave->i_port))
         return;
-    for (i = 0, port = slave->i_port; port != slave->i_port_end; port++, i++) {
+    for (i = 0, port = slave->i_port;
+            port != slave->i_port_end; port++, i++) {
         ssSetInputPortWidth   (S, i, DYNAMICALLY_SIZED);
         ssSetInputPortDataType(S, i, port->sl_port_data_type);
     }
@@ -1586,7 +1674,8 @@ static void mdlInitializeSizes(SimStruct *S)
     /* Process output ports */
     if (!ssSetNumOutputPorts(S, slave->o_port_end - slave->o_port))
         return;
-    for (i = 0, port = slave->o_port; port != slave->o_port_end; port++, i++) {
+    for (i = 0, port = slave->o_port;
+            port != slave->o_port_end; port++, i++) {
         ssSetOutputPortWidth   (S, i, port->pdo_end - port->pdo);
         ssSetOutputPortDataType(S, i, port->sl_port_data_type);
     }
@@ -1701,7 +1790,7 @@ static void mdlSetInputPortWidth(SimStruct *S, int_T port, int_T width)
 static void mdlSetDefaultPortDataTypes(SimStruct *S)
 {
     struct ecat_slave *slave = ssGetUserData(S);
-    struct io_port *port;
+    const struct io_port *port;
     uint_T i = 0;
 
     if (!slave)
@@ -1721,7 +1810,7 @@ static void mdlSetDefaultPortDataTypes(SimStruct *S)
 static void mdlSetDefaultPortDimensionInfo(SimStruct *S)
 {
     struct ecat_slave *slave = ssGetUserData(S);
-    struct io_port *port;
+    const struct io_port *port;
     uint_T i = 0;
 
     if (!slave)
@@ -1761,7 +1850,7 @@ create_runtime_parameter(SimStruct *S, int_T idx, struct output_param *p)
 static void mdlSetWorkWidths(SimStruct *S)
 {
     struct ecat_slave *slave = ssGetUserData(S);
-    struct io_port *port;
+    const struct io_port *port;
     uint_T param_idx = 0;
 
     if (!slave)
@@ -1779,7 +1868,8 @@ static void mdlSetWorkWidths(SimStruct *S)
         if (port->dwork_idx) {
             ssSetDWorkWidth(S, port->dwork_idx-1,
                     ssGetOutputPortWidth(S, port - slave->o_port));
-            ssSetDWorkDataType(S, port->dwork_idx-1, port->data_type->sl_type);
+            ssSetDWorkDataType(S, port->dwork_idx-1,
+                    port->data_type->sl_type);
             /*ssSetDWorkRTWIdentifier(S, port->dwork_idx-1, "KKKKK");*/
         }
     }
@@ -1791,7 +1881,8 @@ static void mdlSetWorkWidths(SimStruct *S)
         if (port->dwork_idx) {
             ssSetDWorkWidth(S, port->dwork_idx-1,
                     ssGetInputPortWidth(S, port - slave->i_port));
-            ssSetDWorkDataType(S, port->dwork_idx-1, port->data_type->sl_type);
+            ssSetDWorkDataType(S, port->dwork_idx-1,
+                    port->data_type->sl_type);
             /*ssSetDWorkRTWIdentifier(S, port->dwork_idx-1, "KKKKK");*/
         }
     }
@@ -1838,12 +1929,12 @@ static void mdlTerminate(SimStruct *S)
 }
 
 static int_T
-mdlRTWWritePort(struct ecat_slave *slave, struct io_port *port,
+mdlRTWWritePort(struct ecat_slave *slave, const struct io_port *port,
         int_T *param_idx, int_T *const_idx, real_T *constants)
 {
     uint32_T (*pdo_spec)[3];
     int32_T param[3] = {-1, -1, -1};
-    struct port_pdo *pdo;
+    const struct port_pdo *pdo;
     size_t i;
     enum {
         PS_PdoEntryIndex = 0,
@@ -1955,9 +2046,9 @@ static void mdlRTW(SimStruct *S)
     real_T *constants;
     size_t n;
 
-    struct io_port *port;
-    struct sdo_config *sdo;
-    struct soe_config *soe;
+    const struct io_port *port;
+    const struct sdo_config *sdo;
+    const struct soe_config *soe;
 
     /* General assignments of array indices that form the basis for
      * the S-Function <-> TLC communication
@@ -2052,7 +2143,8 @@ static void mdlRTW(SimStruct *S)
                 &soe->index, DTINFO(SS_UINT16, 0),
 
                 SSWRITE_VALUE_DTYPE_VECT, "OctetString",
-                soe->octet_string, soe->octet_string_len, DTINFO(SS_UINT8, 0)))
+                soe->octet_string, soe->octet_string_len,
+                DTINFO(SS_UINT8, 0)))
             return;
         config_idx[n] = param_idx++;
     }
@@ -2069,7 +2161,7 @@ static void mdlRTW(SimStruct *S)
 
         uint_T pdo_idx = 0, pdo_entry_idx = 0;
 
-        struct sync_manager *sm;
+        const struct sync_manager *sm;
 
         sync_manager = mxCalloc(sm_count, sizeof(*sync_manager));
         pdo_info = mxCalloc(slave->pdo_count, sizeof(*pdo_info));
@@ -2077,7 +2169,7 @@ static void mdlRTW(SimStruct *S)
             mxCalloc(slave->pdo_entry_count, sizeof(*pdo_entry_info));
 
         for (sm = slave->sync_manager; sm != slave->sync_manager_end; sm++) {
-            struct pdo *pdo;
+            const struct pdo *pdo;
 
             sync_manager[sm_idx][SM_Index] = sm->index;
             sync_manager[sm_idx][SM_Direction] =
@@ -2085,7 +2177,7 @@ static void mdlRTW(SimStruct *S)
             sync_manager[sm_idx][SM_PdoCount] = 0;
 
             for (pdo = sm->pdo; pdo != sm->pdo_end; pdo++) {
-                struct pdo_entry *pdo_entry;
+                const struct pdo_entry *pdo_entry;
 
                 sync_manager[sm_idx][SM_PdoCount]++;
 
@@ -2157,7 +2249,8 @@ static void mdlRTW(SimStruct *S)
     constants = mxCalloc(slave->const_count, sizeof(real_T));
     n = slave->o_port_end - slave->o_port;
     config_idx = mxCalloc(n, sizeof(*config_idx));
-    for (port = slave->o_port, n = 0; port != slave->o_port_end; port++, n++) {
+    for (port = slave->o_port, n = 0;
+            port != slave->o_port_end; port++, n++) {
         if (mdlRTWWritePort(slave, port, &param_idx, &const_idx, constants))
             return;
 
@@ -2169,7 +2262,8 @@ static void mdlRTW(SimStruct *S)
 
     n = slave->i_port_end - slave->i_port;
     config_idx = mxCalloc(n, sizeof(*config_idx));
-    for (port = slave->i_port, n = 0; port != slave->i_port_end; port++, n++) {
+    for (port = slave->i_port, n = 0;
+            port != slave->i_port_end; port++, n++) {
         if (mdlRTWWritePort(slave, port, &param_idx, &const_idx, constants))
             return;
 
@@ -2179,7 +2273,8 @@ static void mdlRTW(SimStruct *S)
         return;
     mxFree (config_idx);
 
-    if (!ssWriteRTWVectParam(S, "ConstVector", constants, SS_DOUBLE, const_idx))
+    if (!ssWriteRTWVectParam(S, "ConstVector",
+                constants, SS_DOUBLE, const_idx))
         return;
     mxFree (constants);
 
