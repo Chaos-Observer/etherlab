@@ -29,17 +29,12 @@
 
   %% General assignments of array indices that form the basis for
   %% the S-Function <-> TLC communication
-  %% DO NOT CHANGE THESE without updating the S-Function ec_test2.c
+  %% DO NOT CHANGE THESE without updating the S-Function ec_test3.c
   %% as well
 
   %assign ::PS_PdoEntryIndex            = 0
   %assign ::PS_PdoEntrySubIndex         = 1
   %assign ::PS_ElementIndex             = 2
-
-  %assign ::SdoConfigIndex              = 0
-  %assign ::SdoConfigSubIndex           = 1
-  %assign ::SdoConfigDataType           = 2
-  %assign ::SdoConfigValue              = 3
 
   %assign ::PdoEI_Index                 = 0
   %assign ::PdoEI_SubIndex              = 1
