@@ -216,8 +216,8 @@ CFLAGS   = $(DEP) $(CC_OPTS) $(CPP_REQ_DEFINES) $(RTW_OPTS) $(INCLUDES)
 CPPFLAGS = $(DEP) $(CPP_OPTS) $(CC_OPTS) $(CPP_REQ_DEFINES) $(RTW_OPTS) $(INCLUDES)
 #-------------------------- Additional Libraries ------------------------------
 
-SYSLIBS = $(EXT_LIB) -lm -ldl -lrt -lpdserv -L$(ETHERLAB_DIR)/lib -Wl,--rpath $(ETHERLAB_DIR)/lib
-DYNAMIC = -rdynamic
+SYSLIBS = -rdynamic $(EXT_LIB) -lm -ldl -lrt -lpdserv -L$(ETHERLAB_DIR)/lib \
+        -Wl,--rpath $(ETHERLAB_DIR)/lib
 
 ifneq ($(findstring rtipc.c,$(S_FUNCTIONS)),)
     SYSLIBS += -lrtipc
@@ -254,7 +254,7 @@ SRCS = $(MODULES) $(S_FUNCTIONS)
 
 ifeq ($(MODELREF_TARGET_TYPE), NONE)
     PRODUCT            = $(RELATIVE_PATH_TO_ANCHOR)/$(MODEL)
-    BIN_SETTING        = $(LD) $(LDFLAGS) $(ADDITIONAL_LDFLAGS) -o $(PRODUCT) $(SYSLIBS)
+    BIN_SETTING        = $(LD) $(LDFLAGS) $(ADDITIONAL_LDFLAGS) -o $(PRODUCT)
     BUILD_PRODUCT_TYPE = "executable"
     SRCS               += $(MODEL).$(TARGET_LANG_EXT) $(EXT_SRC) $(SOLVER) \
                           hrt_main.c rt_sim.c $(MODEL)_header.c
@@ -320,7 +320,7 @@ all : Makefile $(PRODUCT)
 ifeq ($(MODELREF_TARGET_TYPE),NONE)
 $(PRODUCT) : $(OBJS) $(SHARED_LIB) $(LIBS) $(MODELREF_LINK_LIBS)
 	LD_LIBRARY_PATH= $(BIN_SETTING) $(LINK_OBJS) \
-	        $(DYNAMIC) $(MODELREF_LINK_LIBS) $(SHARED_LIB) $(LIBS)
+	        $(MODELREF_LINK_LIBS) $(SHARED_LIB) $(LIBS) $(SYSLIBS)
 	@echo "### Created $(BUILD_PRODUCT_TYPE): $@"
 else
 $(PRODUCT) : $(OBJS) $(SHARED_LIB)
