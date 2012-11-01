@@ -1,5 +1,5 @@
 function [Address masterStr positionStr] = ...
-    getEtherCATAddress(block,masterArg,indexArg)
+    getEtherCATAddress(block,masterArg,indexArg,sampleTimeArg)
 % This function takes the arguments masterAg and indexArg to 
 % calculate the values for master, domain, alias, position
 %
@@ -30,8 +30,13 @@ end
 % Scalar: master = value
 % else Vector: [master domain]
 Address.master = masterArg(1);
-if sum(size(masterArg)) > 2
-    Address.domain = masterArg(2);
+if numel(masterArg) > 1
+    warning([block ': domain specification has moved to sample time']);
+end
+
+% Second element of sampleTime is the domain
+if numel(sampleTimeArg) > 2
+    Address.domain = sampleTimeArg(2);
 end
 
 if Address.domain
