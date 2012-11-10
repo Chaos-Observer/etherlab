@@ -184,6 +184,8 @@
 extern "C" {
 #endif
 
+struct pdserv *pdserv = NULL;
+
 extern RT_MODEL *MODEL(void);
 
 extern void MdlInitializeSizes(void);
@@ -663,8 +665,15 @@ const char *register_signal(const struct thread_task *task,
             err = "No memory";
             goto out;
         }
-        for (i = 0; i < ndim; ++i) {
-            dim[i] = dimArray[dimArrayIndex + i];
+
+        if (rtwCAPI_GetOrientation(dimMap, dimIndex)
+                    == rtwCAPI_MATRIX_COL_MAJOR) {
+            dim[0] = dimArray[dimArrayIndex + 1];
+            dim[1] = dimArray[dimArrayIndex];
+        }
+        else {
+            for (i = 0; i < ndim; ++i)
+                dim[i] = dimArray[dimArrayIndex + i];
         }
     }
 
@@ -758,8 +767,15 @@ const char *register_parameter( struct pdserv *pdserv,
             err = "No memory";
             goto out;
         }
-        for (i = 0; i < ndim; ++i) {
-            dim[i] = dimArray[dimArrayIndex + i];
+
+        if (rtwCAPI_GetOrientation(dimMap, dimIndex)
+                == rtwCAPI_MATRIX_COL_MAJOR) {
+            dim[0] = dimArray[dimArrayIndex + 1];
+            dim[1] = dimArray[dimArrayIndex];
+        }
+        else {
+            for (i = 0; i < ndim; ++i)
+                dim[i] = dimArray[dimArrayIndex + i];
         }
     }
 
@@ -1016,7 +1032,6 @@ int main(int argc, char **argv)
 {
     RT_MODEL *S;
     struct thread_task task[NUMTASKS];
-    struct pdserv *pdserv = NULL;
     unsigned int dt;
     unsigned int running = 1;
     const char *err = NULL;
