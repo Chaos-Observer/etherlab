@@ -33,7 +33,6 @@ INSTALL (FILES
     getEtherCATAddress.m
     ec_slave3.c ec_slave3.tlc
     setup.m
-    el1xxx.m
 
     master_state.c master_state.tlc
     domain_state.c domain_state.tlc
@@ -42,12 +41,20 @@ INSTALL (FILES
 
     murr_dio.m
     update_library.m update_devices.m
+    slave_dc.m update_mask_state.m
 
-    el1xxx.m  el2xxx.m  el31xx.m
-    el4xxx.m ep1xxx.m ep2xxx.m
-    el30xx.m el320x.m ep31xx.m ekxxxx.m
-    el500x.m el5021.m el5101.m el5101_0010.m
-    el515x.m ep41xx.m ep43xx.m
+    ekxxxx.m
+    el1xxx.m
+    el2xxx.m
+    el30xx.m el31xx.m el320x.m el335x.m
+    el4xxx.m
+    el500x.m el5021.m el5101_0010.m el5101.m el515x.m
+
+    ep1xxx.m
+    ep2xxx.m
+    ep31xx.m
+    ep41xx.m
+    ep43xx.m
 
     mtsrseries_check.m
 
