@@ -1,0 +1,9 @@
+%%
+%% Copyright (c) 2012 IgH Essen GmbH
+%% License: GPL
+%%
+%% Abstract: Post processing RTW file after code generation
+%%       Called by etherlab.tlc
+%%
+
+%selectfile NULL_FILE
