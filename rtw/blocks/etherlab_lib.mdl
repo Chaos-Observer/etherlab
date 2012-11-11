@@ -15,9 +15,9 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "ha"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Sun Nov 11 23:30:12 2012"
-  RTWModifiedTimeStamp	  274575957
-  ModelVersionFormat	  "1.%<AutoIncrement:1072>"
+  LastModifiedDate	  "Sun Nov 11 23:48:00 2012"
+  RTWModifiedTimeStamp	  274578347
+  ModelVersionFormat	  "1.%<AutoIncrement:1073>"
   ConfigurationManager	  "rcs"
   SampleTimeColors	  off
   SampleTimeAnnotations	  off
@@ -586,7 +586,7 @@ Library {
   }
   System {
     Name		    "etherlab_lib"
-    Location		    [80, 45, 548, 679]
+    Location		    [46, 45, 562, 914]
     Open		    off
     ModelBrowserVisibility  off
     ModelBrowserWidth	    200
@@ -600,7 +600,7 @@ Library {
     ShowPageBoundaries	    off
     ZoomFactor		    "100"
     ReportName		    "simulink-default.rpt"
-    SIDHighWatermark	    159
+    SIDHighWatermark	    167
     Block {
       BlockType		      SubSystem
       Name		      "EtherCAT"
@@ -622,7 +622,7 @@ Library {
       MaskIconUnits	      "pixels"
       System {
 	Name			"EtherCAT"
-	Location		[80, 45, 548, 679]
+	Location		[46, 45, 562, 914]
 	Open			off
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
@@ -656,7 +656,7 @@ Library {
 	  MaskIconUnits		  "autoscale"
 	  System {
 	    Name		    "Baumer"
-	    Location		    [791, 135, 1259, 769]
+	    Location		    [757, 45, 1273, 914]
 	    Open		    off
 	    ModelBrowserVisibility  off
 	    ModelBrowserWidth	    200
@@ -730,7 +730,7 @@ Library {
 	  MaskIconUnits		  "autoscale"
 	  System {
 	    Name		    "Beckhoff"
-	    Location		    [636, 0, 1523, 611]
+	    Location		    [636, 91, 1570, 677]
 	    Open		    off
 	    ModelBrowserVisibility  off
 	    ModelBrowserWidth	    200
@@ -1007,12 +1007,12 @@ Library {
 	      "tor=@17;dc_shift0_input=@18;dc_cycle1=@19;dc_cycle1_factor=@20;dc_shift1=@21;dc_shift1_factor=@22;coe=@23;"
 	      MaskTunableValueString  "off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,of"
 	      "f,off"
-	      MaskCallbackString      "||el3356('update-ui');|||||||||el3356('update-ui');|||||||||||"
+	      MaskCallbackString      "||el335x('update-ui');|||||||||el335x('update-ui');|||||||||||"
 	      MaskEnableString	      "on,on,on,on,on,on,on,on,on,on,off,on,off,off,off,off,off,off,off,off,off,off,on"
 	      MaskVisibilityString    "on,on,on,on,on,on,on,on,on,on,off,on,on,on,on,on,on,on,on,on,on,on,on"
 	      MaskToolTipString	      "on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on"
 	      MaskInitialization      "masterStr = '';\npositionStr = '';\n[Address masterStr positionStr] = ...\n    getEthe"
-	      "rCATAddress(gcb, master, index, tsample);\n\nrv = el3356('config',...\n    struct('control',control,'status',st"
+	      "rCATAddress(gcb, master, index, tsample);\n\nrv = el335x('config',...\n    struct('control',control,'status',st"
 	      "atus,'rmb',rmb),...\n    [dc_assign_activate, ...\n    dc_cycle0, dc_cycle0_factor,...\n    dc_shift0, dc_shift"
 	      "0_factor, dc_shift0_input,...\n    dc_cycle1, dc_cycle1_factor,...\n    dc_shift1, dc_shift1_factor], ...\n    "
 	      "struct('gain',scale,'offset',offset,'tau',tau));\n\nrv.SlaveConfig.sdo = coe;\n"
@@ -1908,7 +1908,7 @@ Library {
 	  MaskIconUnits		  "autoscale"
 	  System {
 	    Name		    "Mts"
-	    Location		    [791, 135, 1259, 769]
+	    Location		    [757, 45, 1273, 914]
 	    Open		    off
 	    ModelBrowserVisibility  off
 	    ModelBrowserWidth	    200
@@ -2001,7 +2001,7 @@ Library {
 	  MaskIconUnits		  "autoscale"
 	  System {
 	    Name		    "Murr"
-	    Location		    [791, 135, 1259, 769]
+	    Location		    [757, 45, 1273, 914]
 	    Open		    off
 	    ModelBrowserVisibility  off
 	    ModelBrowserWidth	    200
@@ -2073,7 +2073,7 @@ Library {
 	  MaskIconUnits		  "pixels"
 	  System {
 	    Name		    "Subsystem"
-	    Location		    [622, 290, 1163, 1035]
+	    Location		    [588, 171, 1177, 1151]
 	    Open		    off
 	    ModelBrowserVisibility  off
 	    ModelBrowserWidth	    200
@@ -2111,7 +2111,7 @@ Library {
       MaskIconUnits	      "autoscale"
       System {
 	Name			"Util"
-	Location		[97, 197, 691, 967]
+	Location		[63, 78, 705, 1083]
 	Open			off
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
@@ -2499,17 +2499,18 @@ MatData {
   }
   DataRecord {
     Tag			    DataTag6
-    Data		    "  %)30     .    > ,   8    (     @         %    \"     $    !     0         %  0 \"0    $    ;    <')O9"
+    Data		    "  %)30     .    D ,   8    (     @         %    \"     $    !     0         %  0 \"0    $    ;    <')O9"
     "'5C=   <F5V:7-I;VX 57!D871E           .    .     8    (    !@         %    \"     $    !     0         )    \"    "
-    "    *1@.*I!#@   #@    &    \"     8         !0    @    !     0    $         \"0    @         \"@ T00X   \"8 @  !@ "
-    "   @    0          4    (     0    $    !          X   !H @  !@    @    \"          4    (     0    $    !        "
-    "  4 !  0     0   $    !M871L86)R;V]T        <V5P87)A=&]R         '-E;G1I;F5L          !F=6YC=&EO;E]H86YD;&4 #@   $"
-    "@    &    \"     0         !0    @    !    %0    $         $    !4    O=F]L+V]P=\"]-871L86(M,C Q,F(    .    ,     "
-    "8    (    !          %    \"     $    !     0         0  $ +P    X    P    !@    @    $          4    (     0    $"
-    "    !         !   0!     #@   \"@!   &    \"     (         !0    @    !     0    $         !0 $  D    !    &P   &9"
+    "    *1@.*I!#@   #@    &    \"     8         !0    @    !     0    $         \"0    @         \"@ T00X   \"P @  !@ "
+    "   @    0          4    (     0    $    !          X   \"  @  !@    @    \"          4    (     0    $    !       "
+    "   4 !  0     0   $    !M871L86)R;V]T        <V5P87)A=&]R         '-E;G1I;F5L          !F=6YC=&EO;E]H86YD;&4 #@   "
+    "$@    &    \"     0         !0    @    !    %0    $         $    !4    O=F]L+V]P=\"]-871L86(M,C Q,F(    .    ,    "
+    " 8    (    !          %    \"     $    !     0         0  $ +P    X    P    !@    @    $          4    (     0    "
+    "$    !         !   0!     #@   $ !   &    \"     (         !0    @    !     0    $         !0 $  D    !    &P   &9"
     "U;F-T:6]N '1Y<&4      &9I;&4             #@   #@    &    \"     0         !0    @    !    !@    $         $     8 "
-    "  !E;#,S-7@   X    X    !@    @    $          4    (     0    8    !         !     &    <VEM<&QE   .    2     8   "
-    " (    !          %    \"     $    5     0         0    %0   \"]H;VUE+VAA+V%I;2]E;#,S-7@N;0    "
+    "  !E;#,S-7@   X    X    !@    @    $          4    (     0    8    !         !     &    <VEM<&QE   .    8     8   "
+    " (    !          %    \"     $    N     0         0    +@   \"]H;VUE+VAA+V5T:&5R;&%B+W)T=R]B;&]C:W,O171H97)#050O96"
+    "PS,S5X+FT   "
   }
   DataRecord {
     Tag			    DataTag7
