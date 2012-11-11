@@ -12,7 +12,7 @@ function etherlab_config(hDlg,hSrc)
   % Solver options
   slConfigUISetVal(hDlg,hSrc,'SolverType','Fixed-step');
   slConfigUISetEnabled(hDlg,hSrc,'SolverType','off');
-  slConfigUISetVal(hDlg,hSrc,'Solver','ode1');
+  slConfigUISetVal(hDlg,hSrc,'Solver','discrete');
   slConfigUISetVal(hDlg,hSrc,'SolverMode','SingleTasking');
   slConfigUISetVal(hDlg,hSrc,'AutoInsertRateTranBlk','off');
 
