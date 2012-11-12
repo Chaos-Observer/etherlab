@@ -136,7 +136,7 @@
     %if port.Param[2] == -1
       %% No filter
       %%
-      %assign RollVars = ["y%<idx>", "dwork/DWORK%<port.DWorkIndex>"]
+      %assign RollVars = ["y%<idx>", "<dwork>/DWORK%<port.DWorkIndex>"]
       %%
       %assign   gain = port.Param[0] != -1
       %assign offset = port.Param[1] != -1
@@ -150,12 +150,12 @@
       %%
       %% Add gain parameter name to RollVars if it is tuneable
       %if gainTuneable
-        %assign RollVars = RollVars + "param/%<gainParam.Name>"
+        %assign RollVars = RollVars + "<param>/%<gainParam.Name>"
       %endif
       %%
       %% Add offset parameter name to RollVars if it is tuneable
       %if offsetTuneable
-        %assign RollVars = RollVars + "param/%<offsetParam.Name>"
+        %assign RollVars = RollVars + "<param>/%<offsetParam.Name>"
       %endif
       %%
       %trace RollVars=%<RollVars>
@@ -275,7 +275,7 @@
       %assign rollRegions = [0:%<PortWidth-1>]                                 
     %endif                                                              
     %%
-    %assign RollVars = ["u%<idx>", "dwork/DWORK%<port.DWorkIndex>"]
+    %assign RollVars = ["u%<idx>", "<dwork>/DWORK%<port.DWorkIndex>"]
     %%
     %assign   gain = port.Param[0] != -1
     %assign offset = port.Param[1] != -1
@@ -289,12 +289,12 @@
     %%
     %% Add gain parameter name to RollVars if it is tuneable
     %if gainTuneable
-      %assign RollVars = RollVars + "param/%<gainParam.Name>"
+      %assign RollVars = RollVars + "<param>/%<gainParam.Name>"
     %endif
     %%
     %% Add offset parameter name to RollVars if it is tuneable
     %if offsetTuneable
-      %assign RollVars = RollVars + "param/%<offsetParam.Name>"
+      %assign RollVars = RollVars + "<param>/%<offsetParam.Name>"
     %endif
     %%
     %trace RollVars=%<RollVars> regiouns=%<rollRegions> port=%<port>
@@ -388,7 +388,7 @@
   %assign PortWidth = LibBlockOutputSignalWidth(idx)
   %assign rollRegions = [0:%<PortWidth-1>]
   %%
-  %assign RollVars = ["dwork/DWORK%<port.DWorkIndex>"]
+  %assign RollVars = ["<dwork>/DWORK%<port.DWorkIndex>"]
   %%
   %assign   gain = port.Param[0] != -1
   %assign offset = port.Param[1] != -1
@@ -403,17 +403,17 @@
   %%
   %% Add gain parameter name to RollVars if it is tuneable
   %if gainTuneable
-    %assign RollVars = RollVars + "param/%<gainParam.Name>"
+    %assign RollVars = RollVars + "<param>/%<gainParam.Name>"
   %endif
   %%
   %% Add offset parameter name to RollVars if it is tuneable
   %if offsetTuneable
-    %assign RollVars = RollVars + "param/%<offsetParam.Name>"
+    %assign RollVars = RollVars + "<param>/%<offsetParam.Name>"
   %endif
   %%
   %% Add filter parameter name to RollVars if it is tuneable
   %if filterTuneable
-    %assign RollVars = RollVars + "param/%<filterParam.Name>"
+    %assign RollVars = RollVars + "<param>/%<filterParam.Name>"
   %endif
   %%
   %trace RollVars=%<RollVars>
