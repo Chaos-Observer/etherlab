@@ -169,15 +169,15 @@ case 'sc'
         rv.PortConfig.output(port).pdo = pdo{2};
         rv.PortConfig.output(port).pdo_data_type = 1032;
         if numel(scale.gain) > 1
-            rv.PortConfig.output(port).gain = {'Gain1', scale.gain(2)};
+            rv.PortConfig.output(port).gain = {'Gain2', scale.gain(2)};
             rv.PortConfig.output(port).full_scale = 2^31;
         end
         if numel(scale.offset) > 1
-            rv.PortConfig.output(port).offset = {'Offset1', scale.offset(2)};
+            rv.PortConfig.output(port).offset = {'Offset2', scale.offset(2)};
             rv.PortConfig.output(port).full_scale = 2^31;
         end
         if numel(scale.tau) > 1
-            rv.PortConfig.output(port).tau = {'Filter1', scale.tau(2)};
+            rv.PortConfig.output(port).tau = {'Filter2', scale.tau(2)};
         end
 
         port = port + 1;
