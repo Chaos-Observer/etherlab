@@ -592,6 +592,8 @@ const char *register_signal(const struct thread_task *task,
         rtwCAPI_GetSamplePeriodPtr(sampleTimeMap, sTimeIndex);
     int8_T tid = rtwCAPI_GetSampleTimeTID(sampleTimeMap, sTimeIndex);
     uint_T decimation;
+    boolean_T related;
+    const char *prev_signal_path, *next_signal_path;
 
     struct pdvariable *signal;
     char *path;
@@ -616,29 +618,41 @@ const char *register_signal(const struct thread_task *task,
         goto out;
     }
 
+    /* Find out whether this signal path is the same as a neighbour. Then
+     * the path must be modified to make it unique.
+     * If it has an alias, use it, otherwise hopefully the port number
+     * can be used to make it unique.
+     *
+     * Note: * idx + 1 is valid, since the list is null terminated
+     */
+    prev_signal_path = idx ? rtwCAPI_GetSignalBlockPath(signals, idx-1) : NULL;
+    next_signal_path = rtwCAPI_GetSignalBlockPath(signals, idx+1);
+    related =
+        (prev_signal_path && !strcmp(blockPath, prev_signal_path))
+        || (next_signal_path && !strcmp(blockPath, next_signal_path));
+
+    /* Simulink Coder adds model name to the path. This is totally useless,
+     * so remomve it */
     blockPath = strchr(blockPath, '/');
     if (!blockPath) {
         err = "No '/' in path";
         goto out;
     }
 
-    /* If portNumber or the port number of the next signal is set, it means
-     * that these signals are part of a single block. Try to use the
-     * signalName to extend the path, otherwise attach the portNumber.
-     *
-     * Note: * idx + 1 is valid, since the list is null terminated
-     */
-    if (portNumber || rtwCAPI_GetSignalPortNumber(signals, idx + 1)) {
-        if (*signalName) {
+    /* Format block path */
+    if (related) {
+        if (*signalName && strlen(signalName)) {
+            /* Add alias to signal name for related signals */
             snprintf(path, pathLen, "%s/%s", blockPath, signalName);
             signalName = NULL;
         }
         else {
+            /* No alias, so add portNumber to identify related signals */
             snprintf(path, pathLen, "%s/%u", blockPath, portNumber);
         }
     }
     else {
-        snprintf(path, pathLen, "%s", blockPath);
+        strncpy(path, blockPath, pathLen);
     }
 
 #if !defined(MULTITASKING)
@@ -687,7 +701,7 @@ const char *register_signal(const struct thread_task *task,
     signal = pdserv_signal(task->pdtask, decimation,
             path, data_type, address, ndim, dim);
 
-    if (signalName && *signalName)
+    if (signal && !related && signalName && *signalName)
         pdserv_set_alias(signal, signalName);
 
 out:
