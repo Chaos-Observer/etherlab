@@ -258,7 +258,8 @@ struct thread_task {
     const char *err;
     double sample_time;
     struct pdtask *pdtask;
-    struct timespec time;
+    struct timespec monotonic_time;
+    struct timespec world_time;
     pthread_t thread;
 };
 
@@ -288,6 +289,13 @@ inline void timeradd(struct timespec *t, unsigned int dt)
 #if !defined(MULTITASKING)  /* SINGLETASKING */
 
 #define NUMTASKS 1
+static struct thread_task task[NUMTASKS];
+
+const struct timespec *
+get_etl_world_time(size_t tid)
+{
+    return &task[0].world_time;
+}
 
 /** Perform one step of the model.
  *
@@ -322,7 +330,13 @@ rt_OneStepMain(RT_MODEL *S)
 #else /* MULTITASKING */
 
 #define NUMTASKS (NUMST - FIRST_TID)
+static struct thread_task task[NUMTASKS];
 
+const struct timespec *
+get_etl_world_time(size_t tid)
+{
+    return &task[tid].world_time;
+}
 
 /** Perform one step of the model.
  *
@@ -405,15 +419,15 @@ void *run_task(void *p)
     unsigned int dt = thread->sample_time * 1.0e9 + 0.5;
     uint32_t exec_ns = 0, period_ns = 0;
     struct timespec start_time, last_start_time = {0, 0},
-                    end_time = last_start_time, world_time;
+                    end_time = last_start_time;
 
     do {
         clock_gettime(CLOCK_MONOTONIC, &start_time);
-        clock_gettime(CLOCK_REALTIME, &world_time);
+        clock_gettime(CLOCK_REALTIME, &thread->world_time);
 
         thread->err = rt_OneStepTid(thread->S, thread->tid);
 
-        pdserv_update(thread->pdtask, &world_time);
+        pdserv_update(thread->pdtask, &thread->world_time);
 
         period_ns = DIFF_NS(last_start_time, start_time);
         exec_ns = DIFF_NS(last_start_time, end_time);
@@ -421,11 +435,12 @@ void *run_task(void *p)
         pdserv_update_statistics(thread->pdtask,
                 exec_ns / 1e9, period_ns / 1e9, 0);
 
-        timeradd(&thread->time, dt);
+        timeradd(&thread->monotonic_time, dt);
 
         clock_gettime(CLOCK_MONOTONIC, &end_time);
 
-        clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &thread->time, 0);
+        clock_nanosleep(CLOCK_MONOTONIC,
+                TIMER_ABSTIME, &thread->monotonic_time, 0);
     } while(!thread->err && *thread->running);
 
     *thread->running = 0;
@@ -434,7 +449,6 @@ void *run_task(void *p)
 }
 
 #endif /* MULTITASKING */
-
 
 /****************************************************************************/
 
@@ -540,7 +554,8 @@ int get_etl_data_type (const char *mwName,
         case SS_UINT32:  pd_type = pd_uint32_T;        break;
         case SS_BOOLEAN: pd_type = pd_boolean_T;       break;
         case SS_STRUCT:
-                         pd_type = get_compound_data_type(mwName, size); break;
+                         pd_type = get_compound_data_type(mwName, size);
+                         break;
         default:         pd_type = 0;                  break;
     }
 
@@ -921,7 +936,7 @@ void stack_prefault(void)
     memset(dummy, 0, MAX_SAFE_STACK);
 }
 
-/*****************************************************************************/
+/****************************************************************************/
 
 /** Remove the PID file.
  */
@@ -992,7 +1007,7 @@ void usage(FILE *f)
             base_name);
 }
 
-/*****************************************************************************/
+/****************************************************************************/
 
 /** Get the command-line options.
  */
@@ -1069,14 +1084,13 @@ void get_options(int argc, char **argv)
 int main(int argc, char **argv)
 {
     RT_MODEL *S;
-    struct thread_task task[NUMTASKS];
     unsigned int dt;
     unsigned int running = 1;
     const char *err = NULL;
     size_t i;
     uint32_t exec_ns = 0, period_ns = 0;
     struct timespec start_time, last_start_time = {0, 0},
-                    end_time = last_start_time, world_time;
+                    end_time = last_start_time;
 
     /* Set defaults for command-line options. */
     base_name = basename(argv[0]);
@@ -1156,12 +1170,12 @@ int main(int argc, char **argv)
         create_pid_file();
     }
 
-    clock_gettime(CLOCK_MONOTONIC, &task[0].time);
+    clock_gettime(CLOCK_MONOTONIC, &task[0].monotonic_time);
 
 #if defined(MULTITASKING)
     /* Start subtask threads */
     for (i = 1; i < NUMTASKS; ++i) {
-        task[i].time = task[0].time;
+        task[i].monotonic_time = task[0].monotonic_time;
         task[i].running = &running;
         task[i].err = 0;
         pthread_create(&task[i].thread, 0, run_task, &task[i]);
@@ -1174,13 +1188,14 @@ int main(int argc, char **argv)
     /* Main thread running here */
     do {
         clock_gettime(CLOCK_MONOTONIC, &start_time);
-        clock_gettime(CLOCK_REALTIME, &world_time);
+        clock_gettime(CLOCK_REALTIME, &task[0].world_time);
 
-        pdserv_get_parameters(pdserv, task[0].pdtask, &task[0].time);
+        pdserv_get_parameters(pdserv, task[0].pdtask,
+                &task[0].monotonic_time);
 
         err = rt_OneStepMain(S);
 
-        pdserv_update(task[0].pdtask, &world_time);
+        pdserv_update(task[0].pdtask, &task[0].world_time);
 
         period_ns = DIFF_NS(last_start_time, start_time);
         exec_ns = DIFF_NS(last_start_time, end_time);
@@ -1188,11 +1203,12 @@ int main(int argc, char **argv)
         pdserv_update_statistics(task[0].pdtask,
                 exec_ns / 1e9, period_ns / 1e9, 0);
 
-        timeradd(&task[0].time, dt);
+        timeradd(&task[0].monotonic_time, dt);
 
         clock_gettime(CLOCK_MONOTONIC, &end_time);
 
-        clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &task[0].time, 0);
+        clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME,
+                &task[0].monotonic_time, 0);
     } while(!err && running);
 
     running = 0;
