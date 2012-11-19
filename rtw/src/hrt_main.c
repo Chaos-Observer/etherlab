@@ -597,7 +597,7 @@ const char *register_signal(const struct thread_task *task,
 
     struct pdvariable *signal;
     char *path;
-    size_t *dim = 0;
+    size_t arrayDim[2], *dim = arrayDim;
 
     size_t i;
     const char *err = 0;
@@ -625,7 +625,8 @@ const char *register_signal(const struct thread_task *task,
      *
      * Note: * idx + 1 is valid, since the list is null terminated
      */
-    prev_signal_path = idx ? rtwCAPI_GetSignalBlockPath(signals, idx-1) : NULL;
+    prev_signal_path =
+        idx ? rtwCAPI_GetSignalBlockPath(signals, idx-1) : NULL;
     next_signal_path = rtwCAPI_GetSignalBlockPath(signals, idx+1);
     related =
         (prev_signal_path && !strcmp(blockPath, prev_signal_path))
@@ -666,29 +667,43 @@ const char *register_signal(const struct thread_task *task,
 #endif
 
     if (ndim == 1) {
-        ndim = dimArray[dimArrayIndex];
+        /* Only one dimension */
+        dim[0] = dimArray[dimArrayIndex];
     }
-    else if (ndim == 2
-            && min(dimArray[dimArrayIndex],
-                dimArray[dimArrayIndex + 1]) == 1) {
-        ndim = max(dimArray[dimArrayIndex], dimArray[dimArrayIndex + 1]);
+    else if (ndim == 2) {
+        if (dimArray[dimArrayIndex] == 1
+                || dimArray[dimArrayIndex + 1] == 1) {
+            ndim = 1;
+            dim[0] = dimArray[dimArrayIndex] * dimArray[dimArrayIndex + 1];
+        }
+        else if (rtwCAPI_GetOrientation(dimMap, dimIndex)
+                == rtwCAPI_MATRIX_COL_MAJOR) {
+            dim[0] = dimArray[dimArrayIndex + 1];
+            dim[1] = dimArray[dimArrayIndex];
+        }
+        else {
+            dim[0] = dimArray[dimArrayIndex];
+            dim[1] = dimArray[dimArrayIndex + 1];
+        }
     }
     else {
+        /* Multidimenstional array. Copy array specification */
         dim = calloc(ndim, sizeof(size_t));
         if (!dim) {
             err = "No memory";
             goto out;
         }
 
-        if (rtwCAPI_GetOrientation(dimMap, dimIndex)
-                    == rtwCAPI_MATRIX_COL_MAJOR) {
-            dim[0] = dimArray[dimArrayIndex + 1];
-            dim[1] = dimArray[dimArrayIndex];
-        }
-        else {
-            for (i = 0; i < ndim; ++i)
-                dim[i] = dimArray[dimArrayIndex + i];
-        }
+        /* Reverse the order of the nD-Matrix.
+         * Matlab's Matrices run coherently from the first to the last index,
+         * while in C it is exactly the other way round. The intention here
+         * is to present the arrays in a way that is compatable to C.
+         *
+         * e.g. in Matlab A(2,1,1) and A(3,1,1) are adjacent, whereas
+         * in C, A[1][1][2] and A[1][1][3] are adjacent.
+         */
+        for (i = 0; i < ndim; ++i)
+            dim[i] = dimArray[dimArrayIndex + (ndim - 1) - i];
     }
 
 #if 0
@@ -706,7 +721,8 @@ const char *register_signal(const struct thread_task *task,
 
 out:
     free(path);
-    free(dim);
+    if (dim != arrayDim)
+        free(dim);
     if (err) {
         printf("%s\n", err);
     }
@@ -739,7 +755,7 @@ const char *register_parameter( struct pdserv *pdserv,
 
     struct pdvariable *param;
     char *path;
-    size_t *dim = 0;
+    size_t arrayDim[2], *dim = arrayDim;
 
     size_t i;
     const char *err = 0;
@@ -769,28 +785,35 @@ const char *register_parameter( struct pdserv *pdserv,
     snprintf(path, pathLen, "%s/%s", blockPath, paramName);
 
     if (ndim == 1) {
-        ndim = dimArray[dimArrayIndex];
+        /* Only one dimension */
+        dim[0] = dimArray[dimArrayIndex];
     }
-    else if (ndim == 2
-            && min(dimArray[dimArrayIndex], dimArray[dimArrayIndex+1]) == 1) {
-        ndim = max(dimArray[dimArrayIndex], dimArray[dimArrayIndex+1]);
+    else if (ndim == 2) {
+        if (dimArray[dimArrayIndex] == 1
+                || dimArray[dimArrayIndex + 1] == 1) {
+            ndim = 1;
+            dim[0] = dimArray[dimArrayIndex] * dimArray[dimArrayIndex + 1];
+        }
+        else if (rtwCAPI_GetOrientation(dimMap, dimIndex)
+                == rtwCAPI_MATRIX_COL_MAJOR) {
+            dim[0] = dimArray[dimArrayIndex + 1];
+            dim[1] = dimArray[dimArrayIndex];
+        }
+        else {
+            dim[0] = dimArray[dimArrayIndex];
+            dim[1] = dimArray[dimArrayIndex + 1];
+        }
     }
     else {
+        /* Multidimenstional array. Copy array specification */
         dim = calloc(ndim, sizeof(size_t));
         if (!dim) {
             err = "No memory";
             goto out;
         }
 
-        if (rtwCAPI_GetOrientation(dimMap, dimIndex)
-                == rtwCAPI_MATRIX_COL_MAJOR) {
-            dim[0] = dimArray[dimArrayIndex + 1];
-            dim[1] = dimArray[dimArrayIndex];
-        }
-        else {
-            for (i = 0; i < ndim; ++i)
-                dim[i] = dimArray[dimArrayIndex + i];
-        }
+        for (i = 0; i < ndim; ++i)
+            dim[i] = dimArray[dimArrayIndex + (ndim - 1) - i];
     }
 
     param = pdserv_parameter(pdserv, path, 0666,
@@ -798,7 +821,8 @@ const char *register_parameter( struct pdserv *pdserv,
 
 out:
     free(path);
-    free(dim);
+    if (dim != arrayDim)
+        free(dim);
     if (err) {
         printf("%s\n", err);
     }
