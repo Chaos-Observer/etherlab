@@ -35,7 +35,7 @@ if numel(masterArg) > 1
 end
 
 % Second element of sampleTime is the domain
-if numel(sampleTimeArg) > 2
+if numel(sampleTimeArg) >= 2
     Address.domain = sampleTimeArg(2);
 end
 
