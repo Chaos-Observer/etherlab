@@ -944,7 +944,7 @@ init_slave(size_t nst, const struct ec_slave *slave)
                             sdo->sdo_index, sdo->sdo_subindex,
                             (const uint8_t*)sdo->byte_array,
                             sdo->value)) {
-                    failed_method = "ecrt_slave_config_complete_sdo";
+                    failed_method = "ecrt_slave_config_sdo";
                     goto out_slave_failed;
                 }
             }
@@ -1047,7 +1047,8 @@ init_slave(size_t nst, const struct ec_slave *slave)
 
 out_slave_failed:
     snprintf(errbuf, sizeof(errbuf), 
-            "%s() failed ", failed_method);
+            "%s() failed while configuring slave %u:%u",
+            failed_method, slave->alias, slave->position);
     return errbuf;
 }
 
