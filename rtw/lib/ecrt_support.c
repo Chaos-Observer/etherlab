@@ -1116,9 +1116,7 @@ const char * ecs_start(
             size_t bytes = bitlen / 8;
 
             convert->src = pdo_map->address;
-            convert->dst = pdo_map->domain->io_data
-                + pdo_map->offset
-                + bytes * pdo_map->idx;
+            convert->dst = pdo_map->domain->io_data + pdo_map->offset;
 
             if (pdo_map->datatype < 1008) {
                 /* bit operations */
@@ -1172,9 +1170,7 @@ const char * ecs_start(
             size_t bytes = bitlen / 8;
 
             convert->dst = pdo_map->address;
-            convert->src = pdo_map->domain->io_data
-                + pdo_map->offset
-                + bytes * pdo_map->idx;
+            convert->src = pdo_map->domain->io_data + pdo_map->offset;
 
             if (pdo_map->datatype < 1008) {
                 void (*convert_funcs[])(const struct endian_convert_t *) = {
