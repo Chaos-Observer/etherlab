@@ -11,7 +11,7 @@ case 'set'
     ud = get_param(gcbh,'UserData');
     model = get_param(gcbh, 'model');
 
-    if model(1) ~= 'E'
+    if ~ismember(model(1), {'C', 'E'})
         errordlg('Please choose a correct slave', gcb);
         return
     end
@@ -33,7 +33,7 @@ case 'check'
 
     if isequal(sc.sm, ud.SlaveConfig.sm) && ~isequal(sc, ud.SlaveConfig)
         % The slave has a new name
-        warning('el1xxx:NewName', ...
+        warning('ekxxxx:NewName', ...
                 '%s: Renaming device from %s to %s', ...
                 gcb, get_param(gcbh,'model'), sc.description)
         set_param(gcbh, 'model', sc.description)
