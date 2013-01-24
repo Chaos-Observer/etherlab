@@ -193,7 +193,7 @@ static const struct datatype_info {
 
 static const struct datatype_info *type_uint8  = &datatype_info[7];
 static const struct datatype_info *type_uint16 = &datatype_info[8];
-static const struct datatype_info *type_uint32 = &datatype_info[9];
+static const struct datatype_info *type_uint32 = &datatype_info[10];
 /* static struct datatype_info *type_single = &datatype_info[19]; */
 /* static struct datatype_info *type_double = &datatype_info[20]; */
 
