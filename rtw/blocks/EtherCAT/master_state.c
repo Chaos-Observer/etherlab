@@ -15,10 +15,11 @@
 #include "simstruc.h"
 
 #define MASTER             mxGetScalar(ssGetSFcnParam(S,0))
-#define RESET              mxGetScalar(ssGetSFcnParam(S,1))
-#define REFCLOCK_DEC       mxGetScalar(ssGetSFcnParam(S,2))
-#define TSAMPLE            mxGetScalar(ssGetSFcnParam(S,3))
-#define PARAM_COUNT                                     4
+#define DEVICES            mxGetScalar(ssGetSFcnParam(S,1))
+#define RESET              mxGetScalar(ssGetSFcnParam(S,2))
+#define REFCLOCK_DEC       mxGetScalar(ssGetSFcnParam(S,3))
+#define TSAMPLE            mxGetScalar(ssGetSFcnParam(S,4))
+#define PARAM_COUNT                                     5
 
 
 /*====================*
@@ -33,7 +34,8 @@
 static void mdlInitializeSizes(SimStruct *S)
 {
     uint_T i;
-    
+    int_T num_devices = DEVICES;
+
     ssSetNumSFcnParams(S, PARAM_COUNT);  /* Number of expected parameters */
     if (ssGetNumSFcnParams(S) != ssGetSFcnParamsCount(S)) {
         /* Return if number of expected != number of actual parameters */
@@ -42,6 +44,11 @@ static void mdlInitializeSizes(SimStruct *S)
     for( i = 0; i < PARAM_COUNT; i++) 
         ssSetSFcnParamTunable(S,i,SS_PRM_NOT_TUNABLE);
 
+    if (num_devices <= 0) {
+        ssSetErrorStatus(S, "Number of devices must be a positive integer");
+        return;
+    }
+    
     if (RESET) {
         ssSetNumInputPorts(S, 1);
         ssSetNumIWork(S, 1);
@@ -53,11 +60,11 @@ static void mdlInitializeSizes(SimStruct *S)
     }
 
     if (!ssSetNumOutputPorts(S, 3)) return;
-    ssSetOutputPortWidth(S, 0, 1);
+    ssSetOutputPortWidth(S, 0, num_devices);
     ssSetOutputPortDataType(S, 0, SS_UINT32);
-    ssSetOutputPortWidth(S, 1, 1);
+    ssSetOutputPortWidth(S, 1, num_devices);
     ssSetOutputPortDataType(S, 1, SS_UINT8);
-    ssSetOutputPortWidth(S, 2, 1);
+    ssSetOutputPortWidth(S, 2, num_devices);
     ssSetOutputPortDataType(S, 2, SS_BOOLEAN);
 
     ssSetNumSampleTimes(S, 1);

@@ -15,9 +15,9 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "ha"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Sun Nov 11 23:48:00 2012"
-  RTWModifiedTimeStamp	  274578347
-  ModelVersionFormat	  "1.%<AutoIncrement:1073>"
+  LastModifiedDate	  "Thu Jan 24 15:23:13 2013"
+  RTWModifiedTimeStamp	  280941106
+  ModelVersionFormat	  "1.%<AutoIncrement:1076>"
   ConfigurationManager	  "rcs"
   SampleTimeColors	  off
   SampleTimeAnnotations	  off
@@ -586,7 +586,7 @@ Library {
   }
   System {
     Name		    "etherlab_lib"
-    Location		    [46, 45, 562, 914]
+    Location		    [80, 25, 1066, 873]
     Open		    off
     ModelBrowserVisibility  off
     ModelBrowserWidth	    200
@@ -600,7 +600,7 @@ Library {
     ShowPageBoundaries	    off
     ZoomFactor		    "100"
     ReportName		    "simulink-default.rpt"
-    SIDHighWatermark	    167
+    SIDHighWatermark	    176
     Block {
       BlockType		      SubSystem
       Name		      "EtherCAT"
@@ -622,7 +622,7 @@ Library {
       MaskIconUnits	      "pixels"
       System {
 	Name			"EtherCAT"
-	Location		[46, 45, 562, 914]
+	Location		[80, 25, 1066, 873]
 	Open			off
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
@@ -656,7 +656,7 @@ Library {
 	  MaskIconUnits		  "autoscale"
 	  System {
 	    Name		    "Baumer"
-	    Location		    [757, 45, 1273, 914]
+	    Location		    [723, 45, 1287, 1149]
 	    Open		    off
 	    ModelBrowserVisibility  off
 	    ModelBrowserWidth	    200
@@ -730,7 +730,7 @@ Library {
 	  MaskIconUnits		  "autoscale"
 	  System {
 	    Name		    "Beckhoff"
-	    Location		    [636, 91, 1570, 677]
+	    Location		    [602, 45, 1584, 866]
 	    Open		    off
 	    ModelBrowserVisibility  off
 	    ModelBrowserWidth	    200
@@ -1800,6 +1800,7 @@ Library {
 	  BackgroundColor	  "yellow"
 	  FunctionName		  "domain_state"
 	  Parameters		  "master,domain,input,output,io_domain,tsample"
+	  SFunctionModules	  "'ecrt_support'"
 	  EnableBusSupport	  off
 	  MaskType		  "Domain State"
 	  MaskDescription	  "Displays the following domain state information:\n* Working Counter\n* Domain state:\n	0 - No sl"
@@ -1861,31 +1862,32 @@ Library {
 	Block {
 	  BlockType		  S-Function
 	  Name			  "Master State"
-	  SID			  26
+	  SID			  176
 	  Ports			  [0, 3]
 	  Position		  [280, 30, 355, 70]
 	  BackgroundColor	  "yellow"
 	  FunctionName		  "master_state"
-	  Parameters		  "master,reset,sync_dec,tsample"
+	  Parameters		  "master,devices,reset,sync_dec,tsample"
+	  SFunctionModules	  "'ecrt_support'"
 	  EnableBusSupport	  off
 	  MaskType		  "Master State"
 	  MaskDescription	  "Outputs master state:\n* number of responding slaves\n* Slave states\n* Link up\n\nEnabling <b>M"
 	  "aster Reset</b> forces the master to reset the bus\nand scan for new slaves\n"
-	  MaskPromptString	  "Master|Reset Port|Reference Clock Sync Decimation|Sample Time"
-	  MaskStyleString	  "edit,checkbox,edit,edit"
-	  MaskVariables		  "master=@1;reset=@2;sync_dec=@3;tsample=@4;"
-	  MaskTunableValueString  "off,off,off,off"
-	  MaskCallbackString	  "|||"
-	  MaskEnableString	  "on,on,on,on"
-	  MaskVisibilityString	  "on,on,on,on"
-	  MaskToolTipString	  "on,on,on,on"
+	  MaskPromptString	  "Master|Device Count|Reset Port|Reference Clock Sync Decimation|Sample Time"
+	  MaskStyleString	  "edit,edit,checkbox,edit,edit"
+	  MaskVariables		  "master=@1;devices=@2;reset=@3;sync_dec=@4;tsample=@5;"
+	  MaskTunableValueString  "off,off,off,off,off"
+	  MaskCallbackString	  "||||"
+	  MaskEnableString	  "on,on,on,on,on"
+	  MaskVisibilityString	  "on,on,on,on,on"
+	  MaskToolTipString	  "on,on,on,on,on"
 	  MaskDisplay		  "fprintf('Master State\\nM: %u', master);"
 	  MaskIconFrame		  on
 	  MaskIconOpaque	  on
 	  MaskIconRotate	  "none"
 	  MaskPortRotate	  "default"
 	  MaskIconUnits		  "autoscale"
-	  MaskValueString	  "0|off|0|0"
+	  MaskValueString	  "0|1|off|0|0"
 	}
 	Block {
 	  BlockType		  SubSystem
@@ -1908,7 +1910,7 @@ Library {
 	  MaskIconUnits		  "autoscale"
 	  System {
 	    Name		    "Mts"
-	    Location		    [757, 45, 1273, 914]
+	    Location		    [723, 45, 1287, 1149]
 	    Open		    off
 	    ModelBrowserVisibility  off
 	    ModelBrowserWidth	    200
@@ -2001,7 +2003,7 @@ Library {
 	  MaskIconUnits		  "autoscale"
 	  System {
 	    Name		    "Murr"
-	    Location		    [757, 45, 1273, 914]
+	    Location		    [723, 45, 1287, 1149]
 	    Open		    off
 	    ModelBrowserVisibility  off
 	    ModelBrowserWidth	    200
@@ -2073,7 +2075,7 @@ Library {
 	  MaskIconUnits		  "pixels"
 	  System {
 	    Name		    "Subsystem"
-	    Location		    [588, 171, 1177, 1151]
+	    Location		    [554, 52, 1191, 1267]
 	    Open		    off
 	    ModelBrowserVisibility  off
 	    ModelBrowserWidth	    200
@@ -2111,7 +2113,7 @@ Library {
       MaskIconUnits	      "autoscale"
       System {
 	Name			"Util"
-	Location		[63, 78, 705, 1083]
+	Location		[29, 45, 719, 1285]
 	Open			off
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
@@ -2756,13 +2758,13 @@ MatData {
     "A7W1Y<&4       X   !0    !@    @    &          4    (     0    0    !          D    @                             "
     "     !            .    .     8    (    !@         %    \"     $    !     0         )    \"           2(] #@   %   "
     "  &    \"     8         !0    @    !    !     $         \"0   \"                                  &$            X "
-    "   X    !@    @    &          4    (     0    $    !          D    (          !(CT .    Z $   8    (     @        "
+    "   X    !@    @    &          4    (     0    $    !          D    (           @D$ .    Z $   8    (     @        "
     " %    \"     $    \"     0         %  0 #@    $    <    <&1O              !P9&]?9&%T85]T>7!E       .    L     8   "
     " (    !@         %    \"     0    $     0         )    @            / _        \\#\\       #P/P       / _         "
     "                                         #P/P        A         $$         40                                      "
     "     #@   #@    &    \"     8         !0    @    !     0    $         \"0    @          $B/0 X   !0    !@    @    "
     "&          4    (     0    0    !          D    @            \\#\\                  \"1            .    .     8   "
-    " (    !@         %    \"     $    !     0         )    \"           2(] #@   + \"   &    \"    !          !0    @ "
+    " (    !@         %    \"     $    !     0         )    \"           ()! #@   + \"   &    \"    !          !0    @ "
     "   !     0    $         #@   ( \"   &    \"     (         !0    @    !     0    $         !0 $ !     !    0    &UA"
     "=&QA8G)O;W0       !S97!A<F%T;W(         <V5N=&EN96P          &9U;F-T:6]N7VAA;F1L90 .    2     8    (    !         "
     " %    \"     $    5     0         0    %0   \"]V;VPO;W!T+TUA=&QA8BTR,#$R8@    X    P    !@    @    $          4   "
