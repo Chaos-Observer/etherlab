@@ -293,7 +293,7 @@ case 'PortConfig'
             n = numel(spec{j});
             rv(count).pdo = repmat([varargin{2},i-1,0,0], numel(spec{j}), 1);
             rv(count).pdo(:,3) = spec{j};
-            rv(count).pdo_data_type = 1000 + pdo{idx(i),3}(spec{i}(1)+1,3);
+            rv(count).pdo_data_type = 1000 + pdo{idx(i),3}(spec{j}(1)+1,3);
             count = count + 1;
         end
     end
