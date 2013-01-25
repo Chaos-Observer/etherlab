@@ -253,10 +253,11 @@ int get_etl_data_type (const char *mwName,
 
 struct thread_task {
     RT_MODEL *S;
-    uint_T tid;
+    uint_T sl_tid;
     unsigned int *running;
     const char *err;
     double sample_time;
+    unsigned int repetitions;
     struct pdtask *pdtask;
     struct timespec monotonic_time;
     struct timespec world_time;
@@ -425,7 +426,7 @@ void *run_task(void *p)
         clock_gettime(CLOCK_MONOTONIC, &start_time);
         clock_gettime(CLOCK_REALTIME, &thread->world_time);
 
-        thread->err = rt_OneStepTid(thread->S, thread->tid);
+        thread->err = rt_OneStepTid(thread->S, thread->sl_tid);
 
         pdserv_update(thread->pdtask, &thread->world_time);
 
@@ -1112,8 +1113,8 @@ int main(int argc, char **argv)
     /* Create necessary pdserv tasks */
     for (i = 0; i < NUMTASKS; ++i) {
         task[i].S = S;
-        task[i].tid = i + FIRST_TID;
-        task[i].sample_time = rtmGetSampleTime(S, task[i].tid);
+        task[i].sl_tid = i + FIRST_TID;
+        task[i].sample_time = rtmGetSampleTime(S, task[i].sl_tid);
         task[i].pdtask = pdserv_create_task(pdserv, task[i].sample_time, 0);
     }
 
