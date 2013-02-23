@@ -90,30 +90,44 @@
  *          .pdo = PdoSpec
  *          .big_endian = True for big endian data type
  *          .pdo_data_type = specifies the data type of the PDO.
- *                           The following data types are allowed:
- *                                1001: Boolean
- *                                1002: Bit2
- *                                1003: Bit3
- *                                1004: Bit4
- *                                1005: Bit5
- *                                1006: Bit6
- *                                1007: Bit7
- *                                1008: Unsigned8
- *                                1016: Unsigned16
- *                                1024: Unsigned24
- *                                1032: Unsigned32
- *                                1040: Unsigned40
- *                                1048: Unsigned48
- *                                1056: Unsigned56
- *                                1064: Unsigned64
+ *              The data type can be specified using:
+ *              1) Matlab data types
+ *                      * uint(n): Unsigned integer with n bits,
+ *                                 n E [1..8, 16, 24, 32, 40, 48, 56, 64]
+ *                      * sint(n): Signed integer with n bits
+ *                                 n E [8, 16, 32, 64]
+ *                      * float('single') or float('double')
+ *              2) String specification:
+ *                      'Boolean',
+ *                      'Bit2', 'Bit3', 'Bit4', 'Bit5', 'Bit6', 'Bit7',
+ *                      'Unsigned8',  'Unsigned16', 'Unsigned24', 'Unsigned32',
+ *                      'Unsigned40', 'Unsigned48', 'Unsigned56', 'Unsigned64',
+ *                      'Integer8',   'Integer16',  'Integer32',  'Integer64',
+ *                      'Real32', 'Real64'
+ *              3) Numeric value (deprecated, for backward compatability)
+ *                      1001: Boolean
+ *                      1002: Bit2
+ *                      1003: Bit3
+ *                      1004: Bit4
+ *                      1005: Bit5
+ *                      1006: Bit6
+ *                      1007: Bit7
+ *                      1008: Unsigned8
+ *                      1016: Unsigned16
+ *                      1024: Unsigned24
+ *                      1032: Unsigned32
+ *                      1040: Unsigned40
+ *                      1048: Unsigned48
+ *                      1056: Unsigned56
+ *                      1064: Unsigned64
  *
- *                                2008: Integer8
- *                                2016: Integer16
- *                                2032: Integer32
- *                                2064: Integer64
+ *                      2008: Integer8
+ *                      2016: Integer16
+ *                      2032: Integer32
+ *                      2064: Integer64
  *
- *                                3032: Real32
- *                                3064: Real64
+ *                      3032: Real32
+ *                      3064: Real64
  *
  *      ParamSpec  := {'Name', vector}   Named value, will be a parameter
  *                   | vector          Constant anonymous real_T value
@@ -194,8 +208,8 @@ static const struct datatype_info {
 static const struct datatype_info *type_uint8  = &datatype_info[7];
 static const struct datatype_info *type_uint16 = &datatype_info[8];
 static const struct datatype_info *type_uint32 = &datatype_info[10];
-/* static struct datatype_info *type_single = &datatype_info[19]; */
-/* static struct datatype_info *type_double = &datatype_info[20]; */
+static const struct datatype_info *type_single = &datatype_info[19];
+static const struct datatype_info *type_double = &datatype_info[20];
 
 static char errmsg[256];
 
@@ -1297,6 +1311,78 @@ get_port_raw_pdo_spec (struct ecat_slave *slave, const char_T *p_ctxt,
 
 
 /****************************************************************************/
+static const struct datatype_info *
+get_data_type(const mxArray *spec)
+{
+    const struct datatype_info *dt = datatype_info;
+
+    if (!spec || !mxGetNumberOfElements(spec))
+        return NULL;
+
+    if (mxIsDouble(spec)) {
+        uint_T dt_id = *mxGetPr(spec);
+
+        while (dt->id) {
+            if (dt->id == dt_id)
+                return dt;
+            ++dt;
+        }
+    }
+    else if (mxIsChar(spec)) {
+        char_T name[20];
+
+        if (mxGetString(spec, name, sizeof(name)))
+            return NULL;
+
+        while (dt->id) {
+            if (!strcmp(name, dt->name))
+                return dt;
+            ++dt;
+        }
+    }
+    else if (mxIsStruct(spec)) {
+        const mxArray *class = mxGetField(spec, 0, "Class");
+        char_T class_name[20];
+
+        if (!class || !mxIsChar(class) || !mxGetNumberOfElements(class)
+                || mxGetString(class, class_name, sizeof(class_name)))
+            return NULL;
+
+        if (!strcmp(class_name, "DOUBLE"))
+            return type_double;
+        else if (!strcmp(class_name, "SINGLE"))
+            return type_single;
+        else if (!strcmp(class_name, "INT")) {
+            const mxArray *is_signed = mxGetField(spec, 0, "IsSigned");
+            const mxArray *mant_bits = mxGetField(spec, 0, "MantBits");
+            const real_T *val;
+            uint_T dt_id;
+
+            if (!is_signed || !mxIsDouble(is_signed)
+                    || !mxGetNumberOfElements(is_signed)
+                    || !(val = mxGetPr(is_signed)))
+                return NULL;
+
+            dt_id = *val ? 2000 : 1000;
+
+            if (!mant_bits || !mxIsDouble(mant_bits)
+                    || !mxGetNumberOfElements(mant_bits)
+                    || !(val = mxGetPr(mant_bits)))
+                return NULL;
+            dt_id += *val;
+
+            while (dt->id) {
+                if (dt->id == dt_id)
+                    return dt;
+                ++dt;
+            }
+        }
+    }
+
+    return NULL;
+}
+
+/****************************************************************************/
 static int
 get_port_pdo_spec (struct ecat_slave *slave, const char_T *p_ctxt,
         const mxArray *port_spec, struct io_port *port, size_t idx,
@@ -1304,20 +1390,14 @@ get_port_pdo_spec (struct ecat_slave *slave, const char_T *p_ctxt,
 {
     size_t j;
     real_T real;
-    uint_T dt_id;
 
     /* Read the PDO data type */
-    real = 0;
-    RETURN_ON_ERROR(get_numeric_field(slave, p_ctxt, __LINE__,
-                port_spec, idx, 0, 0, 0, "pdo_data_type", &real));
-    dt_id = real;
-    for (port->data_type = datatype_info;
-            port->data_type->id != dt_id; port->data_type++) {
-        if (!port->data_type->id) {
-            pr_error(slave, p_ctxt, "pdo_data_type", __LINE__,
-                    "Unknown data type %u", dt_id);
-            return -1;
-        }
+    port->data_type =
+        get_data_type(mxGetField(port_spec,idx,"pdo_data_type"));
+    if (!port->data_type) {
+        pr_error(slave, p_ctxt, "pdo_data_type", __LINE__,
+                "Unknown data type");
+        return -1;
     }
 
     CHECK_CALLOC(slave->S, rows, sizeof(struct port_pdo), port->pdo);
