@@ -47,10 +47,9 @@ INSTALL (FILES
     ekxxxx.m
     el1xxx.m
     el2xxx.m
-    el30xx.m el31xx.m el320x.m el335x.m
+    el30xx.m el31xx.m el320x.m el3356.m
     el4xxx.m
     el500x.m el5021.m el5101_0010.m el5101.m el515x.m
-    el3356.m
 
     ep1xxx.m
     ep2xxx.m
