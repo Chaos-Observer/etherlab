@@ -42,6 +42,7 @@ INSTALL (FILES
     murr_dio.m
     update_library.m update_devices.m
     slave_dc.m update_mask_state.m
+    EtherCATSlaveBlock.m
 
     ekxxxx.m
     el1xxx.m
@@ -49,6 +50,7 @@ INSTALL (FILES
     el30xx.m el31xx.m el320x.m el335x.m
     el4xxx.m
     el500x.m el5021.m el5101_0010.m el5101.m el515x.m
+    el3356.m
 
     ep1xxx.m
     ep2xxx.m
