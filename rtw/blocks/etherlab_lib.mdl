@@ -1004,7 +1004,7 @@ Library {
 	      "d resistance 4|Load resistance 5"
 	      MaskStyleString	      "edit,edit,popup(EL3255),popup(1|1..2|1..3|1..4|1..5),checkbox,edit,edit,edit,edit,edit,e"
 	      "dit,edit,popup(Free Run/SM-Synchron|DC-Synchron|DC-Synchron (input based)|Custom),edit,min,max,min,max,checkbox"
-	      ",min,max,min,max,checkbox,popup(50 Hz|60 Hz|100 Hz|500 Hz|1 kHz|2 kHz|3\\,75 kHz|7\\,5 kHz|15 kHz|30 kHz|5 Hz|1"
+	      ",min,max,min,max,checkbox,popup(50 Hz|60 Hz|100 Hz|500 Hz|1 kHz|2 kHz|3.75 kHz|7.5 kHz|15 kHz|30 kHz|5 Hz|1"
 	      "0 Hz),popup(Off (up to 10 kOhm)|25 kOhm|50 kOhm),popup(Off (up to 10 kOhm)|25 kOhm|50 kOhm),popup(Off (up to 10"
 	      " kOhm)|25 kOhm|50 kOhm),popup(Off (up to 10 kOhm)|25 kOhm|50 kOhm),popup(Off (up to 10 kOhm)|25 kOhm|50 kOhm)"
 	      MaskVariables	      "master=@1;index=@2;model=&3;channels=@4;vector=@5;gain=@6;offset=@7;filter=@8;tsample=@9;d"
