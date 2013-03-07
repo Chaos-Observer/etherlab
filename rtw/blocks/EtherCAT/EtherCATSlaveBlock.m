@@ -59,7 +59,7 @@ methods
     end
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    function setPortNames(obj,input,output)
+    function setPortNames(obj,input,output,deflt)
         fmt = 'port_label(''%s'', %i, ''%s'')\n';
         str = horzcat(...
                 arrayfun(@(x) sprintf(fmt, 'input', x, input{x}), ...
@@ -67,7 +67,16 @@ methods
                 arrayfun(@(x) sprintf(fmt, 'output', x, output{x}), ...
                          1:numel(output), 'UniformOutput', false));
 
-        set_param(obj.block, 'MaskDisplay', cell2mat(str));
+        if isempty(str)
+            if nargin >= 4
+                str = sprintf('disp(''%s'')',deflt);
+            else
+                str = '';
+            end
+        else
+            str = cell2mat(str);
+        end
+        set_param(obj.block, 'MaskDisplay', str);
     end
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -80,12 +89,17 @@ methods
         %       product_code, revision_number
 
         set_param(obj.block, 'product_code',    int2str(codes(1)));
-        set_param(obj.block, 'revision_number', int2str(codes(2)));
+        if numel(codes) > 1
+            set_param(obj.block, 'revision_number', int2str(codes(2)));
+        else
+            set_param(obj.block, 'revision_number', '[]');
+        end
     end
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     function checkProductCodeAndRevision(obj,slave)
-        % Make sure that the product code and revision is ok and matches model
+        % Make sure that the product code and revision is ok and matches
+        % model
         % Arguments
         %       slave: EtherCAT Slave object
         %
@@ -94,25 +108,28 @@ methods
 
         models = slave.getModels();
 
-        pc       = str2double(get_param(obj.block, 'product_code'));
-        revision = str2double(get_param(obj.block, 'revision_number'));
-        row = find(cell2mat(models(:,2)) == pc ...
-                    & cell2mat(models(:,3)) == revision, 1);
+        model    =      get_param(obj.block, 'model');
+        pc       = eval(get_param(obj.block, 'product_code'));
+        revision = eval(get_param(obj.block, 'revision_number'));
+
+        % Must be careful, revision may be empty []
+        row = find([models{:,2}] == pc ...
+                    & cellfun(@(x) isequal(x, revision), models(:,3)'), 1);
     
-        selected_model = get_param(obj.block,'model');
-    
-        if ~isempty(row) && strcmp(selected_model, models(row,1))
+        if ~isempty(row) && strcmp(model, models(row,1))
             % Nothing changed
             return
         end
-    
+
         try
             if isempty(row)
                 % There is no slave with the current product code and revision
                 % Update these fields
-                idx = find(strcmp(models(:,1), selected_model),1);
-                set_param(obj.block, 'product_code',    int2str(models{idx,2}));
-                set_param(obj.block, 'revision_number', int2str(models{idx,3}));
+                idx = find(strcmp(models(:,1), model),1);
+                set_param(obj.block, 'product_code', ...
+                                mat2str(models{idx,2}));
+                set_param(obj.block, 'revision_number', ...
+                                mat2str(models{idx,3}));
                 display([obj.block ': updated product code and revision number.'])
             else
                 set_param(obj.block, 'model', models{row,1});
