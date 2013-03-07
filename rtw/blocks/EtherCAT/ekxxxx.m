@@ -81,13 +81,17 @@ methods
             end
         end
 
+        % Only the output port may be boolean or uint16; select the bitlen
+        % from the SyncManager
+        % input ports are always boolean
         rv.PortConfig.output = struct('portname',{});
         rv.PortConfig.input  = struct('portname',{});
         if vector
             if ~isempty(output_port)
+                bitlen = sm{output_port{1,1}+1}{3}{1}{2}{1,1}(3);
                 rv.PortConfig.output = struct(...
                     'pdo', cell2mat(output_port(:,1:4)), ...
-                    'pdo_data_type', uint(1), ...
+                    'pdo_data_type', uint(bitlen), ...
                     'portname','Out' ...
                 );
             end
@@ -100,11 +104,12 @@ methods
             end
         else    % vector
             if ~isempty(output_port)
+                bitlen = sm{output_port{1,1}+1}{3}{1}{2}{1,1}(3);
                 rv.PortConfig.output = struct(...
                     'pdo', arrayfun(@(x) [output_port{x,1:4}], ...
                                     1:size(output_port,1), ...
                                     'UniformOutput', false), ...
-                    'pdo_data_type', uint(1), ...
+                    'pdo_data_type', uint(bitlen), ...
                     'portname', output_port(:,5)' ...
                 );
             end
@@ -125,32 +130,35 @@ end     % methods
 properties (SetAccess=private)
     %  name          product code         revision   {PDO classes}
     % Note: to date 'Beckhoff EKxxx.xml Version 1.2', there are
-    % no differences between the revisions, so column 3 is empty
+    % no differences between the revisions, so column 3 only has the
+    % version numbers
     models = {
-      'EK1100',      hex2dec('044c2c52'), [], [];
-      'EK1100-0030', hex2dec('044c2c52'), [], [];
-      'EK1101',      hex2dec('044d2c52'), [], [1];
-      'EK1110',      hex2dec('04562c52'), [], [];
-      'EK1122',      hex2dec('04622c52'), [], [];
-      'EK1200',      hex2dec('04b02c52'), [], [];
-      'EK1501',      hex2dec('05dd2c52'), [], [1];
-      'EK1501-0010', hex2dec('05dd2c52'), [], [1];
-      'EK1521',      hex2dec('05f12c52'), [], [];
-      'EK1521-0010', hex2dec('05f12c52'), [], [];
-      'EK1541',      hex2dec('06052c52'), [], [1];
-      'EK1561',      hex2dec('06192c52'), [], [];
-      'EK1814',      hex2dec('07162c52'), [], [2,3];
-      'EK1818',      hex2dec('071a2c52'), [], [4,5];
-      'EK1828',      hex2dec('07242c52'), [], [6,7,8];
-      'EK1828-0010', hex2dec('07242c52'), [], [6,7];
-      'CX1100-0004', hex2dec('044c6032'), [], [];
+      'EK1100',      hex2dec('044c2c52'),  0, [];
+      'EK1100-0030', hex2dec('044c2c52'), 30, [];
+      'EK1101',      hex2dec('044d2c52'),  0, [1];
+      'EK1101-0080', hex2dec('044d2c52'), 80, [1];
+      'EK1110',      hex2dec('04562c52'),  0, [];
+      'EK1122',      hex2dec('04622c52'),  0, [];
+      'EK1122-0080', hex2dec('04622c52'), 80, [];
+      'EK1200',      hex2dec('04b02c52'),  0, [];
+      'EK1501',      hex2dec('05dd2c52'),  0, [1];
+      'EK1501-0010', hex2dec('05dd2c52'), 10, [1];
+      'EK1521',      hex2dec('05f12c52'),  0, [];
+      'EK1521-0010', hex2dec('05f12c52'), 10, [];
+      'EK1541',      hex2dec('06052c52'),  0, [1];
+      'EK1561',      hex2dec('06192c52'),  0, [];
+      'EK1814',      hex2dec('07162c52'),  0, [2,3];
+      'EK1818',      hex2dec('071a2c52'),  0, [4,5];
+      'EK1828',      hex2dec('07242c52'),  0, [6,7,8];
+      'EK1828-0010', hex2dec('07242c52'), 10, [6,7];
+      'CX1100-0004', hex2dec('044c6032'),  4 [];
     };
 
     % SyncManager class definitions
     % Column 4 of models selects the correct SyncManager
     sm = {
         % Input Sm (TxPdo) for EK1101 EK1501 EK1541
-        {0, 1, {{hex2dec('1a00'), {[hex2dec('6000'), 1, 1], 'Id'}}}},
+        {0, 1, {{hex2dec('1a00'), {[hex2dec('6000'), 1, 16], 'Id'}}}},
 
         % Output Sm (RxPdo) for EK1814
         {0, 0, {{hex2dec('1608'), {[hex2dec('7080'), 1, 1], 'Ch. 5'}},
