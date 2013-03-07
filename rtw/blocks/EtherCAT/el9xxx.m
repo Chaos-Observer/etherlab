@@ -84,18 +84,18 @@ end     % methods
 properties (SetAccess=private)
     %  name          product code         revision             PDO class
     models = {...
-      'EL9110',      hex2dec('23963052'), hex2dec('00110000'), 1;
-      'EL9160',      hex2dec('23c83052'), hex2dec('00110000'), 1;
-      'EL9210',      hex2dec('23fa3052'), hex2dec('00110000'), 2;
-      'EL9210-0020', hex2dec('23fa3052'), hex2dec('00110014'), 2;
-      'EL9260',      hex2dec('242c3052'), hex2dec('00110000'), 2;
-      'EL9410',      hex2dec('24c23052'), hex2dec('00110000'), 3;
-      'EL9505',      hex2dec('25213052'), hex2dec('00110000'), 4;
-      'EL9508',      hex2dec('25243052'), hex2dec('00110000'), 4;
-      'EL9510',      hex2dec('25263052'), hex2dec('00110000'), 4;
-      'EL9512',      hex2dec('25283052'), hex2dec('00110000'), 4;
-      'EL9515',      hex2dec('252b3052'), hex2dec('00110000'), 4;
-      'EL9560',      hex2dec('25583052'), hex2dec('00110000'), 5;
+      'EL9110',      hex2dec('23963052'),  0, 1;
+      'EL9160',      hex2dec('23c83052'),  0, 1;
+      'EL9210',      hex2dec('23fa3052'),  0, 2;
+      'EL9210-0020', hex2dec('23fa3052'), 20, 2;
+      'EL9260',      hex2dec('242c3052'),  0, 2;
+      'EL9410',      hex2dec('24c23052'),  0, 3;
+      'EL9505',      hex2dec('25213052'),  0, 4;
+      'EL9508',      hex2dec('25243052'),  0, 4;
+      'EL9510',      hex2dec('25263052'),  0, 4;
+      'EL9512',      hex2dec('25283052'),  0, 4;
+      'EL9515',      hex2dec('252b3052'),  0, 4;
+      'EL9560',      hex2dec('25583052'),  0, 5;
     };
 
     % PDO class

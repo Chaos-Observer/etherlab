@@ -151,7 +151,7 @@ properties (SetAccess=private)
       'EK1818',      hex2dec('071a2c52'),  0, [4,5];
       'EK1828',      hex2dec('07242c52'),  0, [6,7,8];
       'EK1828-0010', hex2dec('07242c52'), 10, [6,7];
-      'CX1100-0004', hex2dec('044c6032'),  4 [];
+      'CX1100-0004', hex2dec('044c6032'),  4, [];
     };
 
     % SyncManager class definitions

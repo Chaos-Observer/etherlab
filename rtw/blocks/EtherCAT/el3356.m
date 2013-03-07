@@ -191,8 +191,8 @@ end     % methods
 properties (SetAccess=private)
     %  name          product code         revision             modify pdo
     models = {...
-      'EL3356',      hex2dec('0d1c3052'), hex2dec('00140000'), true;
-      'EL3356-0010', hex2dec('0d1c3052'), hex2dec('0014000a'), false;
+      'EL3356',      hex2dec('0d1c3052'),  0, true;
+      'EL3356-0010', hex2dec('0d1c3052'), 10, false;
     };
 
     % All known sdo's
