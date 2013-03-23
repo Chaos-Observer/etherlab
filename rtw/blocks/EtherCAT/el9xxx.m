@@ -14,12 +14,6 @@ methods
     end
 
     %========================================================================
-    function rv = getCodeAndRevision(obj,model)
-        row = find(strcmp(obj.models(:,1), model));
-        rv = cell2mat(obj.models(row,2:3));
-    end
-
-    %========================================================================
     function rv = getDC(obj,model)
         rv = [];
     end
@@ -41,7 +35,7 @@ methods
         rv.SlaveConfig.description = obj.models{row,1};
 
         % Get the model's PDO
-        pdo = obj.pdo{obj.models{row,4}};
+        pdo = obj.pdo{obj.models{row,3}};
 
         % Input syncmanager
         rv.SlaveConfig.sm = {{0, 1, ...
@@ -82,20 +76,20 @@ end     % methods
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 properties (SetAccess=private)
-    %  name          product code         revision             PDO class
+    %  name          product code         PDO class
     models = {...
-      'EL9110',      hex2dec('23963052'),  0, 1;
-      'EL9160',      hex2dec('23c83052'),  0, 1;
-      'EL9210',      hex2dec('23fa3052'),  0, 2;
-      'EL9210-0020', hex2dec('23fa3052'), 20, 2;
-      'EL9260',      hex2dec('242c3052'),  0, 2;
-      'EL9410',      hex2dec('24c23052'),  0, 3;
-      'EL9505',      hex2dec('25213052'),  0, 4;
-      'EL9508',      hex2dec('25243052'),  0, 4;
-      'EL9510',      hex2dec('25263052'),  0, 4;
-      'EL9512',      hex2dec('25283052'),  0, 4;
-      'EL9515',      hex2dec('252b3052'),  0, 4;
-      'EL9560',      hex2dec('25583052'),  0, 5;
+      'EL9110',      hex2dec('23963052'), 1;
+      'EL9160',      hex2dec('23c83052'), 1;
+      'EL9210',      hex2dec('23fa3052'), 2;
+      'EL9210-0020', hex2dec('23fa3052'), 2;
+      'EL9260',      hex2dec('242c3052'), 2;
+      'EL9410',      hex2dec('24c23052'), 3;
+      'EL9505',      hex2dec('25213052'), 4;
+      'EL9508',      hex2dec('25243052'), 4;
+      'EL9510',      hex2dec('25263052'), 4;
+      'EL9512',      hex2dec('25283052'), 4;
+      'EL9515',      hex2dec('252b3052'), 4;
+      'EL9560',      hex2dec('25583052'), 5;
     };
 
     % PDO class

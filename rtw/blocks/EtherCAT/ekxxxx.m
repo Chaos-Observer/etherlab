@@ -10,13 +10,7 @@ classdef ekxxxx
 methods
     %========================================================================
     function rv = getModels(obj)
-        rv = obj.models(:,1:3);
-    end
-
-    %========================================================================
-    function rv = getCodeAndRevision(obj,model)
-        row = find(strcmp(obj.models(:,1), model));
-        rv = cell2mat(obj.models(row,2:3));
+        rv = obj.models(:,1);
     end
 
     %========================================================================
@@ -41,7 +35,7 @@ methods
         rv.SlaveConfig.description = obj.models{row,1};
 
         % Get the model's SM
-        sm = obj.sm(obj.models{row,4});
+        sm = obj.sm(obj.models{row,3});
         rv.SlaveConfig.sm = sm;
 
         % Go through the rv.SlaveConfig.sm and reformat the PDO Entries
@@ -133,25 +127,25 @@ properties (SetAccess=private)
     % no differences between the revisions, so column 3 only has the
     % version numbers
     models = {
-      'EK1100',      hex2dec('044c2c52'),  0, [];
-      'EK1100-0030', hex2dec('044c2c52'), 30, [];
-      'EK1101',      hex2dec('044d2c52'),  0, [1];
-      'EK1101-0080', hex2dec('044d2c52'), 80, [1];
-      'EK1110',      hex2dec('04562c52'),  0, [];
-      'EK1122',      hex2dec('04622c52'),  0, [];
-      'EK1122-0080', hex2dec('04622c52'), 80, [];
-      'EK1200',      hex2dec('04b02c52'),  0, [];
-      'EK1501',      hex2dec('05dd2c52'),  0, [1];
-      'EK1501-0010', hex2dec('05dd2c52'), 10, [1];
-      'EK1521',      hex2dec('05f12c52'),  0, [];
-      'EK1521-0010', hex2dec('05f12c52'), 10, [];
-      'EK1541',      hex2dec('06052c52'),  0, [1];
-      'EK1561',      hex2dec('06192c52'),  0, [];
-      'EK1814',      hex2dec('07162c52'),  0, [2,3];
-      'EK1818',      hex2dec('071a2c52'),  0, [4,5];
-      'EK1828',      hex2dec('07242c52'),  0, [6,7,8];
-      'EK1828-0010', hex2dec('07242c52'), 10, [6,7];
-      'CX1100-0004', hex2dec('044c6032'),  4, [];
+      'EK1100',      hex2dec('044c2c52'), [];
+      'EK1100-0030', hex2dec('044c2c52'), [];
+      'EK1101',      hex2dec('044d2c52'), [1];
+      'EK1101-0080', hex2dec('044d2c52'), [1];
+      'EK1110',      hex2dec('04562c52'), [];
+      'EK1122',      hex2dec('04622c52'), [];
+      'EK1122-0080', hex2dec('04622c52'), [];
+      'EK1200',      hex2dec('04b02c52'), [];
+      'EK1501',      hex2dec('05dd2c52'), [1];
+      'EK1501-0010', hex2dec('05dd2c52'), [1];
+      'EK1521',      hex2dec('05f12c52'), [];
+      'EK1521-0010', hex2dec('05f12c52'), [];
+      'EK1541',      hex2dec('06052c52'), [1];
+      'EK1561',      hex2dec('06192c52'), [];
+      'EK1814',      hex2dec('07162c52'), [2,3];
+      'EK1818',      hex2dec('071a2c52'), [4,5];
+      'EK1828',      hex2dec('07242c52'), [6,7,8];
+      'EK1828-0010', hex2dec('07242c52'), [6,7];
+      'CX1100-0004', hex2dec('044c6032'), [];
     };
 
     % SyncManager class definitions

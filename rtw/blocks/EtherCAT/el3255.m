@@ -10,13 +10,7 @@ classdef el3255
 methods
     %========================================================================
     function rv = getModels(obj)
-        rv = obj.models(:,1:3);
-    end
-
-    %========================================================================
-    function rv = getCodeAndRevision(obj,model)
-        row = find(strcmp(obj.models(:,1), model));
-        rv = cell2mat(obj.models(row,2:3));
+        rv = obj.models(:,1);
     end
 
     %========================================================================
@@ -100,9 +94,9 @@ end     % methods
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 properties (SetAccess=private)
-    %  name          product code         revision             modify pdo
-    models = {...
-      'EL3255',      hex2dec('0cb73052'), 0;
+    %  name          product code
+    models = {
+      'EL3255',      hex2dec('0cb73052');
     };
 
     % All known sdo's
