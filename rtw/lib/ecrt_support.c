@@ -1126,12 +1126,9 @@ const char * ecs_start(
                     ecs_write_uint5, ecs_write_uint6,
                     ecs_write_uint7,
                 };
-                size_t bitpos = pdo_map->bit_pos + bitlen * pdo_map->idx;
                 convert->copy = convert_funcs[bitlen-1];
-                convert->dst = pdo_map->domain->io_data
-                    + pdo_map->offset
-                    + bitpos / 8;
-                convert->index = bitpos % 8;
+                convert->dst = pdo_map->domain->io_data + pdo_map->offset;
+                convert->index = pdo_map->bit_pos;
             }
             else if (pdo_map->datatype > 3000) {
                 /* floating points */
@@ -1179,12 +1176,9 @@ const char * ecs_start(
                     ecs_read_uint5, ecs_read_uint6,
                     ecs_read_uint7,
                 };
-                size_t bitpos = pdo_map->bit_pos + bitlen * pdo_map->idx;
                 convert->copy = convert_funcs[bitlen-1];
-                convert->src = pdo_map->domain->io_data
-                    + pdo_map->offset
-                    + bitpos / 8;
-                convert->index = bitpos % 8;
+                convert->src = pdo_map->domain->io_data + pdo_map->offset;
+                convert->index = pdo_map->bit_pos;
             }
             else if (pdo_map->datatype > 3000) {
                 void (*convert_funcs[][2])(const struct endian_convert_t *) = {
