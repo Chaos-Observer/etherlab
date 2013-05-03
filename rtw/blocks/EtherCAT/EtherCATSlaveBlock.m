@@ -11,7 +11,7 @@ classdef EtherCATSlaveBlock
 %       updateSDOVisibility(obj,sdo)
 
 properties (SetAccess = private)
-    block = gcb;
+    block
     maskNames
 end
 
@@ -20,6 +20,8 @@ methods
     function obj = EtherCATSlaveBlock(b)
         if nargin > 0
             obj.block = b;
+        else
+            obj.block = gcb;
         end
         obj.maskNames = get_param(obj.block,'MaskNames');
     end
@@ -59,7 +61,7 @@ methods
     end
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    function setPortNames(obj,input,output)
+    function setPortNames(obj,input,output,deflt)
         fmt = 'port_label(''%s'', %i, ''%s'')\n';
         str = horzcat(...
                 arrayfun(@(x) sprintf(fmt, 'input', x, input{x}), ...
@@ -67,60 +69,16 @@ methods
                 arrayfun(@(x) sprintf(fmt, 'output', x, output{x}), ...
                          1:numel(output), 'UniformOutput', false));
 
-        set_param(obj.block, 'MaskDisplay', cell2mat(str));
-    end
-
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    function setProductCodeAndRevision(obj,codes)
-        % Make sure that the product code and revision is ok and matches model
-        % Arguments
-        %       codes: [ProductCode, RevisionNo]
-        %
-        % Requires the following mask variables:
-        %       product_code, revision_number
-
-        set_param(obj.block, 'product_code',    int2str(codes(1)));
-        set_param(obj.block, 'revision_number', int2str(codes(2)));
-    end
-
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    function checkProductCodeAndRevision(obj,slave)
-        % Make sure that the product code and revision is ok and matches model
-        % Arguments
-        %       slave: EtherCAT Slave object
-        %
-        % Requires the following mask variables:
-        %       product_code, revision_number, model
-
-        models = slave.getModels();
-
-        pc       = str2double(get_param(obj.block, 'product_code'));
-        revision = str2double(get_param(obj.block, 'revision_number'));
-        row = find(cell2mat(models(:,2)) == pc ...
-                    & cell2mat(models(:,3)) == revision, 1);
-    
-        selected_model = get_param(obj.block,'model');
-    
-        if ~isempty(row) && strcmp(selected_model, models(row,1))
-            % Nothing changed
-            return
-        end
-    
-        try
-            if isempty(row)
-                % There is no slave with the current product code and revision
-                % Update these fields
-                idx = find(strcmp(models(:,1), selected_model),1);
-                set_param(obj.block, 'product_code',    int2str(models{idx,2}));
-                set_param(obj.block, 'revision_number', int2str(models{idx,3}));
-                display([obj.block ': updated product code and revision number.'])
+        if isempty(str)
+            if nargin >= 4
+                str = sprintf('disp(''%s'')',deflt);
             else
-                set_param(obj.block, 'model', models{row,1});
-                display([obj.block ': updated model.'])
+                str = '';
             end
-        catch
-            display([obj.block ' is corrupted. Replace it.'])
+        else
+            str = cell2mat(str);
         end
+        set_param(obj.block, 'MaskDisplay', str);
     end
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

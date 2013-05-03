@@ -10,13 +10,7 @@ classdef el3356
 methods
     %========================================================================
     function rv = getModels(obj)
-        rv = obj.models(:,1:3);
-    end
-
-    %========================================================================
-    function rv = getCodeAndRevision(obj,model)
-        row = find(strcmp(obj.models(:,1), model));
-        rv = cell2mat(obj.models(row,2:3));
+        rv = obj.models(:,1);
     end
 
     %========================================================================
@@ -45,7 +39,7 @@ methods
         % Whether this is EL3356, not EL3356-0010
         % The predefined PDO and DC structures are for EL3356-0010
         % The EL3356 does not have all these features
-        el3356 = obj.models{row,4};
+        el3356 = obj.models{row,3};
 
         % General information
         rv.SlaveConfig.vendor = 2;
@@ -189,10 +183,10 @@ end     % methods
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 properties (SetAccess=private)
-    %  name          product code         revision             modify pdo
+    %  name          product code         basic_version
     models = {...
-      'EL3356',      hex2dec('0d1c3052'), hex2dec('00140000'), true;
-      'EL3356-0010', hex2dec('0d1c3052'), hex2dec('0014000a'), false;
+      'EL3356',      hex2dec('0d1c3052'), true;
+      'EL3356-0010', hex2dec('0d1c3052'), false;
     };
 
     % All known sdo's
