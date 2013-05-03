@@ -70,7 +70,12 @@ r = 0 : num_magnets - 1;
 rv.PortConfig.output(1).pdo = [zeros(numel(r), 4)];
 rv.PortConfig.output(1).pdo(:, 3) = [3 * r + 1];
 rv.PortConfig.output(1).pdo_data_type = 1032;
-rv.PortConfig.output(1).gain = 1e-6;
+
+if invert
+    rv.PortConfig.output(1).gain = -1e-6;
+else
+    rv.PortConfig.output(1).gain = 1e-6;
+end
 
 if velocity_output
     status_pdo = 3;
