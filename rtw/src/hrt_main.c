@@ -674,7 +674,7 @@ const char *register_signal(const struct thread_task *task,
 
 #if !defined(MULTITASKING)
     decimation =
-        tid >= 0 && *sampleTime ? *sampleTime / task[0].sample_time : 1;
+        tid >= 0 && *sampleTime ? *sampleTime/task[0].sample_time + 0.5 : 1;
 #else
     decimation = 1;
     if (tid >= 0) {
