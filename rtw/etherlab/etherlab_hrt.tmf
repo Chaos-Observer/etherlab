@@ -218,7 +218,7 @@ CPPFLAGS = $(DEP) $(CPP_OPTS) $(CC_OPTS) $(CPP_REQ_DEFINES) $(RTW_OPTS) $(INCLUD
 
 SYSLIBS = -rdynamic $(EXT_LIB) -lm -ldl -lrt -lpdserv \
         -L$(ETHERLAB_DIR)/lib -Wl,--rpath $(ETHERLAB_DIR)/lib \
-        -L$(ETHERLAB_DIR)/lib64 -Wl,--rpath $(ETHERLAB_DIR)/lib64
+        -L$(ETHERLAB_DIR)/lib64 -Wl,--rpath $(ETHERLAB_DIR)/lib64 -pthread
 
 ifneq ($(findstring rtipc.c,$(S_FUNCTIONS)),)
     SYSLIBS += -lrtipc
