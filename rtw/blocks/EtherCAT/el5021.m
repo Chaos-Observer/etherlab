@@ -19,7 +19,7 @@ methods
     end
 
     %========================================================================
-    function rv = configure(obj,model,sdo)
+    function rv = configure(obj,model,dc_spec,sdo)
         rv = [];
 
         row = find(strcmp(obj.models(:,1), model));
@@ -35,7 +35,17 @@ methods
         rv.SlaveConfig.sm{1}{3}{1}{2} = cell2mat(obj.pdo{1}{2}(:,1:3));
         rv.SlaveConfig.sm{2}{3}{1}{2} = cell2mat(obj.pdo{2}{2}(:,1:3));
 
+        % CoE Configuration
         rv.SlaveConfig.sdo = num2cell(horzcat(obj.sdo,sdo'));
+
+        % Distributed clocks
+        if dc_spec(1) ~= 4
+            % DC Configuration from the default list
+            rv.SlaveConfig.dc = obj.dc(dc_spec(1),:);
+        else
+            % Custom DC
+            rv.SlaveConfig.dc = dc_spec(2:end);
+        end
 
         % Input port
         rv.PortConfig.input(1).pdo = [0,0,0,0; 0,0,2,0];

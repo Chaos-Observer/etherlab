@@ -15,9 +15,9 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "ha"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Mon Jul 29 14:48:04 2013"
-  RTWModifiedTimeStamp	  297010038
-  ModelVersionFormat	  "1.%<AutoIncrement:1126>"
+  LastModifiedDate	  "Mon Jul 29 15:04:05 2013"
+  RTWModifiedTimeStamp	  297011042
+  ModelVersionFormat	  "1.%<AutoIncrement:1127>"
   ConfigurationManager	  "rcs"
   SampleTimeColors	  off
   SampleTimeAnnotations	  off
@@ -585,7 +585,7 @@ Library {
   }
   System {
     Name		    "etherlab_lib"
-    Location		    [693, 409, 1127, 617]
+    Location		    [913, 481, 1347, 689]
     Open		    on
     ModelBrowserVisibility  off
     ModelBrowserWidth	    200
@@ -621,8 +621,8 @@ Library {
       MaskIconUnits	      "pixels"
       System {
 	Name			"EtherCAT"
-	Location		[877, 436, 1290, 846]
-	Open			off
+	Location		[1097, 508, 1510, 918]
+	Open			on
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
 	ScreenColor		"white"
@@ -729,8 +729,8 @@ Library {
 	  MaskIconUnits		  "autoscale"
 	  System {
 	    Name		    "Beckhoff"
-	    Location		    [1089, 560, 1891, 1190]
-	    Open		    off
+	    Location		    [131, 173, 933, 803]
+	    Open		    on
 	    ModelBrowserVisibility  off
 	    ModelBrowserWidth	    200
 	    ScreenColor		    "white"
@@ -1266,14 +1266,12 @@ Library {
 	      MaskVariables	      "master=@1;index=@2;model=&3;tsample=@4;debug=@5;dc_mode=@6;dc_assign_activate=@7;dc_cycle0"
 	      "=@8;dc_cycle0_factor=@9;dc_shift0=@10;dc_shift0_factor=@11;dc_shift0_input=@12;dc_cycle1=@13;dc_cycle1_factor=@"
 	      "14;dc_shift1=@15;dc_shift1_factor=@16;x8000_01=@17;x8000_0E=@18;x8001_01=@19;x8001_02=@20;x8001_11=@21;"
-	      MaskInitialization      "Address = getEtherCATAddress(gcb,master,index,tsample);\n\n%el5021('set');\n%rv = get_"
-	      "param(gcbh,'UserData');\n%rv.SlaveConfig.sdo = {...\n%    hex2dec('1011'), 1,32,hex2dec('64616f6c');\n%    hex2"
-	      "dec('8000'), 1, 8,x8000_01;\n%    hex2dec('8000'),14, 8,x8000_0E;\n%    hex2dec('8001'), 1, 8,x8000_10;\n%    h"
-	      "ex2dec('8001'), 2, 8,x8000_11;\n%    hex2dec('8001'),17, 8,x8000_13;\n%};\nrv = el5021().configure(model,...\n "
-	      "   [x8000_01, x8000_0E, x8001_01, x8001_02, x8001_11]);\n"
+	      MaskInitialization      "Address = getEtherCATAddress(gcb,master,index,tsample);\n\nrv = el5021().configure(mod"
+	      "el,...\n    [dc_mode, dc_assign_activate, ...\n    dc_cycle0, dc_cycle0_factor,...\n    dc_shift0, dc_shift0_fa"
+	      "ctor, dc_shift0_input,...\n    dc_cycle1, dc_cycle1_factor,...\n    dc_shift1, dc_shift1_factor], ...\n    [x80"
+	      "00_01, x8000_0E, x8001_01, x8001_02, x8001_11]);\n"
 	      MaskDisplay	      "port_label('input', 1, 'bool[2]')\nport_label('input', 2, 'Ctr val')\nport_label('output', 1"
 	      ", 'bool[5]')\nport_label('output', 2, 'Ctr')\nport_label('output', 3, 'Latch')\n"
-	      MaskSelfModifiable      on
 	      MaskIconFrame	      on
 	      MaskIconOpaque	      on
 	      MaskIconRotate	      "none"
