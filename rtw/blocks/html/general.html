@@ -153,15 +153,22 @@ user@host:~$ ethercat slaves
 
         <a name="dc"><h3>Distributed Clocks</h3></a>
         Select the correct Distributed Clocks mode from the selection list.
-        The last item <tt>DC Customized</tt> allows a custom 10-element vector
-        to be entered on a separate <b>DC Customer</b> field:<br/>
-        <pre>[AssignActivate ...
-        CycleTimeSync0 CycleTimeSync0Factor ...
-        ShiftTimeSync0 ShiftTimeSync0Factor ShiftTimeSync0Input ...
-        CycleTimeSync1 CycleTimeSync1Factor ...
-        ShiftTimeSync1 ShiftTimeSync1Factor]</pre>
+        The last item <tt>DC Customized</tt> allows custom control of DC by
+        being able to set values for:
+        <tt>
+        <table>
+        <tr><td>AssignActivate</td></tr>
+        <tr><td>CycleTimeSync0</td><td>CycleTimeSync0Factor</td></tr>
+        <tr><td>ShiftTimeSync0</td><td>ShiftTimeSync0Factor</td></tr> 
+        <tr><td>ShiftTimeSync0Input</td></tr>
+        <tr><td>CycleTimeSync1</td><td>CycleTimeSync1Factor</td></tr>
+        <tr><td>ShiftTimeSync1</td><td>ShiftTimeSync1Factor</td></tr>
+        </table>
+        </tt>
 
-        These vector specifies the values for <tt>CycleTime0</tt> (ESC 0x9A0),
+        <p/>The values of CycleTimeSyncX and ShiftTimeSyncX are in nanoseconds.
+
+        <p/>These vector specifies the values for <tt>CycleTime0</tt> (ESC 0x9A0),
         <tt>CycleTime1</tt> (ESC 0x9A4) and <tt>StartTime</tt> (ESC 0x990) for
         the slave in nanoseconds and <tt>AssignActivate</tt> (ESC 0x980).
 
@@ -169,9 +176,9 @@ user@host:~$ ethercat slaves
 <pre>if CycleTimeSync0 ~= 0
         CycleTime0 = CycleTimeSync0
 else if CycleTimeSync0Factor &gt; 0
-        CycleTime0 = ModelSampleTime * 1e9 * CycleTimeSync0Factor
+        CycleTime0 = BlockSampleTime * 1e9 * CycleTimeSync0Factor
 else if CycleTimeSync0Factor &lt; 0
-        CycleTime0 = ModelSampleTime * 1e9 / -CycleTimeSync0Factor
+        CycleTime0 = BlockSampleTime * 1e9 / -CycleTimeSync0Factor
 else
         CycleTime0 = 0
 endif</pre>
@@ -182,7 +189,7 @@ endif</pre>
 else if CycleTimeSync1Factor &gt; 0
         T1 = CycleTime0 * CycleTimeSync1Factor
 else if CycleTimeSync1Factor &lt; 0
-        T1 = ModelSampleTime * 1e9 * -CycleTimeSync1Factor
+        T1 = BlockSampleTime * 1e9 * -CycleTimeSync1Factor
 else
         T1 = 0
 endif
@@ -198,6 +205,9 @@ else
 endif</pre>
         The value of <tt>ShiftTime</tt> is used to calculate the start time of
         the internal clocks.
+
+        <p/>Take particular note how the sign of factor chooses
+        BlockSampleTime or CycleTime0!
 
         <p/>Usually it is a bad idea to use fixed times for cycle times
         (<tt>CycleTimeSyncX</tt>). Using factors
