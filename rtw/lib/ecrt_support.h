@@ -57,7 +57,13 @@ struct ec_slave {
     const struct soe_config *soe_config;
 
     const ec_sync_info_t *ec_sync_info;
-    const uint32_t dc_config[5];
+    struct {
+        uint16_t assign_activate;
+        uint8_t input_based;
+        uint32_t cycle_time0;
+        uint32_t cycle_time1;
+        int32_t shift_time;
+    } dc_config;
 
     size_t rxpdo_count;
     size_t txpdo_count;

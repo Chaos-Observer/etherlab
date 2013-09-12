@@ -1010,10 +1010,13 @@ init_slave(size_t nst, const struct ec_slave *slave)
     }
 
     /* Configure distributed clocks for slave if assign_activate is set */
-    if (slave->dc_config[0]) {
-        ecrt_slave_config_dc(slave_config, slave->dc_config[0],
-                slave->dc_config[1], slave->dc_config[2],
-                slave->dc_config[3], slave->dc_config[4]);
+    if (slave->dc_config.assign_activate) {
+        ecrt_slave_config_dc(slave_config,
+                slave->dc_config.assign_activate,
+                slave->dc_config.cycle_time0,
+                slave->dc_config.shift_time,
+                slave->dc_config.cycle_time1,
+                0);
     }
 
     /* Register RxPdo's (output domain) */

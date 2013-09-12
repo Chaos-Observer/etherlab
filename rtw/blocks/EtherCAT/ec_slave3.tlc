@@ -710,22 +710,37 @@
   %endif
   %assign DC = SFcnParamSettings[DcOpMode]
 
-  %assign CycleTime = block.BlockSampleTime ...
+  %assign SampleTime = block.BlockSampleTime ...
         ? block.BlockSampleTime : LibGetClockTickStepSize(LibGetTID01EQ())
-  %assign CycleTime = CAST("Number", CycleTime * 1000000000.0)
+  %assign SampleTime = CAST("Number", SampleTime * 1000000000.0)
 
-  %foreach i = 4
-    %if !DC.Time[i] && DC.Factor[i]
-      %assign DC.Time[i] = DC.Factor[i] > 0 ...
-          ? DC.Factor[i] * CycleTime : CycleTime / -DC.Factor[i]
-    %endif
-  %endforeach
+  %% CycleTime0    (ESC Reg 0x09A3:0x09A0)
+  %if DC.Time[0]
+    %assign CycleTime0 = DC.Time[0]
+  %else
+    %assign CycleTime0 = DC.Factor[0] >= 0 ? SampleTime *  DC.Factor[0] ...
+                                           : SampleTime / -DC.Factor[0]
+  %endif
+
+  %% CycleTime1    (ESC Reg 0x09A7:0x09A4)
+  %% See OpMode:CycleTimeSync1 in
+  %%     ETG.2001_V1i0i9_G_R_EtherCATSlaveInformationAnnotations.pdf
+  %if DC.Time[2]
+    %assign CycleTime1 = DC.Time[2]
+  %else
+    %assign CycleTime1 = DC.Factor[2] >= 0 ? CycleTime0 *  DC.Factor[2] ...
+                                           : SampleTime * -DC.Factor[2]
+  %endif
+  %assign CycleTime1 = CycleTime1 - CycleTime0 + DC.Time[3]
+
+  %% ShiftTime     (For start time ESC Reg 0x0993:0x0990)
+  %assign ShiftTime = DC.Time[1] + (DC.Factor[1] >= 0 ...
+                                    ? CycleTime0 *  DC.Factor[1] ...
+                                    : CycleTime0 / -DC.Factor[1])
 
   %openfile buf
   { %<SPRINTF("0x%04X", DC.AssignActivate)>, \
-    %<DC.Time[0]>, %<DC.Time[1]>, \
-    %<DC.Time[2]>, %<DC.Time[3]> \
-  } \
+    %<DC.ShiftTimeSync0Input>, %<CycleTime0>, %<CycleTime1>, %<ShiftTime> } \
   %closefile buf
 
   %return buf

@@ -161,8 +161,54 @@ user@host:~$ ethercat slaves
         CycleTimeSync1 CycleTimeSync1Factor ...
         ShiftTimeSync1 ShiftTimeSync1Factor]</pre>
 
-        Consult the EtherCAT documentation regarding the meaning of these
-        values.
+        These vector specifies the values for <tt>CycleTime0</tt> (ESC 0x9A0),
+        <tt>CycleTime1</tt> (ESC 0x9A4) and <tt>StartTime</tt> (ESC 0x990) for
+        the slave in nanoseconds and <tt>AssignActivate</tt> (ESC 0x980).
+
+        <p/>The value for <tt>CycleTime0</tt> is calculated as:
+<pre>if CycleTimeSync0 ~= 0
+        CycleTime0 = CycleTimeSync0
+else if CycleTimeSync0Factor &gt; 0
+        CycleTime0 = ModelSampleTime * 1e9 * CycleTimeSync0Factor
+else if CycleTimeSync0Factor &lt; 0
+        CycleTime0 = ModelSampleTime * 1e9 / -CycleTimeSync0Factor
+else
+        CycleTime0 = 0
+endif</pre>
+
+        The value for <tt>CycleTime1</tt> is calculated as:
+<pre>if CycleTimeSync1 ~= 0
+        T1 = CycleTimeSync1
+else if CycleTimeSync1Factor &gt; 0
+        T1 = CycleTime0 * CycleTimeSync1Factor
+else if CycleTimeSync1Factor &lt; 0
+        T1 = ModelSampleTime * 1e9 * -CycleTimeSync1Factor
+else
+        T1 = 0
+endif
+CycleTime1 = T1 - CycleTime0 + ShiftTimeSync1</pre>
+
+        The value for <tt>ShiftTime</tt> is calculated as:
+<pre>if ShiftTimeSync0Factor &gt; 0
+        ShiftTime = ShiftTimeSync0 + CycleTime0 *  ShiftTimeSync0Factor
+else if ShiftTimeSync0Factor &lt; 0
+        ShiftTime = ShiftTimeSync0 + CycleTime0 / -ShiftTimeSync0Factor
+else
+        ShiftTime = ShiftTimeSync0
+endif</pre>
+        The value of <tt>ShiftTime</tt> is used to calculate the start time of
+        the internal clocks.
+
+        <p/>Usually it is a bad idea to use fixed times for cycle times
+        (<tt>CycleTimeSyncX</tt>). Using factors
+        (<tt>CycleTimeSyncXFactor</tt>) increases flexibility because it
+        relates to the model's sample time.
+
+        <p/>The values of <tt>ShiftTimeSync0Input</tt> and
+        <tt>ShiftTimeSync1Factor</tt> are ignored and reserved for future use.
+
+        <p/>Consult the EtherCAT documentation for further references
+        regarding the meaning of these values.
 
         <a name="sampletime"><h3>Sample Time</h3></a>
         The <tt>Sample Time</tt> is either a scalar or a vector with two
