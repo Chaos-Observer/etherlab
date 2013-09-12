@@ -15,9 +15,9 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "ha"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Thu Sep 12 16:02:56 2013"
-  RTWModifiedTimeStamp	  300902573
-  ModelVersionFormat	  "1.%<AutoIncrement:1131>"
+  LastModifiedDate	  "Thu Sep 12 16:04:53 2013"
+  RTWModifiedTimeStamp	  300902689
+  ModelVersionFormat	  "1.%<AutoIncrement:1132>"
   ConfigurationManager	  "rcs"
   SampleTimeColors	  off
   SampleTimeAnnotations	  off
@@ -621,7 +621,7 @@ Library {
       MaskIconUnits	      "pixels"
       System {
 	Name			"EtherCAT"
-	Location		[0, 28, 413, 438]
+	Location		[790, 200, 1203, 610]
 	Open			off
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
@@ -729,7 +729,7 @@ Library {
 	  MaskIconUnits		  "autoscale"
 	  System {
 	    Name		    "Beckhoff"
-	    Location		    [182, 227, 984, 857]
+	    Location		    [972, 399, 1774, 1029]
 	    Open		    off
 	    ModelBrowserVisibility  off
 	    ModelBrowserWidth	    200
@@ -948,7 +948,7 @@ Library {
 	      MaskType		      "EL320x"
 	      MaskDescription	      "Beckhoff 1, 2, 4-Channel Input Terminal Pt100 (RTD)"
 	      MaskHelp		      "web(etherlab_help_path('el320x.html'), '-helpbrowser');"
-	      MaskPromptString	      "Master|Slave Index|Device Model |RTD-Element (CoE 80x0:18)|Connection Technology (CoE 8"
+	      MaskPromptString	      "Master|Slave Index|Device Model |RTD-Element (CoE 80x0:19)|Connection Technology (CoE 8"
 	      "0x0:1A)|Filter (CoE 8000:15)|Vector Output|Status Port|Sample Time|Debug"
 	      MaskStyleString	      "edit,edit,popup(EL3201|EL3201-0010|EL3201-0020|EL3202|EL3202-0010|EL3204),edit,edit,popu"
 	      "p(50 Hz|60 Hz|100 Hz|500 Hz|1 kHz|2 kHz|3.75 kHz|7.5 kHz|15 kHz|30 kHz|5 Hz|10 Hz),checkbox,checkbox,edit,edit"
