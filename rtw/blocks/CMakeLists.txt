@@ -34,6 +34,7 @@ INSTALL (FILES
     setup.m 
 
     EtherLAB_IO.tlc 
+    RtIPC.tlc
     rtipc_tx.c rtipc_tx.tlc 
     rtipc_rx.c rtipc_rx.tlc 
     world_time.c world_time.tlc
