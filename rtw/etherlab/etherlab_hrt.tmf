@@ -216,9 +216,9 @@ CFLAGS   = $(DEP) $(CC_OPTS) $(CPP_REQ_DEFINES) $(RTW_OPTS) $(INCLUDES)
 CPPFLAGS = $(DEP) $(CPP_OPTS) $(CC_OPTS) $(CPP_REQ_DEFINES) $(RTW_OPTS) $(INCLUDES)
 #-------------------------- Additional Libraries ------------------------------
 
-SYSLIBS = -rdynamic $(EXT_LIB) -lm -ldl -lrt -lpdserv \
-        -L$(ETHERLAB_DIR)/lib -Wl,--rpath $(ETHERLAB_DIR)/lib \
-        -L$(ETHERLAB_DIR)/lib64 -Wl,--rpath $(ETHERLAB_DIR)/lib64 -pthread
+SYSLIBS = -rdynamic $(EXT_LIB) -lm \
+    $(shell PKG_CONFIG_PATH=$(ETHERLAB_DIR)/$(PLATFORM_LIBDIR)/pkgconfig pkg-config --libs libpdserv) \
+    -Wl,-rpath=$(ETHERLAB_DIR)/$(PLATFORM_LIBDIR)
 
 ifneq ($(findstring rtipc.c,$(S_FUNCTIONS)),)
     SYSLIBS += -lrtipc

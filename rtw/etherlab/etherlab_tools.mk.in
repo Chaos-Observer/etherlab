@@ -9,3 +9,4 @@
 #INSTRUMENT_LIBS  = $(RTW_DIR)/lib/libetherlab.a
 #USER_INCLUDES    = -I$(STAGING_DIR)/$(ETHERLAB_DIR)/include \
 #        -I$(RTW_DIR)/include -I$(STAGING_DIR)/$(ETHERLAB_DIR)/capi
+PLATFORM_LIBDIR = @CMAKE_INSTALL_LIBDIR@

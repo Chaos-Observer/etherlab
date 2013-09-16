@@ -25,6 +25,9 @@
 CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/Contents.m.in"
     "${CMAKE_CURRENT_BINARY_DIR}/Contents.m")
 
+CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/etherlab_tools.mk.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/etherlab_tools.mk")
+
 INSTALL (FILES
     "${CMAKE_CURRENT_BINARY_DIR}/Contents.m"
     etherlab.tlc
@@ -32,7 +35,7 @@ INSTALL (FILES
     etherlab_genfiles.tlc
     etherlab_hrt.tmf
     etherlab_postprocess.m
-    etherlab_tools.mk
+    "${CMAKE_CURRENT_BINARY_DIR}/etherlab_tools.mk"
     get_meta_tag.m
     postprocess.tlc
     postprocess_rtw.pl

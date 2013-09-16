@@ -51,6 +51,8 @@ ENDIF ()
 SET (CMAKE_INSTALL_PREFIX "${PREFIX}")
 LIST (APPEND CMAKE_PREFIX_PATH "${PREFIX}")
 
+INCLUDE (GNUInstallDirs)
+
 # Make sure that the project options are remembered
 SET (PREFIX "${PREFIX}" CACHE PATH
     "Root directory for the project" FORCE)
@@ -61,8 +63,6 @@ FIND_PACKAGE (Mercurial)
 IF (MERCURIAL_FOUND AND EXISTS "${CMAKE_SOURCE_DIR}/.hg")
 MERCURIAL_HG_INFO (${PROJECT_SOURCE_DIR} Package)
 ENDIF ()
-
-#FIND_PACKAGE (Matlab)
 
 ADD_SUBDIRECTORY (rtw)
 
