@@ -15,9 +15,9 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "ha"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Thu Sep 12 16:04:53 2013"
-  RTWModifiedTimeStamp	  300902689
-  ModelVersionFormat	  "1.%<AutoIncrement:1132>"
+  LastModifiedDate	  "Wed Sep 18 12:31:44 2013"
+  RTWModifiedTimeStamp	  301408264
+  ModelVersionFormat	  "1.%<AutoIncrement:1135>"
   ConfigurationManager	  "rcs"
   SampleTimeColors	  off
   SampleTimeAnnotations	  off
@@ -585,7 +585,7 @@ Library {
   }
   System {
     Name		    "etherlab_lib"
-    Location		    [257, 676, 691, 884]
+    Location		    [934, 379, 1368, 587]
     Open		    on
     ModelBrowserVisibility  off
     ModelBrowserWidth	    200
@@ -599,7 +599,7 @@ Library {
     ShowPageBoundaries	    off
     ZoomFactor		    "100"
     ReportName		    "simulink-default.rpt"
-    SIDHighWatermark	    253
+    SIDHighWatermark	    254
     Block {
       BlockType		      SubSystem
       Name		      "EtherCAT"
@@ -729,7 +729,7 @@ Library {
 	  MaskIconUnits		  "autoscale"
 	  System {
 	    Name		    "Beckhoff"
-	    Location		    [972, 399, 1774, 1029]
+	    Location		    [323, 201, 1446, 701]
 	    Open		    off
 	    ModelBrowserVisibility  off
 	    ModelBrowserWidth	    200
@@ -863,12 +863,13 @@ Library {
 	      Name		      "EL31xx_0"
 	      SID		      5
 	      Ports		      [0, 1]
-	      Position		      [155, 46, 225, 84]
+	      Position		      [900, 46, 970, 84]
 	      BackgroundColor	      "yellow"
 	      LibraryVersion	      "1.840"
 	      UserDataPersistent      on
 	      UserData		      "DataTag4"
-	      LoadFcn		      "el31xx('check')"
+	      LoadFcn		      "el31xx('check')                              \nif ~strcmp(bdroot(gcb),'etherlab_lib')       \n "
+	      "  disp([gcb ' is obsolete. Please replace'])\nend                                          "
 	      FunctionName	      "ec_slave3"
 	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
 	      SFunctionModules	      "'ecrt_support'"
@@ -930,6 +931,90 @@ Library {
 	      MaskPortRotate	      "default"
 	      MaskIconUnits	      "autoscale"
 	      MaskValueString	      "0|1|EL3102|DC-Synchron|on|off||||0|0"
+	    }
+	    Block {
+	      BlockType		      "S-Function"
+	      Name		      "EL31xx_1"
+	      SID		      254
+	      Ports		      [0, 2]
+	      Position		      [155, 45, 225, 85]
+	      BackgroundColor	      "yellow"
+	      AttributesFormatString  "%<model> %<slave_function>\\nM:%<master> Idx:%<index>"
+	      FunctionName	      "ec_slave3"
+	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
+	      SFunctionModules	      "'ecrt_support'"
+	      EnableBusSupport	      off
+	      MaskType		      "EL31xx"
+	      MaskDescription	      "Beckhoff 2,4,8-Channel 16-Bit Analog Input with Distributed Clocks"
+	      MaskHelp		      "This block generically implements the EtherCAT 16-Bit Analog Input Terminal for various models"
+	      ".\n<p/>\nThe following Terminals are supported:\n<center>\n<table width=\"80%\">\n<tr><td>EL3102,4,8</td><td>-1"
+	      "0..10V Voltage Input</td></tr>\n<tr><td>EL3112,4   </td><td>0..20mA Current Input</td></tr>\n<tr><td>EL3122,4  "
+	      " </td><td>4..20mA Current Input</td></tr>\n<tr><td>EL3142,4,8</td><td>0..20mA Current Input</td></tr>\n<tr><td>"
+	      "EL3152,4,8</td><td>4..20mA Current Input</td></tr>\n<tr><td>EL3162,4,8</td><td>0..10V Voltage Input</td></tr>\n"
+	      "</table>\n</center>\n<p/>\nChoose and set the following options:\n<h4>Master:</h4>\nSet the EtherCAT Master of "
+	      "this terminal.\n\n<h4>Slave Index:</h4>\nSet the EtherCAT slave index. Following address formats are allowed:\n"
+	      "<ol>\n<li> Absolute addressing: a scalar number <<b><tt>n</tt></b>> representing the (zero based) absolute posi"
+	      "tion in the bus.\n<li> SSId addressing: the Secondary Slave (or 'Alias') Addressing has the form <<b><tt>[alias"
+	      " position]</tt></b>> where <b><tt>alias</tt></b> is the Secondary Slave Id of the EtherCAT slave and <b><tt>pos"
+	      "ition</tt></b> is the offset after the slave with the given <b><tt>alias</tt></b>. The SSId has to be preprogra"
+	      "mmed into the slave with other service tools (see 'ethercat alias --help').\n</ol>\n\n<h4>Device Model:</h4>\nC"
+	      "hoose the model at the Indexed position of the master.\n\n<h4>Output Type:</h4>\n<ul>\n<li>Choose <b>Vector Out"
+	      "put</b> to have a single output as a vector\nwith a size corresponding to the channel count of the terminal. Th"
+	      "is mode also allows a status output port to be displayed. <br/>\n<li>Choose <b>Separate Outputs</b> to have one"
+	      " output for every channel.\n</ul>\n<h4>Output Full Scale</h4>\nWhen <b>Output Data Type</b> is set to <b>Double"
+	      " with scale and offset</b>, the block's output value at full scale terminal input can be set here.\n\n<h4>Outpu"
+	      "t Offset</h4>\nWhen <b>Output Data Type</b> is set to <b>Double with scale and offset</b>, the blocks output at"
+	      " zero terminal input can be set here. Note that the Full Scale above is also increased by this amount. Note fur"
+	      "thermore that this corresponds to the minimum input for terminals such as 4..20mA.\n\n<h4>Output Data Type</h4>"
+	      "\nChoose the block's output data type for the output signal. Available are:\n<ul>\n<li><b><tt>Raw</tt></b> outp"
+	      "utting the internal raw value as <tt>int16_T</tt> or <tt>uint16_T</tt> as appropriate\n<li><b><tt>Double</tt></"
+	      "b> outputting 0..10, -10..10, 0..0.02 and 0.004..0.02 depending on the Model as appropriate\n<li><b><tt>Double "
+	      "with scale and offset</tt></b>, allowing the output to be scaled with an offset.\n</ul>\n\n<p>\nChoosing <b>Sta"
+	      "tus Output</b> provides a port of type <tt>uint8_T</tt> where the status is presented. This is only enabled whe"
+	      "n <b>Vector Output</b> is selected. Terminal input over- and underrange can be detected using this output. See "
+	      "the terminal's documentation.\n\n<h4>Output Filter</h4>\nWhen not in <b>Raw</b> mode, the <b>Output Filter</b> "
+	      "checkbox becomes available, allowing the use of an internal low pass filter. Enter the <b>LPF Time Constant</b>"
+	      " for the filter in the field below.\n<br>For continuous sample time systems (0 in Sample Time), the filter is a"
+	      "lso continuous. Discrete samples systems (Sample Time > 0) uses an equivalent discrete low pass filter with a s"
+	      "imilar time constant.\n\n<p>\nSet the <b>Sample Time</b> for the block. <tt>0</tt> is continuous sample time (r"
+	      "uns at the model's base rate). Setting <tt>-1</tt> will try to set the time using back propagation.\n"
+	      MaskPromptString	      "Master|Slave Index|Device Model |Vector Output|Status output|Enable output scaling|Outp"
+	      "ut Gain|Output Offset|LPF Time Constant (sec)|Sample Time|Debug|Function (used for annotations)|Mode|Assign Act"
+	      "ivate|Cycle Time Sync 0|Factor|Shift Time Sync0|Factor|Shift Time0 Input|Cycle Time Sync1|Factor|Shift Time Syn"
+	      "c1|Factor"
+	      MaskStyleString	      "edit,edit,popup(EL3101|EL3102|EL3104|EL3111|EL3112|EL3114|EL3121|EL3122|EL3124|EL3141|EL"
+	      "3142|EL3142-0010|EL3144|EL3151|EL3152|EL3154|EL3161|EL3162|EL3164),checkbox,checkbox,checkbox,edit,edit,edit,ed"
+	      "it,edit,edit,popup(Free Run/SM-Synchron|DC-Synchron|DC-Synchron (input based)|Custom),edit,min,max,min,max,chec"
+	      "kbox,min,max,min,max"
+	      MaskTunableValueString  "off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,of"
+	      "f,off"
+	      MaskCallbackString      "|||||EtherCATSlaveBlock().setEnable({'gain','offset','tau'},...\n    strcmp(get_param("
+	      "gcbh,'scale'),'on'));|||||||EtherCATSlaveBlock().updateCustomDCEnable()||||||||||"
+	      MaskEnableString	      "on,on,on,on,on,on,on,on,on,on,on,off,on,off,off,off,off,off,off,off,off,off,off"
+	      MaskVisibilityString    "on,on,on,on,on,on,on,on,on,on,off,off,on,on,on,on,on,on,on,on,on,on,on"
+	      MaskToolTipString	      "on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on"
+	      MaskVariables	      "master=@1;index=@2;model=&3;vector=@4;status=@5;scale=@6;gain=@7;offset=@8;tau=@9;tsample="
+	      "@10;debug=@11;slave_function=&12;dc_mode=@13;dc_assign_activate=@14;dc_cycle0=@15;dc_cycle0_factor=@16;dc_shift"
+	      "0=@17;dc_shift0_factor=@18;dc_shift0_input=@19;dc_cycle1=@20;dc_cycle1_factor=@21;dc_shift1=@22;dc_shift1_facto"
+	      "r=@23;"
+	      MaskInitialization      "masterStr = '';\npositionStr = '';\nAddress = getEtherCATAddress(gcb, master, index, t"
+	      "sample);\n\nif scale\n    scaling = struct('gain',gain,'offset',offset,'tau',tau);\nelse\n    scaling = [];\nen"
+	      "d\n\nrv = el31xx_1.configure(model,status,vector,scaling,...\n    [dc_mode, dc_assign_activate, ...\n     dc_cy"
+	      "cle0, dc_cycle0_factor, ...\n     dc_shift0, dc_shift0_factor, dc_shift0_input, ...\n     dc_cycle1, dc_cycle1_"
+	      "factor, ...\n     dc_shift1, dc_shift1_factor]);\n \nEtherCATSlaveBlock().setPortNames({},...\n    {rv.PortConf"
+	      "ig.output.portname})\n\nset_param(gcb,'slave_function',rv.function)\n"
+	      MaskDisplay	      "port_label('output', 1, 'Value')\nport_label('output', 2, 'Status')\n"
+	      MaskSelfModifiable      on
+	      MaskIconFrame	      on
+	      MaskIconOpaque	      on
+	      MaskIconRotate	      "none"
+	      MaskPortRotate	      "default"
+	      MaskIconUnits	      "autoscale"
+	      MaskValueString	      "0|1|EL3102|on|on|on|[]|[]|[]|0|0|+-10V|Free Run/SM-Synchron|hex2dec('700')|0|1|0|0|off|0"
+	      "|1|5000|0"
+	      MaskTabNameString	      "Main,Main,Main,Main,Main,Main,Main,Main,Main,Main,Main,Main,Distributed Clocks,Distrib"
+	      "uted Clocks,Distributed Clocks,Distributed Clocks,Distributed Clocks,Distributed Clocks,Distributed Clocks,Dist"
+	      "ributed Clocks,Distributed Clocks,Distributed Clocks,Distributed Clocks"
 	    }
 	    Block {
 	      BlockType		      "S-Function"
@@ -1154,7 +1239,7 @@ Library {
 	      Name		      "EL4xxx_0"
 	      SID		      9
 	      Ports		      [1]
-	      Position		      [155, 111, 225, 149]
+	      Position		      [155, 126, 225, 164]
 	      BackgroundColor	      "yellow"
 	      LibraryVersion	      "1.835"
 	      UserDataPersistent      on
@@ -1679,7 +1764,7 @@ Library {
 	      Name		      "EP31xx_0"
 	      SID		      40
 	      Ports		      [0, 1]
-	      Position		      [155, 176, 225, 214]
+	      Position		      [155, 191, 225, 229]
 	      BackgroundColor	      "yellow"
 	      LibraryVersion	      "1.845"
 	      UserDataPersistent      on
@@ -1768,7 +1853,7 @@ Library {
 	      Name		      "EP41xx_0"
 	      SID		      41
 	      Ports		      [1]
-	      Position		      [155, 241, 225, 279]
+	      Position		      [155, 256, 225, 294]
 	      BackgroundColor	      "yellow"
 	      LibraryVersion	      "1.846"
 	      UserDataPersistent      on
@@ -1841,7 +1926,7 @@ Library {
 	      Name		      "EP43xx_0"
 	      SID		      8
 	      Ports		      [1, 1]
-	      Position		      [155, 306, 225, 344]
+	      Position		      [155, 321, 225, 359]
 	      BackgroundColor	      "yellow"
 	      LibraryVersion	      "1.846"
 	      UserDataPersistent      on
@@ -1912,7 +1997,7 @@ Library {
 	      MaskInitialization      "Address = getEtherCATAddress(gcb, master, index, tsample);\n\nrv = ekxxxx().configure("
 	      "model,vector);\n \nEtherCATSlaveBlock().setPortNames(...\n    {rv.PortConfig.input.portname}, ...\n    {rv.Port"
 	      "Config.output.portname},model);\n\n"
-	      MaskDisplay	      "disp('EK1100')"
+	      MaskDisplay	      "disp('EK1100')\n"
 	      MaskSelfModifiable      on
 	      MaskIconFrame	      on
 	      MaskIconOpaque	      on
@@ -1950,6 +2035,12 @@ Library {
 	      Name		      "Infrastructure"
 	      Position		      [666, 24]
 	      FontSize		      12
+	    }
+	    Annotation {
+	      Name		      "Obsolete"
+	      Position		      [931, 24]
+	      DropShadow	      on
+	      FontSize		      15
 	    }
 	  }
 	}

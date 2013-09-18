@@ -5,12 +5,11 @@ classdef EtherCATSlaveBlock
 % Methods:
 %       EtherCATSlaveBlock(b)
 %       updateModels(obj,models)
-%       checkProductCodeAndRevision(obj,models)
 %       updateCustomDCEnable(obj)
 %       updateDCVisibility(obj,state)
 %       updateSDOVisibility(obj,sdo)
 
-properties (SetAccess = private)
+properties (Access = private)
     block
     maskNames
 end
@@ -21,7 +20,7 @@ methods
         if nargin > 0
             obj.block = b;
         else
-            obj.block = gcb;
+            obj.block = gcbh;
         end
         obj.maskNames = get_param(obj.block,'MaskNames');
     end
@@ -36,7 +35,11 @@ methods
         %       model
 
         % Trim the models
-        models = slave.getModels();
+        if isa(slave,'cell')
+            models = slave;
+        else
+            models = slave.getModels();
+        end
         models = models(:,1);
 
         if verLessThan('Simulink','8.0')
@@ -44,7 +47,7 @@ methods
 
             pos = find(strcmp(obj.maskNames,'model'));
 
-            modelstr = ['popup(', strJoin(models,'|'), ')'];
+            modelstr = ['popup(', EtherCATSlaveBlock.strJoin(models,'|'), ')'];
             if ~strcmp(style{pos}, modelstr)
                 style{pos} = modelstr;
                 set_param(obj.block,'MaskStyles', style);
@@ -63,21 +66,21 @@ methods
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     function setPortNames(obj,input,output,deflt)
         fmt = 'port_label(''%s'', %i, ''%s'')\n';
-        str = horzcat(...
+
+        if nargin > 3
+            str = {sprintf('disp(''%s'')\n',deflt)};
+        else
+            str = {''};
+        end
+
+        str = horzcat(str, ...
                 arrayfun(@(x) sprintf(fmt, 'input', x, input{x}), ...
                          1:numel(input), 'UniformOutput', false), ...
                 arrayfun(@(x) sprintf(fmt, 'output', x, output{x}), ...
                          1:numel(output), 'UniformOutput', false));
 
-        if isempty(str)
-            if nargin >= 4
-                str = sprintf('disp(''%s'')',deflt);
-            else
-                str = '';
-            end
-        else
-            str = cell2mat(str);
-        end
+        str = cell2mat(str);
+
         set_param(obj.block, 'MaskDisplay', str);
     end
 
@@ -90,20 +93,13 @@ methods
         % Requires the following mask varialbes:
         %       dc_mode, dc_*
 
-        en    = get_param(obj.block,'MaskEnables');
-        en_prev = en;
-    
-        if strcmp(get_param(obj.block,'dc_mode'),'Custom')
-            state = 'on';
-        else
-            state = 'off';
-        end
-    
         mode_idx = find(strcmp(obj.maskNames,'dc_mode'));
         n = setdiff(find(strncmp(obj.maskNames,'dc_',3)), mode_idx);
-        en(n) = repmat({state}, size(n));
-        if ~isequal(en_prev,en)
-            set_param(obj.block,'MaskEnables',en);
+
+        if strcmp(get_param(obj.block,'dc_mode'),'Custom')
+            setEnable(obj, obj.maskNames(n), true);
+        else
+            setEnable(obj, obj.maskNames(n), false);
         end
     end
 
@@ -115,53 +111,88 @@ methods
         % Requires the following mask varialbes:
         %       dc_mode, dc_*
 
-        vis   = get_param(obj.block,'MaskVisibilities');
-        vis_prev = vis;
-    
-        if state
-            state = 'on';
-        else
-            state = 'off';
-        end
-    
         n = find(strncmp(obj.maskNames,'dc_',3));
-        vis(n) = repmat({state}, size(n));
-        if ~isequal(vis_prev,vis)
-            set_param(obj.block,'MaskVisibilities',vis);
-        end
+        setVisible(obj, obj.maskNames(n), state)
     end
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    function updateSDOVisibility(obj,sdo)
+    function updateSDOVisibility(obj,sdoList)
         %% Change visibility of SDO Mask Variables
         % SDO Variables start with 'x8'
         % Argument:
-        %       sdo: array of vars [Index, SubIndex]
+        %       sdoList: array of vars [Index, SubIndex]
         %
         % Requires the following mask varialbes:
         %       x8*
 
-        vis   = get_param(obj.block,'MaskVisibilities');
-        vis_prev = vis;
-    
-        n_all = find(strncmp(obj.maskNames,'x8',2));
-        vis(n_all) = repmat({'off'}, size(n_all));
-    
-        sdo = strcat('x', dec2base(sdo(:,1), 16, 4),...
-                     '_', dec2base(sdo(:,2), 16, 2));
-        n = cellfun(@(x) find(strcmp(obj.maskNames,x)), cellstr(lower(sdo)));
-        vis(n) = repmat({'on'},size(n));
-    
-        if ~isequal(vis_prev,vis)
+        sdo = obj.maskNames(strncmp(obj.maskNames,'x8',2));
+        enable = cellstr(strcat('x', dec2base(sdoList(:,1), 16, 4),...
+                                '_', dec2base(sdoList(:,2), 16, 2)));
+
+        state = repmat(0, size(sdo));
+        state(cellfun(@(i) find(strcmp(sdo,i)), enable)) = 1;
+
+        setEnable(obj,sdo,state);
+    end
+
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    function setEnable(obj, var, state)
+        %% Change enabled state of a mask variable
+        % Arguments:
+        %   var: string or cellarray of strings
+        %   state: boolean
+
+        if isstr(var)
+            var = {var};
+        end
+
+        vis = get_param(obj.block,'MaskEnables');
+        n = cellfun(@(i) find(strcmp(obj.maskNames,i)), var);
+
+        vis(n) = EtherCATSlaveBlock.enableSet(state);
+
+        if ~isequal(get_param(obj.block,'MaskEnables'),vis)
+            set_param(obj.block,'MaskEnables',vis);
+        end
+    end
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    function setVisible(obj, var, state)
+        %% Change visibility of a mask variable
+        % Arguments:
+        %   var: string or cellarray of strings
+        %   state: boolean
+
+        if isstr(var)
+            var = {var};
+        end
+
+        vis = get_param(obj.block,'MaskVisibilities');
+        n = cellfun(@(i) find(strcmp(obj.maskNames,i)), var);
+
+        vis(n) = EtherCATSlaveBlock.enableSet(state);
+
+        if ~isequal(get_param(obj.block,'MaskVisibilities'),vis)
             set_param(obj.block,'MaskVisibilities',vis);
         end
+    end
+
+end
+
+methods (Static)
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    function s = enableSet(state)
+        %% returns a cellarray with elements 'on' or 'off' depending on state
+        s = {'off','on'};
+        s = s((state ~= 0) + 1);
+    end
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    function rv = strJoin(s,delim)
+        rv = cell2mat(strcat(reshape(s,1,[]),delim));
+        rv(end) = [];
     end
 end
 
 end     % classdef
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function rv = strJoin(s,delim)
-    rv = cell2mat(strcat(reshape(s,1,[]),delim));
-    rv(end) = [];
-end
