@@ -21,15 +21,10 @@ p = cellstr(char(java.lang.String(path).split(':')));
 v = find(cell2mat(cellfun(@(x) ~isempty(x), ...
             strfind(p,'etherlab'),'uniformoutput',0)'));
         
-for i = v
-    rmpath(p{i});
-
-    x = cellstr(char(java.lang.String(p{i}).split('/')));
-    j = find(~cell2mat(cellfun(@(x) isempty(x), ...
-            strfind(x,'rtw')', 'uniformoutput',0)));
-        
-    addpath([el_path,filesep,strjoin(x(j:end),filesep)]);
-end
+rmpath(p{v});
+addpath(strjoin({el_path; 'rtw'; 'etherlab'}, filesep));
+addpath(strjoin({el_path; 'rtw'; 'blocks'}, filesep));
+addpath(strjoin({el_path; 'rtw'; 'blocks'; 'EtherCAT'}, filesep));
 
 return
 
