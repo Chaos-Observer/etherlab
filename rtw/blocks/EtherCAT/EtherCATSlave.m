@@ -3,6 +3,17 @@ classdef EtherCATSlave
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     methods (Static)
         %====================================================================
+        function slave = findSlave(name,models)
+            row = find(strcmp(models(:,1), name));
+
+            if isempty(row)
+                slave = [];
+            else
+                slave = models(row,:);
+            end
+        end
+
+        %====================================================================
         function port = configurePorts(name,pdo,type,vector,scale,bits)
 
             if nargin < 5
@@ -46,7 +57,7 @@ classdef EtherCATSlave
                     port(1).filter = [];
                 end
 
-                if ~bits
+                if ~bits || ~isa(scale,'struct')
                     return
                 end
 
@@ -85,6 +96,5 @@ classdef EtherCATSlave
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     properties (Constant, Abstract)
         models
-        dc
     end
 end
