@@ -3,7 +3,7 @@ classdef el31xx_1 < EtherCATSlave
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     methods (Static)
         %====================================================================
-        function rv = configure(model,status,vector,scale,dc)
+        function rv = configure(model,status,vector,scale,dc,filter)
             slave = el31xx_1.findSlave(model,el31xx_1.models);
 
             rv.SlaveConfig.vendor = 2;
@@ -26,7 +26,7 @@ classdef el31xx_1 < EtherCATSlave
                                          pdo_idx:(pdo_idx+pdo_count-1), ...
                                          'UniformOutput', false)}};
             if dc(1) > 3
-                rv.SlaveConfig.dc = dc(2:end);
+                rv.SlaveConfig.dc = dc(2:11);
             else
                 rv.SlaveConfig.dc = el31xx_1.dc{dc(1),2};
             end
@@ -35,7 +35,7 @@ classdef el31xx_1 < EtherCATSlave
             pdo(:,2) = 0:pdo_count-1;
 
             rv.PortConfig.output = ...
-                el31xx_1.configurePorts('Value',pdo,sint(16),vector,scale,15);
+                el31xx_1.configurePorts('Value',pdo,sint(16),vector,scale);
 
             if status
                 pdo(:,3) = 4;
@@ -46,8 +46,29 @@ classdef el31xx_1 < EtherCATSlave
                     n = pdo_count;
                 end
                 
-                rv.PortConfig.output(end+(1:n)) = ...
-                        el31xx_1.configurePorts('Status',pdo,uint(1),vector,scale);
+                rv.PortConfig.output(end+(1:n)) = el31xx_1.configurePorts(...
+                        'Status',pdo,uint(1),vector,isa(scale,'struct'));
+            end
+            
+            rv.SlaveConfig.sdo = {
+                hex2dec('8000'),hex2dec(' 6'), 8,double(filter > 1);
+                hex2dec('8000'),hex2dec('15'),16,max(0,filter-2);
+            };
+
+        end
+
+        %====================================================================
+        function test(p)
+            ei = EtherCATInfo(fullfile(p,'Beckhoff EL31xx.xml'));
+            for i = 1:size(el31xx_1.models,1)
+                fprintf('Testing %s\n', el31xx_1.models{i,1});
+                rv = el31xx_1.configure(el31xx_1.models{i,1},0,i&1,...
+                        EtherCATSlave.configureScale(2^15,''),2,1);
+                ei.testConfiguration(rv.SlaveConfig,rv.PortConfig);
+
+                rv = el31xx_1.configure(el31xx_1.models{i,1},1,i&1,...
+                        EtherCATSlave.configureScale(2^15,'6'),rem(i,3)+1,2);
+                ei.testConfiguration(rv.SlaveConfig,rv.PortConfig);
             end
         end
     end

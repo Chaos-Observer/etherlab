@@ -4,39 +4,24 @@
 % Copyright (C) 2013 Richard Hacker
 % License: LGPL
 %
-classdef el37x2
+classdef el37x2 < EtherCATSlave
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-methods
+methods (Static)
     %========================================================================
-    function rv = getModels(obj)
-        rv = obj.models(:,1);
-    end
-
-    %========================================================================
-    function rv = getDC(obj,model)
-        if strcmp(model,'EL37x2')
-            rv = [];
-        else
-            rv = obj.dc;
-        end
-    end
-
-    %========================================================================
-    function rv = configure(obj,model,one_ch,dc_spec,scaling)
-        rv = [];
-
-        row = find(strcmp(obj.models(:,1), model));
+    function rv = configure(model,one_ch,dc_spec,scaling)
+        slave = el37x2.findSlave(model,el37x2.models);
 
         % General information
         rv.SlaveConfig.vendor = 2;
-        rv.SlaveConfig.product = obj.models{row,2};
-        rv.SlaveConfig.description = obj.models{row,1};
+        rv.SlaveConfig.product = slave{2};
+        rv.SlaveConfig.description = slave{1};
 
         % Distributed clock
         if dc_spec(1) ~= 15
             % DC Configuration from the default list
-            rv.SlaveConfig.dc = obj.dc(dc_spec(1),:);
+            dc = el37x2.dc;
+            rv.SlaveConfig.dc = dc(dc_spec(1),:);
         else
             % Custom DC
             rv.SlaveConfig.dc = dc_spec(2:end);
@@ -55,10 +40,10 @@ methods
 
         % output syncmanager
         for i = channels
-            rv.SlaveConfig.sm{i} = {i-1,1,obj.pdos{i}};
+            rv.SlaveConfig.sm{i} = {i-1,1,el37x2.pdos{i}};
             entries = rv.SlaveConfig.sm{i}{3}{2}{2};
             rv.SlaveConfig.sm{i}{3}{2}{2} = horzcat(...
-                    entries(1)+obj.os_idx_inc*(0:os_fac-1)', ...
+                    entries(1)+el37x2.os_idx_inc*(0:os_fac-1)', ...
                     repmat(entries(2:end),os_fac,1));
         end
 
@@ -66,7 +51,7 @@ methods
 
         gain = repmat({[]},size(channels));
         if isfield(scaling,'gain') && ~isempty(scaling.gain)
-            fs = obj.models{row,3};
+            fs = slave{3};
             gain = arrayfun(@(x) {{strcat('Gain',num2str(x)),
                                   scaling.gain(min(end,x))}}, ...
                             channels);
@@ -74,7 +59,7 @@ methods
 
         offset = repmat({[]},size(channels));
         if isfield(scaling,'offset') && ~isempty(scaling.offset)
-            fs = obj.models{row,3};
+            fs = slave{3};
             offset = arrayfun(@(x) {{strcat('Offset',num2str(x)),
                                   scaling.offset(min(end,x))}}, ...
                             channels);
@@ -91,16 +76,32 @@ methods
                         'portname', strcat('Ch.',num2str(i))), ...
             channels);
     end
+
+    %====================================================================
+    function test(p)
+        ei = EtherCATInfo(fullfile(p,'Beckhoff EL37xx.xml'));
+        for i = 1:size(el37x2.models,1)
+            fprintf('Testing %s\n', el37x2.models{i,1});
+            for j = 1:14
+                rv = el37x2.configure(el37x2.models{i,1},j&1,j,...
+                EtherCATSlave.configureScale(2^15,'4'));
+                ei.testConfiguration(rv.SlaveConfig,rv.PortConfig);
+            end
+        end
+    end
 end     % methods
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-properties (SetAccess=private)
+properties (Constant)
     %  name          product code         basic_version
     models = {...
       'EL3702', hex2dec('0e763052'), 2^15;
       'EL3742', hex2dec('0e9e3052'), 2^15;
     };
+end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+properties (Access = private, Constant)
     % ADC and status PDO
     pdos = {{ {hex2dec('1b00'), [hex2dec('6800'),  1, 16]},
               {hex2dec('1a00'), [hex2dec('6000'),  1, 16]}}, 

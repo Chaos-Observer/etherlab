@@ -4,10 +4,10 @@
 % Copyright (C) 2013 Richard Hacker
 % License: LGPL
 %
-classdef el3255
+classdef el3255 < EtherCATSlave
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-methods
+methods (Static)
     %========================================================================
     function rv = getModels(obj)
         rv = obj.models(:,1);
@@ -24,18 +24,16 @@ methods
     end
 
     %========================================================================
-    function rv = configure(obj,model,count,vector,dc_spec,scaling,sdo)
-        rv = [];
-
-        row = find(strcmp(obj.models(:,1), model));
+    function rv = configure(model,count,vector,dc_spec,scaling,sdo)
+        slave = el3255.findSlave(model,el3255.models);
 
         % General information
         rv.SlaveConfig.vendor = 2;
-        rv.SlaveConfig.product = obj.models{row,2};
-        rv.SlaveConfig.description = obj.models{row,1};
+        rv.SlaveConfig.product = slave{2};
+        rv.SlaveConfig.description = slave{1};
 
         % Input syncmanager
-        rv.SlaveConfig.sm = {{3,1,obj.pdo}};
+        rv.SlaveConfig.sm = {{3,1,el3255.pdo}};
 
         rv.SlaveConfig.sm{1}{3}(count+1:end) = [];
 
@@ -64,7 +62,8 @@ methods
         if dc_spec(1)
             if dc_spec(1) ~= 4
                 % DC Configuration from the default list
-                rv.SlaveConfig.dc = obj.dc(dc_spec(1),:);
+                dc = el3255.dc;
+                rv.SlaveConfig.dc = dc(dc_spec(1),:);
             else
                 % Custom DC
                 rv.SlaveConfig.dc = dc_spec(2:end);
@@ -72,33 +71,44 @@ methods
         end
 
         % Scaling and filter of output port 1
-        if numel(scaling.gain) || numel(scaling.offset)
-            rv.PortConfig.output(1).full_scale = 2^15;
-        end
-        if numel(scaling.gain)
+        if isstruct(scaling)
+            rv.PortConfig.output(1).full_scale = scaling.full_scale;
             rv.PortConfig.output(1).gain = {'Gain', scaling.gain};
-        end
-        if numel(scaling.offset)
             rv.PortConfig.output(1).offset = {'Offset', scaling.offset};
-        end
-        if numel(scaling.filter)
-            rv.PortConfig.output(1).filter = {'Filter', scaling.filter};
+            rv.PortConfig.output(1).filter = {'Filter', scaling.tau};
         end
 
         % SDO Configuration
-        rv.SlaveConfig.sdo = num2cell(horzcat(obj.sdo, reshape(sdo,[],1)));
+        sdo(2:end) = sdo(2:end)-1;   % 8000:15, 80x0:1c are zero based
+        rv.SlaveConfig.sdo = num2cell(horzcat(el3255.sdo, reshape(sdo,[],1)));
         rv.SlaveConfig.sdo(count+3:end,:) = [];
 
+    end
+
+    %====================================================================
+    function test(p)
+        ei = EtherCATInfo(fullfile(p,'Beckhoff EL3xxx.xml'));
+        for i = 1:size(el3255.models,1)
+            fprintf('Testing %s\n', el3255.models{i,1});
+            for j = 1:4
+                rv = el3255.configure(el3255.models{i,1},j,j&1,1:11,...
+                EtherCATSlave.configureScale(2^31,'4'),1:7);
+                ei.testConfiguration(rv.SlaveConfig,rv.PortConfig);
+            end
+        end
     end
 end     % methods
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-properties (SetAccess=private)
+properties (Constant)
     %  name          product code
     models = {
       'EL3255',      hex2dec('0cb73052');
     };
+end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+properties (Access = private, Constant)
     % All known sdo's
     sdo = [hex2dec('8000'), hex2dec('06'),  8;
            hex2dec('8000'), hex2dec('15'),  8;

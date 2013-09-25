@@ -2,7 +2,121 @@ classdef EtherCATSlave
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     methods (Static)
+        function scale = configureScale(full_scale,gain,offset,tau)
+            %% Return a structure with fields
+            %   scale.full_scale = full_scale
+            %   scale.gain       = evalin('base',gain)
+            %   scale.offset     = evalin('base',offset)
+            %   scale.tau        = evalin('base',tau)
+            % if gain, offset and tau are not all ''
+            % otherwise, return false
+
+            % Make sure all options are set
+            if nargin < 3
+                offset = '';
+            end
+            if nargin < 4
+                tau = '';
+            end
+
+            % If everything is empty, no scaling and return
+            if all(strcmp({gain,offset,tau},''));
+                scale = false;
+                return
+            end
+
+            % Make sure every parameter is set
+            if isempty(gain)
+                scale.gain   = [];
+            else
+                scale.gain   = evalin('base',gain);
+            end
+            if isempty(offset)
+                scale.offset = [];
+            else
+                scale.offset = evalin('base',offset);
+            end
+            if isempty(tau)
+                scale.tau    = [];
+            else
+                scale.tau    = evalin('base',tau);
+            end
+
+            if isempty(scale.gain) && isempty(scale.offset)
+                scale.full_scale = 1;
+            else
+                scale.full_scale = full_scale;
+            end
+        end
+    end
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    methods (Static, Access = protected)
         %====================================================================
+        % This function returns an array that will address every
+        % Pdo Entry that is non-zero and have the correct direction
+        % given the SyncManager list
+        % The return value is a Nx7 array, where columns
+        %       1:4   = [SmIdx,PdoIdx,PdoEntryIdx,0] address
+        %       5:6   = [PdoEntryIndex,PdoEntrySyubIndex,BitLen]
+        function entry = findPdoEntries(Sm, dir)
+            if isempty(Sm)
+                entry = [];
+                return
+            end
+
+            % Find the syncmanagers with the correct directions
+            % The result is a cell array where each cell consists of:
+            %   SmIdx, -- Syncmanager Index
+            %   Pdo,   -- Cell array of pdo's
+            sm = arrayfun(@(smIdx) {smIdx-1,Sm{smIdx}{3}}, ...
+                           find(cellfun(@(x) x{2} == dir, Sm)), ...
+                           'UniformOutput', false);
+
+            if isempty(sm)
+                entry = [];
+                return
+            end
+
+            % Split up the individual syncmanagers into pdo's
+            % The result is a vertical cell array where each cell has
+            %   SmIdx, -- Syncmanager Index
+            %   PdoIdx, -- Index of pdo
+            %   PdoEntry, -- Nx4 Array of Pdo Entries
+            pdo = cellfun(...
+                @(pdo) mat2cell(horzcat(repmat({pdo{1}},...
+                                               numel(pdo{2}),1),...
+                                        num2cell(0:numel(pdo{2})-1)',...
+                                        reshape(pdo{2},[],1)),...
+                                ones(1,numel(pdo{2}))),...
+                sm, 'UniformOutput', false);
+            pdo = vertcat(pdo{:});
+
+            % Split up the individual pdo's into pdo entries
+            % The result is an array where each row consists of
+            %   SmIdx, -- Syncmanager Index
+            %   PdoIdx, -- Index of pdo
+            %   ElementIdx, -- (=0), Index of the element
+            %   PdoEntryIdx, -- Index of Pdo Entry
+            %   EtherCAT PdoEntryIndex
+            %   EtherCAT PdoEntrySubIndex
+            %   EtherCAT BitLen
+            entry = cellfun(...
+                @(e) horzcat(repmat([e{[1,2]},0],size(e{3}{2},1),1),...
+                             (0:size(e{3}{2},1)-1)',...
+                             e{3}{2}),...
+                pdo, 'UniformOutput', false);
+            entry = vertcat(entry{:});
+
+            % - Remove rows where PdoEntryIndex == 0
+            % - Swap columns 4 and 3
+            if ~isempty(entry)
+                entry = entry(entry(:,5) ~= 0,[1,2,4,3,5,6,7]);
+            end
+        end
+        
+        %====================================================================
+        % Return the row where the name in the first column matches
         function slave = findSlave(name,models)
             row = find(strcmp(models(:,1), name));
 
@@ -14,50 +128,50 @@ classdef EtherCATSlave
         end
 
         %====================================================================
-        function port = configurePorts(name,pdo,type,vector,scale,bits)
+        function port = configurePorts(name,pdo,dtype,vector,scale)
 
             if nargin < 5
-                scale = [];
-            end
-            if nargin < 6
-                bits = 0;
+                scale = false;
             end
 
             pdo_count = size(pdo,1);
 
+            if ~pdo_count
+                port = [];
+                return
+            end
+
             if vector
-                port.pdo = pdo;
-                port.pdo_data_type = type;
+                port.pdo = pdo(:,1:4);
+                port.pdo_data_type = dtype;
                 port.portname = name;
 
                 if isa(scale,'struct')
-                    if bits
-                        port.full_scale = 2^bits;
-                        port.gain   = {'Gain',  scale.gain};
-                        port.offset = {'Offset',scale.offset};
-                        port.filter = {'Filter',scale.tau};
-                    else
-                        port.full_scale = [];
-                        port.gain   = [];
-                        port.offset = [];
-                        port.filter = [];
-                    end
+                    port.full_scale = scale.full_scale;
+                    port.gain   = {'Gain',  scale.gain};
+                    port.offset = {'Offset',scale.offset};
+                    port.filter = {'Filter',scale.tau};
+                elseif scale
+                    port.full_scale = [];
+                    port.gain   = [];
+                    port.offset = [];
+                    port.filter = [];
                 end
             else
                 port = arrayfun(...
-                        @(i) struct('pdo',pdo(i,:),...
-                                    'pdo_data_type',type,...
+                        @(i) struct('pdo',pdo(i,1:4),...
+                                    'pdo_data_type',dtype,...
                                     'portname', [name,int2str(i)]), ...
                         1:pdo_count);
 
-                if isa(scale,'struct')
+                if isa(scale,'struct') || scale
                     port(1).full_scale = [];
                     port(1).gain   = [];
                     port(1).offset = [];
                     port(1).filter = [];
                 end
 
-                if ~bits || ~isa(scale,'struct')
+                if ~isa(scale,'struct')
                     return
                 end
 
@@ -75,7 +189,7 @@ classdef EtherCATSlave
                 for i = 1:pdo_count
                     idxstr = int2str(i);
 
-                    port(i).full_scale = 2^bits;
+                    port(i).full_scale = scale.full_scale;
 
                     if i <= numel(scale.gain)
                         port(i).gain   = {['Gain', idxstr], scale.gain(i)};

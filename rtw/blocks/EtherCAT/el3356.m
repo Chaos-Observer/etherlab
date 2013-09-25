@@ -4,51 +4,43 @@
 % Copyright (C) 2013 Richard Hacker
 % License: LGPL
 %
-classdef el3356
+classdef el3356 < EtherCATSlave
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-methods
+methods (Static)
     %========================================================================
-    function rv = getModels(obj)
-        rv = obj.models(:,1);
-    end
-
-    %========================================================================
-    function rv = getDC(obj,model)
+    function rv = getDC(model)
         if strcmp(model,'EL3356')
             rv = [];
         else
-            rv = obj.dc;
+            rv = el3356.dc;
         end
     end
 
     %========================================================================
-    function rv = getSDO(obj,model)
-        rv = obj.sdo;
+    function rv = getSDO(model)
+        rv = el3356.sdo;
         if strcmp(model,'EL3356')
             rv([2,4,7],:) = [];
         end
     end
 
     %========================================================================
-    function rv = configure(obj,model,adc,dc_spec,scaling,sdo)
-        rv = [];
-
-        row = find(strcmp(obj.models(:,1), model));
-
+    function rv = configure(model,adc,dc_spec,scaling,sdo)
         % Whether this is EL3356, not EL3356-0010
         % The predefined PDO and DC structures are for EL3356-0010
         % The EL3356 does not have all these features
-        el3356 = obj.models{row,3};
+        slave = el3356.findSlave(model,el3356.models);
+        basic = strcmp(model,'EL3356');
 
         % General information
         rv.SlaveConfig.vendor = 2;
-        rv.SlaveConfig.product = obj.models{row,2};
-        rv.SlaveConfig.description = obj.models{row,1};
+        rv.SlaveConfig.product = slave{2};
+        rv.SlaveConfig.description = slave{1};
 
         % Input and output syncmanager
-        rv.SlaveConfig.sm = {{2,0,obj.ctrl_pdo}, {3,1,{}}};
-        if el3356
+        rv.SlaveConfig.sm = {{2,0,el3356.ctrl_pdo}, {3,1,{}}};
+        if basic
             % Remove PDO Entry 7000:04 for EL3356
             rv.SlaveConfig.sm{1}{3}{1}{2}(4,1:2) = [0,0];
         end
@@ -66,8 +58,8 @@ methods
 
         if adc
             % 2xADC Converter
-            rv.SlaveConfig.sm{2}{3} = obj.adc_status_pdo;
-            if el3356
+            rv.SlaveConfig.sm{2}{3} = el3356.adc_status_pdo;
+            if basic
                 % Modifications for EL3356
                 % modify entry row 5 [0,0,1] to bitlen 8
                 % remove entry row 6 [0,0,7]
@@ -88,8 +80,9 @@ methods
 
             % Status 1 output port; all rows with bitlen of 1, except last
             % TxPDO toggle
-            row = find(  obj.adc_status_pdo{1}{2}(:,3) == 1 ...
-                       & obj.adc_status_pdo{1}{2}(:,1)) - 1;
+            pdo = el3356.adc_status_pdo;
+            row = find(  pdo{1}{2}(:,3) == 1 ...
+                       & pdo{1}{2}(:,1)) - 1;
             row(end) = [];      % Remove TxPDO toggle 60x0:16
             rv.PortConfig.output(2) = struct(...
                 'pdo', horzcat(ones(size(row)),...
@@ -107,7 +100,7 @@ methods
 
         else
             % Bridge measurement
-            rv.SlaveConfig.sm{2}{3} = obj.rmb_status_pdo;
+            rv.SlaveConfig.sm{2}{3} = el3356.rmb_status_pdo;
 
             % Signal output port; only entry of PDO 1a01
             rv.PortConfig.output = struct(...
@@ -118,8 +111,9 @@ methods
 
             % Status output port; all entries with bitlen of 1,
             % except for last 2 rows: Sync_error and TxPDO_toggle
-            row = find(  obj.rmb_status_pdo{1}{2}(:,3) == 1 ...
-                       & obj.rmb_status_pdo{1}{2}(:,1)) - 1;
+            pdo = el3356.rmb_status_pdo;
+            row = find(  pdo{1}{2}(:,3) == 1 ...
+                       & pdo{1}{2}(:,1)) - 1;
             row(end-1:end) = [];      % Remove Sync error 1c32:32 
                                       % and TxPDO toggle 1800:9
             rv.PortConfig.output(2) = struct(...
@@ -134,10 +128,11 @@ methods
         end
 
         % Distributed clock for EL3356-0010 only
-        if ~el3356 && dc_spec(1)
+        if ~basic && dc_spec(1)
             if dc_spec(1) ~= 4
                 % DC Configuration from the default list
-                rv.SlaveConfig.dc = obj.dc(dc_spec(1),:);
+                dc = el3356.dc;
+                rv.SlaveConfig.dc = dc(dc_spec(1),:);
             else
                 % Custom DC
                 rv.SlaveConfig.dc = dc_spec(2:end);
@@ -146,7 +141,7 @@ methods
             if rv.SlaveConfig.dc(1)
                 % Add Timestamp PDO when using DC - required
                 n = numel(rv.SlaveConfig.sm{2}{3});
-                rv.SlaveConfig.sm{2}{3}{n+1} = obj.time_pdo;
+                rv.SlaveConfig.sm{2}{3}{n+1} = el3356.time_pdo;
 
                 % Output the timestamp as 2 uint32's
                 rv.PortConfig.output(end+1) = struct(...
@@ -159,30 +154,39 @@ methods
         end
 
         % Scaling and filter of output port 1
-        if numel(scaling.gain) || numel(scaling.offset)
-            rv.PortConfig.output(1).full_scale = 2^31;
-        end
-        if numel(scaling.gain)
+        if isstruct(scaling)
+            rv.PortConfig.output(1).full_scale = scaling.full_scale;
             rv.PortConfig.output(1).gain = {'Gain', scaling.gain};
-        end
-        if numel(scaling.offset)
             rv.PortConfig.output(1).offset = {'Offset', scaling.offset};
-        end
-        if numel(scaling.filter)
-            rv.PortConfig.output(1).filter = {'Filter', scaling.filter};
+            rv.PortConfig.output(1).filter = {'Filter', scaling.tau};
         end
 
         % SDO Configuration
-        rv.SlaveConfig.sdo = num2cell(horzcat(obj.sdo, reshape(sdo,[],1)));
-        if el3356
+        sdo([6,7,15,17]) = sdo([6,7,15,17]) - 1;
+        rv.SlaveConfig.sdo = num2cell(horzcat(el3356.sdo, reshape(sdo,[],1)));
+        if basic
             rv.SlaveConfig.sdo([2,4,7],:) = [];
         end
+    end
 
+    %====================================================================
+    function test(p)
+        ei = EtherCATInfo(fullfile(p,'Beckhoff EL3xxx.xml'));
+        for i = 1:size(el3356.models,1)
+            fprintf('Testing %s\n', el3356.models{i,1});
+            rv = el3356.configure(el3356.models{i,1},0,1:10,...
+                    EtherCATSlave.configureScale(2^31,''),1:17);
+            ei.testConfiguration(rv.SlaveConfig,rv.PortConfig);
+
+            rv = el3356.configure(el3356.models{i,1},1,2,...
+                    EtherCATSlave.configureScale(2^31,'6'),1:17);
+            ei.testConfiguration(rv.SlaveConfig,rv.PortConfig);
+        end
     end
 end     % methods
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-properties (SetAccess=private)
+properties (Constant)
     %  name          product code         basic_version
     models = {...
       'EL3356',      hex2dec('0d1c3052'), true;
@@ -208,7 +212,10 @@ properties (SetAccess=private)
            hex2dec('8010'), hex2dec('15'), 16;
            hex2dec('8020'), hex2dec('06'),  8;
            hex2dec('8020'), hex2dec('15'), 16];
+end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+properties (Access = private, Constant)
     % Control port pdo
     % for EL3356, PdoEntry 7000:4 must be zeroed
     ctrl_pdo =       { {hex2dec('1600'), [hex2dec('7000'),  1,  1;

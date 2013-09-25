@@ -45,6 +45,13 @@ INSTALL (FILES
     EtherCATSlave.m
     EtherCATSlaveBlock.m
 
+    EtherCATInfo.m
+    EtherCATInfoSlave.m
+    XmlNode.m
+    el30xx_1.m el320x_1.m
+    el515x_2.m
+    ep31xx_1.m ep41xx_1.m ep43xx_1.m
+
     ekxxxx.m
     el1xxx.m
     el2xxx.m
@@ -62,3 +69,5 @@ INSTALL (FILES
     mtsrseries_check.m
 
     DESTINATION rtw/blocks/EtherCAT)
+
+
