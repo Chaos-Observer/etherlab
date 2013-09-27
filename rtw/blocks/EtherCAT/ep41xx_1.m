@@ -18,7 +18,7 @@ classdef ep41xx_1 < EtherCATSlave
             % Value output
             pdo = zeros(pdo_count,4);
             pdo(:,2) = 0:pdo_count-1;
-            rv.PortConfig.input = ep41xx_1.configurePorts('Value',...
+            rv.PortConfig.input = ep41xx_1.configurePorts('Ch.',...
                            pdo,sint(16),vector,scale);
                       
             % Distributed clock

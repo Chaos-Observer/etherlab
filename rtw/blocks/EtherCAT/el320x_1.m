@@ -23,7 +23,7 @@ classdef el320x_1 < EtherCATSlave
             pdo(:,2) = 0:pdo_count-1;
 
             rv.PortConfig.output = ...
-                el320x_1.configurePorts('Value',pdo,sint(16),vector);
+                el320x_1.configurePorts('Ch.',pdo,sint(16),vector);
 
             if status
                 pdo(:,3) = 4;
@@ -35,31 +35,21 @@ classdef el320x_1 < EtherCATSlave
                 end
                 
                 rv.PortConfig.output(end+(1:n)) = el320x_1.configurePorts(...
-                        'Status',pdo,uint(1),vector);
+                        'St.',pdo,uint(1),vector);
             end
 
-            if status
-                for i = 1:pdo_count
-                    rv.PortConfig.output(i).full_scale = slave{4};
-                end
-            else
-                rv.PortConfig.output(1).full_scale = slave{4};
+            % Set the full scale range for temperature port
+            for i = 1:numel(rv.PortConfig.output)/2
+                rv.PortConfig.output(i).full_scale = slave{4};
             end
             
-            config = repmat([0,hex2dec('19'),16,0;
-                             0,hex2dec('1a'),16,0;
-                             0,hex2dec('1b'),16,0], ...
-                            pdo_count, 1);
-            config(:,1) = floor((0:3*pdo_count-1)/3) * 16 + hex2dec('8000');
-            config(:,4) = reshape([element(1:pdo_count);
-                                   technology(1:pdo_count);
-                                   resistance(1:pdo_count)],...
-                                  [],1);
+            subIndex = hex2dec({'19','1a','1b'})';
             config = [hex2dec('8000') + repmat(0:pdo_count-1,1,3)*16;
-                      reshape(repmat(hex2dec({'19','1a','1b'})',pdo_count,1),1,[]);
+                      subIndex(floor((0:3*pdo_count-1)/pdo_count)+1);
                       repmat(16,1,pdo_count*3);
-                      [element(1:pdo_count), technology(1:pdo_count), resistance(1:pdo_count)]]';
-                
+                      [element(1:pdo_count), technology(1:pdo_count),...
+                       resistance(1:pdo_count)]]';
+
             rv.SlaveConfig.sdo = ...
                 num2cell( [hex2dec('8000'),hex2dec(' 6'), 8,double(filter > 1);
                            hex2dec('8000'),hex2dec('15'),16,max(0,filter-2);

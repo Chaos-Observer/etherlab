@@ -32,7 +32,7 @@ classdef el30xx_1 < EtherCATSlave
             pdo(:,2) = 0:pdo_count-1;
 
             rv.PortConfig.output = ...
-                el30xx_1.configurePorts('Value',pdo,sint(16),vector,scale);
+                el30xx_1.configurePorts('Ch.',pdo,sint(16),vector,scale);
 
             if status
                 pdo(:,3) = 4;
@@ -44,7 +44,7 @@ classdef el30xx_1 < EtherCATSlave
                 end
                 
                 rv.PortConfig.output(end+(1:n)) = el30xx_1.configurePorts(...
-                        'Status',pdo,uint(1),vector,isa(scale,'struct'));
+                        'St.',pdo,uint(1),vector,isa(scale,'struct'));
             end
 
             % Hardware filter

@@ -3,68 +3,126 @@ classdef EtherCATSlaveBlock
 % This class provides methods to manage a slave
 %
 % Methods:
-%       EtherCATSlaveBlock(b)
-%       updateModels(obj,models)
-%       updateCustomDCEnable(obj)
-%       updateDCVisibility(obj,state)
-%       updateSDOVisibility(obj,sdo)
+%    function rv = formatAddress(master,index,tsample)
+%    function updateSlaveState(slave)
+%    function updateModels(list)
+%    function setPortNames(input,output,deflt)
+%    function updateCustomDCEnable()
+%    function updateDCVisibility(state)
+%    function updateSDOVisibility(sdoList)
+%    function setEnable(var, state)
+%    function setVisible(var, state)
+%    function s = enableSet(state)
+%    function rv = strJoin(s,delim)
 
-properties (Access = private)
-    block
-    maskNames
-end
-
-methods
+methods (Static)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    function obj = EtherCATSlaveBlock(b)
-        if nargin > 0
-            obj.block = b;
+    function rv = formatAddress(master,index,tsample)
+        rv.master = master(1);
+
+        if numel(tsample) > 1
+            rv.domain = tsample(2);
         else
-            obj.block = gcbh;
+            rv.domain = 0;
         end
-        obj.maskNames = get_param(obj.block,'MaskNames');
+
+        if numel(index) > 1
+            rv.alias = index(1);
+            rv.position = index(2);
+        else
+            rv.alias = 0;
+            rv.position = index(1);
+        end
     end
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    function updateModels(obj,slave)
-        %% Keeps the slave model list up to date
+    function updatePdoVisibility(slave,pdo,state)
+        model = get_param(gcbh,'model');
+        exclude = slave.getExcludeList(model, hex2dec(pdo));
+        if isempty(exclude)
+            return
+        end
+        pdo = cellstr(strcat('pdo_x',dec2hex(exclude)));
+        EtherCATSlaveBlock.setEnable(pdo, state);
+    end
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    function updateSlaveState(slave)
+        %% This method filters out all PDO mask entries (everything starting
+        % with 'x1'). It then queries the slave for 
+
+        model = get_param(gcbh,'model');
+        names = get_param(gcbh,'MaskNames');
+
+        % The names of PDO's
+        pdoNames = names(strncmp(names, 'pdo_x', 5));
+
+        % and a list of index numbers they represent
+        pdo = cell2mat(pdoNames);
+        pdo = hex2dec(pdo(:,6:end));
+
+        % A list of checked PDO's
+        checkedPdo = pdo(cellfun(@(x) strcmp(get_param(gcbh,x), 'on'),...
+                                 pdoNames));
+
+        % Ask the slave which PDO's must be disabled
+        exclude = slave.getExcludeList(model, checkedPdo);
+        EtherCATSlaveBlock.setEnable(pdoNames(ismember(pdo,exclude)), false);
+        EtherCATSlaveBlock.setEnable(pdoNames(~ismember(pdo,exclude)), true);
+
+        % Now check the visibility of the PDO's
+        visible = slave.pdoVisible(model);
+        EtherCATSlaveBlock.setVisible(pdoNames(~ismember(pdo,visible)),false);
+        EtherCATSlaveBlock.setVisible(pdoNames( ismember(pdo,visible)), true);
+
+        coeNames = names(strncmp(names,'x80',3));
+        coe = slave.getCoE(model);
+        x = arrayfun(@(i) sprintf('x%04X_%02X', coe(i,[1,2])), ...
+                     1:size(coe,1), 'UniformOutput', false);
+        EtherCATSlaveBlock.setVisible(coeNames( ismember(coeNames,x)), true);
+        EtherCATSlaveBlock.setVisible(coeNames(~ismember(coeNames,x)),false);
+    end
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    function updateModels(list)
+        %% Keeps the list model list up to date
         % Arguments
-        %       slave: cell array where first column is the list of models
+        %       list: cell array where first column is the list of models
         %
         % Requires the following mask variables:
         %       model
 
         % Trim the models
-        if isa(slave,'cell')
-            models = slave;
-        else
-            models = slave.getModels();
+        if ~iscell(list)
+            disp('First parameter must be a cell array')
+            return
         end
-        models = models(:,1);
+        models = list(:,1);
 
         if verLessThan('Simulink','8.0')
-            style = get_param(obj.block,'MaskStyles');
+            style = get_param(gcbh,'MaskStyles');
+            names = get_param(gcbh,'MaskNames');
 
-            pos = find(strcmp(obj.maskNames,'model'));
+            pos = find(strcmp(names,'model'));
 
             modelstr = ['popup(', EtherCATSlaveBlock.strJoin(models,'|'), ')'];
             if ~strcmp(style{pos}, modelstr)
                 style{pos} = modelstr;
-                set_param(obj.block,'MaskStyles', style);
-                display(['Updated ', obj.block])
+                set_param(gcbh,'MaskStyles', style);
+                display(['Updated ', gcb])
             end
         else
-            p = Simulink.Mask.get(obj.block);
+            p = Simulink.Mask.get(gcbh);
             pos = find(strcmp({p.Parameters.Name}, 'model'), 1);
             if ~isequal(p.Parameters(pos).TypeOptions, models)
                 p.Parameters(pos).set('TypeOptions', models(:,1));
-                display(['Updated ', obj.block])
+                display(['Updated ', gcb])
             end
         end
     end
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    function setPortNames(obj,input,output,deflt)
+    function setPortNames(input,output,deflt)
         fmt = 'port_label(''%s'', %i, ''%s'')\n';
 
         if nargin > 3
@@ -81,11 +139,14 @@ methods
 
         str = cell2mat(str);
 
-        set_param(obj.block, 'MaskDisplay', str);
+        set_param(gcbh, 'MaskDisplay', str);
     end
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    function updateCustomDCEnable(obj)
+    function updateCustomDCEnable()
+        model = get_param(gcbh,'model');
+        names = get_param(gcbh,'MaskNames');
+
         % This function sets the enable state of all mask variables
         % where custom values for distributed clock can be entered.
         % if dc_mode == 'Custom' they are enabled
@@ -93,30 +154,30 @@ methods
         % Requires the following mask varialbes:
         %       dc_mode, dc_*
 
-        mode_idx = find(strcmp(obj.maskNames,'dc_mode'));
-        n = setdiff(find(strncmp(obj.maskNames,'dc_',3)), mode_idx);
+        mode_idx = find(strcmp(names,'dc_mode'));
+        n = setdiff(find(strncmp(names,'dc_',3)), mode_idx);
 
-        if strcmp(get_param(obj.block,'dc_mode'),'Custom')
-            setEnable(obj, obj.maskNames(n), true);
+        if strcmp(get_param(gcbh,'dc_mode'),'Custom')
+            EtherCATSlaveBlock.setEnable(names(n), true);
         else
-            setEnable(obj, obj.maskNames(n), false);
+            EtherCATSlaveBlock.setEnable(names(n), false);
         end
     end
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    function updateDCVisibility(obj,state)
+    function updateDCVisibility(state)
         %% Change the visibility of all mask variables
         % starting with 'dc_' depending on <state>
         %
         % Requires the following mask varialbes:
         %       dc_mode, dc_*
 
-        n = find(strncmp(obj.maskNames,'dc_',3));
-        setVisible(obj, obj.maskNames(n), state)
+        names = get_param(gcbh,'MaskNames');
+        EtherCATSlaveBlock.setVisible(names(strncmp(names,'dc_',3)), state)
     end
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    function updateSDOVisibility(obj,sdoList)
+    function updateSDOVisibility(sdoList)
         %% Change visibility of SDO Mask Variables
         % SDO Variables start with 'x8'
         % Argument:
@@ -125,62 +186,71 @@ methods
         % Requires the following mask varialbes:
         %       x8*
 
-        sdo = obj.maskNames(strncmp(obj.maskNames,'x8',2));
+        names = get_param(gcbh,'MaskNames');
+        sdo = names(strncmp(names,'x8',2));
         enable = cellstr(strcat('x', dec2base(sdoList(:,1), 16, 4),...
                                 '_', dec2base(sdoList(:,2), 16, 2)));
 
         state = repmat(0, size(sdo));
         state(cellfun(@(i) find(strcmp(sdo,i)), enable)) = 1;
 
-        setEnable(obj,sdo,state);
+        EtherCATSlaveBlock.setEnable(sdo,state);
     end
 
-
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    function setEnable(obj, var, state)
+    function setEnable(var, state)
         %% Change enabled state of a mask variable
         % Arguments:
         %   var: string or cellarray of strings
         %   state: boolean
 
+        if isempty(var)
+            return
+        end
+
+        maskNames = get_param(gcbh,'MaskNames');
+
         if isstr(var)
             var = {var};
         end
 
-        vis = get_param(obj.block,'MaskEnables');
-        n = cellfun(@(i) find(strcmp(obj.maskNames,i)), var);
+        vis = get_param(gcbh,'MaskEnables');
+        n = cellfun(@(i) find(strcmp(maskNames,i)), var);
 
         vis(n) = EtherCATSlaveBlock.enableSet(state);
 
-        if ~isequal(get_param(obj.block,'MaskEnables'),vis)
-            set_param(obj.block,'MaskEnables',vis);
+        if ~isequal(get_param(gcbh,'MaskEnables'),vis)
+            set_param(gcbh,'MaskEnables',vis);
         end
     end
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    function setVisible(obj, var, state)
+    function setVisible(var, state)
         %% Change visibility of a mask variable
         % Arguments:
         %   var: string or cellarray of strings
         %   state: boolean
 
+        if isempty(var)
+            return
+        end
+
+        maskNames = get_param(gcbh,'MaskNames');
+
         if isstr(var)
             var = {var};
         end
 
-        vis = get_param(obj.block,'MaskVisibilities');
-        n = cellfun(@(i) find(strcmp(obj.maskNames,i)), var);
+        vis = get_param(gcbh,'MaskVisibilities');
+        n = cellfun(@(i) find(strcmp(maskNames,i)), var);
 
         vis(n) = EtherCATSlaveBlock.enableSet(state);
 
-        if ~isequal(get_param(obj.block,'MaskVisibilities'),vis)
-            set_param(obj.block,'MaskVisibilities',vis);
+        if ~isequal(get_param(gcbh,'MaskVisibilities'),vis)
+            set_param(gcbh,'MaskVisibilities',vis);
         end
     end
 
-end
-
-methods (Static)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     function s = enableSet(state)
         %% returns a cellarray with elements 'on' or 'off' depending on state

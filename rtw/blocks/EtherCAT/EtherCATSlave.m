@@ -2,6 +2,26 @@ classdef EtherCATSlave
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     methods (Static)
+        %====================================================================
+        function rv = formatAddress(master,index,tsample)
+            rv.master = master(1);
+
+            if numel(tsample) > 1
+                rv.domain = tsample(2);
+            else
+                rv.domain = 0;
+            end
+
+            if numel(index) > 1
+                rv.alias = index(1);
+                rv.position = index(2);
+            else
+                rv.alias = 0;
+                rv.position = index(1);
+            end
+        end
+
+        %====================================================================
         function scale = configureScale(full_scale,gain,offset,tau)
             %% Return a structure with fields
             %   scale.full_scale = full_scale
@@ -111,7 +131,7 @@ classdef EtherCATSlave
             % - Remove rows where PdoEntryIndex == 0
             % - Swap columns 4 and 3
             if ~isempty(entry)
-                entry = entry(entry(:,5) ~= 0,[1,2,4,3,5,6,7]);
+                entry = entry(entry(:,5) ~= 0,[1,2,4,3,5:end]);
             end
         end
         

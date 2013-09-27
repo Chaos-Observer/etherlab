@@ -31,12 +31,12 @@ classdef ep43xx_1 < EtherCATSlave
                 tx_pdo1(:,2) = 0:pdo_count-1;
             end
 
-            rv.PortConfig.output  = ep43xx_1.configurePorts('Value',...
+            rv.PortConfig.output  = ep43xx_1.configurePorts('Ch.',...
                                 tx_pdo1,sint(16),vector,tx_scale);
 
             if status
                 rv.PortConfig.output(end+1) = ep43xx_1.configurePorts(...
-                        'Status',tx_pdo2,uint(1),vector,isa(tx_scale,'struct'));
+                        'St.',tx_pdo2,uint(1),vector,isa(tx_scale,'struct'));
             end
 
             if dc(1) > 2

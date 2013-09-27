@@ -26,7 +26,7 @@ classdef ep31xx_1 < EtherCATSlave
             % Value output
             pdo = repmat([0,0,value_idx,0], pdo_count, 1);
             pdo(:,2) = 0:pdo_count-1;
-            rv.PortConfig.output = ep31xx_1.configurePorts('Value',...
+            rv.PortConfig.output = ep31xx_1.configurePorts('Ch.',...
                            pdo,sint(16),vector,scale);
 
             % Status output
@@ -40,7 +40,7 @@ classdef ep31xx_1 < EtherCATSlave
                 end
                 
                 rv.PortConfig.output(end+(1:n)) = el31xx_1.configurePorts(...
-                        'Status',pdo,uint(1),vector,isa(scale,'struct'));
+                        'St.',pdo,uint(1),vector,isa(scale,'struct'));
             end
 
             % Digital output for EP3182
