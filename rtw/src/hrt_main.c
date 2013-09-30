@@ -49,7 +49,7 @@
  * as:
  *
    // In file <privtype.h>
-  
+
    struct priv_type {
           double dbl[4],
           int16_t i16[5][6];
@@ -59,19 +59,19 @@
               char b[40];
           } inner[2];
    };
-  
-   
+
+
  * Include the following code in the executable:
  * =========================================================================
  *
    #include "privtype.h"
-  
+
    // Definition for struct priv_type
-  
+
    const size_t dimMap[] = {
        5, 6,    // for i16
    };
-  
+
    #ifdef __cplusplus
    extern "C" {
    #endif
@@ -129,6 +129,7 @@
 #include <stdlib.h>     // malloc
 #include <string.h>
 #include <dlfcn.h>
+#include <syslog.h>
 
 #include <pdserv.h>
 
@@ -142,6 +143,33 @@
 #define MAX_SAFE_STACK (8 * 1024) /** The maximum stack size which is
                                     guranteed safe to access without faulting.
                                    */
+
+/** Monitor wakeup latency and output to syslog, if limit [ns] is exceeded.
+ *
+ * Zero disables monitoring.
+ */
+#define WAKEUP_LIMIT_NS          0
+
+/** Monitor runtime of pdserv_get_parameters() and output to syslog,
+ * if limit [ns] is exceeded.
+ *
+ * Zero disables monitoring.
+ */
+#define GET_PARAMETERS_LIMIT_NS  0
+
+/** Monitor runtime of rt_OneStepMain() and output to syslog,
+ * if limit [ns] is exceeded.
+ *
+ * Zero disables monitoring.
+ */
+#define ONESTEPMAIN_LIMIT_NS     0
+
+/** Monitor runtime of pdserv_update() of main task and output to syslog,
+ * if limit [ns] is exceeded.
+ *
+ * Zero disables monitoring.
+ */
+#define PDSERV_UPDATE_LIMIT_NS   0
 
 /* To quote a string */
 #define STR(x) #x
@@ -270,7 +298,7 @@ struct thread_task {
 #  define FIRST_TID 0
 # endif
 
-#define NSEC_PER_SEC (1000000000U)
+#define NSEC_PER_SEC (1000000000)
 
 #undef timeradd
 inline void timeradd(struct timespec *t, unsigned int dt)
@@ -282,8 +310,10 @@ inline void timeradd(struct timespec *t, unsigned int dt)
     }
 }
 
-#define DIFF_NS(A, B) (((B).tv_sec - (A).tv_sec) * NSEC_PER_SEC + \
+#define DIFF_NS(A, B) (((long long) (B).tv_sec - (A).tv_sec) * NSEC_PER_SEC + \
         (B).tv_nsec - (A).tv_nsec)
+
+#define ABS(X) ((X) >= 0 ? (X) : -(X))
 
 /****************************************************************************/
 
@@ -418,7 +448,7 @@ void *run_task(void *p)
 {
     struct thread_task *thread = p;
     unsigned int dt = thread->sample_time * 1.0e9 + 0.5;
-    uint32_t exec_ns = 0, period_ns = 0;
+    uint32_t exec_ns = 0, period_ns = 0, overruns = 0;
     struct timespec start_time, last_start_time = {0, 0},
                     end_time = last_start_time;
 
@@ -434,14 +464,18 @@ void *run_task(void *p)
         exec_ns = DIFF_NS(last_start_time, end_time);
         last_start_time = start_time;
         pdserv_update_statistics(thread->pdtask,
-                exec_ns / 1e9, period_ns / 1e9, 0);
+                exec_ns / 1e9, period_ns / 1e9, overruns);
 
         timeradd(&thread->monotonic_time, dt);
 
         clock_gettime(CLOCK_MONOTONIC, &end_time);
 
-        clock_nanosleep(CLOCK_MONOTONIC,
-                TIMER_ABSTIME, &thread->monotonic_time, 0);
+        if (DIFF_NS(end_time, thread->monotonic_time) < 0) {
+            overruns++;
+        }
+
+        clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME,
+                &thread->monotonic_time, 0);
     } while(!thread->err && *thread->running);
 
     *thread->running = 0;
@@ -498,7 +532,7 @@ int get_compound_data_type(const char *mwName, size_t size)
     struct compound_list *list;
     const void *compound_desc;
     char *compound_name;
-    size_t n, offset;
+    size_t n;
 
     /* Try to find the compound in the list */
     for (list = &compound_list_head;
@@ -600,7 +634,7 @@ const char *register_signal(const struct thread_task *task,
     int data_type = get_etl_data_type(
             rtwCAPI_GetDataTypeMWName(dTypeMap, dataTypeIndex),
             rtwCAPI_GetDataTypeSLId(dTypeMap, dataTypeIndex),
-            rtwCAPI_GetDataTypeSize(dTypeMap, dataTypeIndex), 
+            rtwCAPI_GetDataTypeSize(dTypeMap, dataTypeIndex),
             rtwCAPI_GetDataIsComplex(dTypeMap, dataTypeIndex));
     size_t pathLen = strlen(blockPath) + strlen(signalName) + 9;
     uint8_T ndim = rtwCAPI_GetNumDims(dimMap, dimIndex);
@@ -766,10 +800,9 @@ const char *register_parameter( struct pdserv *pdserv,
     int data_type = get_etl_data_type(
             rtwCAPI_GetDataTypeMWName(dTypeMap, dataTypeIndex),
             rtwCAPI_GetDataTypeSLId(dTypeMap, dataTypeIndex),
-            rtwCAPI_GetDataTypeSize(dTypeMap, dataTypeIndex), 
+            rtwCAPI_GetDataTypeSize(dTypeMap, dataTypeIndex),
             rtwCAPI_GetDataIsComplex(dTypeMap, dataTypeIndex));
 
-    struct pdvariable *param;
     char *path;
     size_t arrayDim[2], *dim = arrayDim;
 
@@ -832,8 +865,7 @@ const char *register_parameter( struct pdserv *pdserv,
             dim[i] = dimArray[dimArrayIndex + (ndim - 1) - i];
     }
 
-    param = pdserv_parameter(pdserv, path, 0666,
-            data_type, address, ndim, dim, 0, 0);
+    pdserv_parameter(pdserv, path, 0666, data_type, address, ndim, dim, 0, 0);
 
 out:
     free(path);
@@ -855,7 +887,6 @@ rtw_capi_init(RT_MODEL *S,
 {
     const rtwCAPI_Signals* signals;
     const rtwCAPI_BlockParameters* params;
-    const char *err;
     size_t i;
 
     mmi = &(rtmGetDataMapInfo(S).mmi);
@@ -1089,9 +1120,23 @@ int main(int argc, char **argv)
     unsigned int running = 1;
     const char *err = NULL;
     size_t i;
-    uint32_t exec_ns = 0, period_ns = 0;
+    uint32_t exec_ns = 0, period_ns = 0, overruns = 0;
     struct timespec start_time, last_start_time = {0, 0},
                     end_time = last_start_time;
+    int ret;
+#if WAKEUP_LIMIT_NS > 0 || GET_PARAMETERS_LIMIT_NS > 0 || \
+    ONESTEPMAIN_LIMIT_NS > 0 || PDSERV_UPDATE_LIMIT_NS > 0
+    long long ns;
+#endif
+#if WAKEUP_LIMIT_NS > 0
+    int syslog_limiter = 0;
+    long long last_ns = 0;
+    struct timespec last_mon = {};
+#endif
+#if GET_PARAMETERS_LIMIT_NS > 0 || ONESTEPMAIN_LIMIT_NS > 0 || \
+    PDSERV_UPDATE_LIMIT_NS > 0
+    struct timespec t1, t2;
+#endif
 
     /* Set defaults for command-line options. */
     base_name = basename(argv[0]);
@@ -1171,6 +1216,8 @@ int main(int argc, char **argv)
         create_pid_file();
     }
 
+    openlog("rttask", LOG_PID, LOG_DAEMON);
+
     clock_gettime(CLOCK_MONOTONIC, &task[0].monotonic_time);
 
 #if defined(MULTITASKING)
@@ -1185,31 +1232,97 @@ int main(int argc, char **argv)
 #endif
 
     dt = task[0].sample_time * 1.0e9 + 0.5;
+    syslog(LOG_INFO, "Starting main thread with dt = %u ns.", dt);
 
     /* Main thread running here */
     do {
         clock_gettime(CLOCK_MONOTONIC, &start_time);
         clock_gettime(CLOCK_REALTIME, &task[0].world_time);
 
+#if WAKEUP_LIMIT_NS > 0
+        ns = DIFF_NS(task[0].monotonic_time, start_time);
+        if (ABS(ns) > WAKEUP_LIMIT_NS && !syslog_limiter) {
+            syslog(LOG_INFO, "Wakeup took %lli ns.", ns);
+            syslog(LOG_INFO, "start_time = %li s, %li ns.",
+                    start_time.tv_sec, start_time.tv_nsec);
+            syslog(LOG_INFO, "monotonic_time = %li s, %li ns.",
+                    task[0].monotonic_time.tv_sec,
+                    task[0].monotonic_time.tv_nsec);
+            syslog(LOG_INFO, "last start_time = %li s, %li ns.",
+                    last_start_time.tv_sec, last_start_time.tv_nsec);
+            syslog(LOG_INFO, "last monotonic_time = %li s, %li ns.",
+                    last_mon.tv_sec,
+                    last_mon.tv_nsec);
+            syslog(LOG_INFO, "last ns = %lli.", last_ns);
+            syslog_limiter = 1 / task[0].sample_time;
+        }
+        if (syslog_limiter) {
+            syslog_limiter--;
+        }
+        last_ns = ns;
+#endif
+
+#if GET_PARAMETERS_LIMIT_NS > 0
+        clock_gettime(CLOCK_MONOTONIC, &t1);
+#endif
         pdserv_get_parameters(pdserv, task[0].pdtask,
                 &task[0].monotonic_time);
+#if GET_PARAMETERS_LIMIT_NS > 0
+        clock_gettime(CLOCK_MONOTONIC, &t2);
+        ns = DIFF_NS(t1, t2);
+        if (ns > GET_PARAMETERS_LIMIT_NS) {
+            syslog(LOG_INFO, "pdserv_get_parameters took %lli ns.", ns);
+        }
+#endif
 
+#if ONESTEPMAIN_LIMIT_NS > 0
+        clock_gettime(CLOCK_MONOTONIC, &t1);
+#endif
         err = rt_OneStepMain(S);
+#if ONESTEPMAIN_LIMIT_NS > 0
+        clock_gettime(CLOCK_MONOTONIC, &t2);
+        ns = DIFF_NS(t1, t2);
+        if (ns > ONESTEPMAIN_LIMIT_NS) {
+            syslog(LOG_INFO, "rt_OneStepMain took %lli ns.", ns);
+        }
+#endif
 
+#if PDSERV_UPDATE_LIMIT_NS > 0
+        clock_gettime(CLOCK_MONOTONIC, &t1);
+#endif
         pdserv_update(task[0].pdtask, &task[0].world_time);
+#if PDSERV_UPDATE_LIMIT_NS > 0
+        clock_gettime(CLOCK_MONOTONIC, &t2);
+        ns = DIFF_NS(t1, t2);
+        if (ns > PDSERV_UPDATE_LIMIT_NS) {
+            syslog(LOG_INFO, "pdserv_update took %lli ns.", ns);
+        }
+#endif
 
         period_ns = DIFF_NS(last_start_time, start_time);
         exec_ns = DIFF_NS(last_start_time, end_time);
         last_start_time = start_time;
-        pdserv_update_statistics(task[0].pdtask,
-                exec_ns / 1e9, period_ns / 1e9, 0);
 
+        pdserv_update_statistics(task[0].pdtask,
+                exec_ns / 1e9, period_ns / 1e9, overruns);
+
+#if WAKEUP_LIMIT_NS > 0
+        last_mon = task[0].monotonic_time;
+#endif
         timeradd(&task[0].monotonic_time, dt);
 
         clock_gettime(CLOCK_MONOTONIC, &end_time);
 
-        clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME,
-                &task[0].monotonic_time, 0);
+        if (DIFF_NS(end_time, task[0].monotonic_time) < 0) {
+            overruns++;
+        }
+
+        ret = clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME,
+                &task[0].monotonic_time, NULL);
+        if (ret != 0) {
+            syslog(LOG_INFO, "clock_nanosleep() returned %i, errno=%i: %s",
+                    ret, errno, strerror(errno));
+        }
     } while(!err && running);
 
     running = 0;
@@ -1228,9 +1341,13 @@ int main(int argc, char **argv)
 out:
     if (err) {
         fprintf(stderr, "Fatal error: %s\n", err);
+        syslog(LOG_INFO, "Exiting with error.");
+        closelog();
         return 1;
     }
     else {
+        syslog(LOG_INFO, "Exiting gracefully.");
+        closelog();
         return 0;
     }
 }
