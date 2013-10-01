@@ -6,7 +6,7 @@ classdef el30xx_1 < EtherCATSlave
         function rv = configure(model,status,vector,scale,filter)
             % filter = [mode,opmode,fastop]
 
-            slave = el30xx_1.findSlave(model,el30xx_1.models);
+            slave = EtherCATSlave.findSlave(model,el30xx_1.models);
 
             rv.SlaveConfig.vendor = 2;
             rv.SlaveConfig.description = model;

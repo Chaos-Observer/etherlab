@@ -3,9 +3,25 @@ classdef el320x_1 < EtherCATSlave
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     methods (Static)
         %====================================================================
+        function rv = getExcludeList(model, checked)
+            rv = [];
+        end
+
+        %====================================================================
+        function rv = getSDO(model)
+            pdo_count = str2double(model(6));
+            rv = 1:3*pdo_count; %floor((0:3*pdo_count-1)/3) + 1;
+        end
+
+        %====================================================================
+        function rv = pdoVisible(model)
+            rv = [];
+        end 
+
+        %====================================================================
         function rv = configure(model,status,vector,filter,...
                                 element,technology,resistance)
-            slave = el320x_1.findSlave(model,el320x_1.models);
+            slave = EtherCATSlave.findSlave(model,el320x_1.models);
 
             rv.SlaveConfig.vendor = 2;
             rv.SlaveConfig.description = model;

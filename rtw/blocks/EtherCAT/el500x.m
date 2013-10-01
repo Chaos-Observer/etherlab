@@ -1,224 +1,217 @@
-function el500x(method, varargin)
-
-if ~nargin
-    return
-end
-
-%display([gcb ' ' method]);
-
-switch lower(method)
-case 'set'
-    model = get_param(gcbh, 'model');
-
-    if model(1) ~= 'E'
-        errordlg('Please choose a correct slave', gcb);
-        return
-    end
-
-    ud = get_param(gcbh,'UserData');
-    ud.SlaveConfig = slave_config(model);
-    ud.PortConfig = port_config(ud.SlaveConfig);
-    set_param(gcbh, 'UserData', ud);
-
-    update_gui
-
-case 'check'
-    % If UserData.SlaveConfig does not exist, this is an update
-    % Convert this block and return
-    model = get_param(gcbh,'model');
-
-    ud = get_param(gcbh, 'UserData');
-
-    % Get slave and port configuration based on product code and revision
-    sc = slave_config(ud.SlaveConfig.product, ud.SlaveConfig.revision);
-    pc = port_config(sc);
-
-    if isequal(sc.sm, ud.SlaveConfig.sm) && ~isequal(sc, ud.SlaveConfig)
-        % The slave has a new name
-        warning('el5001:NewName', ...
-                '%s: Renaming device from %s to %s', ...
-                gcb, get_param(gcbh,'model'), sc.description)
-        set_param(gcbh, 'model', sc.description)
-        return;
-    end
-
-    if ~isequal(pc, ud.PortConfig)
-        errordlg('Configuration error. Please replace this block', gcb);
-        %error('el5001:PortConfig', 'Configuration error on %s. Replace it',...
-                %gcb);
-    end
-
-case 'update'
-    update_devices(varargin{1}, slave_config());
-
-case 'ui'
-    update_gui;
-
-otherwise
-    display([gcb, ': Unknown method ', method])
-end
-
-return
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function rv = slave_config(varargin)
+% SSI decoder EL5001, EL5001-0011, EL5002
+%
+% Copyright (C) 2013 Richard Hacker
+% License: LGPL
+%
+classdef el500x < EtherCATSlave
 
-% directly write the syncmanager configuration
-pdo = { {hex2dec('1a00') [hex2dec('6000'), 1, 1;...
-                          hex2dec('6000'), 2, 1;...
-                          hex2dec('6000'), 3, 1;...
-                          0              , 0,10;...
-                          hex2dec('1c32'),32, 1;...
-                          hex2dec('1800'), 7, 1;...
-                          hex2dec('1800'), 9, 1;...
-                          hex2dec('6000'),17,32]}, ...
-        {hex2dec('1a01') [hex2dec('6010'), 1, 1;...
-                          hex2dec('6010'), 2, 1;...
-                          hex2dec('6010'), 3, 1;...
-                          0              , 0,10;...
-                          hex2dec('1c32'),32, 1;...
-                          hex2dec('1801'), 7, 1;...
-                          hex2dec('1801'), 9, 1;...
-                          hex2dec('6010'),17,32]},...
-        {hex2dec('1a00') [hex2dec('6000'), 1, 1;...
-                          hex2dec('6000'), 2, 1;...
-                          hex2dec('6000'), 3, 1;...
-                          0              , 0, 5;...
-                          0              , 0, 5;...
-                          hex2dec('6000'),14, 1;...
-                          hex2dec('1800'), 7, 1;...
-                          hex2dec('1800'), 9, 1;...
-                          hex2dec('6000'),17,32]},...
-        {hex2dec('1a02') [hex2dec('6000'),18,32]}};
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    methods (Static)
+        %====================================================================
+        function rv = getExcludeList(model, checked)
+            rv = [];
+        end
 
-%   Model       ProductCode          Revision          IndexOffset, function
-models = {...
-  'EL5001',       hex2dec('13893052'), hex2dec('03f90000'), [2]; ...
-  'EL5001-0011',  hex2dec('13893052'), hex2dec('0010000b'), [3 4]; ...
-  'EL5002',       hex2dec('138a3052'), hex2dec('00110000'), [1 2]; ...
-};
+        %====================================================================
+        function rv = getSDO(model)
+            slave = EtherCATSlave.findSlave(model,el500x.models);
+            rv = slave{6};
+        end
 
-switch nargin
-case 2
-    pos = cell2mat(models(:,2)) == varargin{1}...
-        & cell2mat(models(:,3)) == varargin{2};
-    product = models(pos,:);
+        %====================================================================
+        function rv = pdoVisible(model)
+            slave = EtherCATSlave.findSlave(model,el500x.models);
 
-case 1
-    product = models(strcmp(models(:,1),varargin{1}),:);
+            if slave{5}
+                rv = el500x.pdo{slave{5},1};
+            else
+                rv = [];
+            end
+        end 
 
-otherwise
-    fields = models(:,1);
-    obsolete = cellfun(@length, fields) > 11;
-    rv = vertcat(sort(fields(~obsolete)), sort(fields(obsolete)));
-    return
-end
 
-if isempty(product)
-    rv = [];
-    return;
-end
+        %====================================================================
+        function rv = configure(model,timestamp,sdo_config,dc_config)
+            slave = EtherCATSlave.findSlave(model,el500x.models);
 
-rv.vendor = 2;
-rv.description = product{1};
-rv.product = product{2};
-rv.revision = product{3};
-rv.sm = {{3, 1, pdo(product{4})}};
-rv.ssi_monitor = strncmp(rv.description,'EL5001-001',10);
+            rv.SlaveConfig.vendor = 2;
+            rv.SlaveConfig.description = model;
+            rv.SlaveConfig.product  = slave{2};
 
-switch get_param(gcbh,'dcmode')
-case 'DC-Synchron'
-    rv.dc = [hex2dec('700'),0,1,0,0,0,0,1,15000,0];
-case 'DC-Synchron (input based)'
-    rv.dc = [hex2dec('700'),0,1,0,0,1,0,1,15000,0];
-case 'DC-Latch active (only for EL5001-001x)'
-    rv.dc = [hex2dec('120'),0,0,0,0,0,0,1,0,0];
-case 'DC-Customized'
-    rv.dc = evalin('base',get_param(gcbh,'dccustom'));
-end
+            pdo_list = el500x.pdo;
 
-% Remove Timestamp PDO if Monitor Terminal does not require it
-if rv.ssi_monitor && strcmp(get_param(gcbh,'timestamp'),'off')
-    rv.sm{1}{3}(2) = [];
-end
+            % Get a list of pdo's for the selected slave
+            selected = boolean(zeros(1,size(pdo_list,1)));
+            selected(slave{4}) = 1;
 
-return
+            % Add timestamp pdo
+            if slave{5} && timestamp
+                selected(slave{5}) = 1;
+            end
+            
+            % Configure SM3
+            tx = find(selected);
+            rv.SlaveConfig.sm = ...
+                 {{3,1, arrayfun(@(x) {pdo_list{x,1}, pdo_list{x,2}},...
+                                 tx, 'UniformOutput', false)}};
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function rv = port_config(SlaveConfig)
-% Populate the blocks output port(s)
+            % Configure output port. The algorithm below will group all boolean
+            % signals to one port. All other entries get a separate port
+            outputs = arrayfun(@(i) arrayfun(@(j) {i-1, ...
+                                                   pdo_list{tx(i),2}(1,3), ...
+                                                   pdo_list{tx(i),3}{j,1}',...
+                                                   pdo_list{tx(i),3}{j,2}},...
+                                            1:size(pdo_list{tx(i),3},1),...
+                                            'UniformOutput', false), ...
+                              1:numel(tx), 'UniformOutput', false);
+            outputs = horzcat(outputs{:});
 
-last_pdo = size(SlaveConfig.sm{1}{3}{1}{2},1) - 1;
+            rv.PortConfig.output = ...
+                cellfun(@(i) struct('pdo',horzcat(repmat([0,i{1}], ...
+                                                         size(i{3})), ...
+                                                  i{3}, zeros(size(i{3}))), ...
+                                    'pdo_data_type', uint(i{2}), ...
+                                    'portname', i{4}), ...
+                         outputs);
 
-if SlaveConfig.ssi_monitor
-    rv.output(1) = struct('pdo', [0,0,last_pdo,0], 'pdo_data_type', 1032);
-    if strcmp(get_param(gcbh,'timestamp'),'on')
-        rv.output(2) = struct('pdo', [0,1,0,0], 'pdo_data_type', 1032);
+            % Distributed clocks
+            if dc_config(1) == 5
+                % Custom
+                rv.SlaveConfig.dc = dc_config(2:11);
+            elseif dc_config(1) > 1 && ismember(dc_config(1), slave{7})
+                % Preconfigured
+                dc = el500x.dc;
+                rv.SlaveConfig.dc = dc(dc_config(1),:);
+            end
+
+            % CoE Configuration
+            sdo = el500x.sdo;
+            rv.SlaveConfig.sdo = num2cell([sdo(slave{6},:), ...
+                                           sdo_config(slave{6})']);
+        end
+
+        %====================================================================
+        function test(p)
+            ei = EtherCATInfo(fullfile(p,'Beckhoff EL5xxx.xml'));
+            for i = 1:size(el500x.models,1)
+                fprintf('Testing %s\n', el500x.models{i,1});
+                pdo = el500x.pdo;
+                rv = el500x.configure(el500x.models{i,1}, i&1,1:21,1);
+                ei.testConfiguration(rv.SlaveConfig,rv.PortConfig);
+            end
+        end
     end
-    rv.output(end+1) = struct('pdo', [0,0,0,0], 'pdo_data_type', 1001);
-    rv.output(end+1) = struct('pdo', [0,0,1,0], 'pdo_data_type', 1001);
-    if strcmp(get_param(gcbh,'power_fail1'),'on')
-        rv.output(end+1) = struct('pdo', [0,0,2,0], 'pdo_data_type', 1001);
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    properties (Constant, Access = private)
+
+        %              PdoEntry       EntryIdx, SubIdx, Bitlen
+        pdo = { hex2dec('1a00') [hex2dec('6000'), 1, 1;
+                                 hex2dec('6000'), 2, 1;
+                                 hex2dec('6000'), 3, 1;
+                                 0              , 0,10;
+                                 hex2dec('1c32'),32, 1;
+                                 hex2dec('1800'), 7, 1;
+                                 hex2dec('1800'), 9, 1;
+                                 hex2dec('6000'),17,32], ...
+                        { 7, 'Counter'; 0:2, 'Status' };
+                hex2dec('1a01') [hex2dec('6010'), 1, 1;
+                                 hex2dec('6010'), 2, 1;
+                                 hex2dec('6010'), 3, 1;
+                                 0              , 0,10;
+                                 hex2dec('1c32'),32, 1;
+                                 hex2dec('1801'), 7, 1;
+                                 hex2dec('1801'), 9, 1;
+                                 hex2dec('6010'),17,32],...
+                        { 7, 'Counter'; 0:2, 'Status' };
+                hex2dec('1a00') [hex2dec('6000'), 1, 1;
+                                 hex2dec('6000'), 2, 1;
+                                 hex2dec('6000'), 3, 1;
+                                 0              , 0, 5;
+                                 0              , 0, 6;
+                                 hex2dec('6000'),15, 1;
+                                 hex2dec('6000'),16, 1;
+                                 hex2dec('6000'),17,32],...
+                        { 8, 'Counter'; 0:2, 'Status' };
+                hex2dec('1a02') [hex2dec('6000'),18,32], ...
+                        { 0, 'Time' };
+        };
+
+        %% SDO Definition
+        %%% EL5001, 8010
+        %    '1 1 Disable frame error'
+        %    '2 1 Enable power failure bit'
+        %    '3 1 Enable inhibit time'
+        %    '4 1 Enable test mode'
+        %    '6 1 SSI-coding'
+        %    '9 3 SSI-baudrate'
+        %    '15 2 SSI-frame type'
+        %    '17 16 SSI-frame size'
+        %    '18 16 SSI-data length'
+        %    '19 16 Min. inhibit time[µs]'
+        %%% EL5001-0011, #x8000
+        %    '1 1 Disable frame error'
+        %    '2 1 Enable power failure bit'
+        %    '5 1 Check SSI-frame size'
+        %    '6 1 SSI-coding'
+        %    '15 2 SSI-frame type'
+        %    '17 16 SSI-frame size'
+        %    '18 16 SSI-data length'
+        %%% EL5002, #x8000, #x8010
+        %    '1 1 Disable frame error'
+        %    '2 1 Enable power failure bit'
+        %    '3 1 Enable inhibit time'
+        %    '4 1 Enable test mode'
+        %    '6 1 SSI-coding'
+        %    '9 3 SSI-baudrate'
+        %    '15 2 SSI-frame type'
+        %    '17 16 SSI-frame size'
+        %    '18 16 SSI-data length'
+        %    '19 16 Min. inhibit time[µs]'
+
+        sdo = [ % #x8000: EL5001-0011 EL5002
+                hex2dec('8000'),  1,  8;    % Disable frame error
+                hex2dec('8000'),  2,  8;    % Enable power failure bit
+                hex2dec('8000'),  3,  8;    % Enable inhibit time (EL5002)
+                hex2dec('8000'),  4,  8;    % Enable test mode (EL5002)
+                hex2dec('8000'),  5,  8;    % Check SSI-frame size (EL5001-001x
+                hex2dec('8000'),  6,  8;    % SSI-coding
+                hex2dec('8000'),  9,  8;    % SSI-baudrate (EL5002)
+                hex2dec('8000'), 15,  8;    % SSI-frame type
+                hex2dec('8000'), 17, 16;    % SSI-frame size
+                hex2dec('8000'), 18, 16;    % SSI-data length
+                hex2dec('8000'), 19, 16;    % Min. inhibit time[µs] (EL5002)
+
+                % #x8010: EL5001, EL5002
+                hex2dec('8010'),  1,  8;    % Disable frame error
+                hex2dec('8010'),  2,  8;    % Enable power failure bit
+                hex2dec('8010'),  3,  8;    % Enable inhibit time
+                hex2dec('8010'),  4,  8;    % Enable test mode
+                hex2dec('8010'),  6,  8;    % SSI-coding
+                hex2dec('8010'),  9,  8;    % SSI-baudrate
+                hex2dec('8010'), 15,  8;    % SSI-frame type
+                hex2dec('8010'), 17, 16;    % SSI-frame size
+                hex2dec('8010'), 18, 16;    % SSI-data length
+                hex2dec('8010'), 19, 16;    % Min. inhibit time[µs]
+        ];
+
+        dc = [           0  ,0,0,0,0,0,0,1,    0,0; % FreeRun
+              hex2dec('700'),0,1,0,0,0,0,1,15000,0; % DC-Synchron
+              hex2dec('700'),0,1,0,0,1,0,1,15000,0; % DC-Synchron (input based)
+              hex2dec('120'),0,0,0,0,0,0,1,    0,0];% DC-Latch active (only for EL5001-001x)
     end
-else
-    pdo_count = numel(SlaveConfig.sm{1}{3});
 
-    m = zeros(pdo_count,4);
-    m(:,2) = 0:pdo_count-1;
-
-    rv.output = repmat(struct('pdo', m, 'pdo_data_type', 1001), 1, 4);
-
-    i = ones(pdo_count,1);
-
-    rv.output(1).pdo(:,3) = last_pdo * i;
-    rv.output(1).pdo_data_type = 1032;
-    rv.output(2).pdo(:,3) = 0*i;
-    rv.output(3).pdo(:,3) = i;
-    rv.output(4).pdo(:,3) = 2*i;
-
-    if (pdo_count == 1 && strcmp(get_param(gcbh,'power_fail1'),'off')) ...
-            || (pdo_count == 2 && strcmp(get_param(gcbh,'power_fail1'),'off') ...
-                               && strcmp(get_param(gcbh,'power_fail2'),'off')) ...
-        rv.output(4) = [];
+    properties (Constant)
+        %   Model           ProductCode
+        %                Rx    Tx   CoE,   AssignActivate
+        models = {...
+            'EL5001',       hex2dec('13893052'), [],...
+                2,     0,            12:21,   1:3;
+            'EL5001-0011',  hex2dec('13893052'), [],...
+                3,     4, [1,2,5,6,8,9,10], [1,4];
+            'EL5002',       hex2dec('138a3052'), [],...
+                [1,2], 0,       [1:4,6:21],   1:3;
+        };
     end
-end
-
-return
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function update_gui
-mask_enables = cell2struct(...
-    get_param(gcbh,'MaskEnables'),...
-    get_param(gcbh,'MaskNames')...
-);
-
-old_enables = mask_enables;
-
-choice = {'off','on'};
-value = choice{strcmp(get_param(gcbh,'dcmode'),'DC-Customized') + 1};
-
-if ~strcmp(mask_enables.dccustom,value)
-    mask_enables.dccustom = value;
-end
-
-value = choice{strcmp(get_param(gcbh,'frame1'),...
-                      'Variable (set size in Frame Size)') + 1};
-if ~strcmp(mask_enables.fsize1,value)
-    mask_enables.fsize1 = value;
-end
-if ~strcmp(mask_enables.length1,value)
-    mask_enables.length1 = value;
-end
-
-value = choice{strcmp(get_param(gcbh,'frame2'),...
-                      'Variable (set size in Frame Size)') + 1};
-if ~strcmp(mask_enables.fsize2,value)
-    mask_enables.fsize2 = value;
-end
-if ~strcmp(mask_enables.length2,value)
-    mask_enables.length2 = value;
-end
-
-if ~isequal(old_enables, mask_enables)
-    set_param(gcbh,'MaskEnables',struct2cell(mask_enables));
 end

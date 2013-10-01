@@ -27,6 +27,24 @@ classdef EtherCATInfoSlave < XmlNode
         end
 
         %------------------------------------------------------------------
+        function rv = getObject(s)
+            dict = s.getFirstNode('Profile').getFirstNode('Dictionary');
+            rv = cellfun(@(o) struct('node', o, ...
+                                     'index', o.getFirstNode('Index').getTextContent, ...
+                                     'type', o.getFirstNode('Type').getTextContent, ...
+                                     'name', o.getFirstNode('Name').getTextContent), ...
+                        dict.getFirstNode('Objects').getNodes('Object'));
+        end
+
+        %------------------------------------------------------------------
+        function rv = getTypes(s)
+            dict = s.getFirstNode('Profile').getFirstNode('Dictionary');
+            rv = cellfun(@(t) struct('node', t, ...
+                                     'name', t.getFirstNode('Name').getTextContent), ...
+                        dict.getFirstNode('DataTypes').getNodes('DataType'));
+        end
+
+        %------------------------------------------------------------------
         function rv = RevisionNumber(s)
             type = s.getFirstNode('Type');
             pc = type.getAttribute('RevisionNo');

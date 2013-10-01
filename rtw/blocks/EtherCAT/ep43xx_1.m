@@ -3,8 +3,9 @@ classdef ep43xx_1 < EtherCATSlave
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     methods (Static)
         %====================================================================
-        function rv = configure(model,status,vector,tx_scale,rx_scale,dc,filter,type)
-            slave = ep43xx_1.findSlave(model,ep43xx_1.models);
+        function rv = configure(model,status,vector,...
+                                tx_scale,rx_scale,dc,filter,type)
+            slave = EtherCATSlave.findSlave(model,ep43xx_1.models);
 
             rv.SlaveConfig.vendor = 2;
             rv.SlaveConfig.description = model;

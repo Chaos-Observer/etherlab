@@ -29,19 +29,44 @@ classdef EtherCATInfo < XmlNode
         end
 
         %------------------------------------------------------------------
-        function slave = getSlave(obj,code)
+        function slaves = getSlave(obj,code,class,revision)
+            %% Return a list of slaves
+            % arguments:
+            %   code: string:name | numeric:ProductCode
+            %   class: 'class'|'revision'
+            %   revision: number for class
             descriptions = obj.getFirstNode('Descriptions');
             devices = descriptions.getFirstNode('Devices');
             slaves = cellfun(@(x) EtherCATInfoSlave(x), ...
                              devices.getNodes('Device'), ...
                              'UniformOutput', false);
-            slaves = slaves(cellfun(@(s) s.ProductCode == code, slaves));
+
+            if nargin == 1
+                return
+            elseif isstr(code)
+                slaves = slaves(cellfun(@(s) strcmp(s.Name,code), slaves));
+            elseif isnumeric(code)
+                slaves = slaves(cellfun(@(s) s.ProductCode == code, slaves));
+            else
+                return
+            end
+
+            if nargin > 3
+                switch class
+                case 'class'
+                    slaves = slaves(cellfun(@(s) (s.RevisionNumber & 65535) == revision, ...
+                                            slaves));
+                case 'revision'
+                    slaves = slaves(cellfun(@(s) s.RevisionNumber == revision, ...
+                                            slaves));
+                end
+            end
 
             hidden = unique(cell2mat(horzcat(...
                 cellfun(@(s) s.hideTypes,slaves,'UniformOutput', false))));
             rev = cellfun(@(x) x.RevisionNumber, slaves);
 
-            slave = slaves(~ismember(rev,hidden));
+            slaves = slaves(~ismember(rev,hidden));
         end
 
         %------------------------------------------------------------------
@@ -181,7 +206,7 @@ classdef EtherCATInfo < XmlNode
                                   cellfun(@(x) x{1}, SlaveConfig.sm{i}{3}));
 
                 if ~isempty(missing)
-                    x = cell2mat(strcat('#x',cellstr(dec2hex(missing),',')'));
+                    x = cell2mat(strcat('#x',cellstr(dec2hex(missing)),',')');
                     x(end) = [];
                     fprintf('Mandatory pdo''s %s have not been mapped\n',x)
                 end
@@ -190,6 +215,12 @@ classdef EtherCATInfo < XmlNode
 
         %------------------------------------------------------------------
         function testPdoEntry(obj,i,j,sc,pdo,OSIndexInc)
+            if isempty(pdo)
+                fprintf('SlaveConfig.sm{%i}{3}{%i}: Pdo does not exist\n', ...
+                        i,j)
+                return
+            end
+
             entry = pdo.getNodes('Entry');
 
             if isnan(OSIndexInc)

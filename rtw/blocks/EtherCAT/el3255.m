@@ -25,7 +25,7 @@ methods (Static)
 
     %========================================================================
     function rv = configure(model,count,vector,dc_spec,scaling,sdo)
-        slave = el3255.findSlave(model,el3255.models);
+        slave = EtherCATSlave.findSlave(model,el3255.models);
 
         % General information
         rv.SlaveConfig.vendor = 2;

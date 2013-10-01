@@ -4,7 +4,7 @@ classdef ep41xx_1 < EtherCATSlave
     methods (Static)
         %====================================================================
         function rv = configure(model,vector,scale,dc,type)
-            slave = ep41xx_1.findSlave(model,ep41xx_1.models);
+            slave = EtherCATSlave.findSlave(model,ep41xx_1.models);
 
             rv.SlaveConfig.vendor = 2;
             rv.SlaveConfig.description = model;

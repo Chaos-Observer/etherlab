@@ -10,7 +10,7 @@ classdef el37x2 < EtherCATSlave
 methods (Static)
     %========================================================================
     function rv = configure(model,one_ch,dc_spec,scaling)
-        slave = el37x2.findSlave(model,el37x2.models);
+        slave = EtherCATSlave.findSlave(model,el37x2.models);
 
         % General information
         rv.SlaveConfig.vendor = 2;

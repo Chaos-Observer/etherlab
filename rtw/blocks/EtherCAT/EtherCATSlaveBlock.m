@@ -17,25 +17,6 @@ classdef EtherCATSlaveBlock
 
 methods (Static)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    function rv = formatAddress(master,index,tsample)
-        rv.master = master(1);
-
-        if numel(tsample) > 1
-            rv.domain = tsample(2);
-        else
-            rv.domain = 0;
-        end
-
-        if numel(index) > 1
-            rv.alias = index(1);
-            rv.position = index(2);
-        else
-            rv.alias = 0;
-            rv.position = index(1);
-        end
-    end
-
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     function updatePdoVisibility(slave,pdo,state)
         model = get_param(gcbh,'model');
         exclude = slave.getExcludeList(model, hex2dec(pdo));
@@ -75,12 +56,11 @@ methods (Static)
         EtherCATSlaveBlock.setVisible(pdoNames(~ismember(pdo,visible)),false);
         EtherCATSlaveBlock.setVisible(pdoNames( ismember(pdo,visible)), true);
 
-        coeNames = names(strncmp(names,'x80',3));
-        coe = slave.getCoE(model);
-        x = arrayfun(@(i) sprintf('x%04X_%02X', coe(i,[1,2])), ...
-                     1:size(coe,1), 'UniformOutput', false);
-        EtherCATSlaveBlock.setVisible(coeNames( ismember(coeNames,x)), true);
-        EtherCATSlaveBlock.setVisible(coeNames(~ismember(coeNames,x)),false);
+        % Now check the visibility of the SDO's
+        sdoNames = names(strncmp(names,'sdo_',4));
+        x = cellstr(strcat('sdo_',dec2base(slave.getSDO(model),10,2)))';
+        EtherCATSlaveBlock.setVisible(sdoNames( ismember(sdoNames,x)), true);
+        EtherCATSlaveBlock.setVisible(sdoNames(~ismember(sdoNames,x)),false);
     end
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -179,17 +159,13 @@ methods (Static)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     function updateSDOVisibility(sdoList)
         %% Change visibility of SDO Mask Variables
-        % SDO Variables start with 'x8'
+        % SDO Variables start with 'sdo_'
         % Argument:
-        %       sdoList: array of vars [Index, SubIndex]
-        %
-        % Requires the following mask varialbes:
-        %       x8*
+        %       sdoList: array of vars
 
         names = get_param(gcbh,'MaskNames');
-        sdo = names(strncmp(names,'x8',2));
-        enable = cellstr(strcat('x', dec2base(sdoList(:,1), 16, 4),...
-                                '_', dec2base(sdoList(:,2), 16, 2)));
+        sdo = names(strncmp(names,'sdo_',4));
+        enable = cellstr(strcat('sdo_',dec2base(sdoList,10,2)))';
 
         state = repmat(0, size(sdo));
         state(cellfun(@(i) find(strcmp(sdo,i)), enable)) = 1;

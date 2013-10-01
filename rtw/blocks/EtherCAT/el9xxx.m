@@ -4,38 +4,21 @@
 % Copyright (C) 2013 Richard Hacker
 % License: LGPL
 %
-classdef el9xxx
+classdef el9xxx < EtherCATSlave
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-methods
+methods (Static)
     %========================================================================
-    function rv = getModels(obj)
-        rv = obj.models(:,1:3);
-    end
-
-    %========================================================================
-    function rv = getDC(obj,model)
-        rv = [];
-    end
-
-    %========================================================================
-    function rv = getSDO(obj,model)
-        rv = [];
-    end
-
-    %========================================================================
-    function rv = configure(obj,model,vector)
-        rv = [];
-
-        row = find(strcmp(obj.models(:,1), model));
+    function rv = configure(model,vector)
+        slave = EtherCATSlave.findSlave(model,el9xxx.models);
 
         % General information
         rv.SlaveConfig.vendor = 2;
-        rv.SlaveConfig.product = obj.models{row,2};
-        rv.SlaveConfig.description = obj.models{row,1};
+        rv.SlaveConfig.product = slave{2};
+        rv.SlaveConfig.description = slave{1};
 
         % Get the model's PDO
-        pdo = obj.pdo{obj.models{row,3}};
+        pdo = el9xxx.pdo{slave{3}};
 
         % Input syncmanager
         rv.SlaveConfig.sm = {{0, 1, ...
@@ -72,10 +55,36 @@ methods
             );
         end     % vector
     end
+
+    %====================================================================
+    function test(p)
+        ei = EtherCATInfo(fullfile(p,'Beckhoff EL9xxx.xml'));
+        for i = 1:size(el9xxx.models,1)-1
+            fprintf('Testing %s\n', el9xxx.models{i,1});
+            rv = el9xxx.configure(el9xxx.models{i,1},i&1);
+            ei.testConfiguration(rv.SlaveConfig,rv.PortConfig);
+        end
+    end
 end     % methods
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-properties (SetAccess=private)
+properties (Constant, Access=private)
+    % PDO class
+    pdo = { {{hex2dec('1a00'), {hex2dec('6000'), 1, 1, 'Pwr OK'}}}, ...
+            {{hex2dec('1a00'), {hex2dec('6000'), 1, 1, 'Pwr OK'}},  ...
+             {hex2dec('1a01'), {hex2dec('6010'), 1, 1, 'FuseErr'}}}, ...
+            {{hex2dec('1a00'), {hex2dec('6000'), 1, 1, 'Stat Us'}},  ...
+             {hex2dec('1a01'), {hex2dec('6010'), 1, 1, 'Stat Up'}}}, ...
+            {{hex2dec('1a00'), {hex2dec('6000'), 1, 1, 'Pwr OK';
+                                hex2dec('6000'), 2, 1, 'Overload'}}}, ...
+            {{hex2dec('1a00'), {hex2dec('6000'), 1, 1, 'Stat Us';
+                                hex2dec('6000'), 2, 1, 'Stat Uo'}}}  ...
+          };
+
+end     % properties
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+properties (Constant)
     %  name          product code         PDO class
     models = {...
       'EL9110',      hex2dec('23963052'), 1;
@@ -91,19 +100,6 @@ properties (SetAccess=private)
       'EL9515',      hex2dec('252b3052'), 4;
       'EL9560',      hex2dec('25583052'), 5;
     };
-
-    % PDO class
-    pdo = { {{hex2dec('1a00'), {hex2dec('6000'), 1, 1, 'Pwr OK'}}}, ...
-            {{hex2dec('1a00'), {hex2dec('6000'), 1, 1, 'Pwr OK'}},  ...
-             {hex2dec('1a01'), {hex2dec('6010'), 1, 1, 'FuseErr'}}}, ...
-            {{hex2dec('1a00'), {hex2dec('6000'), 1, 1, 'Stat Us'}},  ...
-             {hex2dec('1a01'), {hex2dec('6010'), 1, 1, 'Stat Up'}}}, ...
-            {{hex2dec('1a00'), {hex2dec('6000'), 1, 1, 'Pwr OK'}},  ...
-             {hex2dec('1a01'), {hex2dec('6010'), 1, 1, 'Overload'}}}, ...
-            {{hex2dec('1a00'), {hex2dec('6000'), 1, 1, 'Stat Us';    ...
-                                hex2dec('6000'), 2, 1, 'Stat Uo'}}}  ...
-          };
-
 end     % properties
 
 end     % classdef

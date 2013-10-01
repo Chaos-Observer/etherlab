@@ -19,19 +19,16 @@ methods (Static)
 
     %========================================================================
     function rv = getSDO(model)
-        rv = el3356.sdo;
-        if strcmp(model,'EL3356')
-            rv([2,4,7],:) = [];
-        end
+        slave = EtherCATSlave.findSlave(model,el3356.models);
+        rv = slave{4};
     end
 
     %========================================================================
-    function rv = configure(model,adc,dc_spec,scaling,sdo)
+    function rv = configure(model,adc,dc_spec,scaling,sdo_config)
         % Whether this is EL3356, not EL3356-0010
         % The predefined PDO and DC structures are for EL3356-0010
         % The EL3356 does not have all these features
-        slave = el3356.findSlave(model,el3356.models);
-        basic = strcmp(model,'EL3356');
+        slave = EtherCATSlave.findSlave(model,el3356.models);
 
         % General information
         rv.SlaveConfig.vendor = 2;
@@ -40,7 +37,7 @@ methods (Static)
 
         % Input and output syncmanager
         rv.SlaveConfig.sm = {{2,0,el3356.ctrl_pdo}, {3,1,{}}};
-        if basic
+        if slave{3}
             % Remove PDO Entry 7000:04 for EL3356
             rv.SlaveConfig.sm{1}{3}{1}{2}(4,1:2) = [0,0];
         end
@@ -59,7 +56,7 @@ methods (Static)
         if adc
             % 2xADC Converter
             rv.SlaveConfig.sm{2}{3} = el3356.adc_status_pdo;
-            if basic
+            if slave{3}
                 % Modifications for EL3356
                 % modify entry row 5 [0,0,1] to bitlen 8
                 % remove entry row 6 [0,0,7]
@@ -128,7 +125,7 @@ methods (Static)
         end
 
         % Distributed clock for EL3356-0010 only
-        if ~basic && dc_spec(1)
+        if ~slave{3} && dc_spec(1)
             if dc_spec(1) ~= 4
                 % DC Configuration from the default list
                 dc = el3356.dc;
@@ -162,11 +159,9 @@ methods (Static)
         end
 
         % SDO Configuration
-        sdo([6,7,15,17]) = sdo([6,7,15,17]) - 1;
-        rv.SlaveConfig.sdo = num2cell(horzcat(el3356.sdo, reshape(sdo,[],1)));
-        if basic
-            rv.SlaveConfig.sdo([2,4,7],:) = [];
-        end
+        sdo = el3356.sdo;
+        rv.SlaveConfig.sdo = num2cell([sdo(slave{4},:), ...
+                                       reshape(sdo_config(slave{4}),[],1)]);
     end
 
     %====================================================================
@@ -187,10 +182,10 @@ end     % methods
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 properties (Constant)
-    %  name          product code         basic_version
+    %  name          product code         basic_version, sdo
     models = {...
-      'EL3356',      hex2dec('0d1c3052'), true;
-      'EL3356-0010', hex2dec('0d1c3052'), false;
+      'EL3356',      hex2dec('0d1c3052'), true, [1,3,5,6,8:17];
+      'EL3356-0010', hex2dec('0d1c3052'), false, 1:17;
     };
 
     % All known sdo's

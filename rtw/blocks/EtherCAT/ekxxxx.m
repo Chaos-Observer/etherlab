@@ -4,38 +4,21 @@
 % Copyright (C) 2013 Richard Hacker
 % License: LGPL
 %
-classdef ekxxxx
+classdef ekxxxx < EtherCATSlave
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-methods
+methods (Static)
     %========================================================================
-    function rv = getModels(obj)
-        rv = obj.models(:,1);
-    end
-
-    %========================================================================
-    function rv = getDC(obj,model)
-        rv = [];
-    end
-
-    %========================================================================
-    function rv = getSDO(obj,model)
-        rv = [];
-    end
-
-    %========================================================================
-    function rv = configure(obj,model,vector)
-        rv = [];
-
-        row = find(strcmp(obj.models(:,1), model));
+    function rv = configure(model,vector)
+        slave = EtherCATSlave.findSlave(model,ekxxxx.models);
 
         % General information
         rv.SlaveConfig.vendor = 2;
-        rv.SlaveConfig.product = obj.models{row,2};
-        rv.SlaveConfig.description = obj.models{row,1};
+        rv.SlaveConfig.product = slave{2};
+        rv.SlaveConfig.description = slave{1};
 
         % Get the model's SM
-        sm = obj.sm(obj.models{row,3});
+        sm = ekxxxx.sm(slave{3});
         rv.SlaveConfig.sm = sm;
 
         % Go through the rv.SlaveConfig.sm and reformat the PDO Entries
@@ -118,35 +101,25 @@ methods
             end
         end     % vector
     end
+
+    %====================================================================
+    function test(p)
+        ei = EtherCATInfo(fullfile(p,'Beckhoff EKxxxx.xml'));
+        for i = 1:size(ekxxxx.models,1)-1
+            fprintf('Testing %s\n', ekxxxx.models{i,1});
+            rv = ekxxxx.configure(ekxxxx.models{i,1},i&1);
+            ei.testConfiguration(rv.SlaveConfig,rv.PortConfig);
+        end
+
+        ei = EtherCATInfo(fullfile(p,'Beckhoff CXxxxx.xml'));
+        fprintf('Testing %s\n', ekxxxx.models{size(ekxxxx.models,1),1});
+        rv = ekxxxx.configure(ekxxxx.models{size(ekxxxx.models,1),1},i&1);
+        ei.testConfiguration(rv.SlaveConfig,rv.PortConfig);
+    end
 end     % methods
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-properties (SetAccess=private)
-    %  name          product code         revision   {PDO classes}
-    % Note: to date 'Beckhoff EKxxx.xml Version 1.2', there are
-    % no differences between the revisions, so column 3 only has the
-    % version numbers
-    models = {
-      'EK1100',      hex2dec('044c2c52'), [];
-      'EK1100-0030', hex2dec('044c2c52'), [];
-      'EK1101',      hex2dec('044d2c52'), [1];
-      'EK1101-0080', hex2dec('044d2c52'), [1];
-      'EK1110',      hex2dec('04562c52'), [];
-      'EK1122',      hex2dec('04622c52'), [];
-      'EK1122-0080', hex2dec('04622c52'), [];
-      'EK1200',      hex2dec('04b02c52'), [];
-      'EK1501',      hex2dec('05dd2c52'), [1];
-      'EK1501-0010', hex2dec('05dd2c52'), [1];
-      'EK1521',      hex2dec('05f12c52'), [];
-      'EK1521-0010', hex2dec('05f12c52'), [];
-      'EK1541',      hex2dec('06052c52'), [1];
-      'EK1561',      hex2dec('06192c52'), [];
-      'EK1814',      hex2dec('07162c52'), [2,3];
-      'EK1818',      hex2dec('071a2c52'), [4,5];
-      'EK1828',      hex2dec('07242c52'), [6,7,8];
-      'EK1828-0010', hex2dec('07242c52'), [6,7];
-      'CX1100-0004', hex2dec('044c6032'), [];
-    };
+properties (Constant, Access=private)
 
     % SyncManager class definitions
     % Column 4 of models selects the correct SyncManager
@@ -204,6 +177,35 @@ properties (SetAccess=private)
                                    [              0, 0, 4], ''    }}}},
     };
 
+end     % properties
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+properties (Constant)
+    %  name          product code         revision   {PDO classes}
+    % Note: to date 'Beckhoff EKxxx.xml Version 1.2', there are
+    % no differences between the revisions, so column 3 only has the
+    % version numbers
+    models = {
+      'EK1100',      hex2dec('044c2c52'), [];
+      'EK1100-0030', hex2dec('044c2c52'), [];
+      'EK1101',      hex2dec('044d2c52'), [1];
+%      'EK1101-0080', hex2dec('044d2c52'), [1];
+      'EK1110',      hex2dec('04562c52'), [];
+      'EK1122',      hex2dec('04622c52'), [];
+%      'EK1122-0080', hex2dec('04622c52'), [];
+      'EK1200',      hex2dec('04b02c52'), [];
+      'EK1501',      hex2dec('05dd2c52'), [1];
+      'EK1501-0010', hex2dec('05dd2c52'), [1];
+      'EK1521',      hex2dec('05f12c52'), [];
+      'EK1521-0010', hex2dec('05f12c52'), [];
+      'EK1541',      hex2dec('06052c52'), [1];
+      'EK1561',      hex2dec('06192c52'), [];
+      'EK1814',      hex2dec('07162c52'), [2,3];
+      'EK1818',      hex2dec('071a2c52'), [4,5];
+      'EK1828',      hex2dec('07242c52'), [6,7,8];
+      'EK1828-0010', hex2dec('07242c52'), [6,7];
+      'CX1100-0004', hex2dec('044c6032'), [];
+    };
 end     % properties
 
 end     % classdef

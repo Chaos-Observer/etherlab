@@ -4,7 +4,7 @@ classdef el1xxx < EtherCATSlave
     methods (Static)
         %====================================================================
         function rv = configure(model,vector)
-            slave = el1xxx.findSlave(model,el1xxx.models);
+            slave = EtherCATSlave.findSlave(model,el1xxx.models);
 
             rv.SlaveConfig.vendor = 2;
             rv.SlaveConfig.description = model;

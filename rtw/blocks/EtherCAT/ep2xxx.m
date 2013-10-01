@@ -4,7 +4,7 @@ classdef ep2xxx < EtherCATSlave
     methods (Static)
         %====================================================================
         function rv = configure(model,vector)
-            slave = ep2xxx.findSlave(model,ep2xxx.models);
+            slave = EtherCATSlave.findSlave(model,ep2xxx.models);
 
             rv.SlaveConfig.vendor = 2;
             rv.SlaveConfig.description = model;
@@ -83,7 +83,11 @@ classdef ep2xxx < EtherCATSlave
               {{hex2dec('1600'), [hex2dec('7000'), 1, 1;            %7
                                   hex2dec('7000'), 2, 1;     
                                   hex2dec('7000'), 3, 1;     
-                                  hex2dec('7000'), 4, 1]}},...
+                                  hex2dec('7000'), 4, 1]},...
+               {hex2dec('1601'), [hex2dec('7010'), 1, 1;            %7
+                                  hex2dec('7010'), 2, 1;     
+                                  hex2dec('7010'), 3, 1;     
+                                  hex2dec('7010'), 4, 1]}},...
               {{hex2dec('1600'), [hex2dec('7000'), 1, 1]},...       %8
                {hex2dec('1601'), [hex2dec('7010'), 1, 1]},...
                {hex2dec('1602'), [hex2dec('7020'), 1, 1]},...

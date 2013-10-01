@@ -40,8 +40,6 @@ INSTALL (FILES
     mts_temposonics.m
 
     murr_dio.m
-    update_library.m update_devices.m
-    slave_dc.m update_mask_state.m
     EtherCATSlave.m
     EtherCATSlaveBlock.m
 
@@ -49,7 +47,7 @@ INSTALL (FILES
     EtherCATInfoSlave.m
     XmlNode.m
     el30xx_1.m el320x_1.m
-    el515x_2.m
+    el51xx.m
     ep31xx_1.m ep41xx_1.m ep43xx_1.m
 
     ekxxxx.m
