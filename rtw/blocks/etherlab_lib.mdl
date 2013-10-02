@@ -15,9 +15,9 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "ha"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Wed Oct  2 09:50:05 2013"
-  RTWModifiedTimeStamp	  302608203
-  ModelVersionFormat	  "1.%<AutoIncrement:1418>"
+  LastModifiedDate	  "Wed Oct  2 11:21:14 2013"
+  RTWModifiedTimeStamp	  302613673
+  ModelVersionFormat	  "1.%<AutoIncrement:1424>"
   ConfigurationManager	  "rcs"
   SampleTimeColors	  off
   SampleTimeAnnotations	  off
@@ -621,7 +621,7 @@ Library {
       MaskIconUnits	      "pixels"
       System {
 	Name			"EtherCAT"
-	Location		[790, 200, 1203, 610]
+	Location		[634, 52, 1047, 462]
 	Open			on
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
@@ -656,7 +656,7 @@ Library {
 	  System {
 	    Name		    "Baumer"
 	    Location		    [420, 108, 800, 242]
-	    Open		    on
+	    Open		    off
 	    ModelBrowserVisibility  off
 	    ModelBrowserWidth	    200
 	    ScreenColor		    "white"
@@ -845,10 +845,10 @@ Library {
 	      MaskToolTipString	      "on,on,on,on,on,on,on,on,on,on"
 	      MaskVariables	      "master=@1;index=@2;model=&3;vector=@4;raw=@5;scale=&6;offset=&7;tau=&8;tsample=@9;debug=@1"
 	      "0;"
-	      MaskInitialization      "masterStr = '';\npositionStr = '';\n[Address masterStr positionStr] = ...\n    getEthe"
-	      "rCATAddress(gcb, master, index, tsample);\n\nel30xx('set');\n\nrv = get_param(gcbh, 'UserData');\n"
-	      MaskDisplay	      "fprintf('%s\\n%s AIn\\nM:%s Idx:%s', ...\n    model, rv.SlaveConfig.function, masterStr, pos"
-	      "itionStr)\n\n"
+	      MaskInitialization      "Address = EtherCATSlave.formatAddress(master,index,tsample);\n\nel30xx('set');\n\nrv ="
+	      " get_param(gcbh, 'UserData');\n"
+	      MaskDisplay	      "fprintf('%s\\n%s AIn\\nM:%i Idx:%s', ...\n    model, rv.SlaveConfig.function, master, mat2st"
+	      "r(index))\n\n"
 	      MaskIconFrame	      on
 	      MaskIconOpaque	      on
 	      MaskIconRotate	      "none"
@@ -963,10 +963,10 @@ Library {
 	      MaskToolTipString	      "on,on,on,on,on,on,on,on,on,on,on"
 	      MaskVariables	      "master=@1;index=@2;model=&3;dc=@4;vector=@5;raw=@6;scale=&7;offset=&8;tau=&9;tsample=@10;d"
 	      "ebug=@11;"
-	      MaskInitialization      "masterStr = '';\npositionStr = '';\n[Address masterStr positionStr] = ...\n    getEthe"
-	      "rCATAddress(gcb, master, index, tsample);\n\nel31xx('set');  % Report errors\n\nrv = get_param(gcb,'UserData');"
-	      MaskDisplay	      "fprintf('%s\\n%s AIn\\nM:%s Idx:%s', ...\n    model, rv.SlaveConfig.function, masterStr, pos"
-	      "itionStr)\n\n"
+	      MaskInitialization      "Address = EtherCATSlave.formatAddress(master,index,tsample);\n\nel31xx('set');  % Repo"
+	      "rt errors\n\nrv = get_param(gcb,'UserData');"
+	      MaskDisplay	      "fprintf('%s\\n%s AIn\\nM:%i Idx:%s', ...\n    model, rv.SlaveConfig.function, master, mat2st"
+	      "r(index))\n\n"
 	      MaskIconFrame	      on
 	      MaskIconOpaque	      on
 	      MaskIconRotate	      "none"
@@ -1083,17 +1083,17 @@ Library {
 	      MaskToolTipString	      "on,on,on,on,on,on,on,on,on,on"
 	      MaskVariables	      "master=@1;index=@2;model=&3;rtd=@4;technology=@5;filter=@6;vector=@7;enable_status=@8;tsam"
 	      "ple=@9;debug=@10;"
-	      MaskInitialization      "masterStr = '';\npositionStr = '';\n[Address masterStr positionStr] = ...\n    getEthe"
-	      "rCATAddress(gcb,master,index,tsample);\nSdoConfig = [];\n\nrv = get_param(gcbh,'UserData');\n\ncount = numel(rv"
-	      ".SlaveConfig.sm{1}{3});\n\nerr = {};\nif numel(rtd) == 1\n    rtd = repmat(rtd,1,count);\nelseif numel(rtd) ~= "
-	      "count\n    err = {['- Mask option \"RTD Element\"' ...\n        ' is not a scalar or vector with ' ...\n       "
-	      " num2str(count) ' elements']};\nend\n\nif numel(technology) == 1\n    technology = repmat(technology,1,count);\n"
-	      "elseif numel(technology) ~= count\n    err = horzcat(err, ['- Mask option \"Connection Technology\"' ...\n     "
-	      "   ' is not a scalar or vector with ' ...\n        num2str(count) ' elements']);\nend\n\nif ~isempty(err)\n    "
-	      "errordlg(err,gcb);\n    return\nend\n\nrv.SlaveConfig.sdo = num2cell(vertcat(...\n    [hex2dec('8000'),6,8,1],."
-	      "..\n    [hex2dec('8000'),hex2dec('15'),16,filter+1],...\n    horzcat(repmat(hex2dec('8000') + 16*(0:count-1)',2"
-	      ",1),...\n            [hex2dec('19')*ones(count,1);hex2dec('1a')*ones(count,1)],...\n            16*ones(count*2"
-	      ",1),...\n            vertcat(reshape(rtd,[],1),...\n                    reshape(technology,[],1)))));\n"
+	      MaskInitialization      "Address = EtherCATSlave.formatAddress(master,index,tsample);\n\nSdoConfig = [];\n\nrv "
+	      "= get_param(gcbh,'UserData');\n\ncount = numel(rv.SlaveConfig.sm{1}{3});\n\nerr = {};\nif numel(rtd) == 1\n    "
+	      "rtd = repmat(rtd,1,count);\nelseif numel(rtd) ~= count\n    err = {['- Mask option \"RTD Element\"' ...\n      "
+	      "  ' is not a scalar or vector with ' ...\n        num2str(count) ' elements']};\nend\n\nif numel(technology) =="
+	      " 1\n    technology = repmat(technology,1,count);\nelseif numel(technology) ~= count\n    err = horzcat(err, ['-"
+	      " Mask option \"Connection Technology\"' ...\n        ' is not a scalar or vector with ' ...\n        num2str(co"
+	      "unt) ' elements']);\nend\n\nif ~isempty(err)\n    errordlg(err,gcb);\n    return\nend\n\nrv.SlaveConfig.sdo = n"
+	      "um2cell(vertcat(...\n    [hex2dec('8000'),6,8,1],...\n    [hex2dec('8000'),hex2dec('15'),16,filter+1],...\n    "
+	      "horzcat(repmat(hex2dec('8000') + 16*(0:count-1)',2,1),...\n            [hex2dec('19')*ones(count,1);hex2dec('1a"
+	      "')*ones(count,1)],...\n            16*ones(count*2,1),...\n            vertcat(reshape(rtd,[],1),...\n         "
+	      "           reshape(technology,[],1)))));\n"
 	      MaskDisplay	      "fprintf('%s\\nRTD In\\n%i Idx:%s', model, master, mat2str(index))\n"
 	      MaskIconFrame	      on
 	      MaskIconOpaque	      on
@@ -1500,12 +1500,12 @@ Library {
 	      MaskVariables	      "master=@1;index=@2;model=&3;tsample=@4;debug=@5;dc_mode=@6;dc_assign_activate=@7;dc_cycle0"
 	      "=@8;dc_cycle0_factor=@9;dc_shift0=@10;dc_shift0_factor=@11;dc_shift0_input=@12;dc_cycle1=@13;dc_cycle1_factor=@"
 	      "14;dc_shift1=@15;dc_shift1_factor=@16;sdo_01=@17;sdo_02=@18;sdo_03=@19;sdo_04=@20;sdo_05=@21;"
-	      MaskInitialization      "Address = getEtherCATAddress(gcb,master,index,tsample);\n\nrv = el5021.configure(model"
-	      ",...\n    [dc_mode, dc_assign_activate, ...\n    dc_cycle0, dc_cycle0_factor,...\n    dc_shift0, dc_shift0_fact"
-	      "or, dc_shift0_input,...\n    dc_cycle1, dc_cycle1_factor,...\n    dc_shift1, dc_shift1_factor], ...\n    [sdo_0"
-	      "1, sdo_02, sdo_03, sdo_04, sdo_05]);\n \nEtherCATSlaveBlock.setPortNames(...\n    {rv.PortConfig.input.portname"
-	      "},...\n    {rv.PortConfig.output.portname});\n\nset_param(gcb,'AttributesFormatString',...\n    sprintf('%s\\nM"
-	      ":%i Idx:%s',...\n            model,master,mat2str(index)))\n"
+	      MaskInitialization      "Address = EtherCATSlave.formatAddress(master,index,tsample);\n\nrv = el5021.configure("
+	      "model,...\n    [dc_mode, dc_assign_activate, ...\n    dc_cycle0, dc_cycle0_factor,...\n    dc_shift0, dc_shift0"
+	      "_factor, dc_shift0_input,...\n    dc_cycle1, dc_cycle1_factor,...\n    dc_shift1, dc_shift1_factor], ...\n    ["
+	      "sdo_01, sdo_02, sdo_03, sdo_04, sdo_05]);\n \nEtherCATSlaveBlock.setPortNames(...\n    {rv.PortConfig.input.por"
+	      "tname},...\n    {rv.PortConfig.output.portname});\n\nset_param(gcb,'AttributesFormatString',...\n    sprintf('%"
+	      "s\\nM:%i Idx:%s',...\n            model,master,mat2str(index)))\n"
 	      MaskDisplay	      "port_label('input', 1, 'bool[2]')\nport_label('input', 2, 'Value')\nport_label('output', 1, "
 	      "'bool[5]')\nport_label('output', 2, 'Counter')\nport_label('output', 3, 'Latch')\n"
 	      MaskSelfModifiable      on
@@ -1569,18 +1569,17 @@ Library {
 	      "20;n8000_04=@21;n8000_05=@22;n8001_01=@23;n8001_02=@24;x8010_01=@25;x8010_02=@26;x8010_03=@27;x8010_04=@28;x801"
 	      "0_08=@29;x8010_0A=@30;x8010_0B=@31;x8010_0C=@32;x8010_0D=@33;x8010_0E=@34;x8010_10=@35;x8010_11=@36;x8010_13=@3"
 	      "7;x8010_14=@38;x8010_15=@39;x8010_16=@40;x8010_17=@41;"
-	      MaskInitialization      "masterStr = '';\npositionStr = '';\n[Address masterStr positionStr] = ...\n    getEthe"
-	      "rCATAddress(gcb,master,index,tsample);\n\nel5101('set');\nrv = get_param(gcbh,'UserData');\nrv.SlaveConfig.sdo "
-	      "= {...\n    hex2dec('1011'), 1,32,hex2dec('64616f6c');\n    hex2dec('8000'), 1, 8,n8000_01;\n    hex2dec('8000'"
-	      "), 2, 8,n8000_02;\n    hex2dec('8000'), 3, 8,n8000_03;\n    hex2dec('8000'), 4, 8,n8000_04;\n    hex2dec('8000'"
-	      "), 5, 8,n8000_05;\n    hex2dec('8001'), 1,16,n8001_01;\n    hex2dec('8001'), 2,16,n8001_02;\n    hex2dec('8010'"
-	      "), 1, 8,x8010_01;\n    hex2dec('8010'), 2, 8,x8010_02;\n    hex2dec('8010'), 3, 8,x8010_03;\n    hex2dec('8010'"
-	      "), 4, 8,x8010_04-1;\n    hex2dec('8010'), 8, 8,x8010_08;\n    hex2dec('8010'),10, 8,x8010_0A;\n    hex2dec('801"
-	      "0'),11, 8,x8010_0B;\n    hex2dec('8010'),12, 8,x8010_0C;\n    hex2dec('8010'),13, 8,x8010_0D;\n    hex2dec('801"
-	      "0'),14, 8,x8010_0E;\n    hex2dec('8010'),16, 8,x8010_10;\n    hex2dec('8010'),17,16,x8010_11;\n    hex2dec('801"
-	      "0'),19,16,x8010_13;\n    hex2dec('8010'),20,16,x8010_14;\n    hex2dec('8010'),21,16,x8010_15;\n    hex2dec('801"
-	      "0'),22,16,x8010_16;\n    hex2dec('8010'),23,16,x8010_17;\n};\n"
-	      MaskDisplay	      "fprintf('%s\\nIncr.-Enc\\nM:%s Idx:%s',...\n    model, masterStr, positionStr)\n"
+	      MaskInitialization      "Address = EtherCATSlave.formatAddress(master,index,tsample);\n\nel5101('set');\nrv = g"
+	      "et_param(gcbh,'UserData');\nrv.SlaveConfig.sdo = {...\n    hex2dec('1011'), 1,32,hex2dec('64616f6c');\n    hex2"
+	      "dec('8000'), 1, 8,n8000_01;\n    hex2dec('8000'), 2, 8,n8000_02;\n    hex2dec('8000'), 3, 8,n8000_03;\n    hex2"
+	      "dec('8000'), 4, 8,n8000_04;\n    hex2dec('8000'), 5, 8,n8000_05;\n    hex2dec('8001'), 1,16,n8001_01;\n    hex2"
+	      "dec('8001'), 2,16,n8001_02;\n    hex2dec('8010'), 1, 8,x8010_01;\n    hex2dec('8010'), 2, 8,x8010_02;\n    hex2"
+	      "dec('8010'), 3, 8,x8010_03;\n    hex2dec('8010'), 4, 8,x8010_04-1;\n    hex2dec('8010'), 8, 8,x8010_08;\n    he"
+	      "x2dec('8010'),10, 8,x8010_0A;\n    hex2dec('8010'),11, 8,x8010_0B;\n    hex2dec('8010'),12, 8,x8010_0C;\n    he"
+	      "x2dec('8010'),13, 8,x8010_0D;\n    hex2dec('8010'),14, 8,x8010_0E;\n    hex2dec('8010'),16, 8,x8010_10;\n    he"
+	      "x2dec('8010'),17,16,x8010_11;\n    hex2dec('8010'),19,16,x8010_13;\n    hex2dec('8010'),20,16,x8010_14;\n    he"
+	      "x2dec('8010'),21,16,x8010_15;\n    hex2dec('8010'),22,16,x8010_16;\n    hex2dec('8010'),23,16,x8010_17;\n};\n"
+	      MaskDisplay	      "fprintf('%s\\nIncr.-Enc\\nM:%i Idx:%s', model, master, mat2str(index))\n"
 	      MaskSelfModifiable      on
 	      MaskIconFrame	      on
 	      MaskIconOpaque	      on
@@ -1634,15 +1633,14 @@ Library {
 	      "10;x1A04=&11;x1A05=&12;tsample=@13;debug=@14;x8000_01=@15;x8000_02=@16;x8000_04=@17;x8000_0B=@18;x8000_0C=@19;x"
 	      "8000_0D=@20;x8000_0E=@21;x8000_10=@22;x8000_11=@23;x8000_13=@24;x8000_14=@25;x8000_15=@26;x8000_16=@27;x8000_17"
 	      "=@28;"
-	      MaskInitialization      "masterStr = '';\npositionStr = '';\n[Address masterStr positionStr] = ...\n    getEthe"
-	      "rCATAddress(gcb,master,index,tsample);\n\nel5101_0010('set');\nrv = get_param(gcbh,'UserData');\nrv.SlaveConfig"
-	      ".sdo = {...\n    hex2dec('1011'), 1,32,hex2dec('64616f6c');\n    hex2dec('8000'), 1, 8,x8000_01;\n    hex2dec('"
-	      "8000'), 2, 8,x8000_02;\n    hex2dec('8000'), 4, 8,x8000_04-1;\n    hex2dec('8000'),11, 8,x8000_0B;\n    hex2dec"
-	      "('8000'),12, 8,x8000_0C;\n    hex2dec('8000'),13, 8,x8000_0D;\n    hex2dec('8000'),14, 8,x8000_0E;\n    hex2dec"
-	      "('8000'),16, 8,x8000_10;\n    hex2dec('8000'),17,16,x8000_11;\n    hex2dec('8000'),19,16,x8000_13;\n    hex2dec"
-	      "('8000'),20,16,x8000_14;\n    hex2dec('8000'),21,16,x8000_15;\n    hex2dec('8000'),22,16,x8000_16;\n    hex2dec"
-	      "('8000'),23,16,x8000_17;\n};\n"
-	      MaskDisplay	      "fprintf('%s\\nIncr.-Enc\\nM:%s Idx:%s',...\n    model, masterStr, positionStr)\n"
+	      MaskInitialization      "Address = EtherCATSlave.formatAddress(master,index,tsample);\n\nel5101_0010('set');\nr"
+	      "v = get_param(gcbh,'UserData');\nrv.SlaveConfig.sdo = {...\n    hex2dec('1011'), 1,32,hex2dec('64616f6c');\n   "
+	      " hex2dec('8000'), 1, 8,x8000_01;\n    hex2dec('8000'), 2, 8,x8000_02;\n    hex2dec('8000'), 4, 8,x8000_04-1;\n "
+	      "   hex2dec('8000'),11, 8,x8000_0B;\n    hex2dec('8000'),12, 8,x8000_0C;\n    hex2dec('8000'),13, 8,x8000_0D;\n "
+	      "   hex2dec('8000'),14, 8,x8000_0E;\n    hex2dec('8000'),16, 8,x8000_10;\n    hex2dec('8000'),17,16,x8000_11;\n "
+	      "   hex2dec('8000'),19,16,x8000_13;\n    hex2dec('8000'),20,16,x8000_14;\n    hex2dec('8000'),21,16,x8000_15;\n "
+	      "   hex2dec('8000'),22,16,x8000_16;\n    hex2dec('8000'),23,16,x8000_17;\n};\n"
+	      MaskDisplay	      "fprintf('%s\\nIncr.-Enc\\nM:%i Idx:%s', model, master, mat2str(index))\n"
 	      MaskSelfModifiable      on
 	      MaskIconFrame	      on
 	      MaskIconOpaque	      on
@@ -1705,21 +1703,20 @@ Library {
 	      "x8000_03=@21;x8000_04=@22;x8000_08=@23;x8000_0A=@24;x8000_0E=@25;x8000_0F=@26;x8000_10=@27;x8000_11=@28;x8000_1"
 	      "3=@29;x8000_14=@30;x8000_15=@31;x8000_16=@32;x8000_17=@33;x8010_03=@34;x8010_08=@35;x8010_0A=@36;x8010_0E=@37;x"
 	      "8010_0F=@38;x8010_11=@39;x8010_13=@40;x8010_14=@41;x8010_15=@42;x8010_16=@43;x8010_17=@44;"
-	      MaskInitialization      "masterStr = '';\npositionStr = '';\n[Address masterStr positionStr] = ...\n    getEthe"
-	      "rCATAddress(gcb,master,index,tsample);\n\nel515x('set');\nrv = get_param(gcbh,'UserData');\nrv.SlaveConfig.sdo "
-	      "= {...\n    hex2dec('8000'), 3, 8,x8000_03;\n    hex2dec('8000'), 8, 8,x8000_08;\n    hex2dec('8000'),10, 8,x80"
-	      "00_0A;\n    hex2dec('8000'),14, 8,x8000_0E;\n    hex2dec('8000'),15, 8,x8000_0F;\n    hex2dec('8000'),17,16,x80"
-	      "00_11;\n    hex2dec('8000'),19,16,x8000_13;\n    hex2dec('8000'),20,16,x8000_14;\n    hex2dec('8000'),21,16,x80"
-	      "00_15;\n    hex2dec('8000'),22,16,x8000_16;\n    hex2dec('8000'),23,16,x8000_17;\n};\n\nif strncmp(model,'EL515"
-	      "1',6)\n    rv.SlaveConfig.sdo = vertcat(rv.SlaveConfig.sdo,...\n        { hex2dec('8000'), 1, 8,x8000_01;\n    "
-	      "      hex2dec('8000'), 2, 8,x8000_02;\n          hex2dec('8000'), 4, 8,x8000_04;\n          hex2dec('8000'),16,"
-	      " 8,x8000_10});\nelse\n    rv.SlaveConfig.sdo = vertcat(rv.SlaveConfig.sdo,...\n        { hex2dec('8010'), 3, 8,"
-	      "x8010_03;\n          hex2dec('8010'), 8, 8,x8010_08;\n          hex2dec('8010'),10, 8,x8010_0A;\n          hex2"
-	      "dec('8010'),14, 8,x8010_0E;\n          hex2dec('8010'),15, 8,x8010_0F;\n          hex2dec('8010'),17,16,x8010_1"
-	      "1;\n          hex2dec('8010'),19,16,x8010_13;\n          hex2dec('8010'),20,16,x8010_14;\n          hex2dec('80"
-	      "10'),21,16,x8010_15;\n          hex2dec('8010'),22,16,x8010_16;\n          hex2dec('8010'),23,16,x8010_17});\ne"
-	      "nd\n"
-	      MaskDisplay	      "fprintf('%s\\nIncr.-Enc\\nM:%s Idx:%s',...\n    model, masterStr, positionStr)\n"
+	      MaskInitialization      "Address = EtherCATSlave.formatAddress(master,index,tsample);\n\nel515x('set');\nrv = g"
+	      "et_param(gcbh,'UserData');\nrv.SlaveConfig.sdo = {...\n    hex2dec('8000'), 3, 8,x8000_03;\n    hex2dec('8000')"
+	      ", 8, 8,x8000_08;\n    hex2dec('8000'),10, 8,x8000_0A;\n    hex2dec('8000'),14, 8,x8000_0E;\n    hex2dec('8000')"
+	      ",15, 8,x8000_0F;\n    hex2dec('8000'),17,16,x8000_11;\n    hex2dec('8000'),19,16,x8000_13;\n    hex2dec('8000')"
+	      ",20,16,x8000_14;\n    hex2dec('8000'),21,16,x8000_15;\n    hex2dec('8000'),22,16,x8000_16;\n    hex2dec('8000')"
+	      ",23,16,x8000_17;\n};\n\nif strncmp(model,'EL5151',6)\n    rv.SlaveConfig.sdo = vertcat(rv.SlaveConfig.sdo,...\n"
+	      "        { hex2dec('8000'), 1, 8,x8000_01;\n          hex2dec('8000'), 2, 8,x8000_02;\n          hex2dec('8000')"
+	      ", 4, 8,x8000_04;\n          hex2dec('8000'),16, 8,x8000_10});\nelse\n    rv.SlaveConfig.sdo = vertcat(rv.SlaveC"
+	      "onfig.sdo,...\n        { hex2dec('8010'), 3, 8,x8010_03;\n          hex2dec('8010'), 8, 8,x8010_08;\n          "
+	      "hex2dec('8010'),10, 8,x8010_0A;\n          hex2dec('8010'),14, 8,x8010_0E;\n          hex2dec('8010'),15, 8,x80"
+	      "10_0F;\n          hex2dec('8010'),17,16,x8010_11;\n          hex2dec('8010'),19,16,x8010_13;\n          hex2dec"
+	      "('8010'),20,16,x8010_14;\n          hex2dec('8010'),21,16,x8010_15;\n          hex2dec('8010'),22,16,x8010_16;\n"
+	      "          hex2dec('8010'),23,16,x8010_17});\nend\n"
+	      MaskDisplay	      "fprintf('%s\\nIncr.-Enc\\nM:%i Idx:%s', model, master, mat2str(index))\n"
 	      MaskSelfModifiable      on
 	      MaskIconFrame	      on
 	      MaskIconOpaque	      on
@@ -2036,9 +2033,8 @@ Library {
 	      MaskToolTipString	      "on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on"
 	      MaskVariables	      "master=@1;index=@2;model=&3;type_1=@4;type_2=@5;type_3=@6;type_4=@7;dc=@8;dccustomer=@9;ve"
 	      "ctor=&10;raw=@11;scale=&12;offset=&13;tau=&14;status=@15;tsample=@16;debug=@17;"
-	      MaskInitialization      "masterStr = '';\npositionStr = '';\n[Address masterStr positionStr] = ...\n    getEthe"
-	      "rCATAddress(gcb, master, index, tsample);\n\nep31xx('set');  % Report errors\n\nrv = get_param(gcbh,'UserData')"
-	      ";\n"
+	      MaskInitialization      "Address = EtherCATSlave.formatAddress(master,index,tsample);\n\nep31xx('set');  % Repo"
+	      "rt errors\n\nrv = get_param(gcbh,'UserData');\n"
 	      MaskDisplay	      "fprintf('%s\\nM:%i Idx:%s', model, master, mat2str(index));\n"
 	      MaskIconFrame	      on
 	      MaskIconOpaque	      on
@@ -2214,12 +2210,12 @@ Library {
 	      MaskToolTipString	      "on,on,on,on,on,on,on,on,on,on,on,on,on"
 	      MaskVariables	      "master=@1;index=@2;model=&3;type_1=@4;type_2=@5;type_3=@6;type_4=@7;dcmode=@8;dccustom=@9;"
 	      "vector=@10;scale=&11;tsample=@12;debug=@13;"
-	      MaskInitialization      "masterStr = '';\npositionStr = '';\n[Address masterStr positionStr] = ...\n    getEthe"
-	      "rCATAddress(gcb, master, index, tsample);\n\nep41xx('set');  % Report errors\n\nrv = get_param(gcbh,'UserData')"
-	      ";\n\nbasetype = [type_1; type_2; type_3; type_4] - 1;\ntype_eq3 = basetype == 3;\nbasetype = basetype .* ~type_"
-	      "eq3 + type_eq3*6;\n\nrowcount = numel(rv.SlaveConfig.sm{1}{3});\n\nrv.SlaveConfig.sdo = num2cell(horzcat(...\n "
-	      "   hex2dec('F800')*ones(rowcount,1),...\n    (1:rowcount)',...\n    16*ones(rowcount,1),...\n    basetype));\n"
-	      MaskDisplay	      "fprintf('%s\\nM:%s Idx:%s', ...\n    model, masterStr, positionStr)\n"
+	      MaskInitialization      "Address = EtherCATSlave.formatAddress(master,index,tsample);\n\nep41xx('set');  % Repo"
+	      "rt errors\n\nrv = get_param(gcbh,'UserData');\n\nbasetype = [type_1; type_2; type_3; type_4] - 1;\ntype_eq3 = b"
+	      "asetype == 3;\nbasetype = basetype .* ~type_eq3 + type_eq3*6;\n\nrowcount = numel(rv.SlaveConfig.sm{1}{3});\n\n"
+	      "rv.SlaveConfig.sdo = num2cell(horzcat(...\n    hex2dec('F800')*ones(rowcount,1),...\n    (1:rowcount)',...\n   "
+	      " 16*ones(rowcount,1),...\n    basetype));\n"
+	      MaskDisplay	      "fprintf('%s\\nM:%i Idx:%s', model, master, mat2str(index))\n"
 	      MaskIconFrame	      on
 	      MaskIconOpaque	      on
 	      MaskIconRotate	      "none"
@@ -2337,12 +2333,11 @@ Library {
 	      MaskToolTipString	      "on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on"
 	      MaskVariables	      "master=@1;index=@2;model=&3;type_1=@4;type_2=@5;type_3=@6;type_4=@7;status=&8;vector=&9;dc"
 	      "mode=&10;dccustom=&11;i_scale=&12;o_scale=&13;o_offset=&14;tau=&15;force=&16;tsample=@17;debug=@18;"
-	      MaskInitialization      "masterStr = '';\npositionStr = '';\n[Address masterStr positionStr] = ...\n    getEthe"
-	      "rCATAddress(gcb, master, index, tsample);\n\nep43xx('set');\n\nrv = get_param(gcbh,'UserData');\n\nrowcount = n"
-	      "umel(rv.SlaveConfig.sm{1}{3}) ...\n         + numel(rv.SlaveConfig.sm{2}{3});\n\nrv.SlaveConfig.sdo = num2cell("
-	      "horzcat(...\n    hex2dec('F800')*ones(rowcount,1),...\n    (1:rowcount)',...\n    16*ones(rowcount,1),...\n    "
-	      "[type_1; type_2; type_3; type_4] - 1));\n"
-	      MaskDisplay	      "fprintf('%s\\nAnalog IO\\nM:%s Idx:%s', ...\n    model, masterStr, positionStr);\n"
+	      MaskInitialization      "Address = EtherCATSlave.formatAddress(master,index,tsample);\n\nep43xx('set');\n\nrv ="
+	      " get_param(gcbh,'UserData');\n\nrowcount = numel(rv.SlaveConfig.sm{1}{3}) ...\n         + numel(rv.SlaveConfig."
+	      "sm{2}{3});\n\nrv.SlaveConfig.sdo = num2cell(horzcat(...\n    hex2dec('F800')*ones(rowcount,1),...\n    (1:rowco"
+	      "unt)',...\n    16*ones(rowcount,1),...\n    [type_1; type_2; type_3; type_4] - 1));\n"
+	      MaskDisplay	      "fprintf('%s\\nAnalog IO\\nM:%i Idx:%s', model, master, mat2str(index));\n"
 	      MaskIconFrame	      on
 	      MaskIconOpaque	      on
 	      MaskIconRotate	      "none"
@@ -2560,11 +2555,11 @@ Library {
 	  MaskVisibilityString	  "on,on,on,on,off"
 	  MaskToolTipString	  "on,on,on,on,on"
 	  MaskVariables		  "master=@1;index=@2;rv=@3;tsample=@4;debug=@5;"
-	  MaskInitialization	  "masterStr = '';\npositionStr = '';\n\n[Address masterStr positionStr] = ...\n    getEtherCATA"
-	  "ddress(gcb,master,index,tsample);\n\n\nif ~isfield(rv,'PortConfig') || isempty(rv)\n   rv.PortConfig = [];\nend\n\n"
-	  "if ~isfield(rv,'SlaveConfig') || isempty(rv)\n   rv.SlaveConfig = [];\nend\n\nif ~isfield(rv.SlaveConfig,'descripti"
-	  "on') || isempty(rv)\n   slave_name = 'unknown';\nelse\n   slave_name = rv.SlaveConfig.description;\nend\n\n"
-	  MaskDisplay		  "fprintf('Generic Slave\\n%s \\n%s Idx:%s',...\n    slave_name, masterStr, positionStr)\n"
+	  MaskInitialization	  "Address = EtherCATSlave.formatAddress(master,index,tsample);\n\nif ~isfield(rv,'PortConfig') "
+	  "|| isempty(rv)\n   rv.PortConfig = [];\nend\n\nif ~isfield(rv,'SlaveConfig') || isempty(rv)\n   rv.SlaveConfig = []"
+	  ";\nend\n\nif ~isfield(rv.SlaveConfig,'description') || isempty(rv)\n   slave_name = 'unknown';\nelse\n   slave_name"
+	  " = rv.SlaveConfig.description;\nend\n\n"
+	  MaskDisplay		  "fprintf('Generic Slave\\n%s \\n%i Idx:%s', ...\n    slave_name, master, mat2str(index))\n"
 	  MaskIconFrame		  on
 	  MaskIconOpaque	  on
 	  MaskIconRotate	  "none"
@@ -2624,7 +2619,7 @@ Library {
 	  System {
 	    Name		    "Mts"
 	    Location		    [634, 52, 942, 224]
-	    Open		    on
+	    Open		    off
 	    ModelBrowserVisibility  off
 	    ModelBrowserWidth	    200
 	    ScreenColor		    "white"
@@ -2641,7 +2636,7 @@ Library {
 	      Name		      "MTS_0"
 	      SID		      23
 	      Ports		      [0, 1]
-	      Position		      [105, 60, 185, 100]
+	      Position		      [105, 65, 185, 105]
 	      BackgroundColor	      "yellow"
 	      LibraryVersion	      "1.849"
 	      FunctionName	      "ec_slave3"
@@ -2682,10 +2677,9 @@ Library {
 	      MaskToolTipString	      "on,on,on,on,on,on,on,on,on,on,on"
 	      MaskVariables	      "master=@1;index=@2;model=&3;offset=@4;invert=@5;velocity_output=@6;status_output=@7;filter"
 	      "=@8;tau=@9;tsample=@10;debug=@11;"
-	      MaskInitialization      "masterStr = '';\npositionStr = '';\n\n[address masterStr positionStr] = ...\n        g"
-	      "etEtherCATAddress(gcb, master, index, tsample);\n\nrv = mts_temposonics(model, offset, filter, tau, ...\n      "
-	      "               invert, velocity_output, status_output);\n\n\n"
-	      MaskDisplay	      "fprintf('MTS R-Series\\n%s\\n%s Idx:%s',model,masterStr,positionStr);\n"
+	      MaskInitialization      "Address = EtherCATSlave.formatAddress(master,index,tsample);\n\nrv = mts_temposonics(m"
+	      "odel, offset, filter, tau, ...\n                     invert, velocity_output, status_output);\n\n\n"
+	      MaskDisplay	      "fprintf('MTS R-Series\\n%s\\nM:%i Idx:%s',model,master,mat2str(index))\n"
 	      MaskIconFrame	      on
 	      MaskIconOpaque	      on
 	      MaskIconRotate	      "none"
@@ -2716,7 +2710,7 @@ Library {
 	  MaskIconUnits		  "autoscale"
 	  System {
 	    Name		    "Murr"
-	    Location		    [567, 45, 1151, 1395]
+	    Location		    [567, 52, 930, 235]
 	    Open		    off
 	    ModelBrowserVisibility  off
 	    ModelBrowserWidth	    200
@@ -2748,14 +2742,13 @@ Library {
 	      MaskPromptString	      "Master|Slave Index|Device Model |Vector IO|Sample Time (-1 for inherited)|Debug"
 	      MaskStyleString	      "edit,edit,popup(DI16|DI8DO8|DO16|DO8),checkbox,edit,edit"
 	      MaskTunableValueString  "off,off,off,off,off,off"
-	      MaskCallbackString      "||murr_dio('set');|murr_dio('set');||"
+	      MaskCallbackString      "|||||"
 	      MaskEnableString	      "on,on,on,on,on,on"
 	      MaskVisibilityString    "on,on,on,on,on,off"
 	      MaskToolTipString	      "on,on,on,on,on,on"
-	      MaskVariables	      "master=@1;index=@2;model=&3;vector=&4;tsample=@5;debug=@6;"
-	      MaskInitialization      "masterStr = '';\npositionStr = '';\n[Address masterStr positionStr] = ...\n    getEthe"
-	      "rCATAddress(gcb,master,index,tsample);\n\nrv = get_param(gcbh,'UserData');\n"
-	      MaskDisplay	      "fprintf('Murr Impact 67 EC\\n%s\\nM:%s Idx:%s',...\n    model,masterStr,positionStr)\n"
+	      MaskVariables	      "master=@1;index=@2;model=&3;vector=@4;tsample=@5;debug=@6;"
+	      MaskInitialization      "Address = EtherCATSlave.formatAddress(master,index,tsample);\n\n"
+	      MaskDisplay	      "fprintf('Murr Impact 67 EC\\n%s\\nM:%i Idx:%s',...\n    model,master,mat2str(index))\n"
 	      MaskIconFrame	      on
 	      MaskIconOpaque	      on
 	      MaskIconRotate	      "none"
