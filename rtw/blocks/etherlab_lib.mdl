@@ -15,9 +15,9 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "ha"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Wed Oct  2 11:21:14 2013"
-  RTWModifiedTimeStamp	  302613673
-  ModelVersionFormat	  "1.%<AutoIncrement:1424>"
+  LastModifiedDate	  "Fri Oct  4 00:23:02 2013"
+  RTWModifiedTimeStamp	  302746981
+  ModelVersionFormat	  "1.%<AutoIncrement:1429>"
   ConfigurationManager	  "rcs"
   SampleTimeColors	  off
   SampleTimeAnnotations	  off
@@ -622,7 +622,7 @@ Library {
       System {
 	Name			"EtherCAT"
 	Location		[634, 52, 1047, 462]
-	Open			on
+	Open			off
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
 	ScreenColor		"white"
@@ -735,7 +735,7 @@ Library {
 	  System {
 	    Name		    "Beckhoff"
 	    Location		    [393, 161, 1516, 645]
-	    Open		    on
+	    Open		    off
 	    ModelBrowserVisibility  off
 	    ModelBrowserWidth	    200
 	    ScreenColor		    "white"
@@ -1736,7 +1736,7 @@ Library {
 	      Name		      "EL51xx_0"
 	      SID		      114
 	      Ports		      [2, 3]
-	      Position		      [515, 210, 590, 250]
+	      Position		      [515, 215, 590, 255]
 	      BackgroundColor	      "yellow"
 	      AttributesFormatString  "EL5101\nM:0 Idx:1"
 	      LibraryVersion	      "1.1258"
@@ -2710,7 +2710,7 @@ Library {
 	  MaskIconUnits		  "autoscale"
 	  System {
 	    Name		    "Murr"
-	    Location		    [567, 52, 930, 235]
+	    Location		    [478, 52, 841, 235]
 	    Open		    off
 	    ModelBrowserVisibility  off
 	    ModelBrowserWidth	    200
@@ -2728,8 +2728,9 @@ Library {
 	      Name		      "DIDO_Murr0"
 	      SID		      25
 	      Ports		      [1, 3]
-	      Position		      [115, 53, 225, 107]
+	      Position		      [115, 43, 225, 97]
 	      BackgroundColor	      "yellow"
+	      AttributesFormatString  "DI8DO8\nM:0 Idx:1"
 	      UserDataPersistent      on
 	      UserData		      "DataTag9"
 	      FunctionName	      "ec_slave3"
@@ -2740,15 +2741,21 @@ Library {
 	      MaskDescription	      "Murr Impact67 EC\nDigital  IO-Terminal"
 	      MaskHelp		      "web(etherlab_help_path('murr_dio.html'), '-helpbrowser');"
 	      MaskPromptString	      "Master|Slave Index|Device Model |Vector IO|Sample Time (-1 for inherited)|Debug"
-	      MaskStyleString	      "edit,edit,popup(DI16|DI8DO8|DO16|DO8),checkbox,edit,edit"
+	      MaskStyleString	      "edit,edit,popup(DI8DO8|DO16|DO8|DI16),checkbox,edit,edit"
 	      MaskTunableValueString  "off,off,off,off,off,off"
 	      MaskCallbackString      "|||||"
 	      MaskEnableString	      "on,on,on,on,on,on"
 	      MaskVisibilityString    "on,on,on,on,on,off"
 	      MaskToolTipString	      "on,on,on,on,on,on"
 	      MaskVariables	      "master=@1;index=@2;model=&3;vector=@4;tsample=@5;debug=@6;"
-	      MaskInitialization      "Address = EtherCATSlave.formatAddress(master,index,tsample);\n\n"
-	      MaskDisplay	      "fprintf('Murr Impact 67 EC\\n%s\\nM:%i Idx:%s',...\n    model,master,mat2str(index))\n"
+	      MaskInitialization      "Address = EtherCATSlave.formatAddress(master,index,tsample);\n\nrv = murr_dio.configur"
+	      "e(model,vector);\n\nif isfield(rv.PortConfig,'input')\n    inputNames = {rv.PortConfig.input.portname};\nelse\n"
+	      "    inputNames = {};\nend\n\nEtherCATSlaveBlock.setPortNames(...\n    inputNames,...\n    {rv.PortConfig.output"
+	      ".portname});\n\nset_param(gcb,'AttributesFormatString',...\n    sprintf('%s\\nM:%i Idx:%s',model,master,mat2str"
+	      "(index)))\n\n"
+	      MaskDisplay	      "port_label('input', 1, 'DO')\nport_label('output', 1, 'DI')\nport_label('output', 2, 'Stat')"
+	      "\nport_label('output', 3, 'Short')\n"
+	      MaskSelfModifiable      on
 	      MaskIconFrame	      on
 	      MaskIconOpaque	      on
 	      MaskIconRotate	      "none"

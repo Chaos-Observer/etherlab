@@ -1,239 +1,164 @@
-function murr_dio(method, varargin)
+classdef murr_dio < EtherCATSlave
 
-if ~nargin
-    return
-end
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    methods (Static)
+        %====================================================================
+        function rv = configure(model,vector)
+            slave = EtherCATSlave.findSlave(model,murr_dio.models);
 
-%display([gcb ' ' method]);
+            rv.SlaveConfig.vendor = 79;
+            rv.SlaveConfig.description = model;
+            rv.SlaveConfig.product  = slave{2};
 
-switch lower(method)
-case 'set'
-    ud = get_param(gcbh,'UserData');
-    model = get_param(gcbh, 'model');
+            pdo_list = murr_dio.pdo;
 
-    [ud.SlaveConfig, ud.PortConfig] = slave_config(model);
-    set_param(gcbh, 'UserData', ud);
+            % Find out how many entries there are in PDO #x1a01
+            if isempty(slave{8})
+                status_end = 8;
+            else
+                status_end = slave{8}(end) + 1;
+            end
 
-case 'check'
-    % If UserData.SlaveConfig does not exist, this is an update
-    % Convert this block and return
-    model = get_param(gcbh,'model');
+            % Create an array of TxPdo,length
+            if isempty(slave{5})
+                pdo_idx = [3,status_end];
+                pdo = {{'Stat', zeros(numel(slave{7}),4)}};
+                pdo{1}{2}(:,3) = slave{7};
 
-    ud = get_param(gcbh, 'UserData');
+                if ~isempty(slave{8})
+                    pdo{end+1} = {'Short', zeros(numel(slave{8}),4)};
+                    pdo{end}{2}(:,3) = slave{8};
+                end
+            else
+                pdo_idx = [2,slave{5}(end)+1;
+                           3,status_end];
 
-    % Get slave and port configuration based on product code and revision
-    [sc,pc] = slave_config(ud.SlaveConfig.product, ud.SlaveConfig.revision);
+                % Set BitLen of PDO Entry #x5999
+                pdo_list{2,2}(1,end) = slave{6};
 
-    if isequal(sc.sm, ud.SlaveConfig.sm) && ~isequal(sc, ud.SlaveConfig)
-        % The slave has a new name
-        warning('murrimpact:NewName', ...
-                '%s: Renaming device from %s to %s', ...
-                gcb, get_param(gcbh,'model'), sc.description)
-        set_param(gcbh, 'model', sc.description)
-        return;
-    end
+                pdo = {{'DI', zeros(numel(slave{5}),4)}, ...
+                        {'Stat', zeros(numel(slave{7}),4)}};
+                pdo{1}{2}(:,3) = slave{5};
+                pdo{2}{2}(:,2) = 1;
+                pdo{2}{2}(:,3) = slave{7};
 
-    if ~isequal(pc, ud.PortConfig)
-        errordlg('Configuration error. Please replace this block', gcb);
-        %error('el1xxx:PortConfig', 'Configuration error on %s. Replace it',...
-                %gcb);
-    end
+                if ~isempty(slave{8})
+                    pdo{end+1} = {'Short', zeros(numel(slave{8}),4)};
+                    pdo{end}{2}(:,2) = 1;
+                    pdo{end}{2}(:,3) = slave{8};
+                end
+            end
 
-case 'update'
-    update_devices(varargin{1}, slave_config());
+            rv.SlaveConfig.sm = ...
+                {{3,1,arrayfun(@(i) {pdo_list{pdo_idx(i,1),1}, ...
+                                     pdo_list{pdo_idx(i,1),2}(1:pdo_idx(i,2),:)}, ...
+                               1:size(pdo_idx,1), 'UniformOutput', false)}};
 
-otherwise
-    display([gcb, ': Unknown method ', method])
-end
+             output = cellfun(@(x) EtherCATSlave.configurePorts(x{1}, x{2}, ...
+                                                        uint(1), vector), ...
+                              pdo, 'UniformOutput', false);
+             rv.PortConfig.output = [output{:}];
 
-return
+             if ~isempty(slave{4})
+                 rv.SlaveConfig.sm{end+1} = ...
+                        {2,0,{{pdo_list{1,1}, ...
+                               pdo_list{1,2}(1:slave{4}(end)+1,:)}}};
+                 pdo = repmat([1, 0, 0, 0], numel(slave{4}), 1);
+                 pdo(:,3) = slave{4};
+                 rv.PortConfig.input = ...
+                     EtherCATSlave.configurePorts('DO', pdo, uint(1), vector);
+             end
+        end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [sc,pc] = slave_config(varargin)
-
-sm.input  = struct('index', 2, 'pdo', [hex2dec('1600'), hex2dec('6200')]);
-sm.output = struct('index', 3, 'pdo', [hex2dec('1a00'), hex2dec('6000')]);
-sm.status = struct('index', 3, ...
-                  'pdo', hex2dec('1a01'), 'entry', ...
-                  {hex2dec('1001'), [1 3]; hex2dec('1002'), 1:8});
-
-pdo = {2, hex2dec('1600'), [hex2dec('6199'), 8;
-                            hex2dec('6200'), 1; 
-                            hex2dec('6200'), 2; 
-                            hex2dec('6200'), 3; 
-                            hex2dec('6200'), 4; 
-                            hex2dec('6200'), 5; 
-                            hex2dec('6200'), 6; 
-                            hex2dec('6200'), 7; 
-                            hex2dec('6200'), 8;
-                            hex2dec('6200'), 9; 
-                            hex2dec('6200'), 10; 
-                            hex2dec('6200'), 11; 
-                            hex2dec('6200'), 12; 
-                            hex2dec('6200'), 13; 
-                            hex2dec('6200'), 14; 
-                            hex2dec('6200'), 15; 
-                            hex2dec('6200'), 16];
-
-       3, hex2dec('1a00'), [hex2dec('5999'), 8;
-                            hex2dec('6000'), 1;
-                            hex2dec('6000'), 2;
-                            hex2dec('6000'), 3;
-                            hex2dec('6000'), 4;
-                            hex2dec('6000'), 5;
-                            hex2dec('6000'), 6;
-                            hex2dec('6000'), 7;
-                            hex2dec('6000'), 8;
-                            hex2dec('6000'), 9;
-                            hex2dec('6000'), 10;
-                            hex2dec('6000'), 11;
-                            hex2dec('6000'), 12;
-                            hex2dec('6000'), 13;
-                            hex2dec('6000'), 14;
-                            hex2dec('6000'), 15;
-                            hex2dec('6000'), 16];
-
-       3, hex2dec('1a01'), [hex2dec('1001'), 1;
-                            hex2dec('1001'), 2;
-                            hex2dec('1001'), 3;
-                            hex2dec('1001'), 4;
-                            hex2dec('1001'), 5;
-                            hex2dec('1001'), 6;
-                            hex2dec('1001'), 7;
-                            hex2dec('1001'), 8;
-                            hex2dec('1002'), 1;
-                            hex2dec('1002'), 2;
-                            hex2dec('1002'), 3;
-                            hex2dec('1002'), 4;
-                            hex2dec('1002'), 5;
-                            hex2dec('1002'), 6;
-                            hex2dec('1002'), 7;
-                            hex2dec('1002'), 8;
-                            hex2dec('1002'), 9;
-                            hex2dec('1002'), 10;
-                            hex2dec('1002'), 11;
-                            hex2dec('1002'), 12;
-                            hex2dec('1002'), 13;
-                            hex2dec('1002'), 14;
-                            hex2dec('1002'), 15;
-                            hex2dec('1002'), 16];
-};
-
-%   Model       ProductCode          Revision             PdoStartRow PdoEndRow
-models = {...
-    'DI8DO8', hex2dec('0000d72a'), hex2dec('00000001'),  {1, 2:9},  {2, 2:9},  {3, {1:4, 9:16}};
-    'DO16',   hex2dec('0000d72c'), hex2dec('00000001'),  {1, 2:17}, {},        {3, {[1,2,4], 9:24}}; ...
-    'DO8',    hex2dec('0000d72b'), hex2dec('00000001'),  {1, 2:9 }, {},        {3, {[1,2,4], 9:16}}; ...
-    'DI16',   hex2dec('0000d729'), hex2dec('00000001'),  {},        {2, 2:17}, {3, {[1,3,4], []}}; ...
-    };
-
-sc = [];
-pc = [];
-
-switch nargin
-case 2
-    pos = cell2mat(models(:,2)) == varargin{1}...
-        & cell2mat(models(:,3)) == varargin{2};
-    product = models(pos,:);
-
-case 1
-    product = models(strcmp(models(:,1),varargin{1}),:);
-
-otherwise
-    fields = models(:,1);
-    obsolete = cellfun(@length, fields) > 11;
-    sc = vertcat(sort(fields(~obsolete)), sort(fields(obsolete)));
-    return
-end
-
-if isempty(product)
-    return;
-end
-
-sc.vendor = 79;
-sc.description = product{1};
-sc.product = product{2};
-sc.revision = product{3};
-
-vector  = strcmp(get_param(gcbh,'vector'), 'on');
-%status  = strcmp(get_param(gcbh,'status'), 'on');
-
-sc.sm = [];
-
-% Input port (RxPdo)
-if ~isempty(product{4})
-    idx = product{4}{1};
-    rows = product{4}{2};
-    n = numel(rows);
-
-    RxPdo = {pdo{idx,2}, horzcat(pdo{idx,3}(rows,:), ones(n, 1)) };
-    sc.sm{end+1} = {pdo{idx,1}, 0, { RxPdo }};
-    if vector
-        pc.input.pdo = repmat(0,n,4);
-        pc.input.pdo(:,3) = 0:n-1;
-        pc.input.pdo_data_type = 1001;
-    else
-        pc.input = arrayfun(@(x) struct('pdo', [0 0 x 0], ...
-                                        'pdo_data_type', 1001), 0:n-1);
-    end
-end
-
-% Output port
-if ~isempty(product{5})
-    idx = product{5}{1};
-    rows = product{5}{2};
-    n = numel(rows);
-    smidx = numel(sc.sm);
-
-    TxPdo = {pdo{idx,2}, horzcat(pdo{idx,3}(rows,:), ones(n, 1)) };
-    sc.sm{end+1} = {pdo{idx,1}, 1, { TxPdo }};
-    if vector
-        pc.output.pdo = repmat([smidx,0,0,0],n,1);
-        pc.output.pdo(:,3) = 0:n-1;
-        pc.output.pdo_data_type = 1001;
-    else
-        pc.output = arrayfun(@(x) struct('pdo', [smidx,0,x,0], ...
-                                         'pdo_data_type', 1001), 0:n-1);
-    end
-end
-
-% Status
-if ~isempty(product{6})
-    idx = product{6}{1};
-    rows = product{6}{2};
-    smidx = find(cellfun(@(x) x{1} == pdo{idx,1}, sc.sm));
-    n = sum(cellfun(@(x) numel(x), rows));
-
-    if isempty(smidx)
-        smidx = numel(sc.sm)+1;
-        sc.sm{end+1} = {pdo{idx,1}, 1, {}};
-
-        pc.output = repmat(struct('pdo',[],'pdo_data_type',[]), 0, 1);
-    end
-
-    pdoidx = numel(sc.sm{smidx}{3});
-    sc.sm{smidx}{3}{end+1} = {pdo{idx,2}, ...
-                              horzcat(pdo{idx,3}(cell2mat(rows),:), ...
-                                      ones(n, 1))};
-
-    if vector
-        x = 0:numel(rows{1})-1;
-        pc.output(end+1) = struct('pdo', repmat([smidx-1,pdoidx,0,0], ...
-                                                numel(x), 1), ...
-                                  'pdo_data_type', 1001);
-        pc.output(end).pdo(:,3) = x;
-
-        x = numel(x) + (0:numel(rows{2})-1);
-        pc.output(end+1) = struct('pdo', repmat([smidx-1,pdoidx,0,0], ...
-                                                numel(x), 1), ...
-                                  'pdo_data_type', 1001);
-        pc.output(end).pdo(:,3) = x;
-    else
-        for i = 0:size(sc.sm{smidx}{3}{end}{2},1)-1
-            pc.output(end+1) = struct('pdo', [smidx-1,pdoidx,i,0], ...
-                                      'pdo_data_type', 1001);
+        %====================================================================
+        function test(p)
+            ei = EtherCATInfo(fullfile(p,'Murrelektronik_IMPACT67.xml'));
+            for i = 1:size(murr_dio.models,1)
+                fprintf('Testing %s\n', murr_dio.models{i,1});
+                rv = murr_dio.configure(murr_dio.models{i,1},i&1);
+                slave = ei.getSlave(murr_dio.models{i,2});
+                slave{1}.testConfig(rv.SlaveConfig,rv.PortConfig);
+            end
         end
     end
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    properties (Constant, Access = private)
+
+        pdo = {hex2dec('1600'), [hex2dec('6199'), 1,  8;
+                                 hex2dec('6200'), 1,  1; 
+                                 hex2dec('6200'), 2,  1; 
+                                 hex2dec('6200'), 3,  1; 
+                                 hex2dec('6200'), 4,  1; 
+                                 hex2dec('6200'), 5,  1; 
+                                 hex2dec('6200'), 6,  1; 
+                                 hex2dec('6200'), 7,  1; 
+                                 hex2dec('6200'), 8,  1;
+                                 hex2dec('6200'), 9,  1; 
+                                 hex2dec('6200'), 10, 1; 
+                                 hex2dec('6200'), 11, 1; 
+                                 hex2dec('6200'), 12, 1; 
+                                 hex2dec('6200'), 13, 1; 
+                                 hex2dec('6200'), 14, 1; 
+                                 hex2dec('6200'), 15, 1; 
+                                 hex2dec('6200'), 16, 1];
+
+               hex2dec('1a00'), [hex2dec('5999'), 1,  1;
+                                 hex2dec('6000'), 1,  1;
+                                 hex2dec('6000'), 2,  1;
+                                 hex2dec('6000'), 3,  1;
+                                 hex2dec('6000'), 4,  1;
+                                 hex2dec('6000'), 5,  1;
+                                 hex2dec('6000'), 6,  1;
+                                 hex2dec('6000'), 7,  1;
+                                 hex2dec('6000'), 8,  1;
+                                 hex2dec('6000'), 9,  1;
+                                 hex2dec('6000'), 10, 1;
+                                 hex2dec('6000'), 11, 1;
+                                 hex2dec('6000'), 12, 1;
+                                 hex2dec('6000'), 13, 1;
+                                 hex2dec('6000'), 14, 1;
+                                 hex2dec('6000'), 15, 1;
+                                 hex2dec('6000'), 16, 1];
+
+               hex2dec('1a01'), [hex2dec('1001'), 1,  1;
+                                 hex2dec('1001'), 2,  1;
+                                 hex2dec('1001'), 3,  1;
+                                 hex2dec('1001'), 4,  1;
+                                 hex2dec('1001'), 5,  1;
+                                 hex2dec('1001'), 6,  1;
+                                 hex2dec('1001'), 7,  1;
+                                 hex2dec('1001'), 8,  1;
+                                 hex2dec('1002'), 1,  1;
+                                 hex2dec('1002'), 2,  1;
+                                 hex2dec('1002'), 3,  1;
+                                 hex2dec('1002'), 4,  1;
+                                 hex2dec('1002'), 5,  1;
+                                 hex2dec('1002'), 6,  1;
+                                 hex2dec('1002'), 7,  1;
+                                 hex2dec('1002'), 8,  1;
+                                 hex2dec('1002'), 9,  1;
+                                 hex2dec('1002'), 10, 1;
+                                 hex2dec('1002'), 11, 1;
+                                 hex2dec('1002'), 12, 1;
+                                 hex2dec('1002'), 13, 1;
+                                 hex2dec('1002'), 14, 1;
+                                 hex2dec('1002'), 15, 1;
+                                 hex2dec('1002'), 16, 1];
+        };
+
+    end
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    properties (Constant)
+        %   Model,ProductCode,Revision,
+        %   RxPdo(#x1600),TxPdo(#x1a00), BitLen(Pdo #x5999), Status(#x1a01)
+        models = {
+                'DI8DO8', hex2dec('0000d72a'), [], 1:8,  1:8, 8,     0:3, 8:15;
+                'DO16',   hex2dec('0000d72c'), [], 1:16,  [], 0, [0,1,3], 8:23;
+                'DO8',    hex2dec('0000d72b'), [], 1:8,   [], 0, [0,1,3], 8:15;
+                'DI16',   hex2dec('0000d729'), [], [],  1:16, 1, [0,2,3],   [];
+            };
+    end
 end
 
-return
