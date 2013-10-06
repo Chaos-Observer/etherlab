@@ -30,7 +30,6 @@ INSTALL (FILES
     mts-logo.png
     Murr.png
     EtherCAT.tlc
-    getEtherCATAddress.m
     ec_slave3.c ec_slave3.tlc
     setup.m
 

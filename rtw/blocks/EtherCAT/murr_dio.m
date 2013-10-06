@@ -1,3 +1,10 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Encapsulation for Murr IMPACT67 digital input and output slaves
+% ESI: Murrelektronik_IMPACT67.xml
+%
+% Copyright (C) 2014 Richard Hacker
+% License: LGPL
+%
 classdef murr_dio < EtherCATSlave
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
