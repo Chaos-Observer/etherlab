@@ -38,7 +38,7 @@
   rtwoptions(1).prompt         = 'EtherLab C code generation options';
   rtwoptions(1).type           = 'Category';
   rtwoptions(1).enable         = 'on';  
-  rtwoptions(1).default        = 6;   % number of items under this category
+  rtwoptions(1).default        = 0;   % number of items under this category
                                       % excluding this one.
   rtwoptions(1).popupstrings  = '';
   rtwoptions(1).tlcvariable   = '';
@@ -79,36 +79,6 @@
      'model is unloaded. The stack utilization is printed then.', ...
      sprintf('\n'), ...
      'Keep ~500 bytes free.' ];
-
-  rtwoptions(5).prompt       = 'Verbose build ';
-  rtwoptions(5).type         = 'Checkbox';
-  rtwoptions(5).default      = 'off';
-  rtwoptions(5).tlcvariable  = 'VerboseBuild';
-  rtwoptions(5).makevariable = 'VERBOSE_BUILD';
-  rtwoptions(5).tooltip      = ...
-    ['Check this to turn on extra compiler messages.'];
-
-  rtwoptions(6).prompt       = 'EtherLab directory:	';
-  rtwoptions(6).type         = 'Edit';
-  rtwoptions(6).default      = ...
-        fileparts(fileparts(fileparts(which('etherlab.tlc'))));
-  rtwoptions(6).tlcvariable  = 'EtherLabDir';
-  rtwoptions(6).makevariable = 'ETHERLAB_DIR';
-  rtwoptions(6).tooltip      = ['Path to EtherLab installation'];
-
-  rtwoptions(7).prompt       = 'Module Payload:	';
-  rtwoptions(7).type         = 'Edit';
-  rtwoptions(7).default      = [gcs '.mdl '];
-  rtwoptions(7).tlcvariable  = 'ModulePayload';
-  rtwoptions(7).makevariable = 'MODULE_PAYLOAD';
-  rtwoptions(7).tooltip      = ...
-    ['Space separated list of files that are attached verbatim to the ', ...
-     sprintf('\n'), ...
-     'kernel module. These files will appear compressed in the /proc ', ...
-     sprintf('\n'), ...
-     'filesystem. Wildcards are acceptable. Non-existent files will be', ...
-     sprintf('\n'), ...
-     'filtered out silently.'];
 
   %----------------------------------------%
   % Configure RTW code generation settings %

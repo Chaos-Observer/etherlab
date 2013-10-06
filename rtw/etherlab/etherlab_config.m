@@ -58,12 +58,7 @@ function etherlab_config(hDlg,hSrc)
   slConfigUISetVal(hDlg,hSrc,'ExtModeTesting','off');
   slConfigUISetVal(hDlg,hSrc,'ExtModeTransport','0');
   slConfigUISetVal(hDlg,hSrc,'RTWVerbose','on');
-  slConfigUISetVal(hDlg,hSrc,'RetainRTWFile','on');
-  slConfigUISetEnabled(hDlg,hSrc,'RetainRTWFile','off');
   slConfigUISetVal(hDlg,hSrc,'MatFileLogging','off');
   slConfigUISetEnabled(hDlg,hSrc,'MatFileLogging','off');
 
-%slConfigUISetVal(hDlg, hSrc, 'ModelReferenceCompliant', 'on');
-
-  set_param(bdroot,'PostCodeGenCommand', 'etherlab_postprocess(modelName,buildInfo)');
-
+  slConfigUISetVal(hDlg, hSrc, 'ModelReferenceCompliant', 'on');
