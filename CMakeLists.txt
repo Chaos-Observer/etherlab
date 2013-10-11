@@ -82,18 +82,12 @@ SET (CPACK_SOURCE_PACKAGE_FILE_NAME
 SET (CPACK_GENERATOR "TGZ")
 SET (CPACK_GENERATOR "DEB")
 SET (CPACK_DEBIAN_PACKAGE_MAINTAINER "Richard Hacker") #required
-SET (CPACK_SOURCE_IGNORE_FILES
-    "/CMakeCache.txt"
-    "/CMakeFiles/"
-    "/Makefile$"
-    "/\\\\.hg"
-    "/build.*"
-    "/config.h$"
-    "/etherlab-.*\\\\.tar\\\\."
-    "\\\\.so"
-    "\\\\.sw.$"
+LIST (APPEND CPACK_SOURCE_IGNORE_FILES
     "~$"
-    "${CPACK_SOURCE_IGNORE_FILES}"
+    "/build.*"
+    "\\\\.sw.$"
+    "\\\\.orig$"
+    "/\\\\.hg"
     )
 
 INCLUDE (CPack)
