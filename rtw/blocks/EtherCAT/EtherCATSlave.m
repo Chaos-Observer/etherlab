@@ -33,34 +33,22 @@ classdef EtherCATSlave
 
             % Make sure all options are set
             if nargin < 3
-                offset = '';
+                offset = [];
             end
             if nargin < 4
-                tau = '';
+                tau = [];
             end
 
             % If everything is empty, no scaling and return
-            if all(strcmp({gain,offset,tau},''));
+            if isempty([gain,offset,tau])
                 scale = false;
                 return
             end
 
             % Make sure every parameter is set
-            if isempty(gain)
-                scale.gain   = [];
-            else
-                scale.gain   = evalin('base',gain);
-            end
-            if isempty(offset)
-                scale.offset = [];
-            else
-                scale.offset = evalin('base',offset);
-            end
-            if isempty(tau)
-                scale.tau    = [];
-            else
-                scale.tau    = evalin('base',tau);
-            end
+            scale.gain = gain;
+            scale.offset = offset;
+            scale.tau = tau;
 
             if isempty(scale.gain) && isempty(scale.offset)
                 scale.full_scale = 1;

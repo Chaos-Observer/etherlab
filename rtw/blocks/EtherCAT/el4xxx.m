@@ -27,7 +27,7 @@ classdef el4xxx < EtherCATSlave
 
             rv.PortConfig.input  = el4xxx.configurePorts('O',...
                                 el4xxx.findPdoEntries(rv.SlaveConfig.sm,0),...
-                                sint(16),vector,isa(scale,'struct'));
+                                sint(16),vector,scale);
         end
 
         %====================================================================
@@ -50,16 +50,16 @@ classdef el4xxx < EtherCATSlave
     properties (Constant)
 
                 % PdoIdx         PdoEntryIdx    SubIdx  BitLen
-        pdo = [hex2dec('1600'), hex2dec('7000'), 17;
-               hex2dec('1601'), hex2dec('7010'), 17;
-               hex2dec('1602'), hex2dec('7020'), 17;
-               hex2dec('1603'), hex2dec('7030'), 17;
-               hex2dec('1604'), hex2dec('7040'), 17;
-               hex2dec('1605'), hex2dec('7050'), 17;
-               hex2dec('1606'), hex2dec('7060'), 17;
-               hex2dec('1607'), hex2dec('7070'), 17;
-               hex2dec('1600'), hex2dec('6411'),  1;
-               hex2dec('1601'), hex2dec('6411'),  2];
+        pdo = [hex2dec('1600'), hex2dec('7000'), 1;
+               hex2dec('1601'), hex2dec('7010'), 1;
+               hex2dec('1602'), hex2dec('7020'), 1;
+               hex2dec('1603'), hex2dec('7030'), 1;
+               hex2dec('1604'), hex2dec('7040'), 1;
+               hex2dec('1605'), hex2dec('7050'), 1;
+               hex2dec('1606'), hex2dec('7060'), 1;
+               hex2dec('1607'), hex2dec('7070'), 1;
+               hex2dec('1600'), hex2dec('6411'), 1;
+               hex2dec('1601'), hex2dec('6411'), 2];
 
         %   Model     ProductCode          Revision     IndexOffset, function
         models = {
