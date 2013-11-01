@@ -317,7 +317,7 @@ inline void timeradd(struct timespec *t, unsigned int dt)
 
 /****************************************************************************/
 
-#if !defined(MULTITASKING)  /* SINGLETASKING */
+#if !MT  /* SINGLETASKING */
 
 #define NUMTASKS 1
 static struct thread_task task[NUMTASKS];
@@ -358,7 +358,7 @@ rt_OneStepMain(RT_MODEL *S)
 
 /****************************************************************************/
 
-#else /* MULTITASKING */
+#else /* MT */
 
 #define NUMTASKS (NUMST - FIRST_TID)
 static struct thread_task task[NUMTASKS];
@@ -483,7 +483,7 @@ void *run_task(void *p)
     return 0;
 }
 
-#endif /* MULTITASKING */
+#endif /* MT */
 
 /****************************************************************************/
 
@@ -638,8 +638,10 @@ const char *register_signal(const struct thread_task *task,
             rtwCAPI_GetDataIsComplex(dTypeMap, dataTypeIndex));
     size_t pathLen = strlen(blockPath) + strlen(signalName) + 9;
     uint8_T ndim = rtwCAPI_GetNumDims(dimMap, dimIndex);
+#if !MT
     const real_T *sampleTime =
         rtwCAPI_GetSamplePeriodPtr(sampleTimeMap, sTimeIndex);
+#endif
     int8_T tid = rtwCAPI_GetSampleTimeTID(sampleTimeMap, sTimeIndex);
     uint_T decimation;
     boolean_T related;
@@ -706,7 +708,7 @@ const char *register_signal(const struct thread_task *task,
         strncpy(path, blockPath, pathLen);
     }
 
-#if !defined(MULTITASKING)
+#if !MT
     decimation =
         tid >= 0 && *sampleTime ? *sampleTime/task[0].sample_time + 0.5 : 1;
 #else
@@ -1220,7 +1222,7 @@ int main(int argc, char **argv)
 
     clock_gettime(CLOCK_MONOTONIC, &task[0].monotonic_time);
 
-#if defined(MULTITASKING)
+#if MT
     /* Start subtask threads */
     for (i = 1; i < NUMTASKS; ++i) {
         task[i].monotonic_time = task[0].monotonic_time;

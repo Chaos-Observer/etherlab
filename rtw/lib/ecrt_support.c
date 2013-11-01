@@ -27,6 +27,10 @@
 #include <time.h>
 #include "ecrt_support.h"
 
+#if MT
+#include <semaphore.h>
+#endif
+
 #ifndef EC_TIMESPEC2NANO
 #define EC_TIMESPEC2NANO(TV) \
     (((TV).tv_sec - 946684800ULL) * 1000000000ULL + (TV).tv_nsec)
@@ -167,6 +171,10 @@ struct ecat_master {
     unsigned int refclk_trigger_init; /* Decimation for reference clock
                                          == 0 => do not use dc */
     unsigned int refclk_trigger; /* When == 1, trigger a time syncronisation */
+
+#if MT
+    sem_t lock;
+#endif
 
     struct list_head domain_list;
 };
@@ -691,6 +699,10 @@ ecs_receive(size_t tid)
         
     list_for_each(master, &ecat_data.master_list, list) {
 
+#if MT
+        sem_wait(&master->lock);
+#endif
+
         if (master->fastest_tid == tid) {
             ecrt_master_receive(master->handle);
             ecrt_master_state(master->handle, &master->state);
@@ -712,6 +724,9 @@ ecs_receive(size_t tid)
                 conversion_list->copy(conversion_list);
             }
         }
+#if MT
+        sem_post(&master->lock);
+#endif
     }
 }
 
@@ -730,6 +745,9 @@ ecs_send(size_t tid)
     struct endian_convert_t *conversion_list;
 
     list_for_each(master, &ecat_data.master_list, list) {
+#if MT
+        sem_wait(&master->lock);
+#endif
         list_for_each(domain, &master->domain_list, list) {
 
             if (domain->tid != tid)
@@ -760,6 +778,9 @@ ecs_send(size_t tid)
             ecrt_master_sync_slave_clocks(master->handle);
             ecrt_master_send(master->handle);
         }
+#if MT
+        sem_post(&master->lock);
+#endif
     }
 }
 
@@ -785,6 +806,9 @@ get_master(
     master = calloc(1, sizeof(struct ecat_master));
     master->id = master_id;
     master->fastest_tid = tid;
+#if MT
+    sem_init(&master->lock, 0, 1);
+#endif
     INIT_LIST_HEAD(&master->domain_list);
     list_add_tail(&master->list, &ecat_data.master_list);
 
