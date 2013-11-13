@@ -58,8 +58,8 @@ classdef el4xxx < EtherCATSlave
                hex2dec('1605'), hex2dec('7050'), 1;
                hex2dec('1606'), hex2dec('7060'), 1;
                hex2dec('1607'), hex2dec('7070'), 1;
-               hex2dec('1600'), hex2dec('6411'), 1;
-               hex2dec('1601'), hex2dec('6411'), 2];
+               hex2dec('1600'), hex2dec('3001'), 1;
+               hex2dec('1601'), hex2dec('3002'), 1];
 
         %   Model     ProductCode          Revision     IndexOffset, function
         models = {
