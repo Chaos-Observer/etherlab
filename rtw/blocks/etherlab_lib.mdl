@@ -15,9 +15,9 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "ha"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Wed Oct 23 23:16:48 2013"
-  RTWModifiedTimeStamp	  304470755
-  ModelVersionFormat	  "1.%<AutoIncrement:1432>"
+  LastModifiedDate	  "Fri Nov 15 15:04:50 2013"
+  RTWModifiedTimeStamp	  306428674
+  ModelVersionFormat	  "1.%<AutoIncrement:1433>"
   ConfigurationManager	  "rcs"
   SampleTimeColors	  off
   SampleTimeAnnotations	  off
@@ -585,7 +585,7 @@ Library {
   }
   System {
     Name		    "etherlab_lib"
-    Location		    [1050, 126, 1484, 334]
+    Location		    [0, 28, 434, 236]
     Open		    on
     ModelBrowserVisibility  off
     ModelBrowserWidth	    200
@@ -1736,11 +1736,11 @@ Library {
 	      BlockType		      "S-Function"
 	      Name		      "EL51xx_0"
 	      SID		      114
-	      Ports		      [2, 3]
-	      Position		      [515, 215, 590, 255]
+	      Ports		      [2, 2]
+	      Position		      [520, 215, 595, 255]
 	      BackgroundColor	      "yellow"
-	      AttributesFormatString  "EL5101\nM:0 Idx:1"
-	      LibraryVersion	      "1.1258"
+	      AttributesFormatString  "EL5152\nM:0 Idx:1"
+	      LibraryVersion	      "1.1432"
 	      FunctionName	      "ec_slave3"
 	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
 	      SFunctionModules	      "'ecrt_support'"
@@ -1753,16 +1753,16 @@ Library {
 	      "e (-1 inherited)|Debug|DC Mode|Assign Activate|Cycle Time Sync 0 [ns]|Factor|Shift Time Sync0 [ns]|Factor|Shift"
 	      " Time0 Input|Cycle Time Sync1 [ns]|Factor|Shift Time Sync1 [ns]|Factor|8000:01 - Enable register reload|8000:02"
 	      " - Enable index reset|8000:03 - Enable FWD count|8000:04 - Enable pos. gate|8000:05 - Enable neg. gate|8000:01 "
-	      "- Enable C reset|8000:02 - Enable extern reset|8000:04 - Gate polarity|8000:0B - Open circuit detection A|8000:"
-	      "0C - Open circuit detection B|8000:0D - Open circuit detection C|8000:0E - Reversion of rotation|8000:10 - Exte"
-	      "rn reset polarity|8000:11 - Frequency window [us]|8000:13 - Frequency scaling [1/Hz]|8000:14 - Period scaling ["
-	      "ns]|8000:15 - Frequency resolution [1/Hz]|8000:16 - Period resolution [ns]|8000:17 - Frequency wait time [ms]|8"
-	      "001:01 - Frequency window [16us]|8001:02 - Counter reload value|8010:01 - Enable C reset|8010:02 - Enable exter"
-	      "n reset|8010:03 - Enable up/down counter|8010:04 - Gate polarity|8010:08 - Disable filter|8010:0A - Enable micr"
-	      "o increments|8010:0B - Open circuit detection A|8010:0C - Open circuit detection B|8010:0D - Open circuit detec"
-	      "tion C|8010:0E - Reversion of rotation|8010:10 - Extern reset polarity|8010:11 - Frequency window [us]|8010:13 "
-	      "- Frequency scaling [1/Hz]|8010:14 - Period scaling [ns]|8010:15 - Frequency resolution [1/Hz]|8010:16 - Period"
-	      " resolution [ns]|8010:17 - Frequency Wait Time [ms]"
+	      "- Enable C reset|8000:02 - Enable extern reset|8000:03/04 - Gate polarity|8000:0B - Open circuit detection A|80"
+	      "00:0C - Open circuit detection B|8000:0D - Open circuit detection C|8000:0E - Reversion of rotation|8000:10 - E"
+	      "xtern reset polarity|8000:11 - Frequency window [us]|8000:13 - Frequency scaling [1/Hz]|8000:14 - Period scalin"
+	      "g [ns]|8000:15 - Frequency resolution [1/Hz]|8000:16 - Period resolution [ns]|8000:17 - Frequency wait time [ms"
+	      "]|8001:01 - Frequency window [16us]|8001:02 - Counter reload value|8010:01 - Enable C reset|8010:02 - Enable ex"
+	      "tern reset|8010:03 - Enable up/down counter|8010:03/04 - Gate polarity|8010:08 - Disable filter|8010:0A - Enabl"
+	      "e micro increments|8010:0B - Open circuit detection A|8010:0C - Open circuit detection B|8010:0D - Open circuit"
+	      " detection C|8010:0E - Reversion of rotation|8010:10 - Extern reset polarity|8010:11 - Frequency window [us]|80"
+	      "10:13 - Frequency scaling [1/Hz]|8010:14 - Period scaling [ns]|8010:15 - Frequency resolution [1/Hz]|8010:16 - "
+	      "Period resolution [ns]|8010:17 - Frequency wait time [ms]"
 	      MaskStyleString	      "edit,edit,popup(EL5101|EL5101-0010|EL5101-1006|EL5151|EL5151-0080|EL5152),checkbox,check"
 	      "box,checkbox,checkbox,checkbox,checkbox,checkbox,checkbox,checkbox,checkbox,checkbox,checkbox,edit,edit,popup(F"
 	      "reeRun/SM-Synchron|DC-Synchron|DC-Synchron (input based)|Custom),edit,min,max,min,max,checkbox,min,max,min,max,"
@@ -1780,12 +1780,12 @@ Library {
 	      "dateSlaveState(el51xx)|EtherCATSlaveBlock.updateSlaveState(el51xx)|EtherCATSlaveBlock.updateSlaveState(el51xx)|"
 	      "EtherCATSlaveBlock.updateSlaveState(el51xx)|||EtherCATSlaveBlock.updateCustomDCEnable()||||||||||||||||||||||||"
 	      "||||||||||||||||||||||||"
-	      MaskEnableString	      "on,on,on,off,on,off,off,off,on,on,off,off,off,off,off,on,on,on,off,off,off,off,off,off,"
-	      "off,off,off,off,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on"
-	      ",on,on,on,on,on,on"
-	      MaskVisibilityString    "on,on,on,off,on,on,on,off,on,on,on,on,on,on,on,on,off,on,on,on,on,on,on,on,on,on,on,on"
-	      ",on,on,on,on,on,off,off,off,off,off,off,off,off,off,off,off,off,off,off,on,on,on,on,on,on,on,on,on,on,on,on,on,"
-	      "on,on,on,on,on,on"
+	      MaskEnableString	      "on,on,on,off,on,on,on,off,on,on,on,on,on,on,on,on,on,on,off,off,off,off,off,off,off,off"
+	      ",off,off,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,"
+	      "on,on,on,on"
+	      MaskVisibilityString    "on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,off,on,on,on,on,on,on,on,on,on,on,on,o"
+	      "ff,off,off,off,off,on,on,on,on,on,on,on,on,on,on,on,on,on,on,off,off,on,on,off,on,off,off,on,on,on,on,on,on,on,"
+	      "on,on,on,on"
 	      MaskToolTipString	      "on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on"
 	      ",on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on"
 	      MaskVariables	      "master=@1;index=@2;model=&3;pdo_x1600=@4;pdo_x1601=@5;pdo_x1602=@6;pdo_x1603=@7;pdo_x1A00="
@@ -1809,18 +1809,18 @@ Library {
 	      "setPortNames(...\n    {rv.PortConfig.input.portname},...\n    {rv.PortConfig.output.portname});\n\nset_param(gc"
 	      "b,'AttributesFormatString',...\n    sprintf('%s\\nM:%i Idx:%s',...\n            model,master,mat2str(index)))\n"
 	      "\n"
-	      MaskDisplay	      "port_label('input', 1, 'Ctrl')\nport_label('input', 2, 'Value')\nport_label('output', 1, 'St"
-	      "atus')\nport_label('output', 2, 'Counter')\nport_label('output', 3, 'Latch')\n"
+	      MaskDisplay	      "port_label('input', 1, 'Set')\nport_label('input', 2, 'Value')\nport_label('output', 1, 'boo"
+	      "l[4]')\nport_label('output', 2, 'Counter')\n"
 	      MaskSelfModifiable      on
 	      MaskIconFrame	      on
 	      MaskIconOpaque	      on
 	      MaskIconRotate	      "none"
 	      MaskPortRotate	      "default"
 	      MaskIconUnits	      "autoscale"
-	      MaskValueString	      "0|1|EL5101|off|on|off|off|off|on|off|off|off|off|off|off|-1|0|FreeRun/SM-Synchron|hex2de"
+	      MaskValueString	      "0|1|EL5152|off|on|off|off|off|on|off|off|off|off|off|off|-1|0|FreeRun/SM-Synchron|hex2de"
 	      "c('320')    % EL51x1: '320'; El5152: '720'|0|1|0|0|off|0|1|0|0|off|off|off|on|off|off|off|Enable pos. gate|on|o"
-	      "n|off|off|Rising edge|10000|100|100|100|100|400|100|65535|off|off|off|Enable pos. gate|on|off|on|on|off|off|Ris"
-	      "ing edge|10000|100|100|100|500|1600"
+	      "n|off|off|Rising edge|10000|100|100|100|100|1600|100|65535|off|off|off|Enable pos. gate|on|off|on|on|off|off|Ri"
+	      "sing edge|10000|100|100|100|100|1600"
 	      MaskTabNameString	      "Main,Main,Main,Main,Main,Main,Main,Main,Main,Main,Main,Main,Main,Main,Main,Main,Main,D"
 	      "istributed Clocks,Distributed Clocks,Distributed Clocks,Distributed Clocks,Distributed Clocks,Distributed Clock"
 	      "s,Distributed Clocks,Distributed Clocks,Distributed Clocks,Distributed Clocks,Distributed Clocks,CoE #x800x,CoE"
@@ -3101,7 +3101,7 @@ MatData {
     " $   8    (     @         %    \"     $    !     0         %  0 \"0    $    ;    9G5N8W1I;VX ='EP90      9FEL90   "
     "          .    .     8    (    !          %    \"     $    &     0         0    !@   &5P-#-X>   #@   #@    &    \""
     "     0         !0    @    !    !@    $         $     8   !S:6UP;&4   X   !@    !@    @    $          4    (     0 "
-    "  #     !         !     P    +W1M<\"]X+V]P=\"]E=&AE<FQA8B]R='<O8FQO8VMS+T5T:&5R0T%4+V5P-#-X>\"YM"
+    "  \"X    !         !     N    +VAO;64O:&$O971H97)L86(O<G1W+V)L;V-K<R]%=&AE<D-!5\"]E<#0S>'@N;0  "
   }
   DataRecord {
     Tag			    DataTag7
@@ -3135,8 +3135,8 @@ MatData {
     "  0  $ +P    X    P    !@    @    $          4    (     0    $    !         !   0!     #@   $ !   &    \"     (   "
     "      !0    @    !     0    $         !0 $  D    !    &P   &9U;F-T:6]N '1Y<&4      &9I;&4             #@   #@    &"
     "    \"     0         !0    @    !    !@    $         $     8   !E<#0Q>'@   X    X    !@    @    $          4    ( "
-    "    0    8    !         !     &    <VEM<&QE   .    8     8    (    !          %    \"     $    P     0         0  "
-    "  ,    \"]T;7 O>\"]O<'0O971H97)L86(O<G1W+V)L;V-K<R]%=&AE<D-!5\"]E<#0Q>'@N;0"
+    "    0    8    !         !     &    <VEM<&QE   .    8     8    (    !          %    \"     $    N     0         0  "
+    "  +@   \"]H;VUE+VAA+V5T:&5R;&%B+W)T=R]B;&]C:W,O171H97)#050O97 T,7AX+FT   "
   }
   DataRecord {
     Tag			    DataTag6
@@ -3178,8 +3178,8 @@ MatData {
     "   \"     $    !     0         0  $ 0     X   !  0  !@    @    \"          4    (     0    $    !          4 !  ) "
     "    0   !L   !F=6YC=&EO;@!T>7!E      !F:6QE              X    X    !@    @    $          4    (     0    8    !   "
     "      !     &    97 S,7AX   .    .     8    (    !          %    \"     $    &     0         0    !@   '-I;7!L90  "
-    "#@   &     &    \"     0         !0    @    !    ,     $         $    #     O=&UP+W@O;W!T+V5T:&5R;&%B+W)T=R]B;&]C:"
-    "W,O171H97)#050O97 S,7AX+FT"
+    "#@   &     &    \"     0         !0    @    !    +@    $         $    \"X    O:&]M92]H82]E=&AE<FQA8B]R='<O8FQO8VMS"
+    "+T5T:&5R0T%4+V5P,S%X>\"YM   "
   }
   DataRecord {
     Tag			    DataTag5
@@ -3223,7 +3223,7 @@ MatData {
     ".    0 $   8    (     @         %    \"     $    !     0         %  0 \"0    $    ;    9G5N8W1I;VX ='EP90      9FE"
     "L90             .    .     8    (    !          %    \"     $    &     0         0    !@   &5L-3$U>   #@   #@    &"
     "    \"     0         !0    @    !    !@    $         $     8   !S:6UP;&4   X   !@    !@    @    $          4    ( "
-    "    0   #     !         !     P    +W1M<\"]X+V]P=\"]E=&AE<FQA8B]R='<O8FQO8VMS+T5T:&5R0T%4+V5L-3$U>\"YM"
+    "    0   \"X    !         !     N    +VAO;64O:&$O971H97)L86(O<G1W+V)L;V-K<R]%=&AE<D-!5\"]E;#4Q-7@N;0  "
   }
   DataRecord {
     Tag			    DataTag4
@@ -3274,8 +3274,8 @@ MatData {
     "  #@   % !   &    \"     (         !0    @    !     0    $         !0 $  D    !    &P   &9U;F-T:6]N '1Y<&4      &9"
     "I;&4             #@   $     &    \"     0         !0    @    !    \"P    $         $     L   !E;#4Q,#%?,# Q,      "
     " #@   #@    &    \"     0         !0    @    !    !@    $         $     8   !S:6UP;&4   X   !H    !@    @    $    "
-    "      4    (     0   #4    !         !     U    +W1M<\"]X+V]P=\"]E=&AE<FQA8B]R='<O8FQO8VMS+T5T:&5R0T%4+V5L-3$P,5\\"
-    "P,#$P+FT    "
+    "      4    (     0   #,    !         !     S    +VAO;64O:&$O971H97)L86(O<G1W+V)L;V-K<R]%=&AE<D-!5\"]E;#4Q,#%?,# Q,"
+    "\"YM       "
   }
   DataRecord {
     Tag			    DataTag3
@@ -3327,8 +3327,8 @@ MatData {
     "   \"     $    !     0         0  $ 0     X   !  0  !@    @    \"          4    (     0    $    !          4 !  ) "
     "    0   !L   !F=6YC=&EO;@!T>7!E      !F:6QE              X    X    !@    @    $          4    (     0    8    !   "
     "      !     &    96PU,3 Q   .    .     8    (    !          %    \"     $    &     0         0    !@   '-I;7!L90  "
-    "#@   &     &    \"     0         !0    @    !    ,     $         $    #     O=&UP+W@O;W!T+V5T:&5R;&%B+W)T=R]B;&]C:"
-    "W,O171H97)#050O96PU,3 Q+FT"
+    "#@   &     &    \"     0         !0    @    !    +@    $         $    \"X    O:&]M92]H82]E=&AE<FQA8B]R='<O8FQO8VMS"
+    "+T5T:&5R0T%4+V5L-3$P,2YM   "
   }
   DataRecord {
     Tag			    DataTag2
@@ -3375,8 +3375,8 @@ MatData {
     "  $         $  ! \"\\    .    ,     8    (    !          %    \"     $    !     0         0  $ 0     X   !  0  !@ "
     "   @    \"          4    (     0    $    !          4 !  )     0   !L   !F=6YC=&EO;@!T>7!E      !F:6QE            "
     "  X    X    !@    @    $          4    (     0    8    !         !     &    96PS,C!X   .    .     8    (    !     "
-    "     %    \"     $    &     0         0    !@   '-I;7!L90  #@   &     &    \"     0         !0    @    !    ,     "
-    "$         $    #     O=&UP+W@O;W!T+V5T:&5R;&%B+W)T=R]B;&]C:W,O171H97)#050O96PS,C!X+FT"
+    "     %    \"     $    &     0         0    !@   '-I;7!L90  #@   &     &    \"     0         !0    @    !    +@    "
+    "$         $    \"X    O:&]M92]H82]E=&AE<FQA8B]R='<O8FQO8VMS+T5T:&5R0T%4+V5L,S(P>\"YM   "
   }
   DataRecord {
     Tag			    DataTag1
@@ -3408,8 +3408,8 @@ MatData {
     "         $  ! \"\\    .    ,     8    (    !          %    \"     $    !     0         0  $ 0     X   !  0  !@    "
     "@    \"          4    (     0    $    !          4 !  )     0   !L   !F=6YC=&EO;@!T>7!E      !F:6QE              X"
     "    X    !@    @    $          4    (     0    8    !         !     &    96PS,7AX   .    .     8    (    !        "
-    "  %    \"     $    &     0         0    !@   '-I;7!L90  #@   &     &    \"     0         !0    @    !    ,     $  "
-    "       $    #     O=&UP+W@O;W!T+V5T:&5R;&%B+W)T=R]B;&]C:W,O171H97)#050O96PS,7AX+FT"
+    "  %    \"     $    &     0         0    !@   '-I;7!L90  #@   &     &    \"     0         !0    @    !    +@    $  "
+    "       $    \"X    O:&]M92]H82]E=&AE<FQA8B]R='<O8FQO8VMS+T5T:&5R0T%4+V5L,S%X>\"YM   "
   }
   DataRecord {
     Tag			    DataTag0
@@ -3421,24 +3421,24 @@ MatData {
     "   0  $ +P    X    P    !@    @    $          4    (     0    $    !         !   0!     #@   $ !   &    \"     (  "
     "       !0    @    !     0    $         !0 $  D    !    &P   &9U;F-T:6]N '1Y<&4      &9I;&4             #@   #@    "
     "&    \"     0         !0    @    !    !@    $         $     8   !E;#,P>'@   X    X    !@    @    $          4    ("
-    "     0    8    !         !     &    <VEM<&QE   .    8     8    (    !          %    \"     $    P     0         0 "
-    "   ,    \"]T;7 O>\"]O<'0O971H97)L86(O<G1W+V)L;V-K<R]%=&AE<D-!5\"]E;#,P>'@N;0X   !0!   !@    @    \"          4    "
-    "(     0    $    !          4 !  ,     0   $@   !V96YD;W(       !D97-C<FEP=&EO;@!P<F]D=6-T      !R979I<VEO;@    !F="
-    "6YC=&EO;@    !S;0             .    .     8    (    !@         %    \"     $    !     0         )    \"            "
-    " ! #@   #@    &    \"     0         !0    @    !    !@    $         $     8   !%3#,P,#(   X    X    !@    @    &  "
-    "        4    (     0    $    !          D    (        I&!TIT$.    .     8    (    !@         %    \"     $    !   "
-    "  0         )    \"            #)!#@   #@    &    \"     0         !0    @    !    !0    $         $     4    K+3$"
-    "P5@    X   \"( @  !@    @    !          4    (     0    $    !          X   !8 @  !@    @    !          4    (    "
-    " 0    ,    !          X    X    !@    @    &          4    (     0    $    !          D    (            \"$ .    ."
-    "     8    (    !@         %    \"     $    !     0         )    \"            / _#@   *@!   &    \"     $         "
-    "!0    @    !     @    $         #@   +@    &    \"     $         !0    @    !     @    $         #@   #@    &    \""
-    "     8         !0    @    !     0    $         \"0    @           &Z0 X   !(    !@    @    &          4    (     0"
-    "    ,    !          D    8            V$         Q0        #! #@   +@    &    \"     $         !0    @    !     @ "
-    "   $         #@   #@    &    \"     8         !0    @    !     0    $         \"0    @           .Z0 X   !(    !@ "
-    "   @    &          4    (     0    ,    !          D    8           $V$         Q0        #! #@   *@!   &    \"   "
-    "  (         !0    @    !     0    $         !0 $  <    !    !P   &]U='!U=   #@   & !   &    \"     (         !0   "
-    " @    !     0    $         !0 $  X    !    *@   '!D;P              <&1O7V1A=&%?='EP90!F=6QL7W-C86QE              X"
-    "   !P    !@    @    &          4    (     @    0    !          D   !                                             \\"
+    "     0    8    !         !     &    <VEM<&QE   .    8     8    (    !          %    \"     $    N     0         0 "
+    "   +@   \"]H;VUE+VAA+V5T:&5R;&%B+W)T=R]B;&]C:W,O171H97)#050O96PS,'AX+FT   X   !0!   !@    @    \"          4    ( "
+    "    0    $    !          4 !  ,     0   $@   !V96YD;W(       !D97-C<FEP=&EO;@!P<F]D=6-T      !R979I<VEO;@    !F=6Y"
+    "C=&EO;@    !S;0             .    .     8    (    !@         %    \"     $    !     0         )    \"             !"
+    " #@   #@    &    \"     0         !0    @    !    !@    $         $     8   !%3#,P,#(   X    X    !@    @    &    "
+    "      4    (     0    $    !          D    (        I&!TIT$.    .     8    (    !@         %    \"     $    !     "
+    "0         )    \"            #)!#@   #@    &    \"     0         !0    @    !    !0    $         $     4    K+3$P5"
+    "@    X   \"( @  !@    @    !          4    (     0    $    !          X   !8 @  !@    @    !          4    (     0"
+    "    ,    !          X    X    !@    @    &          4    (     0    $    !          D    (            \"$ .    .  "
+    "   8    (    !@         %    \"     $    !     0         )    \"            / _#@   *@!   &    \"     $         !0"
+    "    @    !     @    $         #@   +@    &    \"     $         !0    @    !     @    $         #@   #@    &    \" "
+    "    8         !0    @    !     0    $         \"0    @           &Z0 X   !(    !@    @    &          4    (     0 "
+    "   ,    !          D    8            V$         Q0        #! #@   +@    &    \"     $         !0    @    !     @  "
+    "  $         #@   #@    &    \"     8         !0    @    !     0    $         \"0    @           .Z0 X   !(    !@  "
+    "  @    &          4    (     0    ,    !          D    8           $V$         Q0        #! #@   *@!   &    \"    "
+    " (         !0    @    !     0    $         !0 $  <    !    !P   &]U='!U=   #@   & !   &    \"     (         !0    "
+    "@    !     0    $         !0 $  X    !    *@   '!D;P              <&1O7V1A=&%?='EP90!F=6QL7W-C86QE              X "
+    "  !P    !@    @    &          4    (     @    0    !          D   !                                             \\"
     "#\\                                           X    X    !@    @    &          4    (     0    $    !          D   "
     " (          \" GT .    .     8    (    !@         %    \"     $    !     0         )    \"            .! "
   }
