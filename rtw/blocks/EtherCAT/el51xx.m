@@ -430,154 +430,51 @@ classdef el51xx < EtherCATSlave
               0,0,1,0,0,1,0,1,0,0];     % DC-Synchron (input based)
 
         % CoE Definition
-        %% EL5101
-        %% 8000
-        %    '1 1 Enable register reload'
-        %    '2 1 Enable index reset'
-        %    '3 1 Enable FWD count'
-        %    '4 1 Enable pos. gate'
-        %    '5 1 Enable neg. gate'
-        %% 8001
-        %    '1 16 Frequency window'
-        %    '2 16 Counter reload value'
-        %% 8010
-        %    '1 1 Enable C reset'
-        %    '2 1 Enable extern reset'
-        %    '3 1 Enable up/down counter'
-        %    '4 2 Gate polarity'
-        %    '8 1 Disable filter'
-        %    '10 1 Enable micro increments'
-        %    '11 1 Open circuit detection A'
-        %    '12 1 Open circuit detection B'
-        %    '13 1 Open circuit detection C'
-        %    '14 1 Reversion of rotation'
-        %    '16 1 Extern reset polarity'
-        %    '17 16 Frequency window'
-        %    '19 16 Frequency scaling'
-        %    '20 16 Period scaling'
-        %    '21 16 Frequency resolution'
-        %    '22 16 Period resolution'
-        %    '23 16 Frequency wait time'
-        %% EL5101-0010
-        %% 8000
-        %    '1 1 Enable C reset'
-        %    '2 1 Enable extern reset'
-        %    '4 2 Gate polarity'
-        %    '11 1 Open circuit detection A'
-        %    '12 1 Open circuit detection B'
-        %    '13 1 Open circuit detection C'
-        %    '14 1 Reversion of rotation'
-        %    '16 1 Extern reset polarity'
-        %    '17 16 Frequency window'
-        %    '19 16 Frequency scaling'
-        %    '20 16 Period scaling'
-        %    '21 16 Frequency resolution'
-        %    '22 16 Period resolution'
-        %    '23 16 Frequency wait time'
-        %% EL5101-1006
-        %% 8000
-        %    '1 1 Enable C reset'
-        %    '2 1 Enable extern reset'
-        %    '4 2 Gate polarity'
-        %    '11 1 Open circuit detection A'
-        %    '12 1 Open circuit detection B'
-        %    '13 1 Open circuit detection C'
-        %    '14 1 Reversion of rotation'
-        %    '16 1 Extern reset polarity'
-        %    '17 16 Frequency window'
-        %    '19 16 Frequency scaling'
-        %    '20 16 Period scaling'
-        %    '21 16 Frequency resolution'
-        %    '22 16 Period resolution'
-        %    '23 16 Frequency wait time'
-        %% EL5151
-        %% 8000
-        %    '1 1 Enable C reset'
-        %    '2 1 Enable extern reset'
-        %    '4 2 Gate polarity'
-        %    '11 1 Open circuit detection A'
-        %    '12 1 Open circuit detection B'
-        %    '13 1 Open circuit detection C'
-        %    '14 1 Reversion of rotation'
-        %    '16 1 Extern reset polarity'
-        %    '17 16 Frequency window'
-        %    '19 16 Frequency scaling'
-        %    '20 16 Period scaling'
-        %    '21 16 Frequency resolution'
-        %    '22 16 Period resolution'
-        %    '23 16 Frequency wait time'
-        %% EL5151-0080
-        %% 8000
-        %    '1 1 Enable C reset'
-        %    '2 1 Enable extern reset'
-        %    '4 2 Gate polarity'
-        %    '11 1 Open circuit detection A'
-        %    '12 1 Open circuit detection B'
-        %    '13 1 Open circuit detection C'
-        %    '14 1 Reversion of rotation'
-        %    '16 1 Extern reset polarity'
-        %    '17 16 Frequency window'
-        %    '19 16 Frequency scaling'
-        %    '20 16 Period scaling'
-        %    '21 16 Frequency resolution'
-        %    '22 16 Period resolution'
-        %    '23 16 Frequency wait time'
-        %% EL5152
-        %% 8000,8010
-        %    '1 1 Enable C reset'
-        %    '2 1 Enable extern reset'
-        %    '4 2 Gate polarity'
-        %    '11 1 Open circuit detection A'
-        %    '12 1 Open circuit detection B'
-        %    '13 1 Open circuit detection C'
-        %    '14 1 Reversion of rotation'
-        %    '16 1 Extern reset polarity'
-        %    '17 16 Frequency window'
-        %    '19 16 Frequency scaling'
-        %    '20 16 Period scaling'
-        %    '21 16 Frequency resolution'
-        %    '22 16 Period resolution'
-        %    '23 16 Frequency wait time'
         sdo = [ 
                 % EL5101
-                hex2dec('8000'),  1,  8; % 1    ' 1 1 Enable register reload'
-                hex2dec('8000'),  2,  8; % 2    ' 2 1 Enable index reset'
-                hex2dec('8000'),  3,  8; % 3    ' 3 1 Enable FWD count'
-                hex2dec('8000'),  4,  8; % 4    ' 4 1 Enable pos. gate'
-                hex2dec('8000'),  5,  8; % 5    ' 5 1 Enable neg. gate'
-                hex2dec('8000'),  1,  8; % 6    ' 1 1 Enable C reset'
-                hex2dec('8000'),  2,  8; % 7    ' 2 1 Enable extern reset'
-                hex2dec('8000'),  4,  8; % 8    ' 4 2 Gate polarity'
-                hex2dec('8000'), 11,  8; % 9    '11 1 Open circuit detection A'
-                hex2dec('8000'), 12,  8; %10    '12 1 Open circuit detection B'
-                hex2dec('8000'), 13,  8; %11    '13 1 Open circuit detection C'
-                hex2dec('8000'), 14,  8; %12    '14 1 Reversion of rotation'
-                hex2dec('8000'), 16,  8; %13    '16 1 Extern reset polarity'
-                hex2dec('8000'), 17, 16; %14    '17 16 Frequency window'
-                hex2dec('8000'), 19, 16; %15    '19 16 Frequency scaling'
-                hex2dec('8000'), 20, 16; %16    '20 16 Period scaling'
-                hex2dec('8000'), 21, 16; %17    '21 16 Frequency resolution'
-                hex2dec('8000'), 22, 16; %18    '22 16 Period resolution'
-                hex2dec('8000'), 23, 16; %19    '23 16 Frequency wait time'
-                hex2dec('8001'),  1, 16; %20    ' 1 16 Frequency window'
-                hex2dec('8001'),  2, 16; %21    ' 2 16 Counter reload value'
-                hex2dec('8010'),  1,  8; %22    ' 1 1 Enable C reset'
-                hex2dec('8010'),  2,  8; %23    ' 2 1 Enable extern reset'
-                hex2dec('8010'),  3,  8; %24    ' 3 1 Enable up/down counter'
-                hex2dec('8010'),  4,  8; %25    ' 4 2 Gate polarity'
-                hex2dec('8010'),  8,  8; %26    ' 8 1 Disable filter'
-                hex2dec('8010'), 10,  8; %27    '10 1 Enable micro increments'
-                hex2dec('8010'), 11,  8; %28    '11 1 Open circuit detection A'
-                hex2dec('8010'), 12,  8; %29    '12 1 Open circuit detection B'
-                hex2dec('8010'), 13,  8; %30    '13 1 Open circuit detection C'
-                hex2dec('8010'), 14,  8; %31    '14 1 Reversion of rotation'
-                hex2dec('8010'), 16,  8; %32    '16 1 Extern reset polarity'
-                hex2dec('8010'), 17, 16; %33    '17 16 Frequency window'
-                hex2dec('8010'), 19, 16; %34    '19 16 Frequency scaling'
-                hex2dec('8010'), 20, 16; %35    '20 16 Period scaling'
-                hex2dec('8010'), 21, 16; %36    '21 16 Frequency resolution'
-                hex2dec('8010'), 22, 16; %37    '22 16 Period resolution'
-                hex2dec('8010'), 23, 16; %38    '23 16 Frequency wait time'
+                hex2dec('8000'),  1,  8; % 1    ' 1  1 Enable register reload'
+                hex2dec('8000'),  2,  8; % 2    ' 2  1 Enable index reset'
+                hex2dec('8000'),  3,  8; % 3    ' 3  1 Enable FWD count'
+                hex2dec('8000'),  4,  8; % 4    ' 4  1 Enable pos. gate'
+                hex2dec('8000'),  5,  8; % 5    ' 5  1 Enable neg. gate'
+                hex2dec('8000'),  1,  8; % 6    ' 1  1 Enable C reset'
+                hex2dec('8000'),  2,  8; % 7    ' 2  1 Enable extern reset'
+                hex2dec('8000'),  3,  8; % 8    ' 3  1 Enable up/down counter'
+                hex2dec('8000'),  4,  8; % 9    ' 4  2 Gate polarity'
+                hex2dec('8000'),  8,  8; %10    ' 8  1 Disable filter'
+                hex2dec('8000'), 10,  8; %11    ' A  1 Enable micro increments'
+                hex2dec('8000'), 11,  8; %12    ' B  1 Open circuit detection A'
+                hex2dec('8000'), 12,  8; %13    ' C  1 Open circuit detection B'
+                hex2dec('8000'), 13,  8; %14    ' D  1 Open circuit detection C'
+                hex2dec('8000'), 14,  8; %15    ' E  2 Reversion of rotation'
+                hex2dec('8000'), 15,  8; %16    ' F  1 Frequency window base'
+                hex2dec('8000'), 16,  8; %17    '10  1 Extern reset polarity'
+                hex2dec('8000'), 17, 16; %18    '11 16 Frequency window'
+                hex2dec('8000'), 19, 16; %19    '13 16 Frequency scaling'
+                hex2dec('8000'), 20, 16; %20    '14 16 Period scaling'
+                hex2dec('8000'), 21, 16; %21    '15 16 Frequency resolution'
+                hex2dec('8000'), 22, 16; %22    '16 16 Period resolution'
+                hex2dec('8000'), 23, 16; %23    '17 16 Frequency wait time'
+                hex2dec('8001'),  1, 16; %24    ' 1 16 Frequency window'
+                hex2dec('8001'),  2, 16; %25    ' 2 16 Counter reload value'
+                hex2dec('8010'),  1,  8; %26    ' 1  1 Enable C reset'
+                hex2dec('8010'),  2,  8; %27    ' 2  1 Enable extern reset'
+                hex2dec('8010'),  3,  8; %28    ' 3  1 Enable up/down counter'
+                hex2dec('8010'),  4,  8; %29    ' 4  2 Gate polarity'
+                hex2dec('8010'),  8,  8; %30    ' 8  1 Disable filter'
+                hex2dec('8010'), 10,  8; %31    ' A  1 Enable micro increments'
+                hex2dec('8010'), 11,  8; %32    ' B  1 Open circuit detection A'
+                hex2dec('8010'), 12,  8; %33    ' C  1 Open circuit detection B'
+                hex2dec('8010'), 13,  8; %34    ' D  1 Open circuit detection C'
+                hex2dec('8010'), 14,  8; %35    ' E  1 Reversion of rotation'
+                hex2dec('8010'), 15,  8; %36    ' F  1 Frequency window base'
+                hex2dec('8010'), 16,  8; %37    '10  1 Extern reset polarity'
+                hex2dec('8010'), 17, 16; %38    '11 16 Frequency window'
+                hex2dec('8010'), 19, 16; %39    '13 16 Frequency scaling'
+                hex2dec('8010'), 20, 16; %40    '14 16 Period scaling'
+                hex2dec('8010'), 21, 16; %41    '15 16 Frequency resolution'
+                hex2dec('8010'), 22, 16; %42    '16 16 Period resolution'
+                hex2dec('8010'), 23, 16; %43    '17 16 Frequency wait time'
         ];
     end
 
@@ -586,17 +483,16 @@ classdef el51xx < EtherCATSlave
         %         Rx,              Tx,                   CoE, AssignActivate
         models = {...
             'EL5101',           hex2dec('13ed3052'), [], ...
-                 1:3,            4:11,     [1:5,20,21,22:38], hex2dec('320');
+                 1:3,            4:11,           [1:5,24,25], hex2dec('320');
             'EL5101-0010',      hex2dec('13ed3052'), [], ...
-                 12:13,         14:19,                  6:19, hex2dec('320');
-            'EL5101-1006',      hex2dec('13ed3052'), [], ...
-                 1:3,            4:11,                  6:19, hex2dec('320');
+                 12:13,         14:19,   [6,7,9,12:15,17:23], hex2dec('320');
+            'EL5101-0000',      hex2dec('13ed3052'), [], ...
+                 12:13,         14:19,         [26:35,37:43], hex2dec('320');
             'EL5151',           hex2dec('141f3052'), [], ...
-                 12:13, [20,21,16:19],                  6:19, hex2dec('320');
-            'EL5151-0080',      hex2dec('141f3052'), [], ...
-                 12:13, [20,21,16:19],                  6:19, hex2dec('320');
+                 12:13, [20,21,16:19],          [6:11,15:23], hex2dec('320');
             'EL5152',           hex2dec('14203052'), [], ...
-                 22:25,         26:33, [6:19,22,23,25,28:38], hex2dec('720');
+                 22:25,         26:33, [8,10,11,15,16,18:23,...
+                                       28,30,31,35,36,38:43], hex2dec('720');
         };
     end
 end
