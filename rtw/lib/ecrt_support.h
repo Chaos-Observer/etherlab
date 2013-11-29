@@ -97,6 +97,13 @@ ec_domain_t *ecs_get_domain_ptr(
         unsigned int tid,       /* Task Id of domain */
         const char **errmsg);
 
+int ecs_sdo_handler(
+        unsigned int master_id, 
+        unsigned int alias, 
+        unsigned int position, 
+        unsigned int len, 
+        void **addr);
+
 #ifdef __cplusplus
 }
 #endif

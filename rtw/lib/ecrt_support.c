@@ -108,6 +108,17 @@ static void list_add_tail(struct list_head *new, struct list_head *head)
 
 /*#######################################################################*/
 
+struct ec_slave_sdo {
+    struct list_head list;
+    unsigned int master;
+    unsigned int alias;
+    unsigned int position;
+    unsigned int len;
+    void **addr;
+};
+struct list_head ec_slave_sdo_head = {&ec_slave_sdo_head, &ec_slave_sdo_head};
+
+
 struct endian_convert_t {
     void (*copy)(const struct endian_convert_t*);
     void *dst;
@@ -939,6 +950,7 @@ init_slave(size_t nst, const struct ec_slave *slave)
     struct ecat_domain *domain;
     ec_slave_config_t *slave_config;
     const struct sdo_config *sdo;
+    const struct ec_slave_sdo *sdo_req;
     const struct soe_config *soe;
     const char *failed_method;
 
@@ -1070,6 +1082,16 @@ init_slave(size_t nst, const struct ec_slave *slave)
             return err;
     }
 
+    list_for_each(sdo_req, &ec_slave_sdo_head, list) {
+        if (sdo_req->master != slave->master
+                || sdo_req->alias != slave->alias
+                || sdo_req->position != slave->position)
+            continue;
+
+        *sdo_req->addr =
+            ecrt_slave_config_create_sdo_request(slave_config, 0, 0, sdo_req->len);
+    }
+
     return NULL;
 
 out_slave_failed:
@@ -1077,6 +1099,29 @@ out_slave_failed:
             "%s() failed while configuring slave %u:%u",
             failed_method, slave->alias, slave->position);
     return errbuf;
+}
+
+/***************************************************************************/
+int ecs_sdo_handler(
+        unsigned int master_id, 
+        unsigned int alias, 
+        unsigned int position, 
+        unsigned int len, 
+        void **addr)
+{
+    struct ec_slave_sdo *s = malloc(sizeof(struct ec_slave_sdo));
+
+    if (!s)
+        return 1;
+
+    s->master = master_id;
+    s->alias = alias;
+    s->position = position;
+    s->len = len;
+    s->addr = addr;
+
+    list_add_tail(&s->list, &ec_slave_sdo_head);
+    return 0;
 }
 
 /***************************************************************************/
