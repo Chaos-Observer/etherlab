@@ -79,7 +79,6 @@ methods (Static)
         end
 
         % SDO Configuration
-        sdo(2:end) = sdo(2:end)-1;   % 8000:15, 80x0:1c are zero based
         rv.SlaveConfig.sdo = num2cell(horzcat(el3255.sdo, reshape(sdo,[],1)));
         rv.SlaveConfig.sdo(count+3:end,:) = [];
 
@@ -111,7 +110,7 @@ end
 properties (Access = private, Constant)
     % All known sdo's
     sdo = [hex2dec('8000'), hex2dec('06'),  8;
-           hex2dec('8000'), hex2dec('15'),  8;
+           hex2dec('8000'), hex2dec('15'), 15;
            hex2dec('8000'), hex2dec('1c'), 16;
            hex2dec('8010'), hex2dec('1c'), 16;
            hex2dec('8020'), hex2dec('1c'), 16;
