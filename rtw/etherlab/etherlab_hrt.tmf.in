@@ -187,7 +187,7 @@ SYSLIBS = -lm -L$(STAGING_DIR)$(ETHERLAB_DIR)/$(PLATFORM_LIBDIR) -lpdserv \
 
 ifneq ($(findstring rtipc.c,$(S_FUNCTIONS)),)
     SYSLIBS += -lrtipc
-    S_FUNCTIONS = $(filter-out rtipc.c,$(S_FUNCTIONS))
+    S_FUNCTIONS := $(filter-out rtipc.c,$(S_FUNCTIONS))
 endif
 
 ifneq ($(findstring ecrt_support.c,$(S_FUNCTIONS)),)
