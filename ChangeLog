@@ -1,8 +1,405 @@
+2013-12-09  ab  <ab>
+
+	* rtw/etherlab/etherlab_hrt.tmf.in:
+	Fix Makefilebug for rtipc usage Failure:Line 191 in model.mk:
+	Recursive variable `S_FUNCTIONS' references itself (eventually).
+	Stop
+	[3f63b108d428] [tip]
+
+2013-11-29  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/blocks/EtherCAT/el3255.m:
+	Fixed EL3255
+	[cd6b793115ef]
+
+	* rtw/lib/ecrt_support.c, rtw/lib/ecrt_support.h:
+	Added support for sdo read/write in source files
+	[6ef87f50b671]
+
+2013-11-21  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/blocks/EtherCAT/el51xx.m, rtw/blocks/etherlab_lib.mdl:
+	Some more updating of SDO config for EL51xx family
+	[7a52879f258d]
+
+2013-11-15  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/blocks/etherlab_lib.mdl:
+	Eye candy for EL51xx
+	[08f1bdf97b10]
+
+2013-11-13  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/blocks/EtherCAT/el4xxx.m:
+	Fixed PDO configuration for EL41x2
+	[a85044b11da2]
+
+	* rtw/blocks/EtherCAT/el51xx.m:
+	Fixed bug in EL5152 configuration
+	[b3b4b0a53ee5]
+
+2013-11-01  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/lib/ecrt_support.c, rtw/src/hrt_main.c:
+	Multithread support
+	[0221798ac59a]
+
+2013-10-24  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/etherlab/etherlab_hrt.tmf.in:
+	Added pthread to linker flags
+	[2aecb342cde6]
+
+	* rtw/blocks/EtherCAT/EtherCATSlave.m, rtw/blocks/EtherCAT/el4xxx.m,
+	rtw/blocks/etherlab_lib.mdl:
+	Fixed problems with evalin when using model based variables
+	[9e0c66c53742]
+
+2013-10-23  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/etherlab/etherlab_hrt.tmf.in:
+	lib/lib64/lib32 issues
+	[382f95116a3d]
+
+2013-10-11  Richard Hacker  <lerichi@gmx.net>
+
+	* CMakeLists.txt:
+	Made packaging more concise
+	[feb2f3da763d]
+
+2013-10-06  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/etherlab/CMakeLists.txt, rtw/etherlab/etherlab.tlc,
+	rtw/etherlab/etherlab_config.m, rtw/etherlab/etherlab_genfiles.tlc,
+	rtw/etherlab/etherlab_hrt.tmf, rtw/etherlab/etherlab_hrt.tmf.in,
+	rtw/etherlab/etherlab_postprocess.m,
+	rtw/etherlab/etherlab_tools.mk.in, rtw/etherlab/get_meta_tag.m,
+	rtw/etherlab/postprocess.tlc, rtw/etherlab/postprocess_rtw.pl:
+	Completely reworked the compile process to improve support for cross
+	compilation
+	[11d1f312d804]
+
+	* rtw/blocks/EtherCAT/CMakeLists.txt, rtw/blocks/EtherCAT/murr_dio.m:
+	Removed getEtherCATAddress.m from install list
+	[a23de939fe15]
+
+2013-10-04  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/blocks/EtherCAT/murr_dio.m, rtw/blocks/etherlab_lib.mdl:
+	Changed Murr/DIDO_Murr0 to class model. Slave stays compatible.
+	[c1c53eea9af9]
+
+2013-10-02  Richard Hacker  <lerichi@gmx.net>
+
+	* merge
+	[466b50b3bfe4]
+
+	* rtw/blocks/EtherCAT/getEtherCATAddress.m,
+	rtw/blocks/etherlab_lib.mdl:
+	Removed obsolete function getEtherCATAddress.m
+	[fd581cd8f5c1]
+
+	* rtw/blocks/EtherCAT/EtherCATInfo.m,
+	rtw/blocks/EtherCAT/EtherCATInfoSlave.m,
+	rtw/blocks/EtherCAT/baumer_ecatencoder.m,
+	rtw/blocks/EtherCAT/el31xx_test.m, rtw/blocks/etherlab_lib.mdl:
+	Updated EtherCAT/Baumer/INC_IN0. This is not really backwards
+	compatible, but it should work
+	[294fccf1925c]
+
+2013-10-01  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/blocks/EtherCAT/CMakeLists.txt,
+	rtw/blocks/EtherCAT/EtherCATInfo.m,
+	rtw/blocks/EtherCAT/EtherCATInfoSlave.m,
+	rtw/blocks/EtherCAT/EtherCATSlaveBlock.m,
+	rtw/blocks/EtherCAT/ekxxxx.m, rtw/blocks/EtherCAT/el1xxx.m,
+	rtw/blocks/EtherCAT/el2xxx.m, rtw/blocks/EtherCAT/el30xx_1.m,
+	rtw/blocks/EtherCAT/el31xx_1.m, rtw/blocks/EtherCAT/el320x_1.m,
+	rtw/blocks/EtherCAT/el3255.m, rtw/blocks/EtherCAT/el3356.m,
+	rtw/blocks/EtherCAT/el37x2.m, rtw/blocks/EtherCAT/el4xxx.m,
+	rtw/blocks/EtherCAT/el500x.m, rtw/blocks/EtherCAT/el5021.m,
+	rtw/blocks/EtherCAT/el5101.m, rtw/blocks/EtherCAT/el5101_0010.m,
+	rtw/blocks/EtherCAT/el515x_2.m, rtw/blocks/EtherCAT/el51xx.m,
+	rtw/blocks/EtherCAT/el9xxx.m, rtw/blocks/EtherCAT/ep1xxx.m,
+	rtw/blocks/EtherCAT/ep2xxx.m, rtw/blocks/EtherCAT/ep31xx_1.m,
+	rtw/blocks/EtherCAT/ep41xx_1.m, rtw/blocks/EtherCAT/ep43xx_1.m,
+	rtw/blocks/EtherCAT/slave_dc.m,
+	rtw/blocks/EtherCAT/update_devices.m,
+	rtw/blocks/EtherCAT/update_library.m,
+	rtw/blocks/EtherCAT/update_mask_state.m,
+	rtw/blocks/etherlab_lib.mdl:
+	etherlab_lib.mdl, *.m: updated el1xxx, el2xxx, ep1xxx,
+	ep2xxx, el4xxx, el3356, el3255, el37x2, el500x,
+	el5021, Infrastructure, el9xxx to new use classes
+	instead of functions added el31xx_1, ep31xx_1, ep41xx_1,
+	ep43xx_1, el30xx_1, el320x_1 that replace their
+	predecessors, which are kept for backwards
+	compatability but emit a message on model load that
+	they should be replaced added el51xx which replaces el5101*
+	and el515x, which are also kept for compatability
+
+	el515x_2.m, slave_dc.m, update_devices.m, update_library.m,
+	update_mask_state.m: removed obsolete files
+	[c32b5f7e5d91]
+
+2013-09-30  Florian Pose  <fp@igh-essen.com>
+
+	* rtw/src/hrt_main.c:
+	Implemented overruns; added syslog() iface and some profiling
+	macros.
+	[d81887046e50]
+
+2013-09-27  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/blocks/EtherCAT/EtherCATSlave.m,
+	rtw/blocks/EtherCAT/EtherCATSlaveBlock.m,
+	rtw/blocks/EtherCAT/el30xx_1.m, rtw/blocks/EtherCAT/el31xx_1.m,
+	rtw/blocks/EtherCAT/el320x_1.m, rtw/blocks/EtherCAT/el5101.m,
+	rtw/blocks/EtherCAT/el5101_0010.m, rtw/blocks/EtherCAT/el515x_2.m,
+	rtw/blocks/EtherCAT/ep31xx_1.m, rtw/blocks/EtherCAT/ep41xx_1.m,
+	rtw/blocks/EtherCAT/ep43xx_1.m, rtw/blocks/etherlab_lib.mdl:
+	Complete rework of EL515x and EL5101* Fixed status data type for
+	EL320x Eye candy
+	[ea306ed8c6db]
+
+2013-09-25  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/blocks/EtherCAT/CMakeLists.txt,
+	rtw/blocks/EtherCAT/EtherCATInfo.m,
+	rtw/blocks/EtherCAT/EtherCATInfoSlave.m,
+	rtw/blocks/EtherCAT/EtherCATSlave.m, rtw/blocks/EtherCAT/XmlNode.m,
+	rtw/blocks/EtherCAT/el1xxx.m, rtw/blocks/EtherCAT/el2xxx.m,
+	rtw/blocks/EtherCAT/el30xx_1.m, rtw/blocks/EtherCAT/el31xx_1.m,
+	rtw/blocks/EtherCAT/el320x_1.m, rtw/blocks/EtherCAT/el3255.m,
+	rtw/blocks/EtherCAT/el3356.m, rtw/blocks/EtherCAT/el37x2.m,
+	rtw/blocks/EtherCAT/el4xxx.m, rtw/blocks/EtherCAT/el515x_2.m,
+	rtw/blocks/EtherCAT/ep1xxx.m, rtw/blocks/EtherCAT/ep2xxx.m,
+	rtw/blocks/EtherCAT/ep31xx_1.m, rtw/blocks/EtherCAT/ep41xx_1.m,
+	rtw/blocks/EtherCAT/ep43xx_1.m, rtw/blocks/etherlab_lib.mdl:
+	Complete rework of the following slaves: EL1xxx_0, EL2xxx_0,
+	EP1xxx_0, EP2xxx_0, EL31xx_1, EL4xxx_1 EL43xx_1, EL30xx_1, EL320x_1,
+	EL3356_0, EL3255_0, EL37x2_0
+	[647186fe65b5]
+
+2013-09-19  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/blocks/EtherCAT/EtherCATSlave.m, rtw/blocks/EtherCAT/el31xx_1.m:
+	Fixed PDO mapping for EL31xx
+	[7af3e84a9c77]
+
+2013-09-18  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/switch_etherlab.m:
+	Better switch_etherlab script
+	[b9ba8f741540]
+
+2013-09-18  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/blocks/EtherCAT/CMakeLists.txt:
+	Added files to installation
+	[7d93c447ed87]
+
+	* rtw/blocks/EtherCAT/EtherCATSlave.m,
+	rtw/blocks/EtherCAT/EtherCATSlaveBlock.m,
+	rtw/blocks/EtherCAT/el31xx_1.m, rtw/blocks/etherlab_lib.mdl:
+	New EL31xx_1. Obsoletes EL31xx_0
+	[4ace6af84284]
+
+2013-09-16  Richard Hacker  <lerichi@gmx.net>
+
+	* CMakeLists.txt, rtw/etherlab/CMakeLists.txt,
+	rtw/etherlab/etherlab_hrt.tmf, rtw/etherlab/etherlab_tools.mk,
+	rtw/etherlab/etherlab_tools.mk.in:
+	Fixed up problems with platform dependent lib/lib64
+	[4ed064af174a]
+
+2013-09-13  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/blocks/CMakeLists.txt:
+	Added RtIPC.tlc to install list
+	[796389aafe55]
+
+2013-09-12  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/blocks/etherlab_lib.mdl:
+	Fixed incorrect CoE SubIndex descripion for EL320x RTD Element
+	[c04f63804a17]
+
+	* rtw/blocks/EtherCAT/CMakeLists.txt, rtw/blocks/EtherCAT/el37x2.m,
+	rtw/blocks/etherlab_lib.mdl, rtw/blocks/html/el37x2.html,
+	rtw/blocks/html/general.html:
+	Added oversampling slaves EL37x2
+	[8d22a2cb632b]
+
+2013-09-12  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/blocks/EtherCAT/ec_slave3.tlc, rtw/blocks/html/general.html,
+	rtw/lib/ecrt_support.c, rtw/lib/ecrt_support.h:
+	Reworked DC completely
+	[0346448a9933]
+
+2013-07-30  Richard Hacker  <ha@igh-essen.com>
+
+	* Merge
+	[445f523293c2]
+
+2013-07-29  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/blocks/EtherCAT/el5021.m, rtw/blocks/etherlab_lib.mdl:
+	Addded DC to EL5021
+	[a7e816caa41c]
+
+	* rtw/blocks/EtherCAT/el5021.m, rtw/blocks/etherlab_lib.mdl,
+	rtw/blocks/html/el5021.html:
+	Updated EL5021 to use objects
+	[60ff0dbdbcd4]
+
+2012-11-08  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/blocks/EtherCAT/update_library.m:
+	update_library.m ignores its own system
+	[0de52e70fb67]
+
+2013-06-21  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/etherlab/etherlab_hrt.tmf:
+	Added -pthread to gcc compile options
+	[ab004556e9d4]
+
+2013-06-12  Richard Hacker  <lerichi@gmx.net>
+
+	* merge
+	[a8311a76e08a]
+
+2013-04-03  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/etherlab/etherlab_hrt.tmf:
+	lib64 added to search path
+	[382e73676d00]
+
+	* rtw/blocks/EtherCAT/el4xxx.m:
+	Fixed incorrect PDO Entry for EL40xx
+	[b29c566c09a8]
+
+	* rtw/lib/ecrt_support.c:
+	Fixed bug when addressing bits
+	[7226ae575b49]
+
+2013-06-11  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/src/hrt_main.c:
+	Fixed roundup error in decimation calculation of signals on some
+	platforms
+	[df1c6cbd3f82]
+
+2013-05-29  Andreas Stewering-Bone  <ab@igh-essen.com>
+
+	* rtw/blocks/etherlab_lib.mdl:
+	Fix default value for EL515x period window
+	[86234555daaa]
+
+2013-05-03  Florian Pose  <fp@igh-essen.com>
+
+	* merge
+	[fe9ce7151d4a]
+
+	* rtw/blocks/EtherCAT/mts_temposonics.m:
+	Take care of invert parameter of MTS block.
+	[df48e0b97721]
+
+2013-03-24  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/blocks/EtherCAT/EtherCATSlaveBlock.m,
+	rtw/blocks/EtherCAT/ekxxxx.m, rtw/blocks/EtherCAT/el3255.m,
+	rtw/blocks/EtherCAT/el3356.m, rtw/blocks/EtherCAT/el9xxx.m,
+	rtw/blocks/etherlab_lib.mdl:
+	Removed revision number from slaves.
+	[d8e57a0293c8]
+
+2013-03-07  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/blocks/EtherCAT/ekxxxx.m, rtw/blocks/EtherCAT/el3255.m,
+	rtw/blocks/EtherCAT/el3356.m, rtw/blocks/EtherCAT/el9xxx.m:
+	Changed the RevisionNumber to a generic type
+	[431101bae9d7]
+
+	* rtw/blocks/EtherCAT/ekxxxx.m:
+	Fixed BitLen for EKxxxx
+	[cb581e19f9c1]
+
+2013-03-07  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/blocks/EtherCAT/EtherCATSlaveBlock.m,
+	rtw/blocks/EtherCAT/ekxxxx.m, rtw/blocks/etherlab_lib.mdl:
+	Updated EKxxxx to include all current slaves
+	[f70b49b9a99f]
+
+2013-03-06  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/blocks/EtherCAT/CMakeLists.txt, rtw/blocks/EtherCAT/el9xxx.m,
+	rtw/blocks/etherlab_lib.mdl, rtw/blocks/html/el9xxx.html:
+	Added Beckhoff EL9xxx
+	[8c4dd51d23c3]
+
+2013-03-06  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/blocks/etherlab_lib.mdl:
+	Fixed 2012b library export problems
+	[2a70463585b5]
+
+2013-02-26  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/blocks/EtherCAT/CMakeLists.txt, rtw/blocks/EtherCAT/el3255.m,
+	rtw/blocks/etherlab_lib.mdl, rtw/blocks/html/el3255.html,
+	rtw/blocks/html/el3356.html:
+	Added EL3255
+	[5ae60fed3a7a]
+
+2013-02-24  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/blocks/EtherCAT/CMakeLists.txt, rtw/blocks/EtherCAT/el335x.m,
+	rtw/blocks/etherlab_lib.mdl:
+	Cleaned up installation
+	[e062f73a5cbd]
+
+	* rtw/blocks/EtherCAT/CMakeLists.txt:
+	Install EL3356 files
+	[ed9fa8ea92cf]
+
+	* rtw/blocks/EtherCAT/EtherCATSlaveBlock.m,
+	rtw/blocks/EtherCAT/el3356.m, rtw/blocks/etherlab_lib.mdl,
+	rtw/blocks/html/el3255.html:
+	Added EL3356
+	[5f59f114b4d7]
+
+2013-02-23  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/blocks/EtherCAT/ec_slave3.c:
+	PORT.pdo_data_type now as numeric, ML data type class or string
+	[a7f51b964bed]
+
+2013-01-31  Florian Pose  <fp@igh-essen.com>
+
+	* rtw/blocks/etherlab_lib.mdl:
+	Beautified library.
+	[3356dc8067b8]
+
+2013-01-29  Florian Pose  <fp@igh-essen.com>
+
+	* .hgtags:
+	Added tag release-2.0.0 for changeset d33ba37cb72d
+	[c1138a7d50b0]
+
+	* ChangeLog:
+	Updated changelog for version 2.0.0.
+	[d33ba37cb72d] [release-2.0.0]
+
 2013-01-25  Richard Hacker  <lerichi@gmx.net>
 
 	* rtw/blocks/etherlab_lib.mdl, rtw/src/hrt_main.c:
 	Updated mask for EL515x
-	[f67f51932722] [tip]
+	[f67f51932722]
 
 2013-01-24  Richard Hacker  <lerichi@gmx.net>
 
