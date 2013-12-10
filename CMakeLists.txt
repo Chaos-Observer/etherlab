@@ -2,10 +2,11 @@
 #
 #  $Id$
 #
-#  Copyright 2012 Richard Hacker (lerichi at gmx dot net)
+#  Copyright 2012-2013  Richard Hacker (lerichi at gmx dot net)
+#                 2013  Florian Pose <fp@igh.de>
 #
-#  This is the main cmake file for PdServ target for Real-Time Workshop(TM)
-#  taget of Mathworks.
+#  This is the main cmake file for EtherLab target for Real-Time Workshop(TM)
+#  target of Mathworks.
 #
 #  The following options can be specified on the command line of cmake to
 #  change the installation paths (Defaults are in <>)
@@ -15,29 +16,37 @@
 #       -DCMAKE_BUILD_TYPE=Debug|Release|RelWithDebInfo|MinSizeRel
 #  option
 #
-#  This file is part of the PdServ-MATLAB package.
+#  This file is part of the EtherLab package.
 #
-#  PdServ-MATLAB is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
+#  EtherLab is free software: you can redistribute it and/or modify it under
+#  the terms of the GNU General Public License as published by the Free
+#  Software Foundation, either version 3 of the License, or (at your option)
+#  any later version.
 #
-#  PdServ-MATLAB is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU General Public License for more details.
+#  EtherLab is distributed in the hope that it will be useful, but WITHOUT ANY
+#  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+#  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+#  details.
 #
-#  You should have received a copy of the GNU General Public License
-#  along with PdServ-MATLAB. See COPYING. If not, see
-#  <http://www.gnu.org/licenses/>.
+#  You should have received a copy of the GNU General Public License along
+#  with EtherLab. See COPYING. If not, see <http://www.gnu.org/licenses/>.
 #
 #############################################################################
-
 
 CMAKE_MINIMUM_REQUIRED (VERSION 2.6)
 PROJECT (etherlab)
 SET (CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS TRUE)
 
+#
+# Release Instructions
+#
+# - Update version numbers below
+# - Update ChangeLog (hg log --branch <branch> --style=changelog > ChangeLog)
+# - Update NEWS file
+# - commit
+# - make dist
+# - add tag release-x.x.x
+#
 SET (MAJOR_VERSION 2)
 SET (MINOR_VERSION 0)
 SET (PATCH_LEVEL 0)
