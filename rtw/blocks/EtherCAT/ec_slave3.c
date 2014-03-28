@@ -1312,12 +1312,16 @@ get_port_raw_pdo_spec (struct ecat_slave *slave, const char_T *p_ctxt,
 
 /****************************************************************************/
 static const struct datatype_info *
-get_data_type(const mxArray *spec)
+get_data_type(struct ecat_slave *slave, const char_T *p_ctxt,
+        const mxArray *spec)
 {
     const struct datatype_info *dt = datatype_info;
 
-    if (!spec || !mxGetNumberOfElements(spec))
+    if (!spec || !mxGetNumberOfElements(spec)) {
+        pr_error(slave, p_ctxt, "pdo_data_type", __LINE__,
+                "Empty data type!");
         return NULL;
+    }
 
     if (mxIsDouble(spec)) {
         uint_T dt_id = *mxGetPr(spec);
@@ -1331,8 +1335,11 @@ get_data_type(const mxArray *spec)
     else if (mxIsChar(spec)) {
         char_T name[20];
 
-        if (mxGetString(spec, name, sizeof(name)))
+        if (mxGetString(spec, name, sizeof(name))) {
+            pr_error(slave, p_ctxt, "pdo_data_type", __LINE__,
+                    "Invalid string data type!");
             return NULL;
+        }
 
         while (dt->id) {
             if (!strcmp(name, dt->name))
@@ -1345,8 +1352,11 @@ get_data_type(const mxArray *spec)
         char_T class_name[20];
 
         if (!class || !mxIsChar(class) || !mxGetNumberOfElements(class)
-                || mxGetString(class, class_name, sizeof(class_name)))
+                || mxGetString(class, class_name, sizeof(class_name))) {
+            pr_error(slave, p_ctxt, "pdo_data_type", __LINE__,
+                    "Invalid class name in data type!");
             return NULL;
+        }
 
         if (!strcmp(class_name, "DOUBLE"))
             return type_double;
@@ -1360,15 +1370,21 @@ get_data_type(const mxArray *spec)
 
             if (!is_signed || !mxIsDouble(is_signed)
                     || !mxGetNumberOfElements(is_signed)
-                    || !(val = mxGetPr(is_signed)))
+                    || !(val = mxGetPr(is_signed))) {
+                pr_error(slave, p_ctxt, "pdo_data_type", __LINE__,
+                        "Invalid field 'IsSigned' in data type!");
                 return NULL;
+            }
 
             dt_id = *val ? 2000 : 1000;
 
             if (!mant_bits || !mxIsDouble(mant_bits)
                     || !mxGetNumberOfElements(mant_bits)
-                    || !(val = mxGetPr(mant_bits)))
+                    || !(val = mxGetPr(mant_bits))) {
+                pr_error(slave, p_ctxt, "pdo_data_type", __LINE__,
+                        "Invalid field 'MantBits' in data type!");
                 return NULL;
+            }
             dt_id += *val;
 
             while (dt->id) {
@@ -1378,6 +1394,78 @@ get_data_type(const mxArray *spec)
             }
         }
     }
+    else if (mxIsClass(spec, "Simulink.NumericType")) {
+        const mxArray *dtMode = mxGetProperty(spec, 0, "DataTypeMode");
+        char_T className[64];
+
+        if (!dtMode || !mxIsChar(dtMode) || !mxGetNumberOfElements(dtMode)
+                || mxGetNumberOfElements(dtMode) >= sizeof(className)
+                || mxGetString(dtMode, className, sizeof(className))) {
+            pr_error(slave, p_ctxt, "pdo_data_type", __LINE__,
+                    "Invalid field 'DataTypeMode' in data type!");
+            return NULL;
+        }
+
+        if (!strcmp(className, "Double")) {
+            return type_double;
+        }
+        else if (!strcmp(className, "Single")) {
+            return type_single;
+        }
+        else if (!strcmp(className, "Fixed-point: binary point scaling")) {
+            const mxArray *signedness = mxGetProperty(spec, 0, "Signedness");
+            const mxArray *wordLength = mxGetProperty(spec, 0, "WordLength");
+            const real_T *bitLength;
+            char_T sign[20];
+            uint_T dtId;
+
+            if (!signedness || !mxIsChar(signedness)
+                    || !mxGetNumberOfElements(signedness)
+                    || mxGetNumberOfElements(signedness) >= sizeof(sign)
+                    || mxGetString(signedness, sign, sizeof(sign))) {
+                pr_error(slave, p_ctxt, "pdo_data_type", __LINE__,
+                        "Invalid field 'Signedness' in data type!");
+                return NULL;
+            }
+
+            if (!strcmp(sign, "Unsigned")) {
+                dtId = 1000;
+            }
+            else if (!strcmp(sign, "Signed")) {
+                dtId = 2000;
+            }
+            else {
+                pr_error(slave, p_ctxt, "pdo_data_type", __LINE__,
+                        "Invalid value '%s' for 'Signedness' in data type!",
+                        sign);
+                return NULL;
+            }
+
+            if (!wordLength || !mxIsDouble(wordLength)
+                    || !mxGetNumberOfElements(wordLength)
+                    || !(bitLength = mxGetPr(wordLength))) {
+                pr_error(slave, p_ctxt, "pdo_data_type", __LINE__,
+                        "Invalid field 'WordLength' in data type!");
+                return NULL;
+            }
+
+            dtId += *bitLength;
+
+            while (dt->id) {
+                if (dt->id == dtId) {
+                    return dt;
+                }
+                ++dt;
+            }
+
+            pr_error(slave, p_ctxt, "pdo_data_type", __LINE__,
+                    "Word length '%lf' not supported in data type!",
+                    bitLength);
+        }
+    }
+
+    pr_error(slave, p_ctxt, "pdo_data_type", __LINE__,
+            "Unknown data type!");
 
     return NULL;
 }
@@ -1392,11 +1480,9 @@ get_port_pdo_spec (struct ecat_slave *slave, const char_T *p_ctxt,
     real_T real;
 
     /* Read the PDO data type */
-    port->data_type =
-        get_data_type(mxGetField(port_spec,idx,"pdo_data_type"));
+    port->data_type = get_data_type(slave, p_ctxt,
+            mxGetField(port_spec,idx,"pdo_data_type"));
     if (!port->data_type) {
-        pr_error(slave, p_ctxt, "pdo_data_type", __LINE__,
-                "Unknown data type");
         return -1;
     }
 
