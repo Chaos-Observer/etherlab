@@ -1460,7 +1460,7 @@ get_data_type(struct ecat_slave *slave, const char_T *p_ctxt,
 
             pr_error(slave, p_ctxt, "pdo_data_type", __LINE__,
                     "Word length '%lf' not supported in data type!",
-                    bitLength);
+                    *bitLength);
         }
     }
 
