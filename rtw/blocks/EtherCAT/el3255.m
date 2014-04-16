@@ -110,7 +110,7 @@ end
 properties (Access = private, Constant)
     % All known sdo's
     sdo = [hex2dec('8000'), hex2dec('06'),  8;
-           hex2dec('8000'), hex2dec('15'), 15;
+           hex2dec('8000'), hex2dec('15'), 16;
            hex2dec('8000'), hex2dec('1c'), 16;
            hex2dec('8010'), hex2dec('1c'), 16;
            hex2dec('8020'), hex2dec('1c'), 16;
