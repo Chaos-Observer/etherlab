@@ -58,9 +58,9 @@ classdef el51xx < EtherCATSlave
             end
 
             % Configure SM2 and SM3
-            i = 1:numel(selected);
-            rx = i(ismember(1:numel(selected), slave{4}) & selected);
-            tx = i(ismember(1:numel(selected), slave{5}) & selected);
+            selected_idx = find(selected);
+            rx = slave{4}(ismember(slave{4}, selected_idx));
+            tx = slave{5}(ismember(slave{5}, selected_idx));
             rv.SlaveConfig.sm = ...
                 {{2,0, arrayfun(@(x) {pdo_list{x,1}, pdo_list{x,3}},...
                                 rx, 'UniformOutput', false)}, ...
@@ -311,9 +311,9 @@ classdef el51xx < EtherCATSlave
                                                     hex2dec('6000'),11, 1;
                                                     0              , 0, 1;
                                                     hex2dec('6000'),13, 1;
-                                                    hex2dec('1c32'),32, 1;
+                                                    hex2dec('6000'),14, 1;
                                                     0              , 0, 1;
-                                                    hex2dec('1800'), 9, 1;
+                                                    hex2dec('6000'),16, 1;
                                                     hex2dec('6000'),17,32;
                                                     hex2dec('6000'),18,32], ...
                        {[0:2,4:7,9], 'bool[8]'; 13, 'Counter'; 14, 'Latch'};
@@ -327,9 +327,9 @@ classdef el51xx < EtherCATSlave
                                                     hex2dec('6000'),11, 1;
                                                     0              , 0, 1;
                                                     hex2dec('6000'),13, 1;
-                                                    hex2dec('1c32'),32, 1;
+                                                    hex2dec('6000'),14, 1;
                                                     0              , 0, 1;
-                                                    hex2dec('1801'), 9, 1;
+                                                    hex2dec('6000'),16, 1;
                                                     hex2dec('6000'),17,16;
                                                     hex2dec('6000'),18,16], ...
                        {[0:2,4:7,9], 'bool[8]'; 13, 'Counter'; 14, 'Latch'};
