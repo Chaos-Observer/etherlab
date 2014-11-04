@@ -60,19 +60,23 @@ classdef ep31xx_1 < EtherCATSlave
                 rv.SlaveConfig.dc = ep31xx_1.dc{dc(1),2};
             end
 
-            rv.SlaveConfig.sdo = {
-                hex2dec('8000'),hex2dec( '6'), 8,double(filter > 1);
-                hex2dec('8000'),hex2dec('15'),16,   max(0,filter-2);
-                hex2dec('F000'),hex2dec( '1'),16,         type(1)-1;
-                hex2dec('F000'),hex2dec( '2'),16,         type(2)-1;
-                hex2dec('F000'),hex2dec( '3'),16,         type(3)-1;
-                hex2dec('F000'),hex2dec( '4'),16,         type(4)-1;
-            };
+            rv.SlaveConfig.sdo = {};
 
-            if pdo_count < 4
-                rv.SlaveConfig.sdo([5,6],:) = [];
+            % Configure filter
+            if filter > 1
+                rv.SlaveConfig.sdo = {
+                    hex2dec('8000'),hex2dec( '6'), 8, 1;
+                    hex2dec('8000'),hex2dec('15'),16, filter-2;
+                };
             end
 
+            % Configure input type (newer models only, using F800)
+            for i = 1:pdo_count
+                t = type(i) - 1;
+                if t
+                    rv.SlaveConfig.sdo(end+1,:) = {hex2dec('F800'),i,16,t};
+                end
+            end
         end
 
         %====================================================================
