@@ -142,7 +142,8 @@
 
     %trace "Added new Task for SampleTime %<Ts> @ %<ETL_tid>"
 
-    %if LibIsContinuous(0)
+    %% Note: LibIsSampleHit() is undocumented!
+    %if LibIsContinuous(tid)
       %assign SendCondition = "%<LibIsSampleHit(tid)> && %<LibIsMajorTimeStep()>"
     %else
       %assign SendCondition = "%<LibIsSampleHit(tid)>"
