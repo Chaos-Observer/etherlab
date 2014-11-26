@@ -75,7 +75,7 @@ methods (Static)
             rv.PortConfig.output(1).full_scale = scaling.full_scale;
             rv.PortConfig.output(1).gain = {'Gain', scaling.gain};
             rv.PortConfig.output(1).offset = {'Offset', scaling.offset};
-            rv.PortConfig.output(1).filter = {'Filter', scaling.tau};
+            rv.PortConfig.output(1).filter = {'Filter', scaling.filter};
         end
 
         % SDO Configuration

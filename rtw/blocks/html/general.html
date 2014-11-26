@@ -106,14 +106,8 @@ user@host:~$ ethercat slaves
         The effect of setting this is:
         <ul>
 
-            <li><b>Completely empty</b>: If nothing is entered in this field, the
-            value is written to the PDO directly. The data type can be
-            float32, float64 or the PDO's integer data type</li>
-
-            <li><b>Empty vector</b> (e.g. <tt>[]</tt>): The input is forced to double
-            and must be within the range [0,1) or [-1,1) for unipolar and
-            bipolar PDO's respectively. This range is automatically mapped to
-            the PDO's domain [MinInt,MaxInt]. </li>
+            <li><b>Empty vector</b> (e.g. <tt>[]</tt>): Raw input. Data type
+            can be either Real32, Real64 or the PDO's data type</li>
 
             <li><b>Scalar</b> (e.g. <tt>0.1</tt>): The input port data type is
             forced to double. All inputs are premultiplied by the scalar
@@ -138,18 +132,16 @@ user@host:~$ ethercat slaves
         <p/>Setting any one of these values will cause the output to be of type
         <tt>double</tt>. The PDO value is then scaled to a value in the range
         [0,1) or [-1,1) for unipolar or bipolar outputs respectively,
-        multiplied by the scalar value and adding the offset. The result is
-        then filtered with the time constant given in filter.
+        multiplied by the scalar value and adding the offset.
+        
+        <p/>LPF Frequency is the corner frequency of a low pass filter applied
+        after scaling. The unit is [rad/s].
 
         <p/>All these parameter values are available as run-time parameters.
         
         <p/>If any one of these parameters are empty (<tt>[]</tt>), the
         specific operation is ignored. The corresponding run-time parameter is
         also not generated.
-
-        <p/>Leaving all these fields completely empty (i.e. not even
-        <tt>[]</tt>!) causes the raw PDO data to be output, including its data
-        type.
 
         <a name="dc"><h3>Distributed Clocks</h3></a>
         Select the correct Distributed Clocks mode from the selection list.

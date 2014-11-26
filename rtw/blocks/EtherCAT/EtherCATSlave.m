@@ -22,13 +22,13 @@ classdef EtherCATSlave
         end
 
         %====================================================================
-        function scale = configureScale(full_scale,gain,offset,tau)
+        function scale = configureScale(full_scale,gain,offset,filter)
             %% Return a structure with fields
             %   scale.full_scale = full_scale
             %   scale.gain       = evalin('base',gain)
             %   scale.offset     = evalin('base',offset)
-            %   scale.tau        = evalin('base',tau)
-            % if gain, offset and tau are not all ''
+            %   scale.filter      = evalin('base',filter)
+            % if gain, offset and filter are not all ''
             % otherwise, return false
 
             % Make sure all options are set
@@ -36,11 +36,11 @@ classdef EtherCATSlave
                 offset = [];
             end
             if nargin < 4
-                tau = [];
+                filter = [];
             end
 
             % If everything is empty, no scaling and return
-            if isempty([gain,offset,tau])
+            if isempty([gain,offset,filter])
                 scale = false;
                 return
             end
@@ -48,7 +48,7 @@ classdef EtherCATSlave
             % Make sure every parameter is set
             scale.gain = gain;
             scale.offset = offset;
-            scale.tau = tau;
+            scale.filter = filter;
 
             if isempty(scale.gain) && isempty(scale.offset)
                 scale.full_scale = 1;
@@ -158,7 +158,7 @@ classdef EtherCATSlave
                     port.full_scale = scale.full_scale;
                     port.gain   = {'Gain',  scale.gain};
                     port.offset = {'Offset',scale.offset};
-                    port.filter = {'Filter',scale.tau};
+                    port.filter = {'Filter',scale.filter};
                 elseif scale
                     port.full_scale = [];
                     port.gain   = [];
@@ -183,15 +183,15 @@ classdef EtherCATSlave
                     return
                 end
 
-                % Replicate gain, offset and tau if there is only on element
+                % Replicate gain, offset and filter if there is only on element
                 if numel(scale.gain) == 1
                     scale.gain = repmat(scale.gain,1,pdo_count);
                 end
                 if numel(scale.offset) == 1
                     scale.offset = repmat(scale.offset,1,pdo_count);
                 end
-                if numel(scale.tau) == 1
-                    scale.tau = repmat(scale.tau,1,pdo_count);
+                if numel(scale.filter) == 1
+                    scale.filter = repmat(scale.filter,1,pdo_count);
                 end
 
                 for i = 1:pdo_count
@@ -207,8 +207,8 @@ classdef EtherCATSlave
                         port(i).offset = {['Offset', idxstr], scale.offset(i)};
                     end
 
-                    if i <= numel(scale.tau)
-                        port(i).filter = {['Filter', idxstr], scale.tau(i)};
+                    if i <= numel(scale.filter)
+                        port(i).filter = {['Filter', idxstr], scale.filter(i)};
                     end
                 end
             end
