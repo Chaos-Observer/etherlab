@@ -161,16 +161,20 @@ methods (Static)
         %% Change visibility of SDO Mask Variables
         % SDO Variables start with 'sdo_'
         % Argument:
-        %       sdoList: array of vars
+        %       sdoList: (cellarray of strings|string array)
+        %                eg: cellstr(dec2base(1:20,10,2));
 
+        % Get a list of names that begin with sdo_
         names = get_param(gcbh,'MaskNames');
         sdo = names(strncmp(names,'sdo_',4));
-        enable = cellstr(strcat('sdo_',dec2base(sdoList,10,2)))';
 
-        state = repmat(0, size(sdo));
-        state(cellfun(@(i) find(strcmp(sdo,i)), enable)) = 1;
+        if isstr(sdoList)
+            sdoList = cellstr(sdoList);
+        end
 
-        EtherCATSlaveBlock.setEnable(sdo,state);
+        enable = strcat('sdo_', sdoList);
+
+        EtherCATSlaveBlock.setEnable(sdo, ismember(sdo, enable));
     end
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -187,7 +191,7 @@ methods (Static)
         maskNames = get_param(gcbh,'MaskNames');
 
         if isstr(var)
-            var = {var};
+            var = cellstr(var);
         end
 
         vis = get_param(gcbh,'MaskEnables');

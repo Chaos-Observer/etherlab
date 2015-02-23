@@ -20,7 +20,7 @@ methods (Static)
     %========================================================================
     function rv = getSDO(model)
         slave = EtherCATSlave.findSlave(model,el3356.models);
-        rv = slave{4};
+        rv = dec2base(slave{4},10,2);
     end
 
     %========================================================================
