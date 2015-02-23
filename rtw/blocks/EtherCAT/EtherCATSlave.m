@@ -183,7 +183,7 @@ classdef EtherCATSlave
                     return
                 end
 
-                % Replicate gain, offset and filter if there is only on element
+                % Replicate gain, offset and filter if there is only one element
                 if numel(scale.gain) == 1
                     scale.gain = repmat(scale.gain,1,pdo_count);
                 end
