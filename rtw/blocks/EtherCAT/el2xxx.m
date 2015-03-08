@@ -3,9 +3,10 @@ classdef el2xxx < EtherCATSlave
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     methods (Static)
         %====================================================================
-        function rv = hasDiag(model)
-            slave = EtherCATSlave.findSlave(model, el2xxx.models);
-            rv = slave{6};
+        function updateModel()
+            slave = EtherCATSlave.findSlave(get_param(gcbh,'model'), ...
+                                            el2xxx.models);
+            EtherCATSlaveBlock.setEnable('diag', slave{6});
         end
 
         %====================================================================

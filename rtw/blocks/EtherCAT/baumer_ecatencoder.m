@@ -3,9 +3,10 @@ classdef baumer_ecatencoder < EtherCATSlave
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     methods (Static)
         %====================================================================
-        function rv = getDC(model)
-            slave = EtherCATSlave.findSlave(model,baumer_ecatencoder.models);
-            rv = slave{4};
+        function updateDC()
+            slave = EtherCATSlave.findSlave(get_param(gcbh,'model'), ...
+                                            baumer_ecatencoder.models);
+            EtherCATSlaveBlock.updateDCVisibility(slave{4});
         end
 
         %====================================================================

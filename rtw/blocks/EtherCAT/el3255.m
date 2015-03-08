@@ -19,11 +19,6 @@ methods (Static)
     end
 
     %========================================================================
-    function rv = getSDO(obj,model)
-        rv = obj.sdo;
-    end
-
-    %========================================================================
     function rv = configure(model,count,vector,dc_spec,scaling,sdo)
         slave = EtherCATSlave.findSlave(model,el3255.models);
 

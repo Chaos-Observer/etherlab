@@ -3,36 +3,51 @@ classdef el51xx < EtherCATSlave
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     methods (Static)
         %====================================================================
-        function rv = getExcludeList(model, checked)
-            slave = EtherCATSlave.findSlave(model,el51xx.models);
-            pdo_list = el51xx.pdo;
+        function updateModel
+            slave = EtherCATSlave.findSlave(get_param(gcbh,'model'), ...
+                                            el51xx.models);
 
-            % row list of all pdo's
-            rows = [slave{[4,5]}];
-
-            % Remove pdo's that do not belong to the slave
-            checked = checked(ismember(checked, [pdo_list{rows,1}]));
-
-            % Select 
-            rows = rows(ismember([pdo_list{rows,1}], checked));
-
-            % return column 2 of pdo_list, the exclude list
-            rv = [pdo_list{rows,2}];
+            pdo = el51xx.pdo;
+            EtherCATSlaveBlock.updatePDOVisibility([pdo{[slave{[4,5]}],1}]);
+            EtherCATSlaveBlock.updateSDOVisibility(dec2hex(slave{6},2))
+            el51xx.updatePDO()
         end
 
         %====================================================================
-        function rv = getSDO(model)
-            slave = EtherCATSlave.findSlave(model,el51xx.models);
-            rv = slave{6};
-        end
+        function updatePDO
+            slave = EtherCATSlave.findSlave(get_param(gcbh,'model'), ...
+                                            el51xx.models);
+            names = char(get_param(gcbh,'MaskNames'));
+            values = get_param(gcbh,'MaskValues');
 
-        %====================================================================
-        function rv = pdoVisible(model)
-            slave = EtherCATSlave.findSlave(model,el51xx.models);
+            % row list of all pdo's for the slave
             pdo_list = el51xx.pdo;
+            pdo_list = pdo_list([slave{[4,5]}], [1,2]);
 
-            rv = [pdo_list{[slave{[4,5]}],1}];
-        end 
+            pdo_rows = ismember(names, ...
+                          strcat('pdo_x', dec2hex([pdo_list{:,1}],4)),...
+                          'rows');
+            pdo_num = zeros(size(pdo_rows));
+            pdo_num(pdo_rows) = hex2dec(names(pdo_rows,6:end));
+            on = strcmp(values,'on') & pdo_rows;
+
+            selected_rows = ismember([pdo_list{:,1}], pdo_num(on));
+            exclude = unique([pdo_list{selected_rows, 2}]);
+
+            disable = pdo_rows & ismember(pdo_num, exclude);
+
+            for i = 1:length(pdo_list)
+                if disable(i) && strcmp(values(i), 'on')
+                    % Upps, there is a confict here. Uncheck the option
+                    % in question and retry the update
+                    set_param(gcbh,deblank(names(i,:)),'off')
+                    el51xx.updatePDO()
+                    return
+                end
+            end
+
+            EtherCATSlaveBlock.setEnable(pdo_rows, ~disable);
+        end
 
         %====================================================================
         function rv = configure(model,mapped_pdo,sdo_config,dc_config)
@@ -87,6 +102,9 @@ classdef el51xx < EtherCATSlave
                                     'pdo_data_type', uint(i{2}), ...
                                     'portname', i{4}), ...
                          inputs);
+            if isempty(rv.PortConfig.input)
+                rv.PortConfig.input = struct('portname',{});
+            end
 
             % Configure output port. The algorithm below will group all boolean
             % signals to one port. All other entries get a separate port
@@ -108,6 +126,9 @@ classdef el51xx < EtherCATSlave
                                     'pdo_data_type', uint(i{2}), ...
                                     'portname', i{4}), ...
                          outputs);
+            if isempty(rv.PortConfig.output)
+                rv.PortConfig.output = struct('portname',{});
+            end
 
             % Distributed clocks
             if dc_config(1) == 4
@@ -171,7 +192,7 @@ classdef el51xx < EtherCATSlave
                      0              , 0, 8;
                      hex2dec('7010'),17,32],...
                    { 0:3, 'bool[4]'; 6, 'Value' };
-                hex2dec('1a01'), hex2dec({'1a00',       '1a03','1a04',...
+                hex2dec('1a01'), hex2dec({              '1a03','1a04',...
                                           '1a05','1a06','1a07','1a08'})',...
                    [ hex2dec('6000'), 1, 8;
                      0              , 0, 8;

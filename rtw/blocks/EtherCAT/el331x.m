@@ -10,12 +10,20 @@ classdef el331x < EtherCATSlave
 methods (Static)
 
     %========================================================================
-    function rv = getSDO(model)
-        slave = EtherCATSlave.findSlave(model,el331x.models);
+    function updateModel
+        slave = EtherCATSlave.findSlave(get_param(gcbh,'model'),...
+                                        el331x.models);
         sdo = el331x.sdo;
         sdoList = sdo(slave{6},:);
-        rv = strcat(dec2base(sdoList(:,1),16,4),...
-                                   '_', dec2base(sdoList(:,2),16,2));
+        EtherCATSlaveBlock.updateSDOEnable(...
+                strcat(dec2hex(sdoList(:,1),4),...
+                  '_', dec2hex(sdoList(:,2),2)));
+    end
+
+    %========================================================================
+    function updateVector
+        EtherCATSlaveBlock.setEnable('status',...
+                strcmp(get_param(gcbh,'vector'), 'on'));
     end
 
     %========================================================================

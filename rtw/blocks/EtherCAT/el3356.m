@@ -9,18 +9,11 @@ classdef el3356 < EtherCATSlave
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 methods (Static)
     %========================================================================
-    function rv = getDC(model)
-        if strcmp(model,'EL3356')
-            rv = [];
-        else
-            rv = el3356.dc;
-        end
-    end
-
-    %========================================================================
-    function rv = getSDO(model)
-        slave = EtherCATSlave.findSlave(model,el3356.models);
-        rv = dec2base(slave{4},10,2);
+    function updateModel
+        slave = EtherCATSlave.findSlave(get_param(gcbh,'model'),...
+                                        el3356.models);
+        EtherCATSlaveBlock.updateDCVisibility(~slave{3});
+        EtherCATSlaveBlock.updateSDOEnable(dec2base(slave{4},10,2));
     end
 
     %========================================================================
