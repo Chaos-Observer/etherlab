@@ -13,7 +13,7 @@ methods (Static)
         slave = EtherCATSlave.findSlave(get_param(gcbh,'model'),...
                                         el3356.models);
         EtherCATSlaveBlock.updateDCVisibility(~slave{3});
-        EtherCATSlaveBlock.updateSDOEnable(dec2base(slave{4},10,2));
+        EtherCATSlaveBlock.updateSDOVisibility(dec2base(slave{4},10,2));
     end
 
     %========================================================================
