@@ -74,10 +74,8 @@ methods (Static)
             end
         end
 
-        %% Input syncmanager (not mandatory)
-        % if slave permits it
-        %    and any of SDO 80n0:0C is set to 3 (External Process Data)
-        if slave{4} && any(sdo_config(channels,2) == 3)
+        %% Input syncmanager (mandatory for some slaves)
+        if slave{4}
             pdo = el331x.rx_pdo;
             rv.SlaveConfig.sm{end+1} = {2,0,pdo(channels)};
 
