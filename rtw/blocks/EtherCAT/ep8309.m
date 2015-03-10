@@ -401,8 +401,6 @@ classdef ep8309 < EtherCATSlave
         % Available SDO's for the various modules
         sdo = struct('anain',   [hex2dec('8000'), hex2dec('06'),  8;
                                  hex2dec('8000'), hex2dec('15'), 16;
-                                 hex2dec('8010'), hex2dec('06'),  8;
-                                 hex2dec('8010'), hex2dec('15'), 16;
                                  hex2dec('F800'), hex2dec('01'), 16;
                                  hex2dec('F800'), hex2dec('02'), 16], ...
                      'tacho2',  [hex2dec('8020'), hex2dec('11'), 16;
