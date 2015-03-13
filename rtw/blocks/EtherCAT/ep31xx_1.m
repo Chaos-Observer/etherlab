@@ -87,11 +87,10 @@ classdef ep31xx_1 < EtherCATSlave
             end
 
             % Configure input type (newer models only, using F800)
+            type_code = [0,1,2,6];
             for i = 1:pdo_count
-                t = type(i) - 1;
-                if t
-                    rv.SlaveConfig.sdo(end+1,:) = {hex2dec('F800'),i,16,t};
-                end
+                rv.SlaveConfig.sdo(end+1,:) = ...
+                    {hex2dec('F800'),i,16,type_code(type(i))};
             end
         end
 
