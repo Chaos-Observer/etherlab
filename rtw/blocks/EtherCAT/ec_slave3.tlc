@@ -624,8 +624,9 @@
         %assign data_array = "NULL"
       %endif
       %%
-      { %<datatype>, %<sdo.Index>, %<sdo.SubIndex>, %<value>, \
-      %<data_array> }, /* */ \
+      { %<datatype>, %<SPRINTF("0x%04X", sdo.Index)>, \
+        %<SPRINTF("0x%02X", sdo.SubIndex)>, \
+        %<value>, %<data_array> }, /* */ \
     %endforeach
   };
   %closefile buf

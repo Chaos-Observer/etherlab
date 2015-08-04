@@ -8,7 +8,7 @@ syntax: glob
 **Makefile
 **cmake_install.cmake
 **~
-./build/*
+./build*
 CMakeCache.txt
 CPackConfig.cmake
 CPackSourceConfig.cmake

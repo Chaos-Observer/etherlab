@@ -3,65 +3,17 @@ classdef EtherCATSlaveBlock
 % This class provides methods to manage a slave
 %
 % Methods:
-%    function rv = formatAddress(master,index,tsample)
-%    function updateSlaveState(slave)
 %    function updateModels(list)
 %    function setPortNames(input,output,deflt)
 %    function updateCustomDCEnable()
 %    function updateDCVisibility(state)
+%    function updatePDOVisibility(list)
 %    function updateSDOVisibility(sdoList)
-%    function setEnable(var, state)
-%    function setVisible(var, state)
-%    function s = enableSet(state)
-%    function rv = strJoin(s,delim)
+%    function updateSDOEnable(sdoList)
+%    function setEnable(list, on, off)
+%    function setVisible(list, on, off)
 
 methods (Static)
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    function updatePdoVisibility(slave,pdo,state)
-        model = get_param(gcbh,'model');
-        exclude = slave.getExcludeList(model, hex2dec(pdo));
-        if isempty(exclude)
-            return
-        end
-        pdo = cellstr(strcat('pdo_x',dec2hex(exclude)));
-        EtherCATSlaveBlock.setEnable(pdo, state);
-    end
-
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    function updateSlaveState(slave)
-        %% This method filters out all PDO mask entries (everything starting
-        % with 'x1'). It then queries the slave for 
-
-        model = get_param(gcbh,'model');
-        names = get_param(gcbh,'MaskNames');
-
-        % The names of PDO's
-        pdoNames = names(strncmp(names, 'pdo_x', 5));
-
-        % and a list of index numbers they represent
-        pdo = cell2mat(pdoNames);
-        pdo = hex2dec(pdo(:,6:end));
-
-        % A list of checked PDO's
-        checkedPdo = pdo(cellfun(@(x) strcmp(get_param(gcbh,x), 'on'),...
-                                 pdoNames));
-
-        % Ask the slave which PDO's must be disabled
-        exclude = slave.getExcludeList(model, checkedPdo);
-        EtherCATSlaveBlock.setEnable(pdoNames(ismember(pdo,exclude)), false);
-        EtherCATSlaveBlock.setEnable(pdoNames(~ismember(pdo,exclude)), true);
-
-        % Now check the visibility of the PDO's
-        visible = slave.pdoVisible(model);
-        EtherCATSlaveBlock.setVisible(pdoNames(~ismember(pdo,visible)),false);
-        EtherCATSlaveBlock.setVisible(pdoNames( ismember(pdo,visible)), true);
-
-        % Now check the visibility of the SDO's
-        sdoNames = names(strncmp(names,'sdo_',4));
-        x = cellstr(strcat('sdo_',dec2base(slave.getSDO(model),10,2)))';
-        EtherCATSlaveBlock.setVisible(sdoNames( ismember(sdoNames,x)), true);
-        EtherCATSlaveBlock.setVisible(sdoNames(~ismember(sdoNames,x)),false);
-    end
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     function updateModels(list)
@@ -124,114 +76,127 @@ methods (Static)
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     function updateCustomDCEnable()
-        model = get_param(gcbh,'model');
         names = get_param(gcbh,'MaskNames');
 
         % This function sets the enable state of all mask variables
         % where custom values for distributed clock can be entered.
         % if dc_mode == 'Custom' they are enabled
         %
-        % Requires the following mask varialbes:
+        % Requires the following mask variables:
         %       dc_mode, dc_*
 
-        mode_idx = find(strcmp(names,'dc_mode'));
-        n = setdiff(find(strncmp(names,'dc_',3)), mode_idx);
+        dc = strncmp(names,'dc_',3);
 
-        if strcmp(get_param(gcbh,'dc_mode'),'Custom')
-            EtherCATSlaveBlock.setEnable(names(n), true);
-        else
-            EtherCATSlaveBlock.setEnable(names(n), false);
-        end
+        % Mask out dc_mode itself
+        dc(strcmp(names,'dc_mode')) = false;
+
+        EtherCATSlaveBlock.setEnable(dc, ...
+                strcmp(get_param(gcbh,'dc_mode'),'Custom'));
     end
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     function updateDCVisibility(state)
-        %% Change the visibility of all mask variables
+        %% Change the visibility (on/off) of all mask variables
         % starting with 'dc_' depending on <state>
         %
         % Requires the following mask varialbes:
         %       dc_mode, dc_*
 
-        names = get_param(gcbh,'MaskNames');
-        EtherCATSlaveBlock.setVisible(names(strncmp(names,'dc_',3)), state)
+        dc = strncmp(get_param(gcbh,'MaskNames'),'dc_',3);
+
+        EtherCATSlaveBlock.setVisible(dc, state);
+    end
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    function updatePDOVisibility(list)
+        %% Make mask variables of type pdo_xXXXX visible
+        %    list       - double vector of indices
+        [idx,enable] = EtherCATSlaveBlock.getVariableList('pdo_x',...
+                                                          dec2hex(list,4));
+        EtherCATSlaveBlock.setVisible(idx,enable)
     end
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     function updateSDOVisibility(sdoList)
-        %% Change visibility of SDO Mask Variables
+        %% Change visibility (on/off) of SDO Mask Variables
         % SDO Variables start with 'sdo_'
         % Argument:
-        %       sdoList: array of vars
-
-        names = get_param(gcbh,'MaskNames');
-        sdo = names(strncmp(names,'sdo_',4));
-        enable = cellstr(strcat('sdo_',dec2base(sdoList,10,2)))';
-
-        state = repmat(0, size(sdo));
-        state(cellfun(@(i) find(strcmp(sdo,i)), enable)) = 1;
-
-        EtherCATSlaveBlock.setEnable(sdo,state);
+        %       sdoList: (cellarray of strings|string array)
+        %                eg: cellstr(dec2hex(1:20,2));
+        [idx,enable] = EtherCATSlaveBlock.getVariableList('sdo_', sdoList);
+        EtherCATSlaveBlock.setVisible(idx,enable)
     end
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    function setEnable(var, state)
+    function updateSDOEnable(sdoList)
+        %% Change enable state (gray/black) of SDO Mask Variables
+        % SDO Variables start with 'sdo_'
+        % Argument:
+        %       sdoList: (cellarray of strings|string array)
+        %                eg: cellstr(dec2hex(1:20,2));
+        [idx,enable] = EtherCATSlaveBlock.getVariableList('sdo_', sdoList);
+        EtherCATSlaveBlock.setEnable(idx, enable);
+    end
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    function setEnable(list, state)
         %% Change enabled state of a mask variable
         % Arguments:
-        %   var: string or cellarray of strings
-        %   state: boolean
+        %   state/off: cellarray of strings or logical array
+        %           to enable/disable a mask variable
 
-        if isempty(var)
-            return
-        end
-
-        maskNames = get_param(gcbh,'MaskNames');
-
-        if isstr(var)
-            var = {var};
-        end
-
-        vis = get_param(gcbh,'MaskEnables');
-        n = cellfun(@(i) find(strcmp(maskNames,i)), var);
-
-        vis(n) = EtherCATSlaveBlock.enableSet(state);
-
-        if ~isequal(get_param(gcbh,'MaskEnables'),vis)
-            set_param(gcbh,'MaskEnables',vis);
-        end
+        EtherCATSlaveBlock.setMaskState('MaskEnables', list, state);
     end
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    function setVisible(var, state)
+    function setVisible(list, state)
         %% Change visibility of a mask variable
         % Arguments:
-        %   var: string or cellarray of strings
-        %   state: boolean
+        %   state/off: cellarray of strings or logical array
+        %           to make visible/invisible
 
-        if isempty(var)
-            return
-        end
+        EtherCATSlaveBlock.setMaskState('MaskVisibilities', list, state);
+    end
 
-        maskNames = get_param(gcbh,'MaskNames');
+end
 
-        if isstr(var)
-            var = {var};
-        end
+methods (Static, Access = private)
 
-        vis = get_param(gcbh,'MaskVisibilities');
-        n = cellfun(@(i) find(strcmp(maskNames,i)), var);
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    function [idx,enable] = getVariableList(prefix, enableList)
+        %% Return a list of indices for all mask names that
+        % start with prefix. enable is also set when a variable is
+        % in the enableList
 
-        vis(n) = EtherCATSlaveBlock.enableSet(state);
+        % Get a list of names that begin with prefix
+        names = get_param(gcbh,'MaskNames');
+        idx = strncmp(names,prefix,length(prefix));
 
-        if ~isequal(get_param(gcbh,'MaskVisibilities'),vis)
-            set_param(gcbh,'MaskVisibilities',vis);
-        end
+        enable = ismember(names, strcat(prefix, enableList));
     end
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    function s = enableSet(state)
-        %% returns a cellarray with elements 'on' or 'off' depending on state
-        s = {'off','on'};
-        s = s((state ~= 0) + 1);
+    function setMaskState(variable, list, on)
+        if numel(on) == 1
+            on = repmat(on, size(list));
+        end
+
+        if ~islogical(list)
+            names = get_param(gcbh, 'MaskNames');
+            [list, pos] = ismember(names, list);
+            i = on;
+            on = list;
+            on(list) = i(pos(list));
+        end
+
+        state = get_param(gcbh,variable);
+
+        state(list &  on) = {'on'};
+        state(list & ~on) = {'off'};
+
+        if ~isequal(get_param(gcbh,variable),state)
+            set_param(gcbh,variable,state);
+        end
     end
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -239,6 +204,6 @@ methods (Static)
         rv = cell2mat(strcat(reshape(s,1,[]),delim));
         rv(end) = [];
     end
-end
+end     % methods
 
 end     % classdef

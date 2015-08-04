@@ -3,6 +3,12 @@ classdef el30xx_1 < EtherCATSlave
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     methods (Static)
         %====================================================================
+        function updateFilter
+            EtherCATSlaveBlock.setEnable({'opmode','fastop'},...
+                            strcmp(get_param(gcb,'filter'),'Off'));
+        end
+
+        %====================================================================
         function rv = configure(model,status,vector,scale,filter)
             % filter = [mode,opmode,fastop]
 

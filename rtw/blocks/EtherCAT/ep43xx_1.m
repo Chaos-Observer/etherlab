@@ -46,13 +46,14 @@ classdef ep43xx_1 < EtherCATSlave
                 rv.SlaveConfig.dc = ep43xx_1.dc{dc(1),2};
             end
 
+           mode = [0,1,2,6];
             rv.SlaveConfig.sdo = {
                 hex2dec('8000'),hex2dec( '6'), 8,double(filter > 1);
                 hex2dec('8000'),hex2dec('15'),16,   max(0,filter-2);
-                hex2dec('F000'),hex2dec( '1'),16,         type(1)-1;
-                hex2dec('F000'),hex2dec( '2'),16,         type(2)-1;
-                hex2dec('F000'),hex2dec( '3'),16,         type(3)-1;
-                hex2dec('F000'),hex2dec( '4'),16,         type(4)-1;
+                hex2dec('F800'),hex2dec( '1'),16,     mode(type(1));
+                hex2dec('F800'),hex2dec( '2'),16,     mode(type(2));
+                hex2dec('F800'),hex2dec( '3'),16,     mode(type(3));
+                hex2dec('F800'),hex2dec( '4'),16,     mode(type(4));
             };
 
         end

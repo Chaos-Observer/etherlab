@@ -3,20 +3,12 @@ classdef el320x_1 < EtherCATSlave
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     methods (Static)
         %====================================================================
-        function rv = getExcludeList(model, checked)
-            rv = [];
-        end
-
-        %====================================================================
-        function rv = getSDO(model)
+        function updateModel
+            model = get_param(gcbh,'model');
             pdo_count = str2double(model(6));
-            rv = 1:3*pdo_count; %floor((0:3*pdo_count-1)/3) + 1;
+            EtherCATSlaveBlock.updateSDOEnable(...
+                dec2base(1:3*pdo_count,10,2));
         end
-
-        %====================================================================
-        function rv = pdoVisible(model)
-            rv = [];
-        end 
 
         %====================================================================
         function rv = configure(model,status,vector,filter,...
@@ -26,7 +18,6 @@ classdef el320x_1 < EtherCATSlave
             rv.SlaveConfig.vendor = 2;
             rv.SlaveConfig.description = model;
             rv.SlaveConfig.product  = slave{2};
-            rv.function = slave{4};
 
             pdo_count = str2double(model(6));
 
@@ -125,7 +116,7 @@ classdef el320x_1 < EtherCATSlave
                                   hex2dec('6030'),17,16];
         };
 
-        %   Model   ProductCode           Function NoStatus WithStatus;
+        %   Model   ProductCode           RevisionNo               TempScale
         models = {
           'EL3201',       hex2dec('0c813052'), hex2dec('00110000'),  10;
           'EL3201-0010',  hex2dec('0c813052'), hex2dec('0011000a'), 100;

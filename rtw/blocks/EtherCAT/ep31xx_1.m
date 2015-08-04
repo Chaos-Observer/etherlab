@@ -2,6 +2,22 @@ classdef ep31xx_1 < EtherCATSlave
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     methods (Static)
+        function updateSlave
+            model = get_param(gcbh,'model');
+            EtherCATSlaveBlock.setEnable({'type_3','type_4'}, model(6) == '4');
+        end
+
+        function updateFilter
+            filter = ~strcmp(get_param(gcbh,'filter'),'Off');
+            if filter
+                set_param(gcbh,'dc_mode','FreeRun/SM-Synchron')
+                EtherCATSlaveBlock.updateCustomDCEnable
+                EtherCATSlaveBlock.setEnable('dc_mode',false)
+            else
+                EtherCATSlaveBlock.setEnable('dc_mode',true)
+            end
+        end
+
         %====================================================================
         function rv = configure(model,status,vector,scale,dc,filter,type)
             slave = EtherCATSlave.findSlave(model,ep31xx_1.models);
@@ -71,11 +87,10 @@ classdef ep31xx_1 < EtherCATSlave
             end
 
             % Configure input type (newer models only, using F800)
+            type_code = [0,1,2,6];
             for i = 1:pdo_count
-                t = type(i) - 1;
-                if t
-                    rv.SlaveConfig.sdo(end+1,:) = {hex2dec('F800'),i,16,t};
-                end
+                rv.SlaveConfig.sdo(end+1,:) = ...
+                    {hex2dec('F800'),i,16,type_code(type(i))};
             end
         end
 

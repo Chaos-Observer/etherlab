@@ -9,27 +9,13 @@ classdef el500x < EtherCATSlave
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     methods (Static)
         %====================================================================
-        function rv = getExcludeList(model, checked)
-            rv = [];
+        function updateModel
+            slave = EtherCATSlave.findSlave(get_param(gcbh,'model'),...
+                                            el500x.models);
+            EtherCATSlaveBlock.setVisible('pdo_x1A02', slave{5});
+            EtherCATSlaveBlock.updateSDOVisibility(...
+                dec2base(slave{6},10,2));
         end
-
-        %====================================================================
-        function rv = getSDO(model)
-            slave = EtherCATSlave.findSlave(model,el500x.models);
-            rv = slave{6};
-        end
-
-        %====================================================================
-        function rv = pdoVisible(model)
-            slave = EtherCATSlave.findSlave(model,el500x.models);
-
-            if slave{5}
-                rv = el500x.pdo{slave{5},1};
-            else
-                rv = [];
-            end
-        end 
-
 
         %====================================================================
         function rv = configure(model,timestamp,sdo_config,dc_config)
@@ -42,7 +28,7 @@ classdef el500x < EtherCATSlave
             pdo_list = el500x.pdo;
 
             % Get a list of pdo's for the selected slave
-            selected = boolean(zeros(1,size(pdo_list,1)));
+            selected = boolean(zeros(1,length(pdo_list)));
             selected(slave{4}) = 1;
 
             % Add timestamp pdo
@@ -133,7 +119,7 @@ classdef el500x < EtherCATSlave
                                  hex2dec('6000'),15, 1;
                                  hex2dec('6000'),16, 1;
                                  hex2dec('6000'),17,32],...
-                        { 8, 'Counter'; 0:2, 'Status' };
+                        { 7, 'Counter'; 0:2, 'Status' };
                 hex2dec('1a02') [hex2dec('6000'),18,32], ...
                         { 0, 'Time' };
         };
@@ -203,13 +189,13 @@ classdef el500x < EtherCATSlave
     end
 
     properties (Constant)
-        %   Model           ProductCode
-        %                Rx    Tx   CoE,   AssignActivate
+        %   Model           ProductCode         RevisionNo
+        %    ValueIdx  TimeIdx       SDO
         models = {...
             'EL5001',       hex2dec('13893052'), [],...
                 2,     0,            12:21,   1:3;
             'EL5001-0011',  hex2dec('13893052'), [],...
-                3,     4, [1,2,5,6,8,9,10], [1,4];
+                3,     4, [1,2,5,6,8,9,10],   [1,4];
             'EL5002',       hex2dec('138a3052'), [],...
                 [1,2], 0,       [1:4,6:21],   1:3;
         };

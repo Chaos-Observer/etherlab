@@ -22,12 +22,13 @@ classdef EtherCATSlave
         end
 
         %====================================================================
-        function scale = configureScale(full_scale,gain,offset,filter)
+        function scale = configureScale(full_scale,gain,offset,filter,pfx)
             %% Return a structure with fields
             %   scale.full_scale = full_scale
             %   scale.gain       = evalin('base',gain)
             %   scale.offset     = evalin('base',offset)
             %   scale.filter      = evalin('base',filter)
+            %   scale.prefix      = evalin('base',filter)
             % if gain, offset and filter are not all ''
             % otherwise, return false
 
@@ -49,6 +50,9 @@ classdef EtherCATSlave
             scale.gain = gain;
             scale.offset = offset;
             scale.filter = filter;
+            if nargin >= 5
+                scale.prefix = pfx;
+            end
 
             if isempty(scale.gain) && isempty(scale.offset)
                 scale.full_scale = 1;
@@ -149,6 +153,12 @@ classdef EtherCATSlave
                 return
             end
 
+            if isfield(scale, 'prefix')
+                pfx = scale.prefix;
+            else
+                pfx = [];
+            end
+
             if vector
                 port.pdo = pdo(:,1:4);
                 port.pdo_data_type = dtype;
@@ -156,9 +166,9 @@ classdef EtherCATSlave
 
                 if isa(scale,'struct')
                     port.full_scale = scale.full_scale;
-                    port.gain   = {'Gain',  scale.gain};
-                    port.offset = {'Offset',scale.offset};
-                    port.filter = {'Filter',scale.filter};
+                    port.gain   = {[pfx, 'Gain'],  scale.gain};
+                    port.offset = {[pfx, 'Offset'],scale.offset};
+                    port.filter = {[pfx, 'Filter'],scale.filter};
                 elseif scale
                     port.full_scale = [];
                     port.gain   = [];
@@ -183,7 +193,7 @@ classdef EtherCATSlave
                     return
                 end
 
-                % Replicate gain, offset and filter if there is only on element
+                % Replicate gain, offset and filter if there is only one element
                 if numel(scale.gain) == 1
                     scale.gain = repmat(scale.gain,1,pdo_count);
                 end
@@ -200,15 +210,15 @@ classdef EtherCATSlave
                     port(i).full_scale = scale.full_scale;
 
                     if i <= numel(scale.gain)
-                        port(i).gain   = {['Gain', idxstr], scale.gain(i)};
+                        port(i).gain   = {[pfx, 'Gain', idxstr], scale.gain(i)};
                     end
 
                     if i <= numel(scale.offset)
-                        port(i).offset = {['Offset', idxstr], scale.offset(i)};
+                        port(i).offset = {[pfx, 'Offset', idxstr], scale.offset(i)};
                     end
 
                     if i <= numel(scale.filter)
-                        port(i).filter = {['Filter', idxstr], scale.filter(i)};
+                        port(i).filter = {[pfx, 'Filter', idxstr], scale.filter(i)};
                     end
                 end
             end
