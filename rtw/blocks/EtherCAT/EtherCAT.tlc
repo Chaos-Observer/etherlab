@@ -118,10 +118,7 @@
     %% Get RTW Task ID of the block
     %assign tid = LibGetGlobalTIDFromLocalSFcnTID(0)
 
-    %% Calculate EtherLab task id. RTW has the ugliness of allocating
-    %% more than one task with the same sample time - these are discarded
-    %% for EtherLab
-    %assign ETL_tid = tid ? tid - LibGetTID01EQ() : 0
+    %assign ETL_tid = ETL.tid[tid]
 
     %% And the Step Size thereof
     %assign Ts = LibGetClockTickStepSize(tid)
@@ -143,10 +140,10 @@
     %trace "Added new Task for SampleTime %<Ts> @ %<ETL_tid>"
 
     %% Note: LibIsSampleHit() is undocumented!
-    %if LibIsContinuous(tid)
-      %assign SendCondition = "%<LibIsSampleHit(tid)> && %<LibIsMajorTimeStep()>"
-    %else
+    %if ETL.tid[tid] || !LibIsContinuous(0)
       %assign SendCondition = "%<LibIsSampleHit(tid)>"
+    %else
+      %assign SendCondition = "%<LibTID()> == 0 && %<LibIsMajorTimeStep()>"
     %endif
 
     %openfile buf
