@@ -307,7 +307,7 @@
               "Roller", RollVars
 
         %<LibBlockDWork(dwork,"",lcv,sigIdx)> = \
-            %<LibBlockInputSignal(idx,"",lcv,sigIdx)> != 0.0;
+            %<LibBlockInputSignal(idx,"",lcv,sigIdx)> != 0;
       %endroll
     %else
       %%

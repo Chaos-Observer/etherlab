@@ -205,6 +205,7 @@ static const struct datatype_info {
     {    0,                                           },
 };
 
+static const struct datatype_info *type_bool   = &datatype_info[0];
 static const struct datatype_info *type_uint8  = &datatype_info[7];
 static const struct datatype_info *type_uint16 = &datatype_info[8];
 static const struct datatype_info *type_uint32 = &datatype_info[10];
@@ -1907,7 +1908,7 @@ static void mdlSetInputPortDataType(SimStruct *S, int_T p, DTypeId id)
     /* Check whether the data type is compatible with the PDO data type or is
      * SS_SINGLE or SS_DOUBLE */
     if (port->data_type->sl_type != id) {
-        if (id != SS_DOUBLE && id != SS_SINGLE) {
+        if (id != SS_DOUBLE && id != SS_SINGLE && port->data_type != type_bool) {
             snprintf(msg, sizeof(msg),
                     "Trying to set data type of input port %i to %s,\n"
                     "whereas PDO has data type %s. Choose PDO data type\n"
