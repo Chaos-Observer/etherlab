@@ -1016,6 +1016,8 @@ void create_pid_file()
         goto out_unlink;
     }
 
+    return;
+
 out_unlink:
     close(fd);
     remove_pid_file();
