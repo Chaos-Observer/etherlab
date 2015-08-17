@@ -54,6 +54,15 @@ methods (Static)
     end
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    function checkFilter(omega)
+        if ~isempty(omega)
+            disp(sprintf(['%s: Deprecated use of LPF Frequency dialog parameter. ' ...
+                 'See <matlab:web(etherlab_help_path(''general.html#filter''), ''-helpbrowser'')>'], ...
+                gcb))
+        end
+    end
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     function setPortNames(input,output,deflt)
         fmt = 'port_label(''%s'', %i, ''%s'')\n';
 
@@ -156,6 +165,29 @@ methods (Static)
         %           to make visible/invisible
 
         EtherCATSlaveBlock.setMaskState('MaskVisibilities', list, state);
+    end
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    function saveModelRevision(slave)
+        revision = slave.getModelRevision();
+        set_param(gcbh,'revision',mat2str(revision));
+    end
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    function checkModelRevision(slave)
+        if isfield(get_param(gcbh, 'DialogParameters'), 'revision')
+            r = get_param(gcbh,'revision')
+            class(r)
+            revision = eval('[]'); %get_param(gcbh,'revision'));
+        else
+            revision = '';
+        end
+
+        model = slave.getOldModel(revision);
+
+        if ~strcmp(model, get_param(gcbh, 'model'))
+            set_param(gcbh, 'model', model)
+        end
     end
 
 end

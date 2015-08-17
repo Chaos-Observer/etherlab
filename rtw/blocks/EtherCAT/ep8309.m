@@ -4,7 +4,7 @@ classdef ep8309 < EtherCATSlave
         function updateAnalogIn
             %% Analog Input selection changed
             sdo = ep8309.sdo.anain;
-            extra = strvcat('gain','offset','filter');
+            extra = strvcat('gain','offset','tau');
 
             if strcmp(get_param(gcbh,'anain'), 'on')
                 ep8309.updateSlaveBlock(sdo, extra, sdo, extra)

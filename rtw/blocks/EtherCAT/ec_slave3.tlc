@@ -458,14 +458,14 @@
     %assign FilterLcv = (lcv != "" && FilterIdx) ? "%<lcv>+%<FilterIdx>" : lcv
     %if BlockSampleTime
       %assign d0 = LibBlockDiscreteState("",FilterLcv,FilterIdx)
-      %<d0> += %<k> * (value - %<d0>);
+      %<d0> += (value - %<d0>) * %<BlockSampleTime> / %<k>;
     %else
       %assign y0 = LibBlockContinuousState("",FilterLcv,FilterIdx)
       %assign d0 = LibBlockContinuousStateDerivative("",FilterLcv,FilterIdx)
       %%
       %% The following is equivalent to:
-      %%   <d0> = %<k>*(%<u0>) + (1 - %<k>)*%<d0>;
-      %<d0>  = %<k> * (value - %<y0>);
+      %%   <d0> = (%<u0>) + (1 - 1/%<k>) * %<d0> /  %<k>
+      %<d0>  = (value - %<y0>) / %<k>;
     %endif
   %endroll
   }

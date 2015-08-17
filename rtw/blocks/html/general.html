@@ -134,14 +134,28 @@ user@host:~$ ethercat slaves
         [0,1) or [-1,1) for unipolar or bipolar outputs respectively,
         multiplied by the scalar value and adding the offset.
         
-        <p/>LPF Frequency is the corner frequency of a low pass filter applied
-        after scaling. The unit is [rad/s].
+        <p/>LPF time constant of a low pass filter applied after scaling. The
+        unit is [s]. (See <a href="#filter">deprecated use of frequency</a>
+        below).
 
         <p/>All these parameter values are available as run-time parameters.
         
         <p/>If any one of these parameters are empty (<tt>[]</tt>), the
         specific operation is ignored. The corresponding run-time parameter is
         also not generated.
+
+        <a name="filter"><h3>Deprecated LPF frequency (rad/s)</h3></a>
+        The use of <b>LPF frequency</b> is deprecated because the
+        implementation was misleading, changed when block sample time changed
+        and inconsistent between continuous and discrete block sample time.
+        Replace the block with a new one from the library and use <b>LPF time
+        constant</b> instead.
+
+        <p/>Continuous blocks (Sample Time = 0) just insert the inverse, i.e.
+        <pre>TimeConstant = 1 / LPF_Frequency.</pre>
+
+        <p/>Discrete blocks use 
+        <pre>TimeConstant = BlockSampleTime / LPF_Frequency</pre>
 
         <a name="dc"><h3>Distributed Clocks</h3></a>
         Select the correct Distributed Clocks mode from the selection list.
