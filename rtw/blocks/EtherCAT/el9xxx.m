@@ -6,19 +6,25 @@
 %
 classdef el9xxx < EtherCATSlave
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-methods (Static)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+methods
+    %====================================================================
+    function obj = el9xxx(id)
+        if nargin > 0
+            obj.slave = obj.find(id);
+        end
+    end
+
     %========================================================================
-    function rv = configure(model,vector)
-        slave = EtherCATSlave.findSlave(model,el9xxx.models);
+    function rv = configure(obj,vector)
 
         % General information
         rv.SlaveConfig.vendor = 2;
-        rv.SlaveConfig.product = slave{2};
-        rv.SlaveConfig.description = slave{1};
+        rv.SlaveConfig.product = obj.slave{2};
+        rv.SlaveConfig.description = obj.slave{1};
 
         % Get the model's PDO
-        pdo = el9xxx.pdo{slave{3}};
+        pdo = el9xxx.pdo{obj.slave{4}};
 
         % Input syncmanager
         rv.SlaveConfig.sm = {{0, 1, ...
@@ -55,14 +61,21 @@ methods (Static)
             );
         end     % vector
     end
+end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+methods (Static)
     %====================================================================
     function test(p)
         ei = EtherCATInfo(fullfile(p,'Beckhoff EL9xxx.xml'));
         for i = 1:size(el9xxx.models,1)-1
             fprintf('Testing %s\n', el9xxx.models{i,1});
-            rv = el9xxx.configure(el9xxx.models{i,1},i&1);
-            ei.testConfiguration(rv.SlaveConfig,rv.PortConfig);
+            slave = ei.getSlave(el9xxx.models{i,2},...
+                    'revision', el9xxx.models{i,3});
+            model = el9xxx.models{i,1};
+
+            rv = el9xxx(model).configure(i&1);
+            slave.testConfig(rv.SlaveConfig,rv.PortConfig);
         end
     end
 end     % methods
@@ -87,18 +100,18 @@ end     % properties
 properties (Constant)
     %  name          product code         PDO class
     models = {...
-      'EL9110',      hex2dec('23963052'), 1;
-      'EL9160',      hex2dec('23c83052'), 1;
-      'EL9210',      hex2dec('23fa3052'), 2;
-      'EL9210-0020', hex2dec('23fa3052'), 2;
-      'EL9260',      hex2dec('242c3052'), 2;
-      'EL9410',      hex2dec('24c23052'), 3;
-      'EL9505',      hex2dec('25213052'), 4;
-      'EL9508',      hex2dec('25243052'), 4;
-      'EL9510',      hex2dec('25263052'), 4;
-      'EL9512',      hex2dec('25283052'), 4;
-      'EL9515',      hex2dec('252b3052'), 4;
-      'EL9560',      hex2dec('25583052'), 5;
+      'EL9110',      hex2dec('23963052'), hex2dec('00100000'), 1;
+      'EL9160',      hex2dec('23c83052'), hex2dec('00100000'), 1;
+      'EL9210',      hex2dec('23fa3052'), hex2dec('00100000'), 2;
+      'EL9210-0020', hex2dec('23fa3052'), hex2dec('00100014'), 2;
+      'EL9260',      hex2dec('242c3052'), hex2dec('00100000'), 2;
+      'EL9410',      hex2dec('24c23052'), hex2dec('00100000'), 3;
+      'EL9505',      hex2dec('25213052'), hex2dec('00100000'), 4;
+      'EL9508',      hex2dec('25243052'), hex2dec('00100000'), 4;
+      'EL9510',      hex2dec('25263052'), hex2dec('00100000'), 4;
+      'EL9512',      hex2dec('25283052'), hex2dec('00100000'), 4;
+      'EL9515',      hex2dec('252b3052'), hex2dec('00100000'), 4;
+      'EL9560',      hex2dec('25583052'), hex2dec('00100000'), 5;
     };
 end     % properties
 

@@ -6,24 +6,28 @@
 %
 classdef el5021 < EtherCATSlave
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-methods (Static)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+methods
+    %====================================================================
+    function obj = el5021(id)
+        if nargin > 0
+            obj.slave = obj.find(id);
+        end
+    end
+
     %========================================================================
-    function rv = configure(model,dc_spec,sdo)
-        slave = EtherCATSlave.findSlave(model,el5021.models);
+    function rv = configure(obj,dc_spec,sdo)
 
         % General information
         rv.SlaveConfig.vendor = 2;
-        rv.SlaveConfig.product = slave{2};
-        rv.SlaveConfig.description = slave{1};
-
-        pdo_list = el5021.pdo;
+        rv.SlaveConfig.product = obj.slave{2};
+        rv.SlaveConfig.description = obj.slave{1};
 
         % Input syncmanager
-        rv.SlaveConfig.sm = {{2, 0, {{pdo_list{1}{1} []}}},
-                             {3, 1, {{pdo_list{2}{1} []}}}};
-        rv.SlaveConfig.sm{1}{3}{1}{2} = cell2mat(pdo_list{1}{2}(:,1:3));
-        rv.SlaveConfig.sm{2}{3}{1}{2} = cell2mat(pdo_list{2}{2}(:,1:3));
+        rv.SlaveConfig.sm = {{2, 0, {{obj.pdo{1}{1} []}}},
+                             {3, 1, {{obj.pdo{2}{1} []}}}};
+        rv.SlaveConfig.sm{1}{3}{1}{2} = cell2mat(obj.pdo{1}{2}(:,1:3));
+        rv.SlaveConfig.sm{2}{3}{1}{2} = cell2mat(obj.pdo{2}{2}(:,1:3));
 
         % CoE Configuration
         rv.SlaveConfig.sdo = num2cell(horzcat(el5021.sdo,sdo'));
@@ -31,8 +35,7 @@ methods (Static)
         % Distributed clocks
         if dc_spec(1) ~= 4
             % DC Configuration from the default list
-            dc = el5021.dc;
-            rv.SlaveConfig.dc = dc(dc_spec(1),:);
+            rv.SlaveConfig.dc = obj.dc(dc_spec(1),:);
         else
             % Custom DC
             rv.SlaveConfig.dc = dc_spec(2:end);
@@ -58,14 +61,21 @@ methods (Static)
         rv.PortConfig.output(3).portname = 'Latch';
 
     end
+end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+methods (Static)
     %====================================================================
     function test(p)
         ei = EtherCATInfo(fullfile(p,'Beckhoff EL5xxx.xml'));
         for i = 1:size(el5021.models,1)
             fprintf('Testing %s\n', el5021.models{i,1});
-            rv = el5021.configure(el5021.models{i,1},2,1:5);
-            ei.testConfiguration(rv.SlaveConfig,rv.PortConfig);
+            slave = ei.getSlave(el5021.models{i,2},...
+                    'revision', el5021.models{i,3});
+            model = el5021.models{i,1};
+
+            rv = el5021(model).configure(2,1:5);
+            slave.testConfig(rv.SlaveConfig,rv.PortConfig);
         end
     end
 end     % methods
@@ -74,7 +84,7 @@ end     % methods
 properties (Constant)
     %  name          product code
     models = {...
-      'EL5021',      hex2dec('139d3052');
+      'EL5021',      hex2dec('139d3052'), hex2dec('00100000');
     };
 
     % PDO class

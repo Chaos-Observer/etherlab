@@ -1,27 +1,33 @@
 classdef ep43xx_1 < EtherCATSlave
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    methods (Static)
+    methods
         %====================================================================
-        function rv = configure(model,status,vector,...
+        function obj = ep43xx_1(id)
+            if nargin > 0
+                obj.slave = obj.find(id);
+            end
+        end
+
+        %====================================================================
+        function rv = configure(obj,status,vector,...
                                 tx_scale,rx_scale,dc,filter,type)
-            slave = EtherCATSlave.findSlave(model,ep43xx_1.models);
 
             rv.SlaveConfig.vendor = 2;
-            rv.SlaveConfig.description = model;
-            rv.SlaveConfig.product = slave{2};
+            rv.SlaveConfig.description = obj.slave{1};
+            rv.SlaveConfig.product = obj.slave{2};
 
             pdo_count = 2;
 
-            rv.SlaveConfig.sm = ep43xx_1.sm;
+            rv.SlaveConfig.sm = obj.sm;
 
             rx_pdo = repmat([0,0,0,0],pdo_count,1);
             rx_pdo(:,2) = 0:pdo_count-1;
-            rv.PortConfig.input  = ep43xx_1.configurePorts('O',...
+            rv.PortConfig.input  = obj.configurePorts('O',...
                                 rx_pdo,sint(16),vector,rx_scale);
 
             if status
-                rv.SlaveConfig.sm{2}{3} = ep43xx_1.status_pdo;
+                rv.SlaveConfig.sm{2}{3} = obj.status_pdo;
                 tx_pdo1 = repmat([1,0,10,0],pdo_count,1);
                 tx_pdo1(:,2) = 0:pdo_count-1;
 
@@ -32,21 +38,21 @@ classdef ep43xx_1 < EtherCATSlave
                 tx_pdo1(:,2) = 0:pdo_count-1;
             end
 
-            rv.PortConfig.output  = ep43xx_1.configurePorts('Ch.',...
+            rv.PortConfig.output  = obj.configurePorts('Ch.',...
                                 tx_pdo1,sint(16),vector,tx_scale);
 
             if status
-                rv.PortConfig.output(end+1) = ep43xx_1.configurePorts(...
+                rv.PortConfig.output(end+1) = obj.configurePorts(...
                         'St.',tx_pdo2,uint(1),vector,isa(tx_scale,'struct'));
             end
 
             if dc(1) > 2
                 rv.SlaveConfig.dc = dc(2:end);
             else
-                rv.SlaveConfig.dc = ep43xx_1.dc{dc(1),2};
+                rv.SlaveConfig.dc = obj.dc{dc(1),2};
             end
 
-           mode = [0,1,2,6];
+            mode = [0,1,2,6];
             rv.SlaveConfig.sdo = {
                 hex2dec('8000'),hex2dec( '6'), 8,double(filter > 1);
                 hex2dec('8000'),hex2dec('15'),16,   max(0,filter-2);
@@ -57,16 +63,22 @@ classdef ep43xx_1 < EtherCATSlave
             };
 
         end
+    end
  
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    methods (Static)
         %====================================================================
         function test(p)
             ei = EtherCATInfo(fullfile(p,'Beckhoff EP4xxx.xml'));
             for i = 1:size(ep43xx_1.models,1)
                 fprintf('Testing %s\n', ep43xx_1.models{i,1});
-                rv = ep43xx_1.configure(ep43xx_1.models{i,1},0,i&1,[],[],1,1,1:4);
+                slave = ei.getSlave(ep43xx_1.models{i,2},...
+                        'revision', ep43xx_1.models{i,3});
+
+                rv = ep43xx_1(ep43xx_1.models{i,1}).configure(0,i&1,[],[],1,1,1:4);
                 ei.testConfiguration(rv.SlaveConfig,rv.PortConfig);
 
-                rv = ep43xx_1.configure(ep43xx_1.models{i,1},1,i&1,[],[],1,2,1:4);
+                rv = ep43xx_1(ep43xx_1.models{i,1}).configure(1,i&1,[],[],1,2,1:4);
                 ei.testConfiguration(rv.SlaveConfig,rv.PortConfig);
             end
         end

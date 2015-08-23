@@ -1,37 +1,48 @@
 classdef el1xxx < EtherCATSlave
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    methods (Static)
+    methods
         %====================================================================
-        function rv = configure(model,vector)
-            slave = EtherCATSlave.findSlave(model,el1xxx.models);
+        function obj = el1xxx(id)
+            if nargin > 0
+                obj.slave = obj.find(id);
+            end
+        end
+
+        %====================================================================
+        function rv = configure(obj, vector)
 
             rv.SlaveConfig.vendor = 2;
-            rv.SlaveConfig.description = model;
-            rv.SlaveConfig.product  = slave{2};
+            rv.SlaveConfig.description = obj.slave{1};
+            rv.SlaveConfig.product  = obj.slave{2};
 
-            pdo_count = slave{5};
+            pdo_count = obj.slave{5};
 
             pdo = repmat(0, pdo_count, 4);
             pdo(:,2) = 0:pdo_count-1;
 
-            pdo_list = el1xxx.pdo;
-            rv.SlaveConfig.sm = {{0,1, arrayfun(@(i) pdo_list(i,:), ...
-                                         pdo(:,2)' + slave{4}, ...
+            rv.SlaveConfig.sm = {{0,1, arrayfun(@(i) obj.pdo(i,:), ...
+                                         pdo(:,2)' + obj.slave{4}, ...
                                          'UniformOutput', false)}};
 
             rv.PortConfig.output = ...
                 el1xxx.configurePorts('D',pdo,uint(1),vector);
 
         end
+    end
 
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    methods (Static)
         %====================================================================
         function test(p)
             ei = EtherCATInfo(fullfile(p,'Beckhoff EL1xxx.xml'));
             for i = 1:size(el1xxx.models,1)
                 fprintf('Testing %s\n', el1xxx.models{i,1});
-                rv = el1xxx.configure(el1xxx.models{i,1},i&1);
-                ei.testConfiguration(rv.SlaveConfig,rv.PortConfig);
+                rv = el1xxx(el1xxx.models{i,1}).configure(i&1);
+                slave = ei.getSlave(el1xxx.models{i,2},...
+                        'revision', el1xxx.models{i,3});
+                slave.testConfig(rv.SlaveConfig,rv.PortConfig);
             end
         end
     end
@@ -68,10 +79,12 @@ classdef el1xxx < EtherCATSlave
             'EL1002', hex2dec('03ea3052'), hex2dec('00100000'), 5,  2;
             'EL1004', hex2dec('03ec3052'), hex2dec('00100000'), 5,  4;
             'EL1004-0010', ...
-                      hex2dec('03ec3052'), hex2dec('0010000A'), 1,  4;
+                      hex2dec('03ec3052'), hex2dec('0000000A'), 1,  4;
             'EL1008', hex2dec('03f03052'), hex2dec('00100000'), 5,  8;
             'EL1012', hex2dec('03f43052'), hex2dec('00100000'), 5,  2;
             'EL1014', hex2dec('03f63052'), hex2dec('00100000'), 5,  4;
+            'EL1014-0010', ...
+                      hex2dec('03f63052'), hex2dec('0000000A'), 1,  4;
             'EL1018', hex2dec('03fa3052'), hex2dec('00100000'), 5,  8;
             'EL1024', hex2dec('04003052'), hex2dec('00100000'), 5,  4;
             'EL1034', hex2dec('040a3052'), hex2dec('00100000'), 5,  4;
@@ -87,6 +100,8 @@ classdef el1xxx < EtherCATSlave
             'EL1202', hex2dec('04b23052'), hex2dec('00100000'),21,  2;
             'EL1702', hex2dec('06a63052'), hex2dec('00100000'), 5,  2;
             'EL1712', hex2dec('06b03052'), hex2dec('00100000'), 5,  2;
+            'EL1712-0020', ...
+                      hex2dec('06b03052'), hex2dec('00100014'), 5,  2;
             'EL1722', hex2dec('06ba3052'), hex2dec('00100000'), 5,  2;
             'EL1804', hex2dec('070c3052'), hex2dec('00100000'), 5,  4;
             'EL1808', hex2dec('07103052'), hex2dec('00100000'), 5,  8;
@@ -94,10 +109,10 @@ classdef el1xxx < EtherCATSlave
             'EL1814', hex2dec('07163052'), hex2dec('00100000'), 5,  4;
             'EL1819', hex2dec('071b3052'), hex2dec('00100000'), 5, 16;
             'EL1862', hex2dec('07463052'), hex2dec('00100000'), 5, 16;
+            'EL1862-0010', ...
+                      hex2dec('07463052'), hex2dec('0010000A'), 5, 16;
             'EL1872', hex2dec('07503052'), hex2dec('00100000'), 5, 16;
             'EL1889', hex2dec('07613052'), hex2dec('00100000'), 5, 16;
-            'EL1014-0000-0000', ...
-                      hex2dec('03f63052'), hex2dec('00000000'), 1,  4;
         };
 
     end

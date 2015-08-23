@@ -7,40 +7,28 @@
 classdef el331x < EtherCATSlave
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-methods (Static)
-
-    %========================================================================
-    function updateModel
-        slave = EtherCATSlave.findSlave(get_param(gcbh,'model'),...
-                                        el331x.models);
-        sdo = el331x.sdo;
-        sdoList = sdo(slave{6},:);
-        EtherCATSlaveBlock.updateSDOVisibility(...
-                strcat(dec2hex(sdoList(:,1),4),...
-                  '_', dec2hex(sdoList(:,2),2)));
+methods
+    %====================================================================
+    function obj = el331x(id)
+        if nargin > 0
+            obj.slave = obj.find(id);
+        end
     end
 
     %========================================================================
-    function updateVector
-        EtherCATSlaveBlock.setEnable('status',...
-                strcmp(get_param(gcbh,'vector'), 'on'));
-    end
-
-    %========================================================================
-    function rv = configure(model,vector,status,sdo_config)
-        slave = EtherCATSlave.findSlave(model,el331x.models);
+    function rv = configure(obj,vector,status,sdo_config)
 
         % General information
         rv.SlaveConfig.vendor = 2;
-        rv.SlaveConfig.product = slave{2};
-        rv.SlaveConfig.description = slave{1};
+        rv.SlaveConfig.product = obj.slave{2};
+        rv.SlaveConfig.description = obj.slave{1};
 
         % Vector with channel numbers
-        channels = 1:str2double(model(6));
+        channels = 1:str2double(obj.slave{1}(6));
 
         %% Output syncmanager
         pdo = el331x.pdo;
-        rv.SlaveConfig.sm = { {3,1,pdo{slave{5}}(channels)} };
+        rv.SlaveConfig.sm = { {3,1,pdo{obj.slave{5}}(channels)} };
         pdo = repmat([0 0 0 0], length(channels), 1);
         pdo(:,2) = channels-1;
 
@@ -75,7 +63,7 @@ methods (Static)
         end
 
         %% Input syncmanager (mandatory for some slaves)
-        if slave{4}
+        if obj.slave{4}
             pdo = el331x.rx_pdo;
             rv.SlaveConfig.sm{end+1} = {2,0,pdo(channels)};
 
@@ -105,16 +93,41 @@ methods (Static)
         sdo = [el331x.sdo, reshape(sdo_config',[],1)];
 
         % Pick out the appropriate rows
-        rv.SlaveConfig.sdo = num2cell(sdo(slave{6},:));
+        rv.SlaveConfig.sdo = num2cell(sdo(obj.slave{6},:));
+    end
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+methods (Static)
+
+    %========================================================================
+    function modelChanged
+        obj = el331x(get_param(gcbh,'model'));
+        sdo = el331x.sdo;
+        sdoList = sdo(obj.slave{6},:);
+        EtherCATSlave.updateSDOVisibility(...
+                strcat(dec2hex(sdoList(:,1),4),...
+                  '_', dec2hex(sdoList(:,2),2)));
+        obj.updateRevision();
+    end
+
+    %========================================================================
+    function updateVector
+        EtherCATSlave.setEnable('status',...
+                strcmp(get_param(gcbh,'vector'), 'on'));
     end
 
     %====================================================================
     function test(p)
-        ei = EtherCATInfo(fullfile(p,'Beckhoff EL3xxx.xml'));
+        ei = EtherCATInfo(fullfile(p,'Beckhoff EL33xx.xml'));
         for i = 1:size(el331x.models,1)
             fprintf('Testing %s\n', el331x.models{i,1});
-            rv = el331x.configure(el331x.models{i,1},1,1,ones(8,5)*3);
-            ei.testConfiguration(rv.SlaveConfig,rv.PortConfig);
+            slave = ei.getSlave(el331x.models{i,2},...
+                    'revision', el331x.models{i,3});
+            model = el331x.models{i,1};
+
+            rv = el331x(model).configure(1,1,ones(8,5)*3);
+            slave.testConfig(rv.SlaveConfig,rv.PortConfig);
         end
     end
 end     % methods
@@ -123,13 +136,13 @@ end     % methods
 properties (Constant)
     %   Model          ProductCode          Revision        RxPdo, TxPdoIdx, SDO Idx;
     models = {...
-        'EL3311',      hex2dec('0cef3052'), hex2dec('00130000'), 1, 1, 1:4;
-        'EL3312',      hex2dec('0cf03052'), hex2dec('00130000'), 1, 1, ...
+        'EL3311',      hex2dec('0cef3052'), hex2dec('00100000'), 1, 1, 1:4;
+        'EL3312',      hex2dec('0cf03052'), hex2dec('00100000'), 1, 1, ...
             [1:4,6:9];
-        'EL3314',      hex2dec('0cf23052'), hex2dec('00130000'), 1, 1, ...
+        'EL3314',      hex2dec('0cf23052'), hex2dec('00100000'), 1, 1, ...
             [1:4,6:9,11:14,16:19];
-        'EL3314-0010', hex2dec('0cf23052'), hex2dec('0012000a'), 0, 2, [1:20];
-        'EL3318',      hex2dec('0cf63052'), hex2dec('00110000'), 1, 3, ...
+        'EL3314-0010', hex2dec('0cf23052'), hex2dec('0010000a'), 0, 2, [1:20];
+        'EL3318',      hex2dec('0cf63052'), hex2dec('00100000'), 1, 3, ...
             [1:4,6:9,11:14,16:19,21:24,26:29,31:34,36:39];
     };
 end

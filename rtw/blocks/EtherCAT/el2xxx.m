@@ -1,33 +1,31 @@
 classdef el2xxx < EtherCATSlave
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    methods (Static)
+    methods
         %====================================================================
-        function updateModel()
-            slave = EtherCATSlave.findSlave(get_param(gcbh,'model'), ...
-                                            el2xxx.models);
-            EtherCATSlaveBlock.setEnable('diag', slave{6});
+        function obj = el2xxx(id)
+            if nargin > 0
+                obj.slave = obj.find(id);
+            end
         end
 
         %====================================================================
-        function rv = configure(model,vector,status)
-            slave = EtherCATSlave.findSlave(model, el2xxx.models);
+        function rv = configure(obj,vector,status)
 
             rv.SlaveConfig.vendor = 2;
-            rv.SlaveConfig.description = model;
-            rv.SlaveConfig.product  = slave{2};
+            rv.SlaveConfig.description = obj.slave{1};
+            rv.SlaveConfig.product  = obj.slave{2};
 
-            pdo_count = slave{4};
+            pdo_count = obj.slave{4};
 
-            pdo_idx = [slave{5} + (0:pdo_count-1)];
+            pdo_idx = [obj.slave{5} + (0:pdo_count-1)];
 
-            status = status && slave{6};
+            status = status && obj.slave{6};
             if status
-                pdo_idx = [pdo_idx, slave{6} + (0:pdo_count-1)];
+                pdo_idx = [pdo_idx, obj.slave{6} + (0:pdo_count-1)];
             end
 
-            pdo_list = el2xxx.pdo;
-            pdo = pdo_list(pdo_idx,:);
+            pdo = obj.pdo(pdo_idx,:);
 
             sm_id = unique(pdo(:,1))';
             rv.SlaveConfig.sm = repmat({{0,0,{}}}, size(sm_id));
@@ -36,22 +34,33 @@ classdef el2xxx < EtherCATSlave
                 p = arrayfun(@(i) {pdo(i,2), [pdo(i,[3,4]),1]},...
                         find(pdo(:,1) == sm_id(i))', ...
                         'UniformOutput', false);
-                dir = status && (pdo_list(slave{6},1) == sm_id(i));
+                dir = status && (obj.pdo(obj.slave{6},1) == sm_id(i));
                 dir = double(dir);
                 rv.SlaveConfig.sm{i} = {sm_id(i), dir, p};
             end
 
-            rv.PortConfig.input  = el2xxx.configurePorts('O',...
-                                el2xxx.findPdoEntries(rv.SlaveConfig.sm,0),...
+            rv.PortConfig.input  = obj.configurePorts('O',...
+                                obj.findPdoEntries(rv.SlaveConfig.sm,0),...
                                 uint(1),vector);
 
             if status
-                rv.PortConfig.output = el2xxx.configurePorts('I',...
-                        el2xxx.findPdoEntries(rv.SlaveConfig.sm,1),...
+                rv.PortConfig.output = obj.configurePorts('I',...
+                        obj.findPdoEntries(rv.SlaveConfig.sm,1),...
                         uint(1),vector);
             else
                 rv.PortConfig.output = [];
             end
+        end
+    end
+
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    methods (Static)
+        %====================================================================
+        function modelChanged()
+            obj = el2xxx(get_param(gcbh,'model'));
+            obj.setEnable('diag', obj.slave{6});
+            obj.updateRevision();
         end
 
         %====================================================================
@@ -59,17 +68,20 @@ classdef el2xxx < EtherCATSlave
             ei = EtherCATInfo(fullfile(p,'Beckhoff EL2xxx.xml'));
             for i = 1:size(el2xxx.models,1)
                 fprintf('Testing %s\n', el2xxx.models{i,1});
-                rv = el2xxx.configure(el2xxx.models{i,1},i&1,0);
-                ei.testConfiguration(rv.SlaveConfig,rv.PortConfig);
+                slave = ei.getSlave(el2xxx.models{i,2},...
+                        'revision', el2xxx.models{i,3});
 
-                rv = el2xxx.configure(el2xxx.models{i,1},i&1,1);
-                ei.testConfiguration(rv.SlaveConfig,rv.PortConfig);
+                rv = el2xxx(el2xxx.models{i,1}).configure(i&1,0);
+                slave.testConfig(rv.SlaveConfig,rv.PortConfig);
+
+                rv = el2xxx(el2xxx.models{i,1}).configure(i&1,1);
+                slave.testConfig(rv.SlaveConfig,rv.PortConfig);
             end
         end
     end
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    properties (Constant)
+    properties (Access = private, Constant)
 
         %      Sm   PdoIdx          EntryIdx      SubIdx
         pdo = [ 0, hex2dec('1600'), hex2dec('7000'), 1;    %   1
@@ -101,6 +113,10 @@ classdef el2xxx < EtherCATSlave
 
                 1, hex2dec('1a00'), hex2dec('3101'), 1;    %  25
                 1, hex2dec('1a01'), hex2dec('3101'), 2];   %  26
+    end
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    properties (Constant)
 
         %   Model       ProductCode          Revision          N, Rx, Tx
         models = {...
@@ -109,6 +125,8 @@ classdef el2xxx < EtherCATSlave
             'EL2008', hex2dec('07d83052'), hex2dec('00100000'), 8, 1,  0;
             'EL2022', hex2dec('07e63052'), hex2dec('00100000'), 2, 1,  0;
             'EL2024', hex2dec('07e83052'), hex2dec('00100000'), 4, 1,  0;
+            'EL2024-0010', ...
+                      hex2dec('07e83052'), hex2dec('0010000A'), 4, 1,  0;
             'EL2032', hex2dec('07f03052'), hex2dec('00100000'), 2, 1, 17;
             'EL2034', hex2dec('07f23052'), hex2dec('00100000'), 4, 1, 17;
             'EL2042', hex2dec('07fa3052'), hex2dec('00100000'), 2, 1,  0;
@@ -116,16 +134,26 @@ classdef el2xxx < EtherCATSlave
             'EL2088', hex2dec('08283052'), hex2dec('00100000'), 8, 1,  0;
             'EL2124', hex2dec('084c3052'), hex2dec('00100000'), 4, 1,  0;
             'EL2202', hex2dec('089a3052'), hex2dec('00100000'), 2, 1,  0;
+            'EL2202-0100', ...
+                      hex2dec('089a3052'), hex2dec('00100064'), 2, 1,  0;
             'EL2602', hex2dec('0a2a3052'), hex2dec('00100000'), 2, 1,  0;
             'EL2612', hex2dec('0a343052'), hex2dec('00100000'), 2, 1,  0;
             'EL2622', hex2dec('0a3e3052'), hex2dec('00100000'), 2, 1,  0;
             'EL2624', hex2dec('0a403052'), hex2dec('00100000'), 4, 1,  0;
+            'EL2652', hex2dec('0a5c3052'), hex2dec('00100000'), 2, 1,  0;
             'EL2712', hex2dec('0a983052'), hex2dec('00100000'), 2, 1,  0;
             'EL2722', hex2dec('0aa23052'), hex2dec('00100000'), 2, 1,  0;
+            'EL2722-0010', ...
+                      hex2dec('0aa23052'), hex2dec('0010000A'), 2, 1,  0;
             'EL2732', hex2dec('0aac3052'), hex2dec('00100000'), 2, 1,  0;
             'EL2798', hex2dec('0aee3052'), hex2dec('00100000'), 8, 1,  0;
             'EL2808', hex2dec('0af83052'), hex2dec('00100000'), 8, 1,  0;
             'EL2809', hex2dec('0af93052'), hex2dec('00100000'),16, 1,  0;
+            'EL2828', hex2dec('0b0c3052'), hex2dec('00100000'), 8, 1,  0;
+            'EL2872', hex2dec('0b383052'), hex2dec('00100000'), 8, 1,  0;
+            'EL2889', hex2dec('0b493052'), hex2dec('00100000'),16, 1,  0;
+            'EL2872-0010', ...
+                      hex2dec('0B383052'), hex2dec('0010000A'), 8, 1,  0;
             'EL2004-0000-0000', ...
                       hex2dec('07d43052'), hex2dec('00000000'), 4, 21, 0;
             'EL2032-0000-0000', ...

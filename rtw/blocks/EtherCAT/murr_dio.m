@@ -8,51 +8,57 @@
 classdef murr_dio < EtherCATSlave
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    methods (Static)
+    methods
         %====================================================================
-        function rv = configure(model,vector)
-            slave = EtherCATSlave.findSlave(model,murr_dio.models);
+        function obj = murr_dio(id)
+            if nargin > 0
+                obj.slave = obj.find(id);
+            end
+        end
+
+        %====================================================================
+        function rv = configure(obj,vector)
 
             rv.SlaveConfig.vendor = 79;
-            rv.SlaveConfig.description = model;
-            rv.SlaveConfig.product  = slave{2};
+            rv.SlaveConfig.description = obj.slave{1};
+            rv.SlaveConfig.product  = obj.slave{2};
 
             pdo_list = murr_dio.pdo;
 
             % Find out how many entries there are in PDO #x1a01
-            if isempty(slave{8})
+            if isempty(obj.slave{8})
                 status_end = 8;
             else
-                status_end = slave{8}(end) + 1;
+                status_end = obj.slave{8}(end) + 1;
             end
 
             % Create an array of TxPdo,length
-            if isempty(slave{5})
+            if isempty(obj.slave{5})
                 pdo_idx = [3,status_end];
-                pdo = {{'Stat', zeros(numel(slave{7}),4)}};
-                pdo{1}{2}(:,3) = slave{7};
+                pdo = {{'Stat', zeros(numel(obj.slave{7}),4)}};
+                pdo{1}{2}(:,3) = obj.slave{7};
 
-                if ~isempty(slave{8})
-                    pdo{end+1} = {'Short', zeros(numel(slave{8}),4)};
-                    pdo{end}{2}(:,3) = slave{8};
+                if ~isempty(obj.slave{8})
+                    pdo{end+1} = {'Short', zeros(numel(obj.slave{8}),4)};
+                    pdo{end}{2}(:,3) = obj.slave{8};
                 end
             else
-                pdo_idx = [2,slave{5}(end)+1;
+                pdo_idx = [2,obj.slave{5}(end)+1;
                            3,status_end];
 
                 % Set BitLen of PDO Entry #x5999
-                pdo_list{2,2}(1,end) = slave{6};
+                pdo_list{2,2}(1,end) = obj.slave{6};
 
-                pdo = {{'DI', zeros(numel(slave{5}),4)}, ...
-                        {'Stat', zeros(numel(slave{7}),4)}};
-                pdo{1}{2}(:,3) = slave{5};
+                pdo = {{'DI', zeros(numel(obj.slave{5}),4)}, ...
+                        {'Stat', zeros(numel(obj.slave{7}),4)}};
+                pdo{1}{2}(:,3) = obj.slave{5};
                 pdo{2}{2}(:,2) = 1;
-                pdo{2}{2}(:,3) = slave{7};
+                pdo{2}{2}(:,3) = obj.slave{7};
 
-                if ~isempty(slave{8})
-                    pdo{end+1} = {'Short', zeros(numel(slave{8}),4)};
+                if ~isempty(obj.slave{8})
+                    pdo{end+1} = {'Short', zeros(numel(obj.slave{8}),4)};
                     pdo{end}{2}(:,2) = 1;
-                    pdo{end}{2}(:,3) = slave{8};
+                    pdo{end}{2}(:,3) = obj.slave{8};
                 end
             end
 
@@ -66,25 +72,31 @@ classdef murr_dio < EtherCATSlave
                               pdo, 'UniformOutput', false);
              rv.PortConfig.output = [output{:}];
 
-             if ~isempty(slave{4})
+             if ~isempty(obj.slave{4})
                  rv.SlaveConfig.sm{end+1} = ...
                         {2,0,{{pdo_list{1,1}, ...
-                               pdo_list{1,2}(1:slave{4}(end)+1,:)}}};
-                 pdo = repmat([1, 0, 0, 0], numel(slave{4}), 1);
-                 pdo(:,3) = slave{4};
+                               pdo_list{1,2}(1:obj.slave{4}(end)+1,:)}}};
+                 pdo = repmat([1, 0, 0, 0], numel(obj.slave{4}), 1);
+                 pdo(:,3) = obj.slave{4};
                  rv.PortConfig.input = ...
                      EtherCATSlave.configurePorts('DO', pdo, uint(1), vector);
              end
         end
+    end
 
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    methods (Static)
         %====================================================================
         function test(p)
             ei = EtherCATInfo(fullfile(p,'Murrelektronik_IMPACT67.xml'));
             for i = 1:size(murr_dio.models,1)
                 fprintf('Testing %s\n', murr_dio.models{i,1});
-                rv = murr_dio.configure(murr_dio.models{i,1},i&1);
-                slave = ei.getSlave(murr_dio.models{i,2});
-                slave{1}.testConfig(rv.SlaveConfig,rv.PortConfig);
+                slave = ei.getSlave(murr_dio.models{i,2},...
+                        'revision', murr_dio.models{i,3});
+                model = murr_dio.models{i,1};
+
+                rv = murr_dio(model).configure(i&1);
+                slave.testConfig(rv.SlaveConfig,rv.PortConfig);
             end
         end
     end
@@ -161,10 +173,10 @@ classdef murr_dio < EtherCATSlave
         %   Model,ProductCode,Revision,
         %   RxPdo(#x1600),TxPdo(#x1a00), BitLen(Pdo #x5999), Status(#x1a01)
         models = {
-                'DI8DO8', hex2dec('0000d72a'), [], 1:8,  1:8, 8,     0:3, 8:15;
-                'DO16',   hex2dec('0000d72c'), [], 1:16,  [], 0, [0,1,3], 8:23;
-                'DO8',    hex2dec('0000d72b'), [], 1:8,   [], 0, [0,1,3], 8:15;
-                'DI16',   hex2dec('0000d729'), [], [],  1:16, 1, [0,2,3],   [];
+                'DI8DO8', hex2dec('0000d72a'), 1, 1:8,  1:8, 8,     0:3, 8:15;
+                'DO16',   hex2dec('0000d72c'), 1, 1:16,  [], 0, [0,1,3], 8:23;
+                'DO8',    hex2dec('0000d72b'), 1, 1:8,   [], 0, [0,1,3], 8:15;
+                'DI16',   hex2dec('0000d729'), 1, [],  1:16, 1, [0,2,3],   [];
             };
     end
 end

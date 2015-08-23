@@ -40,7 +40,6 @@ INSTALL (FILES
 
     murr_dio.m
     EtherCATSlave.m
-    EtherCATSlaveBlock.m
 
     EtherCATInfo.m
     EtherCATInfoSlave.m

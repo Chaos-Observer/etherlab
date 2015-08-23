@@ -7,48 +7,43 @@
 classdef el500x < EtherCATSlave
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    methods (Static)
+    methods
         %====================================================================
-        function updateModel
-            slave = EtherCATSlave.findSlave(get_param(gcbh,'model'),...
-                                            el500x.models);
-            EtherCATSlaveBlock.setVisible('pdo_x1A02', slave{5});
-            EtherCATSlaveBlock.updateSDOVisibility(...
-                dec2base(slave{6},10,2));
+        function obj = el500x(id)
+            if nargin > 0
+                obj.slave = obj.find(id);
+            end
         end
 
         %====================================================================
-        function rv = configure(model,timestamp,sdo_config,dc_config)
-            slave = EtherCATSlave.findSlave(model,el500x.models);
+        function rv = configure(obj,timestamp,sdo_config,dc_config)
 
             rv.SlaveConfig.vendor = 2;
-            rv.SlaveConfig.description = model;
-            rv.SlaveConfig.product  = slave{2};
-
-            pdo_list = el500x.pdo;
+            rv.SlaveConfig.description = obj.slave{1};
+            rv.SlaveConfig.product  = obj.slave{2};
 
             % Get a list of pdo's for the selected slave
-            selected = boolean(zeros(1,length(pdo_list)));
-            selected(slave{4}) = 1;
+            selected = boolean(zeros(1,length(el500x.pdo)));
+            selected(obj.slave{4}) = 1;
 
             % Add timestamp pdo
-            if slave{5} && timestamp
-                selected(slave{5}) = 1;
+            if obj.slave{5} && timestamp
+                selected(obj.slave{5}) = 1;
             end
             
             % Configure SM3
             tx = find(selected);
             rv.SlaveConfig.sm = ...
-                 {{3,1, arrayfun(@(x) {pdo_list{x,1}, pdo_list{x,2}},...
+                 {{3,1, arrayfun(@(x) {el500x.pdo{x,1}, el500x.pdo{x,2}},...
                                  tx, 'UniformOutput', false)}};
 
             % Configure output port. The algorithm below will group all boolean
             % signals to one port. All other entries get a separate port
             outputs = arrayfun(@(i) arrayfun(@(j) {i-1, ...
-                                                   pdo_list{tx(i),2}(1,3), ...
-                                                   pdo_list{tx(i),3}{j,1}',...
-                                                   pdo_list{tx(i),3}{j,2}},...
-                                            1:size(pdo_list{tx(i),3},1),...
+                                                   el500x.pdo{tx(i),2}(1,3), ...
+                                                   el500x.pdo{tx(i),3}{j,1}',...
+                                                   el500x.pdo{tx(i),3}{j,2}},...
+                                            1:size(el500x.pdo{tx(i),3},1),...
                                             'UniformOutput', false), ...
                               1:numel(tx), 'UniformOutput', false);
             outputs = horzcat(outputs{:});
@@ -65,16 +60,26 @@ classdef el500x < EtherCATSlave
             if dc_config(1) == 5
                 % Custom
                 rv.SlaveConfig.dc = dc_config(2:11);
-            elseif dc_config(1) > 1 && ismember(dc_config(1), slave{7})
+            elseif dc_config(1) > 1 && ismember(dc_config(1), obj.slave{7})
                 % Preconfigured
                 dc = el500x.dc;
                 rv.SlaveConfig.dc = dc(dc_config(1),:);
             end
 
             % CoE Configuration
-            sdo = el500x.sdo;
-            rv.SlaveConfig.sdo = num2cell([sdo(slave{6},:), ...
-                                           sdo_config(slave{6})']);
+            rv.SlaveConfig.sdo = num2cell([obj.sdo(obj.slave{6},:), ...
+                                           sdo_config(obj.slave{6})']);
+        end
+    end
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    methods (Static)
+        %====================================================================
+        function modelChanged()
+            obj = el500x(get_param(gcbh,'model'));
+            EtherCATSlave.setVisible('pdo_x1A02', obj.slave{5});
+            EtherCATSlave.updateSDOVisibility(dec2base(obj.slave{6},10,2));
+            obj.updateRevision();
         end
 
         %====================================================================
@@ -82,9 +87,12 @@ classdef el500x < EtherCATSlave
             ei = EtherCATInfo(fullfile(p,'Beckhoff EL5xxx.xml'));
             for i = 1:size(el500x.models,1)
                 fprintf('Testing %s\n', el500x.models{i,1});
-                pdo = el500x.pdo;
-                rv = el500x.configure(el500x.models{i,1}, i&1,1:21,1);
-                ei.testConfiguration(rv.SlaveConfig,rv.PortConfig);
+                slave = ei.getSlave(el500x.models{i,2},...
+                        'revision', el500x.models{i,3});
+                model = el500x.models{i,1};
+
+                rv = el500x(model).configure(i&1,1:21,1);
+                slave.testConfig(rv.SlaveConfig,rv.PortConfig);
             end
         end
     end
@@ -192,11 +200,11 @@ classdef el500x < EtherCATSlave
         %   Model           ProductCode         RevisionNo
         %    ValueIdx  TimeIdx       SDO
         models = {...
-            'EL5001',       hex2dec('13893052'), [],...
+            'EL5001',       hex2dec('13893052'), hex2dec('03f80000'),...
                 2,     0,            12:21,   1:3;
-            'EL5001-0011',  hex2dec('13893052'), [],...
+            'EL5001-0011',  hex2dec('13893052'), hex2dec('0013000b'),...
                 3,     4, [1,2,5,6,8,9,10],   [1,4];
-            'EL5002',       hex2dec('138a3052'), [],...
+            'EL5002',       hex2dec('138a3052'), hex2dec('00100000'),...
                 [1,2], 0,       [1:4,6:21],   1:3;
         };
     end

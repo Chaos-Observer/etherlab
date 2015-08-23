@@ -1,31 +1,37 @@
 classdef ep41xx_1 < EtherCATSlave
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    methods (Static)
+    methods
         %====================================================================
-        function rv = configure(model,vector,scale,dc,type)
-            slave = EtherCATSlave.findSlave(model,ep41xx_1.models);
+        function obj = ep41xx_1(id)
+            if nargin > 0
+                obj.slave = obj.find(id);
+            end
+        end
+
+        %====================================================================
+        function rv = configure(obj,vector,scale,dc,type)
 
             rv.SlaveConfig.vendor = 2;
-            rv.SlaveConfig.description = model;
-            rv.SlaveConfig.product = slave{2};
+            rv.SlaveConfig.description = obj.slave{1};
+            rv.SlaveConfig.product = obj.slave{2};
 
             % PdoCount is needed to configure SDO
-            pdo_count = str2double(model(6));
+            pdo_count = str2double(obj.slave{1}(6));
 
-            rv.SlaveConfig.sm = ep41xx_1.sm;
+            rv.SlaveConfig.sm = obj.sm;
 
             % Value output
             pdo = zeros(pdo_count,4);
             pdo(:,2) = 0:pdo_count-1;
-            rv.PortConfig.input = ep41xx_1.configurePorts('Ch.',...
+            rv.PortConfig.input = obj.configurePorts('Ch.',...
                            pdo,sint(16),vector,scale);
                       
             % Distributed clock
             if dc(1) > 2
                 rv.SlaveConfig.dc = dc(2:11);
             else
-                rv.SlaveConfig.dc = ep31xx_1.dc{dc(1),2};
+                rv.SlaveConfig.dc = obj.dc{dc(1),2};
             end
 
             basetype = [0,1,2,6];
@@ -39,19 +45,26 @@ classdef ep41xx_1 < EtherCATSlave
                 types));
 
         end
+    end
  
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    methods (Static)
         %====================================================================
         function test(p)
             ei = EtherCATInfo(fullfile(p,'Beckhoff EP4xxx.xml'));
             for i = 1:size(ep41xx_1.models,1)
                 fprintf('Testing %s\n', ep41xx_1.models{i,1});
-                rv = ep41xx_1.configure(ep41xx_1.models{i,1},i&1,...
-                        EtherCATSlave.configureScale(2^15,''),1,1:4);
-                ei.testConfiguration(rv.SlaveConfig,rv.PortConfig);
+                slave = ei.getSlave(ep41xx_1.models{i,2},...
+                        'revision', ep41xx_1.models{i,3});
 
-                rv = ep41xx_1.configure(ep41xx_1.models{i,1},~(i&1),...
+                rv = ep41xx_1(ep41xx_1.models{i,1}).configure(i&1,...
+                        EtherCATSlave.configureScale(2^15,''),1,1:4);
+                slave.testConfig(rv.SlaveConfig,rv.PortConfig);
+
+                rv = ep41xx_1(ep41xx_1.models{i,1}).configure(~(i&1),...
                         EtherCATSlave.configureScale(2^15,'6'),1,1:4);
-                ei.testConfiguration(rv.SlaveConfig,rv.PortConfig);
+                slave.testConfig(rv.SlaveConfig,rv.PortConfig);
             end
         end
    end
@@ -77,7 +90,7 @@ classdef ep41xx_1 < EtherCATSlave
     properties (Constant)
         %   Model       ProductCode          Revision          HasOutput
         models = {
-          'EP4174-0002', hex2dec('104e4052'), hex2dec('00110002'); ...
+          'EP4174-0002', hex2dec('104e4052'), hex2dec('00100002'); ...
         };
     end
 end

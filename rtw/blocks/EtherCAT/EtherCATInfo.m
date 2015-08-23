@@ -56,17 +56,16 @@ classdef EtherCATInfo < XmlNode
                 case 'class'
                     slaves = slaves(cellfun(@(s) (s.RevisionNumber & 65535) == revision, ...
                                             slaves));
+                    hidden = unique(cell2mat(horzcat(...
+                        cellfun(@(s) s.hideTypes,slaves,'UniformOutput', false))));
+                    rev = cellfun(@(x) x.RevisionNumber, slaves);
+
+                    slaves = slaves(~ismember(rev,hidden));
                 case 'revision'
-                    slaves = slaves(cellfun(@(s) s.RevisionNumber == revision, ...
-                                            slaves));
+                    slaves = slaves{cellfun(@(s) s.RevisionNumber == revision, ...
+                                            slaves)};
                 end
             end
-
-            hidden = unique(cell2mat(horzcat(...
-                cellfun(@(s) s.hideTypes,slaves,'UniformOutput', false))));
-            rev = cellfun(@(x) x.RevisionNumber, slaves);
-
-            slaves = slaves(~ismember(rev,hidden));
         end
 
         %------------------------------------------------------------------

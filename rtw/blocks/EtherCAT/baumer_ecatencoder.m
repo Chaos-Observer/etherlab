@@ -1,38 +1,53 @@
 classdef baumer_ecatencoder < EtherCATSlave
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    methods (Static)
+    methods
         %====================================================================
-        function updateDC()
-            slave = EtherCATSlave.findSlave(get_param(gcbh,'model'), ...
-                                            baumer_ecatencoder.models);
-            EtherCATSlaveBlock.updateDCVisibility(slave{4});
+        function obj = baumer_ecatencoder(id)
+            if nargin > 0
+                obj.slave = obj.find(id);
+            end
         end
 
         %====================================================================
-        function rv = configure(model, direction, dc_config)
-            slave = EtherCATSlave.findSlave(model,baumer_ecatencoder.models);
+        function rv = configure(obj, direction, dc_config)
 
             rv.SlaveConfig.vendor = hex2dec('516');
-            rv.SlaveConfig.description = slave{1};
-            rv.SlaveConfig.product = slave{2};
-            rv.SlaveConfig.revision = slave{3};
+            rv.SlaveConfig.description = obj.slave{1};
+            rv.SlaveConfig.product = obj.slave{2};
+            rv.SlaveConfig.revision = obj.slave{3};
 
-            rv.SlaveConfig.sm = baumer_ecatencoder.sm(1);
+            rv.SlaveConfig.sm = obj.sm(1);
 
             rv.PortConfig.output = struct('pdo', [0,0,0,0], ...
                                           'pdo_data_type', uint(32));
 
             rv.SlaveConfig.sdo = {hex2dec('6000'),0,16,direction + 4};
 
-            if slave{4} && dc_config(1) > 1
+            if obj.slave{4} && dc_config(1) > 1
                 if dc_config(1) > 2
                     rv.SlaveConfig.dc = dc_config(2:end);
                 else
-                    dc = baumer_ecatencoder.dc;
-                    rv.SlaveConfig.dc = dc(dc_config(1),:);
+                    rv.SlaveConfig.dc = obj.dc(dc_config(1),:);
                 end
             end
+        end
+    end
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    methods (Static)
+
+        %====================================================================
+        function modelChanged(obj)
+            obj = baumer_ecatencoder(get_param(gcbh,'model'));
+            obj.updateDC()
+            obj.updateRevision()
+        end
+
+        %====================================================================
+        function updateDC()
+            obj = baumer_ecatencoder(get_param(gcbh, 'model'));
+            obj.updateDCVisibility(obj.slave{4});
         end
 
         %====================================================================
@@ -40,21 +55,20 @@ classdef baumer_ecatencoder < EtherCATSlave
             ei = EtherCATInfo(f);
             for i = 1:size(baumer_ecatencoder.models,1)
                 fprintf('Testing %s\n', baumer_ecatencoder.models{i,1});
-                rv = baumer_ecatencoder.configure(...
-                        baumer_ecatencoder.models{i,1},i&1,2:12);
+                slave = baumer_ecatencoder(baumer_ecatencoder.models{i,1});
+                rv = slave.configure(i&1,2:12);
                 slave = ei.getSlave(baumer_ecatencoder.models{i,2},...
-                        'revision',baumer_ecatencoder.models{i,3});
-                slave{1}.testConfig(rv.SlaveConfig);
+                        'revision', baumer_ecatencoder.models{i,3});
+                slave.testConfig(rv.SlaveConfig);
             end
         end
     end
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     properties (Constant, Access = private)
-        sm = {{3, 1, {{hex2dec('1A00') [hex2dec('6004') 0 32]}}}};
+        sm = {{3, 1, {{hex2dec('1A00') [hex2dec('6004') 0 32]}}}}
         dc = [             0,  0,0,0,0,0,0,0,0,0;
-                hex2dec('300'),0,0,0,0,0,0,0,0,0];
-
+                hex2dec('300'),0,0,0,0,0,0,0,0,0]
     end
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

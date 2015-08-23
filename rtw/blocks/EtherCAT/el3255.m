@@ -7,25 +7,21 @@
 classdef el3255 < EtherCATSlave
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-methods (Static)
-    %========================================================================
-    function rv = getModels(obj)
-        rv = obj.models(:,1);
+methods
+    %====================================================================
+    function obj = el3255(id)
+        if nargin > 0
+            obj.slave = obj.find(id);
+        end
     end
 
     %========================================================================
-    function rv = getDC(obj,model)
-        rv = obj.dc;
-    end
-
-    %========================================================================
-    function rv = configure(model,count,vector,dc_spec,scaling,sdo)
-        slave = EtherCATSlave.findSlave(model,el3255.models);
+    function rv = configure(obj,count,vector,dc_spec,scaling,sdo)
 
         % General information
         rv.SlaveConfig.vendor = 2;
-        rv.SlaveConfig.product = slave{2};
-        rv.SlaveConfig.description = slave{1};
+        rv.SlaveConfig.product = obj.slave{2};
+        rv.SlaveConfig.description = obj.slave{1};
 
         % Input syncmanager
         rv.SlaveConfig.sm = {{3,1,el3255.pdo}};
@@ -78,16 +74,23 @@ methods (Static)
         rv.SlaveConfig.sdo(count+3:end,:) = [];
 
     end
+end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+methods (Static)
     %====================================================================
     function test(p)
-        ei = EtherCATInfo(fullfile(p,'Beckhoff EL3xxx.xml'));
+        ei = EtherCATInfo(fullfile(p,'Beckhoff EL32xx.xml'));
         for i = 1:size(el3255.models,1)
             fprintf('Testing %s\n', el3255.models{i,1});
+            slave = ei.getSlave(el3255.models{i,2},...
+                    'revision', el3255.models{i,3});
+            model = el3255.models{i,1};
+
             for j = 1:4
-                rv = el3255.configure(el3255.models{i,1},j,j&1,1:11,...
-                EtherCATSlave.configureScale(2^31,'4'),1:7);
-                ei.testConfiguration(rv.SlaveConfig,rv.PortConfig);
+                rv = el3255(model).configure(j,j&1,1:11,...
+                    EtherCATSlave.configureScale(2^31,'4'),1:7);
+                slave.testConfig(rv.SlaveConfig,rv.PortConfig);
             end
         end
     end
@@ -97,7 +100,7 @@ end     % methods
 properties (Constant)
     %  name          product code
     models = {
-      'EL3255',      hex2dec('0cb73052');
+      'EL3255',      hex2dec('0cb73052'), hex2dec('00100000');
     };
 end
 

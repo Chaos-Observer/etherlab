@@ -1,6 +1,115 @@
 classdef EtherCATSlave
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    methods
+        %====================================================================
+        function checkModelName(obj)
+            %% Check whether the slave name changed based on revision information
+            %
+            % This function requires a (hidden) mask variable called 'revision'.
+            % The value is a vector with the fields [ProductCode Revision]
+            % When a product is outdated, its name may change from
+            % say EL3054 to EL3054-000-0011 for instance and a new slave with
+            % named EL3054 is created.
+            %
+            % This function uses the revision information to check whether the
+            % name has changed and sets the new model accordingly.
+
+            % Ignore if block is in a library or block does not have
+            % a revision field
+            if strcmp(bdroot, 'etherlab_lib') || ...
+                        ~any(strcmp(get_param(gcbh, 'MaskNames'), 'revision'))
+                return
+            end
+
+            revision = get_param(gcbh, 'revision');
+            if ~isempty(revision)
+                revision = eval(revision);
+            end
+
+            if isempty(revision) || ~revision(1)
+                obj.updateRevision()
+                return
+            end
+
+            slave = obj.find(eval(get_param(gcbh, 'revision')));
+            model = slave{1};
+            if ~isempty(model) && ~strcmp(model, get_param(gcbh,'model'))
+                disp([gcb ': Setting model from ' get_param(gcbh,'model') ' to ' model])
+                set_param(gcbh, 'model', model)
+            end
+        end
+
+        %====================================================================
+        function updateRevision(obj)
+            %% Set revision mask variable to values based on model mask variable
+            %if isempty(get_param(gcbh, 'LibraryVersion'))
+            if strcmp(bdroot, 'etherlab_lib')
+                revision = '';
+            else
+                revision = mat2str(obj.findRevision(get_param(gcbh, 'model')));
+            end
+
+            if ~strcmp(get_param(gcbh, 'revision'), revision)
+                set_param(gcbh, 'revision', revision)
+            end
+        end
+
+        %====================================================================
+        function revision = findRevision(obj, id)
+            slave = obj.find(id);
+            revision = [slave{[2,3]}];
+        end
+
+        %====================================================================
+        % Return the row where the name in the first column matches
+        % if id is a string, or columns 2 and 3 match if id is numeric
+        function slave = find(obj, id)
+            row = [];
+            if isnumeric(id)
+                row = ismember(cell2mat(obj.models(:,[2 3])), id, 'rows');
+            elseif isstr(id)
+                row = strcmp(obj.models(:,1), id);
+            end
+
+            slave = obj.models(row,:);
+        end
+
+        %====================================================================
+        function updateModels(obj)
+            %% Keeps the list model list up to date
+            % Arguments
+            %       list: cell array where first column is the list of models
+            %
+            % Requires the following mask variables:
+            %       model
+
+            if verLessThan('Simulink','8.0')
+                style = get_param(gcbh,'MaskStyles');
+                names = get_param(gcbh,'MaskNames');
+
+                pos = find(strcmp(names,'model'));
+
+                modelstr = ['popup(', EtherCATSlave.strJoin(obj.models(:,1),'|'), ')'];
+                if ~strcmp(style{pos}, modelstr)
+                    style{pos} = modelstr;
+                    set_param(gcbh,'MaskStyles', style);
+                    display(['Updated ', gcb])
+                end
+            else
+                p = Simulink.Mask.get(gcbh);
+                pos = find(strcmp({p.Parameters.Name}, 'model'), 1);
+                if ~isequal(p.Parameters(pos).TypeOptions, obj.models)
+                    p.Parameters(pos).set('TypeOptions', obj.models(:,1));
+                    display(['Updated ', gcb])
+                end
+            end
+
+            set_param(gcbh, 'revision', '')
+        end
+    end
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     methods (Static)
         %====================================================================
         function rv = formatAddress(master,index,tsample)
@@ -20,7 +129,7 @@ classdef EtherCATSlave
                 rv.position = index(1);
             end
         end
-
+ 
         %====================================================================
         function scale = configureScale(full_scale,gain,offset,filter,pfx)
             %% Return a structure with fields
@@ -59,6 +168,100 @@ classdef EtherCATSlave
             else
                 scale.full_scale = full_scale;
             end
+        end
+
+        %====================================================================
+        function checkFilter
+            if ~isempty(get_param(gcbh,'omega'))
+                disp(sprintf(['%s: Deprecated use of LPF Frequency dialog parameter. ' ...
+                     'See <matlab:web(etherlab_help_path(''general.html#filter''), ''-helpbrowser'')>'], ...
+                    gcb))
+            end
+        end
+
+        %====================================================================
+        function setPortNames(input,output,deflt)
+            fmt = 'port_label(''%s'', %i, ''%s'')\n';
+
+            if nargin > 3
+                str = {sprintf('disp(''%s'')\n',deflt)};
+            else
+                str = {''};
+            end
+
+            str = horzcat(str, ...
+                    arrayfun(@(x) sprintf(fmt, 'input', x, input{x}), ...
+                             1:numel(input), 'UniformOutput', false), ...
+                    arrayfun(@(x) sprintf(fmt, 'output', x, output{x}), ...
+                             1:numel(output), 'UniformOutput', false));
+
+            str = cell2mat(str);
+
+            set_param(gcbh, 'MaskDisplay', str);
+        end
+
+        %====================================================================
+        function updateCustomDCEnable()
+            names = get_param(gcbh,'MaskNames');
+
+            % This function sets the enable state of all mask variables
+            % where custom values for distributed clock can be entered.
+            % if dc_mode == 'Custom' they are enabled
+            %
+            % Requires the following mask variables:
+            %       dc_mode, dc_*
+
+            dc = strncmp(names,'dc_',3);
+
+            % Mask out dc_mode itself
+            dc(strcmp(names,'dc_mode')) = false;
+
+            EtherCATSlave.setEnable(dc, ...
+                    strcmp(get_param(gcbh,'dc_mode'),'Custom'));
+        end
+
+        %====================================================================
+        function updateDCVisibility(state)
+            %% Change the visibility (on/off) of all mask variables
+            % starting with 'dc_' depending on <state>
+            %
+            % Requires the following mask varialbes:
+            %       dc_mode, dc_*
+
+            dc = strncmp(get_param(gcbh,'MaskNames'),'dc_',3);
+
+            EtherCATSlave.setVisible(dc, state);
+        end
+
+        %====================================================================
+        function updatePDOVisibility(list)
+            %% Make mask variables of type pdo_xXXXX visible
+            %    list       - double vector of indices
+            [idx,enable] = EtherCATSlave.getVariableList('pdo_x',...
+                                                              dec2hex(list,4));
+            EtherCATSlave.setVisible(idx,enable)
+        end
+
+        %====================================================================
+        function updateSDOVisibility(sdoList)
+            %% Change visibility (on/off) of SDO Mask Variables
+            % SDO Variables start with 'sdo_'
+            % Argument:
+            %       sdoList: (cellarray of strings|string array)
+            %                eg: cellstr(dec2hex(1:20,2));
+            [idx,enable] = EtherCATSlave.getVariableList('sdo_', sdoList);
+            EtherCATSlave.setVisible(idx,enable)
+        end
+
+        %====================================================================
+        function updateSDOEnable(sdoList)
+            %% Change enable state (gray/black) of SDO Mask Variables
+            % SDO Variables start with 'sdo_'
+            % Argument:
+            %       sdoList: (cellarray of strings|string array)
+            %                eg: cellstr(dec2hex(1:20,2));
+            [idx,enable] = EtherCATSlave.getVariableList('sdo_', sdoList);
+            EtherCATSlave.setEnable(idx, enable);
         end
     end
 
@@ -128,18 +331,6 @@ classdef EtherCATSlave
         end
         
         %====================================================================
-        % Return the row where the name in the first column matches
-        function slave = findSlave(name,models)
-            row = find(strcmp(models(:,1), name));
-
-            if isempty(row)
-                slave = [];
-            else
-                slave = models(row,:);
-            end
-        end
-
-        %====================================================================
         function port = configurePorts(name,pdo,dtype,vector,scale)
 
             if nargin < 5
@@ -182,6 +373,7 @@ classdef EtherCATSlave
                                     'portname', [name,int2str(i)]), ...
                         1:pdo_count);
 
+                        scale
                 if isa(scale,'struct') || scale
                     port(1).full_scale = [];
                     port(1).gain   = [];
@@ -223,10 +415,77 @@ classdef EtherCATSlave
                 end
             end
         end
+
+        %====================================================================
+        function setEnable(list, state)
+            %% Change enabled state of a mask variable
+            % Arguments:
+            %   state/off: cellarray of strings or logical array
+            %           to enable/disable a mask variable
+
+            EtherCATSlave.setMaskState('MaskEnables', list, state);
+        end
+
+        %====================================================================
+        function setVisible(list, state)
+            %% Change visibility of a mask variable
+            % Arguments:
+            %   state/off: cellarray of strings or logical array
+            %           to make visible/invisible
+
+            EtherCATSlave.setMaskState('MaskVisibilities', list, state);
+        end
+    end
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    methods (Static, Access = private)
+
+        %====================================================================
+        function [idx,enable] = getVariableList(prefix, enableList)
+            %% Return a list of indices for all mask names that
+            % start with prefix. enable is also set when a variable is
+            % in the enableList
+
+            % Get a list of names that begin with prefix
+            names = get_param(gcbh,'MaskNames');
+            idx = strncmp(names,prefix,length(prefix));
+
+            enable = ismember(names, strcat(prefix, enableList));
+        end
+
+        %====================================================================
+        function setMaskState(variable, list, on)
+            if numel(on) == 1
+                on = repmat(on, size(list));
+            end
+
+            if ~islogical(list)
+                names = get_param(gcbh, 'MaskNames');
+                [list, pos] = ismember(names, list);
+                i = on;
+                on = list;
+                on(list) = i(pos(list));
+            end
+
+            state = get_param(gcbh,variable);
+
+            state(list &  on) = {'on'};
+            state(list & ~on) = {'off'};
+
+            if ~isequal(get_param(gcbh,variable),state)
+                set_param(gcbh,variable,state);
+            end
+        end
+
+        %====================================================================
+        function rv = strJoin(s,delim)
+            rv = cell2mat(strcat(reshape(s,1,[]),delim));
+            rv(end) = [];
+        end
     end
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    properties (Constant, Abstract)
-        models
+    properties (Access = protected)
+        slave = []
     end
 end

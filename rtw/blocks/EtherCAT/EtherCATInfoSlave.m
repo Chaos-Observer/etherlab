@@ -56,7 +56,8 @@ classdef EtherCATInfoSlave < XmlNode
 
             % Compare description
             if isfield(SlaveConfig,'description')
-                if ~strcmp(obj.Name, SlaveConfig.description)
+                len = min(length(obj.Name), length(SlaveConfig.description));
+                if ~strncmp(obj.Name, SlaveConfig.description, len)
                     fprintf('Slave Description for #x%x do not match\n',...
                         SlaveConfig.product);
                 end
@@ -67,18 +68,24 @@ classdef EtherCATInfoSlave < XmlNode
                 return
             end
 
-            if isfield(SlaveConfig,'dc') && ~isempty(SlaveConfig.dc) ...
-                        && SlaveConfig.dc(1) ~= 0
-                if numel(SlaveConfig.dc) ~= 10
-                    fprintf('DC has %i elements instead of 10\n', ...
-                        numel(SlaveConfig.dc));
-                end
+            dc = obj.getFirstNode('Dc');
+            if isfield(SlaveConfig,'dc') && ~isempty(SlaveConfig.dc) && ...
+                     SlaveConfig.dc(1) ~= 0
 
-                assignActivate = cellfun(@(x) EtherCATInfo.hexDecValue(x.getFirstNode('AssignActivate').getTextContent), ...
-                    obj.getFirstNode('Dc').getNodes('OpMode'));
-                if ~any(ismember(SlaveConfig.dc(1), assignActivate))
-                    fprintf('DC AssignActivate=#x%x is not found\n', ...
-                        SlaveConfig.dc(1));
+                if isempty(dc)
+                    disp('Slave does not have Dc, but DC is configured in SlaveConfig')
+                else
+                    if numel(SlaveConfig.dc) ~= 10
+                        fprintf('DC has %i elements instead of 10\n', ...
+                            numel(SlaveConfig.dc));
+                    end
+
+                    assignActivate = cellfun(@(x) EtherCATInfo.hexDecValue(x.getFirstNode('AssignActivate').getTextContent), ...
+                            dc.getNodes('OpMode'));
+                    if ~any(ismember(SlaveConfig.dc(1), assignActivate))
+                        fprintf('DC AssignActivate=#x%x is not found\n', ...
+                            SlaveConfig.dc(1));
+                    end
                 end
             end
 

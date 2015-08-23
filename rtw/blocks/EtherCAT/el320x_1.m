@@ -1,25 +1,24 @@
 classdef el320x_1 < EtherCATSlave
 
+
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    methods (Static)
+    methods
         %====================================================================
-        function updateModel
-            model = get_param(gcbh,'model');
-            pdo_count = str2double(model(6));
-            EtherCATSlaveBlock.updateSDOEnable(...
-                dec2base(1:3*pdo_count,10,2));
+        function obj = el320x_1(id)
+            if nargin > 0
+                obj.slave = obj.find(id);
+            end
         end
 
         %====================================================================
-        function rv = configure(model,status,vector,filter,...
+        function rv = configure(obj,status,vector,filter,...
                                 element,technology,resistance)
-            slave = EtherCATSlave.findSlave(model,el320x_1.models);
 
             rv.SlaveConfig.vendor = 2;
-            rv.SlaveConfig.description = model;
-            rv.SlaveConfig.product  = slave{2};
+            rv.SlaveConfig.description = obj.slave{1};
+            rv.SlaveConfig.product  = obj.slave{2};
 
-            pdo_count = str2double(model(6));
+            pdo_count = str2double(obj.slave{1}(6));
 
             pdo = el320x_1.pdo;
             rv.SlaveConfig.sm = {{3,1, arrayfun(@(i) pdo(i,:), ...
@@ -47,7 +46,7 @@ classdef el320x_1 < EtherCATSlave
 
             % Set the full scale range for temperature port
             for i = 1:numel(rv.PortConfig.output)/2
-                rv.PortConfig.output(i).full_scale = slave{4};
+                rv.PortConfig.output(i).full_scale = obj.slave{4};
             end
             
             subIndex = hex2dec({'19','1a','1b'})';
@@ -62,15 +61,30 @@ classdef el320x_1 < EtherCATSlave
                            hex2dec('8000'),hex2dec('15'),16,max(0,filter-2);
                            config]);
         end
+    end
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    methods (Static)
+        %====================================================================
+        function modelChanged()
+            obj = el320x_1(get_param(gcbh,'model'));
+            pdo_count = str2double(obj.slave{1}(6));
+            obj.updateSDOEnable(dec2base(1:3*pdo_count,10,2));
+            obj.updateRevision();
+        end
 
         %====================================================================
         function test(p)
-            ei = EtherCATInfo(fullfile(p,'Beckhoff EL3xxx.xml'));
+            ei = EtherCATInfo(fullfile(p,'Beckhoff EL32xx.xml'));
             for i = 1:size(el320x_1.models,1)
                 fprintf('Testing %s\n', el320x_1.models{i,1});
-                rv = el320x_1.configure(el320x_1.models{i,1},i&1,i&2,...
+                slave = ei.getSlave(el320x_1.models{i,2},...
+                        'revision', el320x_1.models{i,3});
+                model = el320x_1.models{i,1};
+
+                rv = el320x_1(model).configure(i&1,i&2,...
                         1,1:4,1:4,1:4);
-                ei.testConfiguration(rv.SlaveConfig,rv.PortConfig);
+                slave.testConfig(rv.SlaveConfig,rv.PortConfig);
             end
         end
     end
@@ -118,12 +132,12 @@ classdef el320x_1 < EtherCATSlave
 
         %   Model   ProductCode           RevisionNo               TempScale
         models = {
-          'EL3201',       hex2dec('0c813052'), hex2dec('00110000'),  10;
-          'EL3201-0010',  hex2dec('0c813052'), hex2dec('0011000a'), 100;
-          'EL3201-0020',  hex2dec('0c813052'), hex2dec('00110014'), 100;
-          'EL3202',       hex2dec('0c823052'), hex2dec('00110000'),  10;
-          'EL3202-0010',  hex2dec('0c823052'), hex2dec('0011000a'), 100;
-          'EL3204',       hex2dec('0c843052'), hex2dec('00110000'),  10;
+          'EL3201',       hex2dec('0c813052'), hex2dec('00100000'),  10;
+          'EL3201-0010',  hex2dec('0c813052'), hex2dec('0010000a'), 100;
+          'EL3201-0020',  hex2dec('0c813052'), hex2dec('00100014'), 100;
+          'EL3202',       hex2dec('0c823052'), hex2dec('00100000'),  10;
+          'EL3202-0010',  hex2dec('0c823052'), hex2dec('0010000a'), 100;
+          'EL3204',       hex2dec('0c843052'), hex2dec('00100000'),  10;
         };
     end
 end

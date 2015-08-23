@@ -1,85 +1,19 @@
 classdef ep8309 < EtherCATSlave
-    methods (Static)
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function updateAnalogIn
-            %% Analog Input selection changed
-            sdo = ep8309.sdo.anain;
-            extra = strvcat('gain','offset','tau');
-
-            if strcmp(get_param(gcbh,'anain'), 'on')
-                ep8309.updateSlaveBlock(sdo, extra, sdo, extra)
-            else
-                ep8309.updateSlaveBlock(sdo, extra)
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    methods
+        %====================================================================
+        function obj = ep8309(id)
+            if nargin > 0
+                obj.slave = obj.find(id);
             end
         end
 
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function updateAnalogOut
-            %% Analog Output selection changed
-            sdo = [ep8309.sdo.current; ep8309.sdo.pwm];
-            extra = 'gain2';
-
-            switch get_param(gcbh,'anaout');
-            case 'Current'
-                ep8309.updateSlaveBlock(sdo, extra, ...
-                                        ep8309.sdo.current, extra);
-            case 'PWM'
-                ep8309.updateSlaveBlock(sdo, extra, ...
-                                        ep8309.sdo.pwm, extra);
-            otherwise
-                ep8309.updateSlaveBlock(sdo, extra);
-            end
-        end
-
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function updateTacho
-            %% Tacho selection changed
-            sdo = [ep8309.sdo.tacho1; ep8309.sdo.tacho2];
-
-            switch get_param(gcbh,'tacho');
-            case 'Single shaft'
-                ep8309.updateSlaveBlock(sdo, [], ep8309.sdo.tacho1)
-            case 'Dual shaft'
-                ep8309.updateSlaveBlock(sdo, [], ep8309.sdo.tacho2)
-            otherwise
-                ep8309.updateSlaveBlock(sdo, [])
-            end
-        end
-
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function updateSlaveBlock(sdo, extra, visible, extra_visible)
-            %% Helper function for all the update* functions above
-            %   sdo     - Nx4 array of affected SDOs (Index, SubIndex)
-            %   extra   - string array of other mask parameters
-            %   visible - Nx4 array of SDO's that are visible
-            %   extra_visible - string array of mask parameters that must
-            %                   remain visible
-            %
-            % Any mask variable that is not in *visible will be hidden
-            %
-            if nargin < 4
-                extra_visible = [];
-            end
-
-            if nargin < 3 || isempty(visible)
-                visible = double.empty(0,2);
-            end
-
-            list = strvcat(extra, strcat('sdo_', dec2hex(sdo(:,1),4),...
-                                            '_', dec2hex(sdo(:,2),2)));
-            on = [ismember(extra, extra_visible, 'rows');
-                  ismember(  sdo,       visible, 'rows')];
-
-            EtherCATSlaveBlock.setVisible(list, on);
-        end
-
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function rv = configure(model,io)
-            slave = EtherCATSlave.findSlave(model, ep8309.models);
+        %====================================================================
+        function rv = configure(obj,io)
 
             rv.SlaveConfig.vendor = 2;
-            rv.SlaveConfig.description = model;
-            rv.SlaveConfig.product = slave{2};
+            rv.SlaveConfig.description = obj.slave{1};
+            rv.SlaveConfig.product = obj.slave{2};
 
             % The various functions
             digin   = isfield(io,   'digin');
@@ -92,17 +26,12 @@ classdef ep8309 < EtherCATSlave
             tacho2  = isfield(io,  'tacho2');   % Dual channel
             tacho   = tacho1 || tacho2;
 
-            % Make copies of the classes properties so that they can be
-            % indexed
-            pdo2 = ep8309.pdo2;
-            pdo3 = ep8309.pdo3;
-
             % SyncManager configuration
             % Dynamically select required PDO's as configured. Some
             % are mandatory
             rv.SlaveConfig.sm = {...
-                {2,0,pdo2([true,true,pwm,current])},...
-                {3,1,pdo3([anain,anain,tacho1,tacho2,tacho2,true,pwm,true])},...
+                {2,0,ep8309.pdo2([true,true,pwm,current])},...
+                {3,1,ep8309.pdo3([anain,anain,tacho1,tacho2,tacho2,true,pwm,true])},...
             };
 
             % Initialize some variables. In particular portname is
@@ -264,6 +193,150 @@ classdef ep8309 < EtherCATSlave
 
             % Now is time to format sdo as a cell array
             rv.SlaveConfig.sdo = num2cell(sdo);
+        end
+    end
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    methods (Static)
+        %====================================================================
+        function test(p)
+            ei = EtherCATInfo(fullfile(p,'Beckhoff EP8xxx.xml'));
+            for i = 1:size(ep8309.models,1)
+                fprintf('Testing %s\n', ep8309.models{i,1});
+                slave = ei.getSlave(ep8309.models{i,2},...
+                        'revision', ep8309.models{i,3});
+                model = ep8309.models{i,1};
+
+                io.digin = 1;
+                io.digout = 1;
+                io.devstat = 1;
+
+                io.anain.gain = [];
+                io.anain.offset = [];
+                io.anain.filter = [];
+                io.anain.sdo = [hex2dec('8000'), hex2dec('06'), true;
+                                hex2dec('8000'), hex2dec('15'), 3;
+                                hex2dec('F800'), hex2dec('01'), 1;
+                                hex2dec('F800'), hex2dec('02'), 1];
+
+                % Single shaft mode
+                io.tacho1.gain = 5;
+                io.tacho1.sdo = [hex2dec('8031'), hex2dec('0B'), true;
+                                 hex2dec('8031'), hex2dec('0C'), true;
+                                 hex2dec('8031'), hex2dec('11'), 5;
+                                 hex2dec('8031'), hex2dec('12'), 5;
+                                 hex2dec('8031'), hex2dec('15'), 1];
+
+                % Current
+                io.current.gain = [];
+                io.current.sdo = [hex2dec('8060'), hex2dec('05'), 1;
+                                  hex2dec('8060'), hex2dec('13'), 4;
+                                  hex2dec('8060'), hex2dec('14'), 4;
+                                  hex2dec('F800'), hex2dec('08'), 1];
+
+                rv = ep8309(model).configure(io);
+                slave.testConfig(rv.SlaveConfig,rv.PortConfig);
+
+                io = [];
+
+                % dual shaft mode
+                io.tacho2.gain = [5,6];
+                io.tacho2.sdo = [hex2dec('8020'), hex2dec('11'), 4;
+                                 hex2dec('8020'), hex2dec('12'), 4;
+                                 hex2dec('8020'), hex2dec('15'), 1;
+                                 hex2dec('8030'), hex2dec('11'), 5;
+                                 hex2dec('8030'), hex2dec('12'), 5;
+                                 hex2dec('8030'), hex2dec('15'), 2];
+                % PWM
+                io.pwm.gain = [];
+                io.pwm.sdo = [hex2dec('8050'), hex2dec('03'), true;
+                              hex2dec('8050'), hex2dec('04'), true;
+                              hex2dec('8050'), hex2dec('05'), 1;
+                              hex2dec('8050'), hex2dec('0D'), 8;
+                              hex2dec('8050'), hex2dec('0E'), 8;
+                              hex2dec('8050'), hex2dec('10'), 100;
+                              hex2dec('8050'), hex2dec('12'), 250;
+                              hex2dec('8050'), hex2dec('13'), 4;
+                              hex2dec('8050'), hex2dec('14'), 50;
+                              hex2dec('8050'), hex2dec('1E'), 64;
+                              hex2dec('8050'), hex2dec('1F'), 5];
+
+                rv = ep8309(model).configure(io);
+                slave.testConfig(rv.SlaveConfig,rv.PortConfig);
+            end
+        end
+
+        %====================================================================
+        function updateAnalogIn
+            %% Analog Input selection changed
+            sdo = ep8309.sdo.anain;
+            extra = strvcat('gain','offset','tau');
+
+            if strcmp(get_param(gcbh,'anain'), 'on')
+                ep8309.updateSlaveBlock(sdo, extra, sdo, extra)
+            else
+                ep8309.updateSlaveBlock(sdo, extra)
+            end
+        end
+
+        %====================================================================
+        function updateAnalogOut
+            %% Analog Output selection changed
+            sdo = [ep8309.sdo.current; ep8309.sdo.pwm];
+            extra = 'gain2';
+
+            switch get_param(gcbh,'anaout');
+            case 'Current'
+                ep8309.updateSlaveBlock(sdo, extra, ...
+                                        ep8309.sdo.current, extra);
+            case 'PWM'
+                ep8309.updateSlaveBlock(sdo, extra, ...
+                                        ep8309.sdo.pwm, extra);
+            otherwise
+                ep8309.updateSlaveBlock(sdo, extra);
+            end
+        end
+
+        %====================================================================
+        function updateTacho
+            %% Tacho selection changed
+            sdo = [ep8309.sdo.tacho1; ep8309.sdo.tacho2];
+
+            switch get_param(gcbh,'tacho');
+            case 'Single shaft'
+                ep8309.updateSlaveBlock(sdo, [], ep8309.sdo.tacho1)
+            case 'Dual shaft'
+                ep8309.updateSlaveBlock(sdo, [], ep8309.sdo.tacho2)
+            otherwise
+                ep8309.updateSlaveBlock(sdo, [])
+            end
+        end
+
+        %====================================================================
+        function updateSlaveBlock(sdo, extra, visible, extra_visible)
+            %% Helper function for all the update* functions above
+            %   sdo     - Nx4 array of affected SDOs (Index, SubIndex)
+            %   extra   - string array of other mask parameters
+            %   visible - Nx4 array of SDO's that are visible
+            %   extra_visible - string array of mask parameters that must
+            %                   remain visible
+            %
+            % Any mask variable that is not in *visible will be hidden
+            %
+            if nargin < 4
+                extra_visible = [];
+            end
+
+            if nargin < 3 || isempty(visible)
+                visible = double.empty(0,2);
+            end
+
+            list = strvcat(extra, strcat('sdo_', dec2hex(sdo(:,1),4),...
+                                            '_', dec2hex(sdo(:,2),2)));
+            on = [ismember(extra, extra_visible, 'rows');
+                  ismember(  sdo,       visible, 'rows')];
+
+            EtherCATSlave.setVisible(list, on);
         end
     end
 
@@ -436,7 +509,7 @@ classdef ep8309 < EtherCATSlave
     properties (Constant)
         %    Name          ProductCode          RevisionNo
         models = {
-            'EP8309-1022', hex2dec('20754052'), hex2dec('001103FE');
+            'EP8309-1022', hex2dec('20754052'), hex2dec('001003FE');
         };
     end
 

@@ -1,41 +1,46 @@
 classdef el31xx_1 < EtherCATSlave
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    methods (Static)
+    methods
         %====================================================================
-        function rv = configure(model,status,vector,scale,dc,filter)
-            slave = EtherCATSlave.findSlave(model,el31xx_1.models);
+        function obj = el31xx_1(id)
+            if nargin > 0
+                obj.slave = obj.find(id);
+            end
+        end
+
+        %====================================================================
+        function rv = configure(obj,status,vector,scale,dc,filter)
 
             rv.SlaveConfig.vendor = 2;
-            rv.SlaveConfig.description = model;
-            rv.SlaveConfig.product  = slave{2};
-            rv.function = slave{3};
+            rv.SlaveConfig.description = obj.slave{1};
+            rv.SlaveConfig.product  = obj.slave{2};
+            rv.function = obj.slave{4};
 
-            pdo_count = str2double(model(6));
+            pdo_count = str2double(obj.slave{1}(6));
 
             if status
-                pdo_idx = slave{5};
+                pdo_idx = obj.slave{6};
                 value_idx = 10;
             else
-                pdo_idx = slave{4};
+                pdo_idx = obj.slave{5};
                 value_idx = 0;
             end
 
-            pdo = el31xx_1.pdo;
-            rv.SlaveConfig.sm = {{3,1, arrayfun(@(i) pdo(i,:), ...
+            rv.SlaveConfig.sm = {{3,1, arrayfun(@(i) obj.pdo(i,:), ...
                                          pdo_idx:(pdo_idx+pdo_count-1), ...
                                          'UniformOutput', false)}};
             if dc(1) > 3
                 rv.SlaveConfig.dc = dc(2:11);
             else
-                rv.SlaveConfig.dc = el31xx_1.dc{dc(1),2};
+                rv.SlaveConfig.dc = obj.dc{dc(1),2};
             end
 
             pdo = repmat([0,0,value_idx,0],pdo_count,1);
             pdo(:,2) = 0:pdo_count-1;
 
             rv.PortConfig.output = ...
-                el31xx_1.configurePorts('Ch.',pdo,sint(16),vector,scale);
+                obj.configurePorts('Ch.',pdo,sint(16),vector,scale);
 
             if status
                 pdo(:,3) = 4;
@@ -46,7 +51,7 @@ classdef el31xx_1 < EtherCATSlave
                     n = pdo_count;
                 end
                 
-                rv.PortConfig.output(end+(1:n)) = el31xx_1.configurePorts(...
+                rv.PortConfig.output(end+(1:n)) = obj.configurePorts(...
                         'St.',pdo,uint(1),vector,isa(scale,'struct'));
             end
             
@@ -56,19 +61,25 @@ classdef el31xx_1 < EtherCATSlave
             };
 
         end
+    end
 
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    methods (Static)
         %====================================================================
         function test(p)
             ei = EtherCATInfo(fullfile(p,'Beckhoff EL31xx.xml'));
             for i = 1:size(el31xx_1.models,1)
                 fprintf('Testing %s\n', el31xx_1.models{i,1});
-                rv = el31xx_1.configure(el31xx_1.models{i,1},0,i&1,...
-                        EtherCATSlave.configureScale(2^15,''),2,1);
-                ei.testConfiguration(rv.SlaveConfig,rv.PortConfig);
+                slave = ei.getSlave(el31xx_1.models{i,2},...
+                        'revision', el31xx_1.models{i,3});
 
-                rv = el31xx_1.configure(el31xx_1.models{i,1},1,i&1,...
+                rv = el31xx_1(el31xx_1.models{i,1}).configure(0,i&1,...
+                        EtherCATSlave.configureScale(2^15,''),2,1);
+                slave.testConfig(rv.SlaveConfig,rv.PortConfig);
+
+                rv = el31xx_1(el31xx_1.models{i,1}).configure(1,i&1,...
                         EtherCATSlave.configureScale(2^15,'6'),rem(i,3)+1,2);
-                ei.testConfiguration(rv.SlaveConfig,rv.PortConfig);
+                slave.testConfig(rv.SlaveConfig,rv.PortConfig);
             end
         end
     end
@@ -169,27 +180,27 @@ classdef el31xx_1 < EtherCATSlave
                                   hex2dec('6000') , 17, 16]};
 
 
-        %   Model   ProductCode           Function NoStatus WithStatus;
+        %   Model   ProductCode  Revision         Function NoStatus WithStatus;
         models = {
-          'EL3101',      hex2dec('0c1d3052'), '+-10V' , 1,  7;
-          'EL3102',      hex2dec('0c1e3052'), '+-10V' , 5, 11;
-          'EL3104',      hex2dec('0c203052'), '+-10V' , 1,  7;
-          'EL3111',      hex2dec('0c273052'), '0-20mA', 1, 13;
-          'EL3112',      hex2dec('0c283052'), '0-20mA', 5, 11;
-          'EL3114',      hex2dec('0c2a3052'), '0-20mA', 1,  7;
-          'EL3121',      hex2dec('0c313052'), '4-20mA', 1,  7;
-          'EL3122',      hex2dec('0c323052'), '4-20mA', 5, 11;
-          'EL3124',      hex2dec('0c343052'), '4-20mA', 1,  7;
-          'EL3141',      hex2dec('0c453052'), '0-20mA', 1,  7;
-          'EL3142',      hex2dec('0c463052'), '0-20mA', 5, 11;
-          'EL3142-0010', hex2dec('0c463052'), '+-10mA', 5, 11;
-          'EL3144',      hex2dec('0c483052'), '0-20mA', 1,  7;
-          'EL3151',      hex2dec('0c4f3052'), '4-20mA', 1,  7;
-          'EL3152',      hex2dec('0c503052'), '4-20mA', 5, 11;
-          'EL3154',      hex2dec('0c523052'), '4-20mA', 1,  7;
-          'EL3161',      hex2dec('0c593052'), '0-10V' , 1,  7;
-          'EL3162',      hex2dec('0c5a3052'), '0-10V' , 5, 11;
-          'EL3164',      hex2dec('0c5c3052'), '0-10V' , 1,  7;
+          'EL3101',      hex2dec('0c1d3052'), hex2dec('00100000'), '+-10V' , 1,  7;
+          'EL3102',      hex2dec('0c1e3052'), hex2dec('00110000'), '+-10V' , 5, 11;
+          'EL3104',      hex2dec('0c203052'), hex2dec('00100000'), '+-10V' , 1,  7;
+          'EL3111',      hex2dec('0c273052'), hex2dec('00100000'), '0-20mA', 1, 13;
+          'EL3112',      hex2dec('0c283052'), hex2dec('00110000'), '0-20mA', 5, 11;
+          'EL3114',      hex2dec('0c2a3052'), hex2dec('00110000'), '0-20mA', 1,  7;
+          'EL3121',      hex2dec('0c313052'), hex2dec('00100000'), '4-20mA', 1,  7;
+          'EL3122',      hex2dec('0c323052'), hex2dec('00110000'), '4-20mA', 5, 11;
+          'EL3124',      hex2dec('0c343052'), hex2dec('00100000'), '4-20mA', 1,  7;
+          'EL3141',      hex2dec('0c453052'), hex2dec('00100000'), '0-20mA', 1,  7;
+          'EL3142',      hex2dec('0c463052'), hex2dec('00110000'), '0-20mA', 5, 11;
+          'EL3142-0010', hex2dec('0c463052'), hex2dec('0011000a'), '+-10mA', 5, 11;
+          'EL3144',      hex2dec('0c483052'), hex2dec('00100000'), '0-20mA', 1,  7;
+          'EL3151',      hex2dec('0c4f3052'), hex2dec('00100000'), '4-20mA', 1,  7;
+          'EL3152',      hex2dec('0c503052'), hex2dec('00110000'), '4-20mA', 5, 11;
+          'EL3154',      hex2dec('0c523052'), hex2dec('00100000'), '4-20mA', 1,  7;
+          'EL3161',      hex2dec('0c593052'), hex2dec('00100000'), '0-10V' , 1,  7;
+          'EL3162',      hex2dec('0c5a3052'), hex2dec('00110000'), '0-10V' , 5, 11;
+          'EL3164',      hex2dec('0c5c3052'), hex2dec('00100000'), '0-10V' , 1,  7;
         };
 
         dc = {'Free Run/SM-Synchron', repmat(0,10,1);

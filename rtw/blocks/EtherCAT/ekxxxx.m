@@ -6,19 +6,25 @@
 %
 classdef ekxxxx < EtherCATSlave
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-methods (Static)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+methods
+    %====================================================================
+    function obj = ekxxxx(id)
+        if nargin > 0
+            obj.slave = obj.find(id);
+        end
+    end
+
     %========================================================================
-    function rv = configure(model,vector)
-        slave = EtherCATSlave.findSlave(model,ekxxxx.models);
+    function rv = configure(obj,vector)
 
         % General information
         rv.SlaveConfig.vendor = 2;
-        rv.SlaveConfig.product = slave{2};
-        rv.SlaveConfig.description = slave{1};
+        rv.SlaveConfig.product = obj.slave{2};
+        rv.SlaveConfig.description = obj.slave{1};
 
         % Get the model's SM
-        sm = ekxxxx.sm(slave{3});
+        sm = ekxxxx.sm(obj.slave{4});
         rv.SlaveConfig.sm = sm;
 
         % Go through the rv.SlaveConfig.sm and reformat the PDO Entries
@@ -101,20 +107,32 @@ methods (Static)
             end
         end     % vector
     end
+end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+methods (Static)
     %====================================================================
     function test(p)
         ei = EtherCATInfo(fullfile(p,'Beckhoff EKxxxx.xml'));
         for i = 1:size(ekxxxx.models,1)-1
             fprintf('Testing %s\n', ekxxxx.models{i,1});
-            rv = ekxxxx.configure(ekxxxx.models{i,1},i&1);
-            ei.testConfiguration(rv.SlaveConfig,rv.PortConfig);
+            slave = ei.getSlave(ekxxxx.models{i,2},...
+                    'revision', ekxxxx.models{i,3});
+            model = ekxxxx.models{i,1};
+
+            rv = ekxxxx(model).configure(i&1);
+            slave.testConfig(rv.SlaveConfig,rv.PortConfig);
         end
 
         ei = EtherCATInfo(fullfile(p,'Beckhoff CXxxxx.xml'));
-        fprintf('Testing %s\n', ekxxxx.models{size(ekxxxx.models,1),1});
-        rv = ekxxxx.configure(ekxxxx.models{size(ekxxxx.models,1),1},i&1);
-        ei.testConfiguration(rv.SlaveConfig,rv.PortConfig);
+        i = size(ekxxxx.models,1);
+        fprintf('Testing %s\n', ekxxxx.models{i,1});
+        slave = ei.getSlave(ekxxxx.models{i,2},...
+                'revision', ekxxxx.models{i,3});
+        model = ekxxxx.models{i,1};
+
+        rv = ekxxxx(model).configure(i&1);
+        slave.testConfig(rv.SlaveConfig,rv.PortConfig);
     end
 end     % methods
 
@@ -186,25 +204,25 @@ properties (Constant)
     % no differences between the revisions, so column 3 only has the
     % version numbers
     models = {
-      'EK1100',      hex2dec('044c2c52'), [];
-      'EK1100-0030', hex2dec('044c2c52'), [];
-      'EK1101',      hex2dec('044d2c52'), [1];
-%      'EK1101-0080', hex2dec('044d2c52'), [1];
-      'EK1110',      hex2dec('04562c52'), [];
-      'EK1122',      hex2dec('04622c52'), [];
-%      'EK1122-0080', hex2dec('04622c52'), [];
-      'EK1200',      hex2dec('04b02c52'), [];
-      'EK1501',      hex2dec('05dd2c52'), [1];
-      'EK1501-0010', hex2dec('05dd2c52'), [1];
-      'EK1521',      hex2dec('05f12c52'), [];
-      'EK1521-0010', hex2dec('05f12c52'), [];
-      'EK1541',      hex2dec('06052c52'), [1];
-      'EK1561',      hex2dec('06192c52'), [];
-      'EK1814',      hex2dec('07162c52'), [2,3];
-      'EK1818',      hex2dec('071a2c52'), [4,5];
-      'EK1828',      hex2dec('07242c52'), [6,7,8];
-      'EK1828-0010', hex2dec('07242c52'), [6,7];
-      'CX1100-0004', hex2dec('044c6032'), [];
+      'EK1100',      hex2dec('044c2c52'), hex2dec('00000000'), [];
+      'EK1100-0030', hex2dec('044c2c52'), hex2dec('0010001e'), [];
+      'EK1101',      hex2dec('044d2c52'), hex2dec('00100000'), [1];
+%      'EK1101-0080', hex2dec('044d2c52'), hex2dec('00000000'), [1];
+      'EK1110',      hex2dec('04562c52'), hex2dec('00000000'), [];
+      'EK1122',      hex2dec('04622c52'), hex2dec('00100000'), [];
+%      'EK1122-0080', hex2dec('04622c52'), hex2dec('00000000'), [];
+      'EK1200',      hex2dec('04b02c52'), hex2dec('00001388'), [];
+      'EK1501',      hex2dec('05dd2c52'), hex2dec('00100000'), [1];
+      'EK1501-0010', hex2dec('05dd2c52'), hex2dec('0010000a'), [1];
+      'EK1521',      hex2dec('05f12c52'), hex2dec('00100000'), [];
+      'EK1521-0010', hex2dec('05f12c52'), hex2dec('0010000a'), [];
+      'EK1541',      hex2dec('06052c52'), hex2dec('00100000'), [1];
+      'EK1561',      hex2dec('06192c52'), hex2dec('00100000'), [];
+      'EK1814',      hex2dec('07162c52'), hex2dec('00100000'), [2,3];
+      'EK1818',      hex2dec('071a2c52'), hex2dec('00100000'), [4,5];
+      'EK1828',      hex2dec('07242c52'), hex2dec('00100000'), [6,7,8];
+      'EK1828-0010', hex2dec('07242c52'), hex2dec('0010000a'), [6,7];
+      'CX1100-0004', hex2dec('044c6032'), hex2dec('00000004'), [];
     };
 end     % properties
 

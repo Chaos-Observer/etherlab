@@ -1,94 +1,55 @@
 classdef el51xx < EtherCATSlave
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    methods (Static)
+    methods
         %====================================================================
-        function updateModel
-            slave = EtherCATSlave.findSlave(get_param(gcbh,'model'), ...
-                                            el51xx.models);
-
-            pdo = el51xx.pdo;
-            EtherCATSlaveBlock.updatePDOVisibility([pdo{[slave{[4,5]}],1}]);
-            EtherCATSlaveBlock.updateSDOVisibility(dec2hex(slave{6},2))
-            el51xx.updatePDO()
-        end
-
-        %====================================================================
-        function updatePDO
-            slave = EtherCATSlave.findSlave(get_param(gcbh,'model'), ...
-                                            el51xx.models);
-            names = char(get_param(gcbh,'MaskNames'));
-            values = get_param(gcbh,'MaskValues');
-
-            % row list of all pdo's for the slave
-            pdo_list = el51xx.pdo;
-            pdo_list = pdo_list([slave{[4,5]}], [1,2]);
-
-            pdo_rows = ismember(names, ...
-                          strcat('pdo_x', dec2hex([pdo_list{:,1}],4)),...
-                          'rows');
-            pdo_num = zeros(size(pdo_rows));
-            pdo_num(pdo_rows) = hex2dec(names(pdo_rows,6:end));
-            on = strcmp(values,'on') & pdo_rows;
-
-            selected_rows = ismember([pdo_list{:,1}], pdo_num(on));
-            exclude = unique([pdo_list{selected_rows, 2}]);
-
-            disable = pdo_rows & ismember(pdo_num, exclude);
-
-            for i = 1:length(pdo_list)
-                if disable(i) && strcmp(values(i), 'on')
-                    % Upps, there is a confict here. Uncheck the option
-                    % in question and retry the update
-                    set_param(gcbh,deblank(names(i,:)),'off')
-                    el51xx.updatePDO()
-                    return
-                end
+        function obj = el51xx(id)
+            if nargin > 0
+                obj.slave = obj.find(id);
             end
-
-            EtherCATSlaveBlock.setEnable(pdo_rows, ~disable);
         end
 
         %====================================================================
-        function rv = configure(model,mapped_pdo,sdo_config,dc_config)
-            slave = EtherCATSlave.findSlave(model,el51xx.models);
+        function rv = configure(obj,mapped_pdo,sdo_config,dc_config)
 
             rv.SlaveConfig.vendor = 2;
-            rv.SlaveConfig.description = model;
-            rv.SlaveConfig.product  = slave{2};
+            rv.SlaveConfig.description = obj.slave{1};
+            rv.SlaveConfig.product  = obj.slave{2};
 
             % Get a list of pdo's for the selected slave
-            pdo_list = el51xx.pdo;
-            selected = ismember(1:size(pdo_list,1), [slave{4},slave{5}]) ...
-                & ismember([pdo_list{:,1}], mapped_pdo);
+            selected = ismember(1:size(obj.pdo,1), [obj.slave{4},obj.slave{5}]) ...
+                & ismember([obj.pdo{:,1}], mapped_pdo);
+
+%            selected = ismember(1:size(el51xx.pdo,1), [obj.slave{4},obj.slave{5}]) ...
+%                & ismember([el51xx.pdo{:,1}], mapped_pdo);
 
             % Reduce this list to the ones selected, making sure that
             % excluded pdo's are not mapped
             exclude = [];
             for i = 1:numel(selected)
-                selected(i) = selected(i) & ~ismember(pdo_list{i,1}, exclude);
+                selected(i) = selected(i) & ~ismember(el51xx.pdo{i,1}, exclude);
                 if selected(i)
-                    exclude = [exclude,pdo_list{i,2}];
+                    exclude = [exclude,el51xx.pdo{i,2}];
                 end
             end
 
             % Configure SM2 and SM3
             selected_idx = find(selected);
-            rx = slave{4}(ismember(slave{4}, selected_idx));
-            tx = slave{5}(ismember(slave{5}, selected_idx));
+            rx = obj.slave{4}(ismember(obj.slave{4}, selected_idx));
+            tx = obj.slave{5}(ismember(obj.slave{5}, selected_idx));
             rv.SlaveConfig.sm = ...
-                {{2,0, arrayfun(@(x) {pdo_list{x,1}, pdo_list{x,3}},...
+                {{2,0, arrayfun(@(x) {el51xx.pdo{x,1}, el51xx.pdo{x,3}},...
                                 rx, 'UniformOutput', false)}, ...
-                 {3,1, arrayfun(@(x) {pdo_list{x,1}, pdo_list{x,3}},...
+                 {3,1, arrayfun(@(x) {el51xx.pdo{x,1}, el51xx.pdo{x,3}},...
                                 tx, 'UniformOutput', false)}};
 
             % Configure input port. The algorithm below will group all boolean
             % signals to one port. All other entries get a separate port
             inputs = arrayfun(@(i) arrayfun(@(j) {i-1, ...
-                                                  pdo_list{rx(i),3}(pdo_list{rx(i),4}{j,1}(1)+1,3), ...
-                                                  pdo_list{rx(i),4}{j,1}',...
-                                                  pdo_list{rx(i),4}{j,2}},...
-                                            1:size(pdo_list{rx(i),4},1),...
+                                                  el51xx.pdo{rx(i),3}(el51xx.pdo{rx(i),4}{j,1}(1)+1,3), ...
+                                                  el51xx.pdo{rx(i),4}{j,1}',...
+                                                  el51xx.pdo{rx(i),4}{j,2}},...
+                                            1:size(el51xx.pdo{rx(i),4},1),...
                                             'UniformOutput', false), ...
                               1:numel(rx), 'UniformOutput', false);
             if ~isempty(inputs)
@@ -109,10 +70,10 @@ classdef el51xx < EtherCATSlave
             % Configure output port. The algorithm below will group all boolean
             % signals to one port. All other entries get a separate port
             outputs = arrayfun(@(i) arrayfun(@(j) {i-1, ...
-                                                   pdo_list{tx(i),3}(pdo_list{tx(i),4}{j,1}(1)+1,3), ...
-                                                   pdo_list{tx(i),4}{j,1}',...
-                                                   pdo_list{tx(i),4}{j,2}},...
-                                            1:size(pdo_list{tx(i),4},1),...
+                                                   el51xx.pdo{tx(i),3}(el51xx.pdo{tx(i),4}{j,1}(1)+1,3), ...
+                                                   el51xx.pdo{tx(i),4}{j,1}',...
+                                                   el51xx.pdo{tx(i),4}{j,2}},...
+                                            1:size(el51xx.pdo{tx(i),4},1),...
                                             'UniformOutput', false), ...
                               1:numel(tx), 'UniformOutput', false);
             if ~isempty(outputs)
@@ -136,30 +97,79 @@ classdef el51xx < EtherCATSlave
             else
                 dc = el51xx.dc;
                 rv.PortConfig.dc = dc(dc_config(1),:);
-                rv.PortConfig.dc(1) = slave{7}; % Set AssignActivate
+                rv.PortConfig.dc(1) = obj.slave{7}; % Set AssignActivate
             end
 
             % CoE Configuration
-            sdo = el51xx.sdo;
-            rv.SlaveConfig.sdo = ...
-                num2cell(horzcat(sdo(slave{6},:), sdo_config(slave{6})'));
+            rv.SlaveConfig.sdo = num2cell(...
+                horzcat(obj.sdo(obj.slave{6},:), sdo_config(obj.slave{6})'));
+        end
+    end
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    methods (Static)
+        %====================================================================
+        function modelChanged
+            obj = el51xx(get_param(gcbh,'model'));
+
+            EtherCATSlave.updatePDOVisibility([obj.pdo{[obj.slave{[4,5]}],1}]);
+            EtherCATSlave.updateSDOVisibility(dec2hex(obj.slave{6},2))
+            el51xx.updatePDO()
+            obj.updateRevision();
+        end
+
+        %====================================================================
+        function updatePDO
+            obj = el51xx(get_param(gcbh,'model'));
+            names = char(get_param(gcbh,'MaskNames'));
+            values = get_param(gcbh,'MaskValues');
+
+            % row list of all pdo's for the slave
+            pdo_list = el51xx.pdo([obj.slave{[4,5]}], [1,2]);
+
+            pdo_rows = ismember(names, ...
+                          strcat('pdo_x', dec2hex([pdo_list{:,1}],4)),...
+                          'rows');
+            pdo_num = zeros(size(pdo_rows));
+            pdo_num(pdo_rows) = hex2dec(names(pdo_rows,6:end));
+            on = strcmp(values,'on') & pdo_rows;
+
+            selected_rows = ismember([pdo_list{:,1}], pdo_num(on));
+            exclude = unique([pdo_list{selected_rows, 2}]);
+
+            disable = pdo_rows & ismember(pdo_num, exclude);
+
+            for i = 1:length(pdo_list)
+                if disable(i) && strcmp(values(i), 'on')
+                    % Upps, there is a confict here. Uncheck the option
+                    % in question and retry the update
+                    set_param(gcbh,deblank(names(i,:)),'off')
+                    el51xx.updatePDO()
+                    return
+                end
+            end
+
+            EtherCATSlave.setEnable(pdo_rows, ~disable);
         end
 
         %====================================================================
         function test(p)
             ei = EtherCATInfo(fullfile(p,'Beckhoff EL5xxx.xml'));
-            pdo = el51xx.pdo;
             for i = 1:size(el51xx.models,1)
                 fprintf('Testing %s\n', el51xx.models{i,1});
+                slave = ei.getSlave(el51xx.models{i,2},...
+                        'revision', el51xx.models{i,3});
+                model = el51xx.models{i,1};
+
                 l = [el51xx.models{1,4},el51xx.models{1,5}];
 
-                pdoIdx = cell2mat(pdo(l,1))';
-                rv = el51xx.configure(el51xx.models{1,1}, pdoIdx, 1:50,2);
-                ei.testConfiguration(rv.SlaveConfig,rv.PortConfig);
+                pdoIdx = cell2mat(el51xx.pdo(l,1))';
+                rv = el51xx(model).configure(pdoIdx, 1:50,2);
+                slave.testConfig(rv.SlaveConfig,rv.PortConfig);
 
-                pdoIdx = cellfun(@(x) x(1), pdo(l,2))';
-                rv = el51xx.configure(el51xx.models{1,1}, pdoIdx, 1:50,2);
-                ei.testConfiguration(rv.SlaveConfig,rv.PortConfig);
+                pdoIdx = cellfun(@(x) x(1), el51xx.pdo(l,2))';
+                rv = el51xx(model).configure(pdoIdx, 1:50,2);
+                slave.testConfig(rv.SlaveConfig,rv.PortConfig);
             end
         end
     end
@@ -288,8 +298,8 @@ classdef el51xx < EtherCATSlave
                                                     hex2dec('6000'),12, 1;
                                                     hex2dec('6000'),13, 1;
                                                     hex2dec('1c32'),32, 1;
-                                                    hex2dec('1800'), 7, 1;
-                                                    hex2dec('1800'), 9, 1;
+                                                    hex2dec('1801'), 7, 1;
+                                                    hex2dec('1801'), 9, 1;
                                                     hex2dec('6000'),17,32;
                                                     hex2dec('6000'),18,32], ...
                        {[0:2,4,5,7:11], 'bool[10]'; 15, 'Counter'; 16, 'Latch'};
@@ -306,8 +316,8 @@ classdef el51xx < EtherCATSlave
                                                     hex2dec('6000'),12, 1;
                                                     hex2dec('6000'),13, 1;
                                                     hex2dec('1c32'),32, 1;
-                                                    hex2dec('1800'), 7, 1;
-                                                    hex2dec('1800'), 9, 1;
+                                                    hex2dec('1801'), 7, 1;
+                                                    hex2dec('1801'), 9, 1;
                                                     hex2dec('6000'),17,16;
                                                     hex2dec('6000'),18,16], ...
                        {[0:2,4,5,7:11], 'bool[10]'; 15, 'Counter'; 16, 'Latch'};
@@ -355,7 +365,7 @@ classdef el51xx < EtherCATSlave
                                                     hex2dec('6000'),18,16], ...
                        {[0:2,4:7,9], 'bool[8]'; 13, 'Counter'; 14, 'Latch'};
 
-                % EL5152 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                % EL5152 RxPdo for Rev 00100000 %%%%%%%%%%%%%%%%%%%%%%%%%%%
                 hex2dec('1600'), hex2dec('1601'), [ 0              , 0, 1;
                                                     0              , 0, 1;
                                                     hex2dec('7000'), 3, 1;
@@ -388,6 +398,8 @@ classdef el51xx < EtherCATSlave
                                                     0              , 0, 8;
                                                     hex2dec('7010'),17,16], ...
                        {2, 'Set'; 6, 'Value'};
+
+                % EL5152 TxPdo %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                 hex2dec('1a00'), hex2dec('1a01'), [ 0              , 0, 2;
                                                     hex2dec('6000'), 3, 1;
                                                     0              , 0, 4;
@@ -444,6 +456,32 @@ classdef el51xx < EtherCATSlave
                        {0, 'Period'};
                 hex2dec('1a07'), hex2dec('1a06'), [ hex2dec('6010'),19,32], ...
                        {0, 'Freq'};
+
+                % EL5152 RxPdo for Rev 00120000 %%%%%%%%%%%%%%%%%%%%%%%%%%%
+                hex2dec('1600'), hex2dec('1601'), [ 0              , 0, 2;
+                                                    hex2dec('7000'), 3, 1;
+                                                    0              , 0, 5;
+                                                    0              , 0, 8;
+                                                    hex2dec('7000'),17,32], ...
+                       {1, 'Set'; 4, 'Value'};
+                hex2dec('1601'), hex2dec('1600'), [ 0              , 0, 2;
+                                                    hex2dec('7000'), 3, 1;
+                                                    0              , 0, 5;
+                                                    0              , 0, 8;
+                                                    hex2dec('7000'),17,16], ...
+                       {1, 'Set'; 4, 'Value'};
+                hex2dec('1602'), hex2dec('1603'), [ 0              , 0, 2;
+                                                    hex2dec('7010'), 3, 1;
+                                                    0              , 0, 5;
+                                                    0              , 0, 8;
+                                                    hex2dec('7010'),17,32], ...
+                       {1, 'Set'; 4, 'Value'};
+                hex2dec('1603'), hex2dec('1602'), [ 0              , 0, 2;
+                                                    hex2dec('7010'), 3, 1;
+                                                    0              , 0, 5;
+                                                    0              , 0, 8;
+                                                    hex2dec('7010'),17,16], ...
+                       {1, 'Set'; 4, 'Value'};
         };
 
         dc = [0,0,0,0,0,0,0,0,0,0;      % FreeRun
@@ -503,15 +541,16 @@ classdef el51xx < EtherCATSlave
         %      Model,                   ProductCode, RevNo
         %         Rx,              Tx,                   CoE, AssignActivate
         models = {...
-            'EL5101',           hex2dec('13ed3052'), [], ...
+            'EL5101',           hex2dec('13ed3052'), hex2dec('00010000'), ...
                  1:3,            4:11,           [1:5,24,25], hex2dec('320');
-            'EL5101-0010',      hex2dec('13ed3052'), [], ...
+            'EL5101-0010',      hex2dec('13ed3052'), hex2dec('0010000a'), ...
                  12:13,         14:19,   [6,7,9,12:15,17:23], hex2dec('320');
-            'EL5101-0000',      hex2dec('13ed3052'), [], ...
-                 12:13,         14:19,         [26:35,37:43], hex2dec('320');
-            'EL5151',           hex2dec('141f3052'), [], ...
+            'EL5151',           hex2dec('141f3052'), hex2dec('00190000'), ...
                  12:13, [20,21,16:19],          [6:11,15:23], hex2dec('320');
-            'EL5152',           hex2dec('14203052'), [], ...
+            'EL5152',           hex2dec('14203052'), hex2dec('00120000'), ...
+                 34:37,         26:33, [8,10,11,15,16,18:23,...
+                                       28,30,31,35,36,38:43], hex2dec('720');
+            'EL5152-0000-0010', hex2dec('14203052'), hex2dec('00100000'), ...
                  22:25,         26:33, [8,10,11,15,16,18:23,...
                                        28,30,31,35,36,38:43], hex2dec('720');
         };

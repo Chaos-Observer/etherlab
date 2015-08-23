@@ -7,30 +7,28 @@
 classdef el3356 < EtherCATSlave
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-methods (Static)
-    %========================================================================
-    function updateModel
-        slave = EtherCATSlave.findSlave(get_param(gcbh,'model'),...
-                                        el3356.models);
-        EtherCATSlaveBlock.updateDCVisibility(~slave{3});
-        EtherCATSlaveBlock.updateSDOVisibility(dec2base(slave{4},10,2));
+methods
+    %====================================================================
+    function obj = el3356(id)
+        if nargin > 0
+            obj.slave = obj.find(id);
+        end
     end
 
     %========================================================================
-    function rv = configure(model,adc,dc_spec,scaling,sdo_config)
+    function rv = configure(obj,adc,dc_spec,scaling,sdo_config)
         % Whether this is EL3356, not EL3356-0010
         % The predefined PDO and DC structures are for EL3356-0010
         % The EL3356 does not have all these features
-        slave = EtherCATSlave.findSlave(model,el3356.models);
 
         % General information
         rv.SlaveConfig.vendor = 2;
-        rv.SlaveConfig.product = slave{2};
-        rv.SlaveConfig.description = slave{1};
+        rv.SlaveConfig.product = obj.slave{2};
+        rv.SlaveConfig.description = obj.slave{1};
 
         % Input and output syncmanager
         rv.SlaveConfig.sm = {{2,0,el3356.ctrl_pdo}, {3,1,{}}};
-        if slave{3}
+        if obj.slave{4}
             % Remove PDO Entry 7000:04 for EL3356
             rv.SlaveConfig.sm{1}{3}{1}{2}(4,1:2) = [0,0];
         end
@@ -49,7 +47,7 @@ methods (Static)
         if adc
             % 2xADC Converter
             rv.SlaveConfig.sm{2}{3} = el3356.adc_status_pdo;
-            if slave{3}
+            if obj.slave{4}
                 % Modifications for EL3356
                 % modify entry row 5 [0,0,1] to bitlen 8
                 % remove entry row 6 [0,0,7]
@@ -118,7 +116,7 @@ methods (Static)
         end
 
         % Distributed clock for EL3356-0010 only
-        if ~slave{3} && dc_spec(1)
+        if ~obj.slave{4} && dc_spec(1)
             if dc_spec(1) ~= 4
                 % DC Configuration from the default list
                 dc = el3356.dc;
@@ -153,22 +151,36 @@ methods (Static)
 
         % SDO Configuration
         sdo = el3356.sdo;
-        rv.SlaveConfig.sdo = num2cell([sdo(slave{4},:), ...
-                                       reshape(sdo_config(slave{4}),[],1)]);
+        rv.SlaveConfig.sdo = num2cell([sdo(obj.slave{5},:), ...
+                                       reshape(sdo_config(obj.slave{5}),[],1)]);
+    end
+end
+
+methods (Static)
+    %========================================================================
+    function modelChanged()
+        obj = el3356(get_param(gcbh,'model'));
+        obj.updateDCVisibility(~obj.slave{4});
+        obj.updateSDOVisibility(dec2base(obj.slave{5},10,2));
+        obj.updateRevision();
     end
 
     %====================================================================
     function test(p)
-        ei = EtherCATInfo(fullfile(p,'Beckhoff EL3xxx.xml'));
+        ei = EtherCATInfo(fullfile(p,'Beckhoff EL33xx.xml'));
         for i = 1:size(el3356.models,1)
             fprintf('Testing %s\n', el3356.models{i,1});
-            rv = el3356.configure(el3356.models{i,1},0,1:10,...
-                    EtherCATSlave.configureScale(2^31,''),1:17);
-            ei.testConfiguration(rv.SlaveConfig,rv.PortConfig);
+            slave = ei.getSlave(el3356.models{i,2},...
+                    'revision', el3356.models{i,3});
+            model = el3356.models{i,1};
 
-            rv = el3356.configure(el3356.models{i,1},1,2,...
+            rv = el3356(model).configure(0,1:10,...
+                    EtherCATSlave.configureScale(2^31,''),1:17);
+            slave.testConfig(rv.SlaveConfig,rv.PortConfig);
+
+            rv = el3356(model).configure(1,2,...
                     EtherCATSlave.configureScale(2^31,'6'),1:17);
-            ei.testConfiguration(rv.SlaveConfig,rv.PortConfig);
+            slave.testConfig(rv.SlaveConfig,rv.PortConfig);
         end
     end
 end     % methods
@@ -177,8 +189,8 @@ end     % methods
 properties (Constant)
     %  name          product code         basic_version, sdo
     models = {...
-      'EL3356',      hex2dec('0d1c3052'), true, [1,3,5,6,8:17];
-      'EL3356-0010', hex2dec('0d1c3052'), false, 1:17;
+      'EL3356',      hex2dec('0d1c3052'), hex2dec('00110000'), true, [1,3,5,6,8:17];
+      'EL3356-0010', hex2dec('0d1c3052'), hex2dec('0011000a'), false, 1:17;
     };
 
     % All known sdo's

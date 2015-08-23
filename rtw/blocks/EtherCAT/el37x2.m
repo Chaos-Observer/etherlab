@@ -7,15 +7,21 @@
 classdef el37x2 < EtherCATSlave
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-methods (Static)
+methods
+    %====================================================================
+    function obj = el37x2(id)
+        if nargin > 0
+            obj.slave = obj.find(id);
+        end
+    end
+
     %========================================================================
-    function rv = configure(model,one_ch,dc_spec,scaling)
-        slave = EtherCATSlave.findSlave(model,el37x2.models);
+    function rv = configure(obj,one_ch,dc_spec,scaling)
 
         % General information
         rv.SlaveConfig.vendor = 2;
-        rv.SlaveConfig.product = slave{2};
-        rv.SlaveConfig.description = slave{1};
+        rv.SlaveConfig.product = obj.slave{2};
+        rv.SlaveConfig.description = obj.slave{1};
 
         % Distributed clock
         if dc_spec(1) ~= 15
@@ -51,7 +57,7 @@ methods (Static)
 
         gain = repmat({[]},size(channels));
         if isfield(scaling,'gain') && ~isempty(scaling.gain)
-            fs = slave{3};
+            fs = obj.slave{4};
             gain = arrayfun(@(x) {{strcat('Gain',num2str(x)),
                                   scaling.gain(min(end,x))}}, ...
                             channels);
@@ -59,7 +65,7 @@ methods (Static)
 
         offset = repmat({[]},size(channels));
         if isfield(scaling,'offset') && ~isempty(scaling.offset)
-            fs = slave{3};
+            fs = obj.slave{4};
             offset = arrayfun(@(x) {{strcat('Offset',num2str(x)),
                                   scaling.offset(min(end,x))}}, ...
                             channels);
@@ -76,16 +82,23 @@ methods (Static)
                         'portname', strcat('Ch.',num2str(i))), ...
             channels);
     end
+end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+methods (Static)
     %====================================================================
     function test(p)
         ei = EtherCATInfo(fullfile(p,'Beckhoff EL37xx.xml'));
         for i = 1:size(el37x2.models,1)
             fprintf('Testing %s\n', el37x2.models{i,1});
+            slave = ei.getSlave(el37x2.models{i,2},...
+                    'revision', el37x2.models{i,3});
+            model = el37x2.models{i,1};
+
             for j = 1:14
-                rv = el37x2.configure(el37x2.models{i,1},j&1,j,...
+                rv = el37x2(model).configure(j&1,j,...
                 EtherCATSlave.configureScale(2^15,'4'));
-                ei.testConfiguration(rv.SlaveConfig,rv.PortConfig);
+                slave.testConfig(rv.SlaveConfig,rv.PortConfig);
             end
         end
     end
@@ -95,8 +108,8 @@ end     % methods
 properties (Constant)
     %  name          product code         basic_version
     models = {...
-      'EL3702', hex2dec('0e763052'), 2^15;
-      'EL3742', hex2dec('0e9e3052'), 2^15;
+      'EL3702', hex2dec('0e763052'), hex2dec('00020000'), 2^15;
+      'EL3742', hex2dec('0e9e3052'), hex2dec('00010000'), 2^15;
     };
 end
 
