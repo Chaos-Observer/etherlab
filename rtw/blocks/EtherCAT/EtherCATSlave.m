@@ -172,7 +172,8 @@ classdef EtherCATSlave
 
         %====================================================================
         function checkFilter
-            if ~isempty(get_param(gcbh,'omega'))
+            omega = get_param(gcbh,'omega');
+            if ~(isempty(omega) || strcmp(omega, '[]'))
                 disp(sprintf(['%s: Deprecated use of LPF Frequency dialog parameter. ' ...
                      'See <matlab:web(etherlab_help_path(''general.html#filter''), ''-helpbrowser'')>'], ...
                     gcb))
@@ -373,7 +374,6 @@ classdef EtherCATSlave
                                     'portname', [name,int2str(i)]), ...
                         1:pdo_count);
 
-                        scale
                 if isa(scale,'struct') || scale
                     port(1).full_scale = [];
                     port(1).gain   = [];
