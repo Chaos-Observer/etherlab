@@ -15,9 +15,9 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "ha"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Mon Aug 24 23:19:23 2015"
-  RTWModifiedTimeStamp	  362359128
-  ModelVersionFormat	  "1.%<AutoIncrement:1663>"
+  LastModifiedDate	  "Tue Sep  8 15:14:51 2015"
+  RTWModifiedTimeStamp	  363626070
+  ModelVersionFormat	  "1.%<AutoIncrement:1664>"
   ConfigurationManager	  "rcs"
   SampleTimeColors	  off
   SampleTimeAnnotations	  off
@@ -735,7 +735,7 @@ Library {
 	  System {
 	    Name		    "Beckhoff"
 	    Location		    [836, 50, 1598, 534]
-	    Open		    on
+	    Open		    off
 	    ModelBrowserVisibility  off
 	    ModelBrowserWidth	    200
 	    ScreenColor		    "white"
@@ -1032,9 +1032,12 @@ Library {
 	      "n|Output Offset|LPF time constant (s)|Sample Time|Debug|deprecated|Mode|Assign Activate|Cycle Time Sync 0|Facto"
 	      "r|Shift Time Sync0|Factor|Shift Time0 Input|Cycle Time Sync1|Factor|Shift Time Sync1|Factor"
 	      MaskStyleString	      "edit,edit,popup(EL3101|EL3102|EL3104|EL3111|EL3112|EL3114|EL3121|EL3122|EL3124|EL3141|EL"
-	      "3142|EL3142-0010|EL3144|EL3151|EL3152|EL3154|EL3161|EL3162|EL3164),edit,checkbox,checkbox,popup(Off|50Hz FIR|60"
-	      "Hz FIR|IIR 1|IIR 2|IIR 3|IIR 4|IIR 5|IIR 6|IIR 7|IIR 8),edit,edit,edit,edit,edit,edit,popup(Free Run/SM-Synchro"
-	      "n|DC-Synchron|DC-Synchron (input based)|Custom),edit,min,max,min,max,checkbox,min,max,min,max"
+	      "3142|EL3142-0010|EL3144|EL3151|EL3152|EL3154|EL3161|EL3162|EL3164|EL3101-0000-0016|EL3102-0000-0017|EL3104-0000"
+	      "-0016|EL3111-0000-0016|EL3112-0000-0017|EL3114-0000-0017|EL3121-0000-0016|EL3122-0000-0017|EL3124-0000-0016|EL3"
+	      "141-0000-0016|EL3142-0000-0017|EL3142-0010-0017|EL3144-0000-0016|EL3151-0000-0016|EL3152-0000-0017|EL3154-0000-"
+	      "0016|EL3161-0000-0016|EL3162-0000-0017|EL3164-0000-0016),edit,checkbox,checkbox,popup(Off|50Hz FIR|60Hz FIR|IIR"
+	      " 1|IIR 2|IIR 3|IIR 4|IIR 5|IIR 6|IIR 7|IIR 8),edit,edit,edit,edit,edit,edit,popup(Free Run/SM-Synchron|DC-Synch"
+	      "ron|DC-Synchron (input based)|Custom),edit,min,max,min,max,checkbox,min,max,min,max"
 	      MaskTunableValueString  "off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,of"
 	      "f,off,off"
 	      MaskCallbackString      "||el31xx_1().updateRevision()|el31xx_1().updateRevision()||||||||||EtherCATSlave.updat"
