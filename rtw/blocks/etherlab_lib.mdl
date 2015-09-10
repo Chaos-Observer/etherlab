@@ -15,9 +15,9 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "ha"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Tue Sep  8 15:14:51 2015"
+  LastModifiedDate	  "Thu Sep 10 11:36:07 2015"
   RTWModifiedTimeStamp	  363626070
-  ModelVersionFormat	  "1.%<AutoIncrement:1664>"
+  ModelVersionFormat	  "1.%<AutoIncrement:1666>"
   ConfigurationManager	  "rcs"
   SampleTimeColors	  off
   SampleTimeAnnotations	  off
@@ -586,7 +586,7 @@ Library {
   System {
     Name		    "etherlab_lib"
     Location		    [1164, 434, 1598, 642]
-    Open		    on
+    Open		    off
     ModelBrowserVisibility  off
     ModelBrowserWidth	    200
     ScreenColor		    "white"
@@ -735,7 +735,7 @@ Library {
 	  System {
 	    Name		    "Beckhoff"
 	    Location		    [836, 50, 1598, 534]
-	    Open		    off
+	    Open		    on
 	    ModelBrowserVisibility  off
 	    ModelBrowserWidth	    200
 	    ScreenColor		    "white"
@@ -1861,7 +1861,7 @@ Library {
 	      BlockType		      "S-Function"
 	      Name		      "EL51xx_0"
 	      SID		      114
-	      Ports		      [2, 3]
+	      Ports		      [0, 3]
 	      Position		      [515, 205, 590, 245]
 	      BackgroundColor	      "yellow"
 	      AttributesFormatString  "EL5101\nM:0 Idx:1"
@@ -1902,16 +1902,16 @@ Library {
 	      MaskTunableValueString  "off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,of"
 	      "f,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,o"
 	      "ff,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off"
-	      MaskCallbackString      "||el51xx().updateRevision()||el51xx.updatePDO|el51xx.updatePDO|el51xx.updatePDO|el51xx"
-	      ".updatePDO|el51xx.updatePDO|el51xx.updatePDO|el51xx.updatePDO|el51xx.updatePDO|el51xx.updatePDO|el51xx.updatePD"
-	      "O|el51xx.updatePDO|el51xx.updatePDO|||EtherCATSlave.updateCustomDCEnable()|||||||||||||||||||||||||||||||||||||"
-	      "||||||||||||||||"
-	      MaskEnableString	      "on,on,on,on,off,on,off,off,off,on,on,off,off,off,off,off,on,on,on,off,off,off,off,off,o"
-	      "ff,off,off,off,off,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on"
-	      ",on,on,on,on,on,on,on,on,on,on,on,on"
-	      MaskVisibilityString    "on,on,on,off,off,on,on,on,off,on,on,on,on,on,on,on,on,off,on,on,on,on,on,on,on,on,on,o"
-	      "n,on,on,on,on,on,on,off,off,off,off,off,off,off,off,off,off,off,off,on,on,off,off,off,off,off,off,off,off,off,o"
-	      "ff,off,off,off,off,off,off,off,off,off,off,off,off,off,off"
+	      MaskCallbackString      "||el51xx.modelChanged||el51xx.updatePDO|el51xx.updatePDO|el51xx.updatePDO|el51xx.updat"
+	      "ePDO|el51xx.updatePDO|el51xx.updatePDO|el51xx.updatePDO|el51xx.updatePDO|el51xx.updatePDO|el51xx.updatePDO|el51"
+	      "xx.updatePDO|el51xx.updatePDO|||EtherCATSlave.updateCustomDCEnable()|||||||||||||||||||||||||||||||||||||||||||"
+	      "||||||||||"
+	      MaskEnableString	      "on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,off,off,off,off,off,off,off,of"
+	      "f,off,off,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on"
+	      ",on,on,on,on,on,on,on,on,on"
+	      MaskVisibilityString    "on,on,on,off,on,on,on,on,on,on,on,on,on,on,on,on,on,off,on,on,on,on,on,on,on,on,on,on,"
+	      "on,off,off,off,off,off,off,off,on,off,on,on,off,off,off,on,on,off,on,on,on,on,on,on,off,off,off,off,on,off,on,o"
+	      "n,off,off,off,on,on,off,on,on,on,on,on,on"
 	      MaskToolTipString	      "on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on"
 	      ",on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on"
 	      ",on,on,on,on,on,on"
@@ -1937,18 +1937,18 @@ Library {
 	      "_shift1, dc_shift1_factor]);     \n\nEtherCATSlave.setPortNames(...\n    {rv.PortConfig.input.portname},...\n  "
 	      "  {rv.PortConfig.output.portname});\n\nset_param(gcb,'AttributesFormatString',...\n    sprintf('%s\\nM:%i Idx:%"
 	      "s',...\n            model,master,mat2str(index)))\n\n"
-	      MaskDisplay	      "port_label('input', 1, 'Ctrl')\nport_label('input', 2, 'Value')\nport_label('output', 1, 'St"
-	      "atus')\nport_label('output', 2, 'Counter')\nport_label('output', 3, 'Latch')\n"
+	      MaskDisplay	      "port_label('output', 1, 'bool[13]')\nport_label('output', 2, 'Counter')\nport_label('output'"
+	      ", 3, 'Latch')\n"
 	      MaskSelfModifiable      on
 	      MaskIconFrame	      on
 	      MaskIconOpaque	      on
 	      MaskIconRotate	      "none"
 	      MaskPortRotate	      "default"
 	      MaskIconUnits	      "autoscale"
-	      MaskValueString	      "0|1|EL5101||off|on|off|off|off|on|off|off|off|off|off|off|-1|0|FreeRun/SM-Synchron|hex2d"
-	      "ec('320')    % EL51x1: '320'; El5152: '720'|0|1|0|0|off|0|1|0|0|off|off|off|on|off|off|off|off|Enable pos. gate"
-	      "|off|off|on|on|off|off|us|Rising edge|10000|100|100|100|100|1600|100|65535|off|off|off|Enable pos. gate|off|off"
-	      "|on|on|off|off|us|Rising edge|10000|100|100|100|100|1600"
+	      MaskValueString	      "0|1|EL5152||off|off|off|off|off|off|off|off|off|off|off|off|-1|0|FreeRun/SM-Synchron|hex"
+	      "2dec('320')    % EL51x1: '320'; El5152: '720'|0|1|0|0|off|0|1|0|0|off|off|off|on|off|off|off|off|Enable pos. ga"
+	      "te|off|off|on|on|off|off|us|Rising edge|10000|100|100|100|100|1600|100|65535|off|off|off|Enable pos. gate|off|o"
+	      "ff|on|on|off|off|us|Rising edge|10000|100|100|100|500|1600"
 	      MaskTabNameString	      "Main,Main,Main,Main,Main,Main,Main,Main,Main,Main,Main,Main,Main,Main,Main,Main,Main,M"
 	      "ain,Distributed Clocks,Distributed Clocks,Distributed Clocks,Distributed Clocks,Distributed Clocks,Distributed "
 	      "Clocks,Distributed Clocks,Distributed Clocks,Distributed Clocks,Distributed Clocks,Distributed Clocks,CoE #x800"
