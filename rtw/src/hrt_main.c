@@ -1270,7 +1270,7 @@ int main(int argc, char **argv)
         clock_gettime(CLOCK_MONOTONIC, &t1);
 #endif
         pdserv_get_parameters(pdserv, task[0].pdtask,
-                &task[0].monotonic_time);
+                &task[0].world_time);
 #if GET_PARAMETERS_LIMIT_NS > 0
         clock_gettime(CLOCK_MONOTONIC, &t2);
         ns = DIFF_NS(t1, t2);
