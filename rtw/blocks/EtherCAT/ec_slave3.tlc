@@ -609,24 +609,21 @@
       %if EXISTS(sdo.ByteArray)
         %% This is a configuration byte array
         %%
-        %assign datatype = 1008U
-        %assign value = SIZE(sdo.ByteArray,1)
-        %%
-        %assign data_array = "\""
-        %foreach j = value
-          %assign data_array = SPRINTF("%s\\x%02x", data_array, \
-                                    sdo.ByteArray[j])
+        %assign data_array = ""
+        %assign count = SIZE(sdo.ByteArray,1)
+        %foreach j = count
+          %assign data_array = ...
+                SPRINTF("%s\\x%02x", data_array, sdo.ByteArray[j])
         %endforeach
-        %assign data_array = "%<data_array>\""
+        %%
+        { 1008U, %<SPRINTF("0x%04X", sdo.Index)>, -1, %<count>, 
+          "%<data_array>" }, /* */ \
       %else
-        %assign datatype = sdo.DataTypeId
-        %assign value = sdo.Value
-        %assign data_array = "NULL"
+        %% Normal SDO
+        %%
+        { %<sdo.DataTypeId>, %<SPRINTF("0x%04X", sdo.Index)>, \
+          %<sdo.SubIndex>, %<sdo.Value>, NULL }, /* */ \
       %endif
-      %%
-      { %<datatype>, %<SPRINTF("0x%04X", sdo.Index)>, \
-        %<SPRINTF("0x%02X", sdo.SubIndex)>, \
-        %<value>, %<data_array> }, /* */ \
     %endforeach
   };
   %closefile buf
