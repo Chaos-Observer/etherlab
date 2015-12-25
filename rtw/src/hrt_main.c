@@ -138,6 +138,10 @@
 #include "rt_nonfinite.h"
 #include "rt_sim.h"
 
+#if !defined(PDSERV_VERSION_CODE) || (PDSERV_VERSION_CODE < PDSERV_VERSION(3,0,0))
+#error Require PdServ Version 3
+#endif
+
 /****************************************************************************/
 
 #define MAX_SAFE_STACK (8 * 1024) /** The maximum stack size which is
@@ -290,6 +294,8 @@ struct thread_task {
     struct timespec monotonic_time;
     struct timespec world_time;
     pthread_t thread;
+    pthread_mutex_t param_lock;
+    pthread_rwlock_t signal_lock;
     const char* (*rt_OneStep)(RT_MODEL*, uint_T);
 };
 
@@ -461,10 +467,15 @@ void *run_task(void *p)
                 &thread->monotonic_time, 0)) {
 
         clock_gettime(CLOCK_MONOTONIC, &start_time);
+
+        pthread_rwlock_wrlock(&thread->signal_lock);
+
         clock_gettime(CLOCK_REALTIME, &thread->world_time);
 
+        /* Lock parameters and execute task */
+        pthread_mutex_lock(&thread->param_lock);
         thread->err = thread->rt_OneStep(thread->S, thread->sl_tid);
-
+        pthread_mutex_unlock(&thread->param_lock);
         pdserv_update(thread->pdtask, &thread->world_time);
 
         /* Calculate timing statistics */
@@ -473,6 +484,8 @@ void *run_task(void *p)
         last_start_time = start_time;
         pdserv_update_statistics(thread->pdtask,
                 1.0e-9 * exec_ns, 1.0e-9 * period_ns, overruns);
+
+        pthread_rwlock_unlock(&thread->signal_lock);
 
         timeradd(&thread->monotonic_time, dt);
 
@@ -616,9 +629,51 @@ int get_etl_data_type (const char *mwName,
 
 /****************************************************************************/
 
+int write_parameter(
+        const struct pdvariable* param,
+        void *dst, const void* src, size_t len,
+        struct timespec* time,
+        void* priv_data)
+{
+    struct thread_task *p_task = task + NUMTASKS;
+    while (p_task != task)
+        pthread_mutex_lock(&(--p_task)->param_lock);
+
+    memcpy(dst, src, len);
+    clock_gettime(CLOCK_REALTIME, time);
+
+    p_task = task + NUMTASKS;
+    while (p_task != task)
+        pthread_mutex_unlock(&(--p_task)->param_lock);
+
+    return 0;
+}
+
+/****************************************************************************/
+
+int read_signal(
+        const struct pdvariable* signal,
+        void* dst, const void* src, size_t len,
+        struct timespec* time,
+        void* priv_data)
+{
+    struct thread_task* task = priv_data;
+
+    pthread_rwlock_rdlock(&task->signal_lock);
+    memcpy(dst, src, len);
+    if (time)
+        *time = task->world_time;
+    pthread_rwlock_unlock(&task->signal_lock);
+
+    return 0;
+}
+
+
+/****************************************************************************/
+
 /** Register a signal with PdServ.
  */
-const char *register_signal(const struct thread_task *task,
+const char *register_signal(struct thread_task *task,
         const rtwCAPI_Signals* signals, size_t idx)
 {
     uint_T addrMapIndex    = rtwCAPI_GetSignalAddrIdx(signals, idx);
@@ -768,7 +823,7 @@ const char *register_signal(const struct thread_task *task,
 
     //printf("Reg with dt=%i\n", data_type);
     signal = pdserv_signal(task->pdtask, decimation,
-            path, data_type, address, ndim, dim);
+            path, data_type, address, ndim, dim, read_signal, task);
 
     if (signal && !related && signalName && *signalName)
         pdserv_set_alias(signal, signalName);
@@ -869,7 +924,8 @@ const char *register_parameter( struct pdserv *pdserv,
             dim[i] = dimArray[dimArrayIndex + (ndim - 1) - i];
     }
 
-    pdserv_parameter(pdserv, path, 0666, data_type, address, ndim, dim, 0, 0);
+    pdserv_parameter(pdserv, path, 0666, data_type, address, ndim, dim,
+            write_parameter, 0);
 
 out:
     free(path);
@@ -887,7 +943,7 @@ out:
  */
 const char *
 rtw_capi_init(RT_MODEL *S,
-        struct pdserv *pdserv, const struct thread_task *task)
+        struct pdserv *pdserv, struct thread_task *task)
 {
     const rtwCAPI_Signals* signals;
     const rtwCAPI_BlockParameters* params;
@@ -1137,6 +1193,7 @@ int main(int argc, char **argv)
     unsigned int running = 1;
     const char *err = NULL;
     struct thread_task* p_task;
+    pthread_rwlockattr_t rwlock_attr;
 
     /* Set defaults for command-line options. */
     base_name = basename(argv[0]);
@@ -1155,13 +1212,23 @@ int main(int argc, char **argv)
     /* Initialize model */
     S = MODEL();
 
+    /* Initialize rwlock attributes */
+    pthread_rwlockattr_init(&rwlock_attr);
+    pthread_rwlockattr_setkind_np(&rwlock_attr,
+            PTHREAD_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP);
+
     /* Create necessary pdserv tasks */
     for (p_task = task; p_task != task + NUMTASKS; ++p_task) {
         p_task->S = S;
         p_task->sl_tid = (p_task - task) + FIRST_TID;
         p_task->sample_time = rtmGetSampleTime(S, p_task->sl_tid);
         p_task->pdtask = pdserv_create_task(pdserv, p_task->sample_time, 0);
+
+        pthread_rwlock_init(&p_task->signal_lock, &rwlock_attr);
+        pthread_mutex_init(&p_task->param_lock, NULL);
     }
+
+    pthread_rwlockattr_destroy(&rwlock_attr);
 
     /* Register signals and parameters */
     if ((err = rtw_capi_init(S, pdserv, task))) {
