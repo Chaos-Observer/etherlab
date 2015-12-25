@@ -265,6 +265,7 @@ int priority = -1; /**< Task priority, -1 means RT (maximum). */
 char *pdserv_config = NULL; /**< Path to PdServ configuration file. */
 bool daemonize = false; /**< Become a daemon. */
 char *pidPath = ""; /**< Path of PID file (empty for no PID file). */
+int phase = -1;      /**< Phase to start task 0..100 */
 
 static rtwCAPI_ModelMappingInfo* mmi;
 static const rtwCAPI_DimensionMap* dimMap;
@@ -274,7 +275,7 @@ static const uint_T* dimArray;
 static void ** dataAddressMap;
 static void *exe;      /* Pointer to this executable. */
 
-const char* rt_OneStepMain(RT_MODEL *s);
+const char* rt_OneStepMain(RT_MODEL *s, uint_T);
 const char* rt_OneStepTid(RT_MODEL *s, uint_T);
 int get_etl_data_type (const char *mwName,
         uint8_T slDataId, size_t size, unsigned int isComplex);
@@ -285,11 +286,11 @@ struct thread_task {
     unsigned int *running;
     const char *err;
     double sample_time;
-    unsigned int repetitions;
     struct pdtask *pdtask;
     struct timespec monotonic_time;
     struct timespec world_time;
     pthread_t thread;
+    const char* (*rt_OneStep)(RT_MODEL*, uint_T);
 };
 
 # if TID01EQ == 1
@@ -334,7 +335,7 @@ get_etl_world_time(size_t tid)
  * service routine (ISR) with minor modifications.
  */
 const char *
-rt_OneStepMain(RT_MODEL *S)
+rt_OneStepMain(RT_MODEL *S, uint_T tid)
 {
     real_T tnext;
 
@@ -383,7 +384,7 @@ get_etl_world_time(size_t tid)
  *      is attached to an interrupt.
  */
 const char *
-rt_OneStepMain(RT_MODEL *S)
+rt_OneStepMain(RT_MODEL *S, uint_T tid)
 {
     real_T tnext;
 
@@ -442,48 +443,49 @@ rt_OneStepTid(RT_MODEL *S, uint_T tid)
 
 /****************************************************************************/
 
+#endif /* MT */
+
 /** Run the main task.
  */
 void *run_task(void *p)
 {
     struct thread_task *thread = p;
-    unsigned int dt = thread->sample_time * 1.0e9 + 0.5;
+    unsigned int dt = 1.0e9 * thread->sample_time + 0.5;
     uint32_t exec_ns = 0, period_ns = 0, overruns = 0;
-    struct timespec start_time, last_start_time = {0, 0},
-                    end_time = last_start_time;
+    struct timespec start_time,
+                    last_start_time = thread->monotonic_time,
+                    end_time = thread->monotonic_time;
 
-    do {
+    while (!thread->err && *thread->running
+            && !clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME,
+                &thread->monotonic_time, 0)) {
+
         clock_gettime(CLOCK_MONOTONIC, &start_time);
         clock_gettime(CLOCK_REALTIME, &thread->world_time);
 
-        thread->err = rt_OneStepTid(thread->S, thread->sl_tid);
+        thread->err = thread->rt_OneStep(thread->S, thread->sl_tid);
 
         pdserv_update(thread->pdtask, &thread->world_time);
 
+        /* Calculate timing statistics */
         period_ns = DIFF_NS(last_start_time, start_time);
         exec_ns = DIFF_NS(last_start_time, end_time);
         last_start_time = start_time;
         pdserv_update_statistics(thread->pdtask,
-                exec_ns / 1e9, period_ns / 1e9, overruns);
+                1.0e-9 * exec_ns, 1.0e-9 * period_ns, overruns);
 
         timeradd(&thread->monotonic_time, dt);
 
         clock_gettime(CLOCK_MONOTONIC, &end_time);
 
-        if (DIFF_NS(end_time, thread->monotonic_time) < 0) {
+        if (DIFF_NS(end_time, thread->monotonic_time) < 0)
             overruns++;
-        }
-
-        clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME,
-                &thread->monotonic_time, 0);
-    } while(!thread->err && *thread->running);
+    }
 
     *thread->running = 0;
 
     return 0;
 }
-
-#endif /* MT */
 
 /****************************************************************************/
 
@@ -1035,10 +1037,12 @@ void usage(FILE *f)
             "  --priority       -p <PRIO>  Set task priority. Default: RT.\n"
             "  --pdserv-config  -c <PATH>  PdServ configuration file.\n"
             "                              Default: None (use defaults).\n"
-            "  --pid-path       -i <PATH>  Write PID file. Default:\n"
-            "                              No PID file.\n"
-            "  --daemon         -d         Become a daemon before cyclic\n"
-            "                              operation.\n"
+            "  --pid-path       -i <PATH>  Write PID file. Default: "
+                                           "No PID file.\n"
+            "  --start-phase    -f         Timing phase to start off (0..99)\n"
+            "                              Default: -1 (None)\n"
+            "  --daemon         -d         Become a daemon before cyclic "
+                                           "operation.\n"
             "  --help           -h         Show this help.\n",
             base_name);
 }
@@ -1056,13 +1060,14 @@ void get_options(int argc, char **argv)
         {"priority",      required_argument, NULL, 'p'},
         {"pdserv-config", required_argument, NULL, 'c'},
         {"pid-file",      required_argument, NULL, 'i'},
+        {"start-phase",   required_argument, NULL, 'f'},
         {"daemon",        no_argument,       NULL, 'd'},
         {"help",          no_argument,       NULL, 'h'},
         {}
     };
 
     do {
-        c = getopt_long(argc, argv, "p:c:i:dh", longOptions, NULL);
+        c = getopt_long(argc, argv, "p:c:i:f:dh", longOptions, NULL);
 
         switch (c) {
             case 'p':
@@ -1084,6 +1089,14 @@ void get_options(int argc, char **argv)
 
             case 'i':
                 pidPath = optarg;
+                break;
+
+            case 'f':
+                phase = atoi(optarg);
+                if (phase >= 100) {
+                    fprintf(stderr, "Invalid phase: %s\n", optarg);
+                    exit(1);
+                }
                 break;
 
             case 'd':
@@ -1123,24 +1136,7 @@ int main(int argc, char **argv)
     unsigned int dt;
     unsigned int running = 1;
     const char *err = NULL;
-    size_t i;
-    uint32_t exec_ns = 0, period_ns = 0, overruns = 0;
-    struct timespec start_time, last_start_time = {0, 0},
-                    end_time = last_start_time;
-    int ret;
-#if WAKEUP_LIMIT_NS > 0 || GET_PARAMETERS_LIMIT_NS > 0 || \
-    ONESTEPMAIN_LIMIT_NS > 0 || PDSERV_UPDATE_LIMIT_NS > 0
-    long long ns;
-#endif
-#if WAKEUP_LIMIT_NS > 0
-    int syslog_limiter = 0;
-    long long last_ns = 0;
-    struct timespec last_mon = {};
-#endif
-#if GET_PARAMETERS_LIMIT_NS > 0 || ONESTEPMAIN_LIMIT_NS > 0 || \
-    PDSERV_UPDATE_LIMIT_NS > 0
-    struct timespec t1, t2;
-#endif
+    struct thread_task* p_task;
 
     /* Set defaults for command-line options. */
     base_name = basename(argv[0]);
@@ -1160,11 +1156,11 @@ int main(int argc, char **argv)
     S = MODEL();
 
     /* Create necessary pdserv tasks */
-    for (i = 0; i < NUMTASKS; ++i) {
-        task[i].S = S;
-        task[i].sl_tid = i + FIRST_TID;
-        task[i].sample_time = rtmGetSampleTime(S, task[i].sl_tid);
-        task[i].pdtask = pdserv_create_task(pdserv, task[i].sample_time, 0);
+    for (p_task = task; p_task != task + NUMTASKS; ++p_task) {
+        p_task->S = S;
+        p_task->sl_tid = (p_task - task) + FIRST_TID;
+        p_task->sample_time = rtmGetSampleTime(S, p_task->sl_tid);
+        p_task->pdtask = pdserv_create_task(pdserv, p_task->sample_time, 0);
     }
 
     /* Register signals and parameters */
@@ -1177,22 +1173,23 @@ int main(int argc, char **argv)
     pdserv_prepare(pdserv);
 
     /* Lock all memory forever. */
-    if (mlockall(MCL_CURRENT | MCL_FUTURE)) {
+    if (mlockall(MCL_CURRENT | MCL_FUTURE))
         fprintf(stderr, "mlockall() failed: %s\n", strerror(errno));
-    }
 
     /* Set task priority. */
     {
         struct sched_param param = {};
-        if (priority == -1) {
-            param.sched_priority = sched_get_priority_max(SCHED_FIFO);
-        } else {
-            param.sched_priority = priority;
-        }
+        if (priority == -1)
+            priority = sched_get_priority_max(SCHED_FIFO);
+
+        param.sched_priority = priority;
         if (sched_setscheduler(0, SCHED_FIFO, &param) == -1) {
-            fprintf(stderr, "Setting SCHED_FIFO"
-                    " with priority %i failed: %s\n",
+            fprintf(stderr,
+                    "Setting SCHED_FIFO with priority %i failed: %s\n",
                     param.sched_priority, strerror(errno));
+
+            /* Reset priority, so that sub-threads start */
+            priority = -1;
         }
     }
 
@@ -1216,131 +1213,80 @@ int main(int argc, char **argv)
         }
     }
 
-    if (pidPath[0]) {
+    if (pidPath[0])
         create_pid_file();
-    }
 
     openlog("rttask", LOG_PID, LOG_DAEMON);
 
-    clock_gettime(CLOCK_MONOTONIC, &task[0].monotonic_time);
+    /* Delay start time of slowest task to an integral multiple of
+     * its sample time. This allows synchronization of real time
+     * threads, specifically to enable phasing */
+    p_task = task + NUMTASKS-1;
+    clock_gettime(CLOCK_MONOTONIC, &p_task->monotonic_time);
+    if (phase >= 0) {
+        uint64_t t64 = 1000000000ULL * p_task->monotonic_time.tv_sec
+            + p_task->monotonic_time.tv_nsec;
+        uint64_t dt = p_task->sample_time * 1e9;
 
-#if MT
-    /* Start subtask threads */
-    for (i = 1; i < NUMTASKS; ++i) {
-        task[i].monotonic_time = task[0].monotonic_time;
-        task[i].running = &running;
-        task[i].err = 0;
-        pthread_create(&task[i].thread, 0, run_task, &task[i]);
-        /* FIXME: set subtask priorities. */
+        timeradd(&p_task->monotonic_time, dt - (t64 % dt));
     }
-#endif
 
-    dt = task[0].sample_time * 1.0e9 + 0.5;
+    /* Start sub-threads */
+    for (p_task = task; p_task != task + NUMTASKS; ++p_task) {
+        p_task->monotonic_time = task[NUMTASKS-1].monotonic_time;
+        p_task->running = &running;
+        p_task->err = 0;
+
+        if (phase >= 0) {
+            /* Delay start time as required by phase */
+            timeradd(&p_task->monotonic_time,
+                    1.0e9 * p_task->sample_time * phase / 100);
+        }
+
+        if (p_task == task)
+            p_task->rt_OneStep = rt_OneStepMain;
+#if MT
+        else {
+            struct sched_param param = {
+                .sched_priority = priority - (p_task - task),
+            };
+            pthread_attr_t attr;
+
+            /* Setup scheduler */
+            pthread_attr_init(&attr);
+            pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED);
+            pthread_attr_setschedpolicy(&attr, SCHED_FIFO);
+            pthread_attr_setschedparam(&attr, &param);
+
+            p_task->rt_OneStep = rt_OneStepTid;
+            pthread_create(&p_task->thread,
+                    priority == -1 ? NULL : &attr, run_task, p_task);
+
+            pthread_attr_destroy(&attr);
+        }
+#endif
+    }
+
     syslog(LOG_INFO, "Starting main thread with dt = %u ns.", dt);
 
-    /* Main thread running here */
-    do {
-        clock_gettime(CLOCK_MONOTONIC, &start_time);
-        clock_gettime(CLOCK_REALTIME, &task[0].world_time);
+    /* Now run main task */
+    run_task(&task[0]);
 
-#if WAKEUP_LIMIT_NS > 0
-        ns = DIFF_NS(task[0].monotonic_time, start_time);
-        if (ABS(ns) > WAKEUP_LIMIT_NS && !syslog_limiter) {
-            syslog(LOG_INFO, "Wakeup took %lli ns.", ns);
-            syslog(LOG_INFO, "start_time = %li s, %li ns.",
-                    start_time.tv_sec, start_time.tv_nsec);
-            syslog(LOG_INFO, "monotonic_time = %li s, %li ns.",
-                    task[0].monotonic_time.tv_sec,
-                    task[0].monotonic_time.tv_nsec);
-            syslog(LOG_INFO, "last start_time = %li s, %li ns.",
-                    last_start_time.tv_sec, last_start_time.tv_nsec);
-            syslog(LOG_INFO, "last monotonic_time = %li s, %li ns.",
-                    last_mon.tv_sec,
-                    last_mon.tv_nsec);
-            syslog(LOG_INFO, "last ns = %lli.", last_ns);
-            syslog_limiter = 1 / task[0].sample_time;
-        }
-        if (syslog_limiter) {
-            syslog_limiter--;
-        }
-        last_ns = ns;
-#endif
+    /* Collect tasks and report errors */
+    for (p_task = task; p_task != task + NUMTASKS; ++p_task) {
+        if (p_task != task)
+            pthread_join(p_task->thread, 0);
 
-#if GET_PARAMETERS_LIMIT_NS > 0
-        clock_gettime(CLOCK_MONOTONIC, &t1);
-#endif
-        pdserv_get_parameters(pdserv, task[0].pdtask,
-                &task[0].world_time);
-#if GET_PARAMETERS_LIMIT_NS > 0
-        clock_gettime(CLOCK_MONOTONIC, &t2);
-        ns = DIFF_NS(t1, t2);
-        if (ns > GET_PARAMETERS_LIMIT_NS) {
-            syslog(LOG_INFO, "pdserv_get_parameters took %lli ns.", ns);
-        }
-#endif
-
-#if ONESTEPMAIN_LIMIT_NS > 0
-        clock_gettime(CLOCK_MONOTONIC, &t1);
-#endif
-        err = rt_OneStepMain(S);
-#if ONESTEPMAIN_LIMIT_NS > 0
-        clock_gettime(CLOCK_MONOTONIC, &t2);
-        ns = DIFF_NS(t1, t2);
-        if (ns > ONESTEPMAIN_LIMIT_NS) {
-            syslog(LOG_INFO, "rt_OneStepMain took %lli ns.", ns);
-        }
-#endif
-
-#if PDSERV_UPDATE_LIMIT_NS > 0
-        clock_gettime(CLOCK_MONOTONIC, &t1);
-#endif
-        pdserv_update(task[0].pdtask, &task[0].world_time);
-#if PDSERV_UPDATE_LIMIT_NS > 0
-        clock_gettime(CLOCK_MONOTONIC, &t2);
-        ns = DIFF_NS(t1, t2);
-        if (ns > PDSERV_UPDATE_LIMIT_NS) {
-            syslog(LOG_INFO, "pdserv_update took %lli ns.", ns);
-        }
-#endif
-
-        period_ns = DIFF_NS(last_start_time, start_time);
-        exec_ns = DIFF_NS(last_start_time, end_time);
-        last_start_time = start_time;
-
-        pdserv_update_statistics(task[0].pdtask,
-                exec_ns / 1e9, period_ns / 1e9, overruns);
-
-#if WAKEUP_LIMIT_NS > 0
-        last_mon = task[0].monotonic_time;
-#endif
-        timeradd(&task[0].monotonic_time, dt);
-
-        clock_gettime(CLOCK_MONOTONIC, &end_time);
-
-        if (DIFF_NS(end_time, task[0].monotonic_time) < 0) {
-            overruns++;
-        }
-
-        ret = clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME,
-                &task[0].monotonic_time, NULL);
-        if (ret != 0) {
-            syslog(LOG_INFO, "clock_nanosleep() returned %i, errno=%i: %s",
-                    ret, errno, strerror(errno));
-        }
-    } while(!err && running);
-
-    running = 0;
-
-    for (i = 1; i < NUMTASKS; ++i) {
-        pthread_join(task[i].thread, 0);
+        if (p_task->err)
+            fprintf(stderr, "Task %zi had an error: %s\n",
+                    p_task - task, p_task->err);
     }
 
+    /* Clean up */
     pdserv_exit(pdserv);
     MdlTerminate();
-
-    if (pidPath[0]) {
+    if (pidPath[0])
         remove_pid_file();
-    }
 
 out:
     if (err) {
