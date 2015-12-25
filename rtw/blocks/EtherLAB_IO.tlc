@@ -38,7 +38,7 @@
 
     %with CompiledModel
       %% Generic IO header
-      %<LibAddToCommonIncludes("rt_vars.h")>
+      %<LibAddToCommonIncludes("<rt_vars.h>")>
   
       %openfile buf
 

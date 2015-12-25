@@ -21,7 +21,7 @@
     %return
   %endif
 
-  %<LibAddToCommonIncludes("rtipc.h")>
+  %<LibAddToCommonIncludes("<rtipc.h>")>
 
   %assign model_c = LibGetModelDotCFile()
 

@@ -40,8 +40,8 @@
   %with CompiledModel
 
     %% EtherCAT header
-    %<LibAddToCommonIncludes("ecrt_support.h")>
-    %<LibAddToCommonIncludes("stdio.h")>
+    %<LibAddToCommonIncludes("<ecrt_support.h>")>
+    %<LibAddToCommonIncludes("<stdio.h>")>
   
     %openfile buf
     const struct ec_slave *slave_head;

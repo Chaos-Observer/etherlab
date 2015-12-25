@@ -28,7 +28,7 @@
 
     %with CompiledModel
       %% RaiseCatch header
-      %<LibAddToCommonIncludes("raise_catch.h")>
+      %<LibAddToCommonIncludes("<raise_catch.h>")>
   
       %openfile buf
   

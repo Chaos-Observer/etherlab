@@ -3,13 +3,11 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %function BlockTypeSetup( block, system) void
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  %<LibAddToCommonIncludes("time.h")>
+  %<LibAddToCommonIncludes("<time.h>")>
 
-  %openfile buf
-    /* get_etl_world_time() is defined in hrt_main.c */
-    const struct timespec *get_etl_world_time(size_t tid);
-  %closefile buf
-  %<LibCacheFunctionPrototype(buf)>
+  %% get_etl_world_time() is defined in hrt_main.c
+  %<LibCacheFunctionPrototype( \
+      "const struct timespec *get_etl_world_time(size_t tid);")>
 %endfunction
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
