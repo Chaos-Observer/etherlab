@@ -32,11 +32,13 @@ INSTALL (FILES
     etherlab_lib.mdl 
     etherlab_help_path.m
     setup.m 
+    blockpath.m
 
     EtherLAB_IO.tlc 
     RtIPC.tlc
     rtipc_tx.c rtipc_tx.tlc 
     rtipc_rx.c rtipc_rx.tlc 
+    message.c message.tlc
     world_time.c world_time.tlc
     raise.c raise.tlc RaiseCatch.tlc 
     get_string.h test_var.m

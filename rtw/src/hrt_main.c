@@ -217,6 +217,10 @@ extern "C" {
 #endif
 
 struct pdserv *pdserv = NULL;
+struct pdserv *get_pdserv_ptr(void)
+{
+    return pdserv;
+}
 
 extern RT_MODEL *MODEL(void);
 
