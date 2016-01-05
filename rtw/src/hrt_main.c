@@ -144,33 +144,6 @@
                                     guranteed safe to access without faulting.
                                    */
 
-/** Monitor wakeup latency and output to syslog, if limit [ns] is exceeded.
- *
- * Zero disables monitoring.
- */
-#define WAKEUP_LIMIT_NS          0
-
-/** Monitor runtime of pdserv_get_parameters() and output to syslog,
- * if limit [ns] is exceeded.
- *
- * Zero disables monitoring.
- */
-#define GET_PARAMETERS_LIMIT_NS  0
-
-/** Monitor runtime of rt_OneStepMain() and output to syslog,
- * if limit [ns] is exceeded.
- *
- * Zero disables monitoring.
- */
-#define ONESTEPMAIN_LIMIT_NS     0
-
-/** Monitor runtime of pdserv_update() of main task and output to syslog,
- * if limit [ns] is exceeded.
- *
- * Zero disables monitoring.
- */
-#define PDSERV_UPDATE_LIMIT_NS   0
-
 /* To quote a string */
 #define STR(x) #x
 #define QUOTE(x) STR(x)
@@ -455,6 +428,8 @@ void *run_task(void *p)
     struct timespec start_time,
                     last_start_time = thread->monotonic_time,
                     end_time = thread->monotonic_time;
+
+    syslog(LOG_INFO, "Starting task with dt = %u ns.", dt);
 
     while (!thread->err && *thread->running
             && !clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME,
@@ -1133,7 +1108,6 @@ void get_options(int argc, char **argv)
 int main(int argc, char **argv)
 {
     RT_MODEL *S;
-    unsigned int dt;
     unsigned int running = 1;
     const char *err = NULL;
     struct thread_task* p_task;
@@ -1266,8 +1240,6 @@ int main(int argc, char **argv)
         }
 #endif
     }
-
-    syslog(LOG_INFO, "Starting main thread with dt = %u ns.", dt);
 
     /* Now run main task */
     run_task(&task[0]);
