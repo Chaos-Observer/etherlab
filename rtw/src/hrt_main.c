@@ -438,6 +438,11 @@ void *run_task(void *p)
         clock_gettime(CLOCK_MONOTONIC, &start_time);
         clock_gettime(CLOCK_REALTIME, &thread->world_time);
 
+        if (thread == &task[0]) {
+            pdserv_get_parameters(pdserv, thread->pdtask,
+                    &thread->world_time);
+        }
+
         thread->err = thread->rt_OneStep(thread->S, thread->sl_tid);
 
         pdserv_update(thread->pdtask, &thread->world_time);
