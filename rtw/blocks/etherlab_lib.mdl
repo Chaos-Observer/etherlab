@@ -15,9 +15,9 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "ha"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Wed Dec 23 13:20:01 2015"
-  RTWModifiedTimeStamp	  372777600
-  ModelVersionFormat	  "1.%<AutoIncrement:1678>"
+  LastModifiedDate	  "Tue Jan 12 08:03:06 2016"
+  RTWModifiedTimeStamp	  374486518
+  ModelVersionFormat	  "1.%<AutoIncrement:1681>"
   ConfigurationManager	  "rcs"
   SampleTimeColors	  off
   SampleTimeAnnotations	  off
@@ -599,7 +599,7 @@ Library {
     ShowPageBoundaries	    off
     ZoomFactor		    "100"
     ReportName		    "simulink-default.rpt"
-    SIDHighWatermark	    271
+    SIDHighWatermark	    273
     Block {
       BlockType		      SubSystem
       Name		      "EtherCAT"
@@ -622,7 +622,7 @@ Library {
       System {
 	Name			"EtherCAT"
 	Location		[1091, 50, 1504, 460]
-	Open			off
+	Open			on
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
 	ScreenColor		"white"
@@ -734,8 +734,8 @@ Library {
 	  MaskIconUnits		  "autoscale"
 	  System {
 	    Name		    "Beckhoff"
-	    Location		    [836, 50, 1598, 534]
-	    Open		    off
+	    Location		    [836, 50, 1598, 614]
+	    Open		    on
 	    ModelBrowserVisibility  off
 	    ModelBrowserWidth	    200
 	    ScreenColor		    "white"
@@ -747,6 +747,47 @@ Library {
 	    TiledPageScale	    1
 	    ShowPageBoundaries	    off
 	    ZoomFactor		    "100"
+	    Block {
+	      BlockType		      "S-Function"
+	      Name		      "EL1262_0"
+	      SID		      272
+	      Ports		      [0, 1]
+	      Position		      [35, 366, 105, 404]
+	      BackgroundColor	      "[0.909804, 0.819608, 0.321569]"
+	      FunctionName	      "ec_slave3"
+	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
+	      SFunctionModules	      "'ecrt_support'"
+	      EnableBusSupport	      off
+	      MaskType		      "EL1262"
+	      MaskDescription	      "Beckhoff oversampling digital input"
+	      MaskHelp		      "web(etherlab_help_path('el1262.html'), '-helpbrowser');"
+	      MaskPromptString	      "Master|Slave Index|Device Model |1 Ch. only|Sample Time|Debug|Revision|Mode/Oversamplin"
+	      "g|Assign Activate|Cycle Time Sync 0 [ns]|Factor|Shift Time Sync0 [ns]|Factor|Shift Time0 Input|Cycle Time Sync1"
+	      " [ns]|Factor|Shift Time Sync1 [ns]|Factor"
+	      MaskStyleString	      "edit,edit,popup(EL1262|EL1262-0050),checkbox,edit,edit,edit,popup(1|2|3|4|5|8|10|16|20|2"
+	      "5|32|40|50|100|200|400|1000|Custom),edit,min,max,min,max,checkbox,min,max,min,max"
+	      MaskTunableValueString  "off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off"
+	      MaskCallbackString      "||el1262().updateRevision()|||||EtherCATSlave.updateCustomDCEnable();||||||||||"
+	      MaskEnableString	      "on,on,on,on,on,on,on,on,off,off,off,off,off,off,off,off,off,off"
+	      MaskVisibilityString    "on,on,on,on,on,off,off,on,on,on,on,on,on,on,on,on,on,on"
+	      MaskToolTipString	      "on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on"
+	      MaskVariables	      "master=@1;index=@2;model=&3;one_ch=@4;tsample=@5;debug=@6;revision=&7;dc_mode=@8;dc_assign"
+	      "_activate=@9;dc_cycle0=@10;dc_cycle0_factor=@11;dc_shift0=@12;dc_shift0_factor=@13;dc_shift0_input=@14;dc_cycle"
+	      "1=@15;dc_cycle1_factor=@16;dc_shift1=@17;dc_shift1_factor=@18;"
+	      MaskInitialization      "Address = EtherCATSlave.formatAddress(master,index,tsample);\n\nrv = el1262(model).con"
+	      "figure(one_ch,...\n    [dc_mode, dc_assign_activate, ...\n    dc_cycle0, dc_cycle0_factor,...\n    dc_shift0, d"
+	      "c_shift0_factor, dc_shift0_input,...\n    dc_cycle1, dc_cycle1_factor,...\n    dc_shift1, dc_shift1_factor]);\n"
+	      MaskDisplay	      "fprintf('%s\\nM:%i Idx:%s', model, master, mat2str(index))\n\n"
+	      MaskIconFrame	      on
+	      MaskIconOpaque	      on
+	      MaskIconRotate	      "none"
+	      MaskPortRotate	      "default"
+	      MaskIconUnits	      "normalized"
+	      MaskValueString	      "0|1|EL1262|on|0|0||10|hex2dec('730')|0|-10|-10000|1|off|0|-1|0|0"
+	      MaskTabNameString	      "Main,Main,Main,Main,Main,Main,Main,Oversampling/DC,Oversampling/DC,Oversampling/DC,Ove"
+	      "rsampling/DC,Oversampling/DC,Oversampling/DC,Oversampling/DC,Oversampling/DC,Oversampling/DC,Oversampling/DC,Ov"
+	      "ersampling/DC"
+	    }
 	    Block {
 	      BlockType		      "S-Function"
 	      Name		      "EL1xxx_0"
@@ -781,6 +822,47 @@ Library {
 	      MaskPortRotate	      "default"
 	      MaskIconUnits	      "autoscale"
 	      MaskValueString	      "0|1|EL1004||on|0|0"
+	    }
+	    Block {
+	      BlockType		      "S-Function"
+	      Name		      "EL2262_0"
+	      SID		      273
+	      Ports		      [1]
+	      Position		      [35, 441, 105, 479]
+	      BackgroundColor	      "[0.909804, 0.819608, 0.321569]"
+	      FunctionName	      "ec_slave3"
+	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
+	      SFunctionModules	      "'ecrt_support'"
+	      EnableBusSupport	      off
+	      MaskType		      "EL2262"
+	      MaskDescription	      "Beckhoff oversampling digital output"
+	      MaskHelp		      "web(etherlab_help_path('el2262.html'), '-helpbrowser');"
+	      MaskPromptString	      "Master|Slave Index|Device Model |1 Ch. only|Sample Time|Debug|Revision|Mode/Oversamplin"
+	      "g|Assign Activate|Cycle Time Sync 0 [ns]|Factor|Shift Time Sync0 [ns]|Factor|Shift Time0 Input|Cycle Time Sync1"
+	      " [ns]|Factor|Shift Time Sync1 [ns]|Factor"
+	      MaskStyleString	      "edit,edit,popup(EL2262),checkbox,edit,edit,edit,popup(1|2|3|4|5|8|10|16|20|25|32|40|50|1"
+	      "00|200|400|1000|Custom),edit,min,max,min,max,checkbox,min,max,min,max"
+	      MaskTunableValueString  "off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off"
+	      MaskCallbackString      "||el2262().updateRevision()|||||EtherCATSlave.updateCustomDCEnable();||||||||||"
+	      MaskEnableString	      "on,on,on,on,on,on,on,on,off,off,off,off,off,off,off,off,off,off"
+	      MaskVisibilityString    "on,on,on,on,on,off,off,on,on,on,on,on,on,on,on,on,on,on"
+	      MaskToolTipString	      "on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on"
+	      MaskVariables	      "master=@1;index=@2;model=&3;one_ch=@4;tsample=@5;debug=@6;revision=&7;dc_mode=@8;dc_assign"
+	      "_activate=@9;dc_cycle0=@10;dc_cycle0_factor=@11;dc_shift0=@12;dc_shift0_factor=@13;dc_shift0_input=@14;dc_cycle"
+	      "1=@15;dc_cycle1_factor=@16;dc_shift1=@17;dc_shift1_factor=@18;"
+	      MaskInitialization      "Address = EtherCATSlave.formatAddress(master,index,tsample);\n\nrv = el2262(model).con"
+	      "figure(one_ch,...\n    [dc_mode, dc_assign_activate, ...\n    dc_cycle0, dc_cycle0_factor,...\n    dc_shift0, d"
+	      "c_shift0_factor, dc_shift0_input,...\n    dc_cycle1, dc_cycle1_factor,...\n    dc_shift1, dc_shift1_factor]);\n"
+	      MaskDisplay	      "fprintf('%s\\nM:%i Idx:%s', model, master, mat2str(index))\n\n"
+	      MaskIconFrame	      on
+	      MaskIconOpaque	      on
+	      MaskIconRotate	      "none"
+	      MaskPortRotate	      "default"
+	      MaskIconUnits	      "normalized"
+	      MaskValueString	      "0|1|EL2262|on|0|0||10|hex2dec('730')|0|-10|-10000|1|off|0|-1|0|0"
+	      MaskTabNameString	      "Main,Main,Main,Main,Main,Main,Main,Oversampling/DC,Oversampling/DC,Oversampling/DC,Ove"
+	      "rsampling/DC,Oversampling/DC,Oversampling/DC,Oversampling/DC,Oversampling/DC,Oversampling/DC,Oversampling/DC,Ov"
+	      "ersampling/DC"
 	    }
 	    Block {
 	      BlockType		      "S-Function"
