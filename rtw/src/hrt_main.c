@@ -138,8 +138,10 @@
 #include "rt_nonfinite.h"
 #include "rt_sim.h"
 
-#if !defined(PDSERV_VERSION_CODE) || (PDSERV_VERSION_CODE < PDSERV_VERSION(3,0,0))
-#error Require PdServ Version 3
+#ifdef PDSERV_VERSION_CODE
+#    if PDSERV_VERSION_CODE >= PDSERV_VERSION(3,0,0)
+#        define PDSERV3
+#    endif
 #endif
 
 /****************************************************************************/
@@ -147,33 +149,6 @@
 #define MAX_SAFE_STACK (8 * 1024) /** The maximum stack size which is
                                     guranteed safe to access without faulting.
                                    */
-
-/** Monitor wakeup latency and output to syslog, if limit [ns] is exceeded.
- *
- * Zero disables monitoring.
- */
-#define WAKEUP_LIMIT_NS          0
-
-/** Monitor runtime of pdserv_get_parameters() and output to syslog,
- * if limit [ns] is exceeded.
- *
- * Zero disables monitoring.
- */
-#define GET_PARAMETERS_LIMIT_NS  0
-
-/** Monitor runtime of rt_OneStepMain() and output to syslog,
- * if limit [ns] is exceeded.
- *
- * Zero disables monitoring.
- */
-#define ONESTEPMAIN_LIMIT_NS     0
-
-/** Monitor runtime of pdserv_update() of main task and output to syslog,
- * if limit [ns] is exceeded.
- *
- * Zero disables monitoring.
- */
-#define PDSERV_UPDATE_LIMIT_NS   0
 
 /* To quote a string */
 #define STR(x) #x
@@ -466,6 +441,8 @@ void *run_task(void *p)
                     last_start_time = thread->monotonic_time,
                     end_time = thread->monotonic_time;
 
+    syslog(LOG_INFO, "Starting task with dt = %u ns.", dt);
+
     while (!thread->err && *thread->running
             && !clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME,
                 &thread->monotonic_time, 0)) {
@@ -475,6 +452,13 @@ void *run_task(void *p)
         pthread_rwlock_wrlock(&thread->signal_lock);
 
         clock_gettime(CLOCK_REALTIME, &thread->world_time);
+
+#ifndef PDSERV3
+        if (thread == &task[0]) {
+            pdserv_get_parameters(pdserv, thread->pdtask,
+                    &thread->world_time);
+        }
+#endif
 
         /* Lock parameters and execute task */
         pthread_mutex_lock(&thread->param_lock);
@@ -826,8 +810,13 @@ const char *register_signal(struct thread_task *task,
 #endif
 
     //printf("Reg with dt=%i\n", data_type);
+#ifdef PDSERV3
     signal = pdserv_signal(task->pdtask, decimation,
             path, data_type, address, ndim, dim, read_signal, task);
+#else
+    signal = pdserv_signal(task->pdtask, decimation,
+            path, data_type, address, ndim, dim);
+#endif
 
     if (signal && !related && signalName && *signalName)
         pdserv_set_alias(signal, signalName);
@@ -928,8 +917,12 @@ const char *register_parameter( struct pdserv *pdserv,
             dim[i] = dimArray[dimArrayIndex + (ndim - 1) - i];
     }
 
+#ifdef PDSERV3
     pdserv_parameter(pdserv, path, 0666, data_type, address, ndim, dim,
             write_parameter, 0);
+#else
+    pdserv_parameter(pdserv, path, 0666, data_type, address, ndim, dim, 0, 0);
+#endif
 
 out:
     free(path);
@@ -1193,7 +1186,6 @@ void get_options(int argc, char **argv)
 int main(int argc, char **argv)
 {
     RT_MODEL *S;
-    unsigned int dt;
     unsigned int running = 1;
     const char *err = NULL;
     struct thread_task* p_task;
@@ -1294,12 +1286,14 @@ int main(int argc, char **argv)
      * threads, specifically to enable phasing */
     p_task = task + NUMTASKS-1;
     clock_gettime(CLOCK_MONOTONIC, &p_task->monotonic_time);
-    if (phase >= 0) {
+    if (phase >= 0 && p_task != task) {
         uint64_t t64 = 1000000000ULL * p_task->monotonic_time.tv_sec
             + p_task->monotonic_time.tv_nsec;
         uint64_t dt = p_task->sample_time * 1e9;
+        unsigned int phase_shift = dt - (t64 % dt);
 
-        timeradd(&p_task->monotonic_time, dt - (t64 % dt));
+        syslog(LOG_INFO, "Delay starting time by %u ns.", phase_shift);
+        timeradd(&p_task->monotonic_time, phase_shift);
     }
 
     /* Start sub-threads */
@@ -1338,7 +1332,8 @@ int main(int argc, char **argv)
 #endif
     }
 
-    syslog(LOG_INFO, "Starting main thread with dt = %u ns.", dt);
+    syslog(LOG_INFO, "Starting main thread with dt = %u ns.",
+            (unsigned int)(p_task->sample_time * 1e9 + 0.5));
 
     /* Now run main task */
     run_task(&task[0]);
