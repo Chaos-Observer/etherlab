@@ -1286,7 +1286,7 @@ int main(int argc, char **argv)
      * threads, specifically to enable phasing */
     p_task = task + NUMTASKS-1;
     clock_gettime(CLOCK_MONOTONIC, &p_task->monotonic_time);
-    if (phase >= 0 && p_task != task) {
+    if (phase >= 0) {
         uint64_t t64 = 1000000000ULL * p_task->monotonic_time.tv_sec
             + p_task->monotonic_time.tv_nsec;
         uint64_t dt = p_task->sample_time * 1e9;
