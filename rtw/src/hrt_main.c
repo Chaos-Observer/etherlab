@@ -1196,6 +1196,18 @@ int main(int argc, char **argv)
 
     get_options(argc, argv);
 
+    if (daemonize) {
+        int ret;
+        fprintf(stderr, "Now becoming a daemon.\n");
+        ret = daemon(0, 0);
+        if (ret != 0) {
+            fprintf(stderr, "Failed to become daemon: %s\n", strerror(errno));
+            pdserv_exit(pdserv);
+            err = "daemon() failed.";
+            goto out;
+        }
+    }
+
     if (!(pdserv = pdserv_create(QUOTE(MODEL), MODEL_VERSION, gettime))) {
         err = "Failed to init pdserv.";
         goto out;
@@ -1262,18 +1274,6 @@ int main(int argc, char **argv)
     if ((err = init_application(S))) {
         pdserv_exit(pdserv);
         goto out;
-    }
-
-    if (daemonize) {
-        int ret;
-        fprintf(stderr, "Now becoming a daemon.\n");
-        ret = daemon(0, 0);
-        if (ret != 0) {
-            fprintf(stderr, "Failed to become daemon: %s\n", strerror(errno));
-            pdserv_exit(pdserv);
-            err = "daemon() failed.";
-            goto out;
-        }
     }
 
     if (pidPath[0])
