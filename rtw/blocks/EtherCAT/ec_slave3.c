@@ -2206,7 +2206,6 @@ mdlRTWWritePort(struct ecat_slave *slave, const struct io_port *port,
 static void mdlRTW(SimStruct *S)
 {
     struct ecat_slave *slave = ssGetUserData(S);
-    size_t sm_idx = 0;
     int_T param_idx = 0;
     int_T const_idx = 0;
     int32_T *config_idx;
@@ -2337,6 +2336,7 @@ static void mdlRTW(SimStruct *S)
 
         for (sm = slave->sync_manager; sm != slave->sync_manager_end; sm++) {
             const struct pdo *pdo;
+            size_t sm_idx = sm - slave->sync_manager;
 
             sync_manager[sm_idx][SM_Index] = sm->index;
             sync_manager[sm_idx][SM_Direction] =
@@ -2366,8 +2366,6 @@ static void mdlRTW(SimStruct *S)
                 }
                 pdo_idx++;
             }
-            if (sync_manager[sm_idx][SM_PdoCount])
-                sm_idx++;
         }
 
         if (slave->pdo_entry_count) {
