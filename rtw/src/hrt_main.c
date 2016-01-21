@@ -138,6 +138,12 @@
 #include "rt_nonfinite.h"
 #include "rt_sim.h"
 
+#ifdef PDSERV_VERSION_CODE
+#    if PDSERV_VERSION_CODE >= PDSERV_VERSION(3,0,0)
+#        define PDSERV3
+#    endif
+#endif
+
 /****************************************************************************/
 
 #define MAX_SAFE_STACK (8 * 1024) /** The maximum stack size which is
@@ -186,6 +192,10 @@ extern "C" {
 #endif
 
 struct pdserv *pdserv = NULL;
+struct pdserv *get_pdserv_ptr(void)
+{
+    return pdserv;
+}
 
 extern RT_MODEL *MODEL(void);
 
@@ -263,6 +273,8 @@ struct thread_task {
     struct timespec monotonic_time;
     struct timespec world_time;
     pthread_t thread;
+    pthread_mutex_t param_lock;
+    pthread_rwlock_t signal_lock;
     const char* (*rt_OneStep)(RT_MODEL*, uint_T);
 };
 
@@ -436,15 +448,22 @@ void *run_task(void *p)
                 &thread->monotonic_time, 0)) {
 
         clock_gettime(CLOCK_MONOTONIC, &start_time);
+
+        pthread_rwlock_wrlock(&thread->signal_lock);
+
         clock_gettime(CLOCK_REALTIME, &thread->world_time);
 
+#ifndef PDSERV3
         if (thread == &task[0]) {
             pdserv_get_parameters(pdserv, thread->pdtask,
                     &thread->world_time);
         }
+#endif
 
+        /* Lock parameters and execute task */
+        pthread_mutex_lock(&thread->param_lock);
         thread->err = thread->rt_OneStep(thread->S, thread->sl_tid);
-
+        pthread_mutex_unlock(&thread->param_lock);
         pdserv_update(thread->pdtask, &thread->world_time);
 
         /* Calculate timing statistics */
@@ -453,6 +472,8 @@ void *run_task(void *p)
         last_start_time = start_time;
         pdserv_update_statistics(thread->pdtask,
                 1.0e-9 * exec_ns, 1.0e-9 * period_ns, overruns);
+
+        pthread_rwlock_unlock(&thread->signal_lock);
 
         timeradd(&thread->monotonic_time, dt);
 
@@ -596,9 +617,51 @@ int get_etl_data_type (const char *mwName,
 
 /****************************************************************************/
 
+int write_parameter(
+        const struct pdvariable* param,
+        void *dst, const void* src, size_t len,
+        struct timespec* time,
+        void* priv_data)
+{
+    struct thread_task *p_task = task + NUMTASKS;
+    while (p_task != task)
+        pthread_mutex_lock(&(--p_task)->param_lock);
+
+    memcpy(dst, src, len);
+    clock_gettime(CLOCK_REALTIME, time);
+
+    p_task = task + NUMTASKS;
+    while (p_task != task)
+        pthread_mutex_unlock(&(--p_task)->param_lock);
+
+    return 0;
+}
+
+/****************************************************************************/
+
+int read_signal(
+        const struct pdvariable* signal,
+        void* dst, const void* src, size_t len,
+        struct timespec* time,
+        void* priv_data)
+{
+    struct thread_task* task = priv_data;
+
+    pthread_rwlock_rdlock(&task->signal_lock);
+    memcpy(dst, src, len);
+    if (time)
+        *time = task->world_time;
+    pthread_rwlock_unlock(&task->signal_lock);
+
+    return 0;
+}
+
+
+/****************************************************************************/
+
 /** Register a signal with PdServ.
  */
-const char *register_signal(const struct thread_task *task,
+const char *register_signal(struct thread_task *task,
         const rtwCAPI_Signals* signals, size_t idx)
 {
     uint_T addrMapIndex    = rtwCAPI_GetSignalAddrIdx(signals, idx);
@@ -747,8 +810,13 @@ const char *register_signal(const struct thread_task *task,
 #endif
 
     //printf("Reg with dt=%i\n", data_type);
+#ifdef PDSERV3
+    signal = pdserv_signal(task->pdtask, decimation,
+            path, data_type, address, ndim, dim, read_signal, task);
+#else
     signal = pdserv_signal(task->pdtask, decimation,
             path, data_type, address, ndim, dim);
+#endif
 
     if (signal && !related && signalName && *signalName)
         pdserv_set_alias(signal, signalName);
@@ -849,7 +917,12 @@ const char *register_parameter( struct pdserv *pdserv,
             dim[i] = dimArray[dimArrayIndex + (ndim - 1) - i];
     }
 
+#ifdef PDSERV3
+    pdserv_parameter(pdserv, path, 0666, data_type, address, ndim, dim,
+            write_parameter, 0);
+#else
     pdserv_parameter(pdserv, path, 0666, data_type, address, ndim, dim, 0, 0);
+#endif
 
 out:
     free(path);
@@ -867,7 +940,7 @@ out:
  */
 const char *
 rtw_capi_init(RT_MODEL *S,
-        struct pdserv *pdserv, const struct thread_task *task)
+        struct pdserv *pdserv, struct thread_task *task)
 {
     const rtwCAPI_Signals* signals;
     const rtwCAPI_BlockParameters* params;
@@ -1116,11 +1189,24 @@ int main(int argc, char **argv)
     unsigned int running = 1;
     const char *err = NULL;
     struct thread_task* p_task;
+    pthread_rwlockattr_t rwlock_attr;
 
     /* Set defaults for command-line options. */
     base_name = basename(argv[0]);
 
     get_options(argc, argv);
+
+    if (daemonize) {
+        int ret;
+        fprintf(stderr, "Now becoming a daemon.\n");
+        ret = daemon(0, 0);
+        if (ret != 0) {
+            fprintf(stderr, "Failed to become daemon: %s\n", strerror(errno));
+            pdserv_exit(pdserv);
+            err = "daemon() failed.";
+            goto out;
+        }
+    }
 
     if (!(pdserv = pdserv_create(QUOTE(MODEL), MODEL_VERSION, gettime))) {
         err = "Failed to init pdserv.";
@@ -1134,13 +1220,23 @@ int main(int argc, char **argv)
     /* Initialize model */
     S = MODEL();
 
+    /* Initialize rwlock attributes */
+    pthread_rwlockattr_init(&rwlock_attr);
+    pthread_rwlockattr_setkind_np(&rwlock_attr,
+            PTHREAD_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP);
+
     /* Create necessary pdserv tasks */
     for (p_task = task; p_task != task + NUMTASKS; ++p_task) {
         p_task->S = S;
         p_task->sl_tid = (p_task - task) + FIRST_TID;
         p_task->sample_time = rtmGetSampleTime(S, p_task->sl_tid);
         p_task->pdtask = pdserv_create_task(pdserv, p_task->sample_time, 0);
+
+        pthread_rwlock_init(&p_task->signal_lock, &rwlock_attr);
+        pthread_mutex_init(&p_task->param_lock, NULL);
     }
+
+    pthread_rwlockattr_destroy(&rwlock_attr);
 
     /* Register signals and parameters */
     if ((err = rtw_capi_init(S, pdserv, task))) {
@@ -1180,18 +1276,6 @@ int main(int argc, char **argv)
         goto out;
     }
 
-    if (daemonize) {
-        int ret;
-        fprintf(stderr, "Now becoming a daemon.\n");
-        ret = daemon(0, 0);
-        if (ret != 0) {
-            fprintf(stderr, "Failed to become daemon: %s\n", strerror(errno));
-            pdserv_exit(pdserv);
-            err = "daemon() failed.";
-            goto out;
-        }
-    }
-
     if (pidPath[0])
         create_pid_file();
 
@@ -1206,8 +1290,10 @@ int main(int argc, char **argv)
         uint64_t t64 = 1000000000ULL * p_task->monotonic_time.tv_sec
             + p_task->monotonic_time.tv_nsec;
         uint64_t dt = p_task->sample_time * 1e9;
+        unsigned int phase_shift = dt - (t64 % dt);
 
-        timeradd(&p_task->monotonic_time, dt - (t64 % dt));
+        syslog(LOG_INFO, "Delay starting time by %u ns.", phase_shift);
+        timeradd(&p_task->monotonic_time, phase_shift);
     }
 
     /* Start sub-threads */
@@ -1245,6 +1331,9 @@ int main(int argc, char **argv)
         }
 #endif
     }
+
+    syslog(LOG_INFO, "Starting main thread with dt = %u ns.",
+            (unsigned int)(p_task->sample_time * 1e9 + 0.5));
 
     /* Now run main task */
     run_task(&task[0]);
