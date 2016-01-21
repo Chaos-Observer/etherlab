@@ -1192,7 +1192,8 @@ const char * ecs_start(
 
             if (pdo_map->datatype < 1008) {
                 /* bit operations */
-                void (*convert_funcs[])(const struct endian_convert_t *) = {
+                static void (* const convert_funcs[])(
+				const struct endian_convert_t *) = {
                     ecs_write_uint1, ecs_write_uint2,
                     ecs_write_uint3, ecs_write_uint4,
                     ecs_write_uint5, ecs_write_uint6,
@@ -1204,7 +1205,8 @@ const char * ecs_start(
             }
             else if (pdo_map->datatype > 3000) {
                 /* floating points */
-                void (*convert_funcs[][2])(const struct endian_convert_t *) = {
+                static void (* const convert_funcs[][2])(
+				const struct endian_convert_t *) = {
                     {ecs_write_le_single, ecs_write_be_single},
                     {ecs_write_le_double, ecs_write_be_double},
                 };
@@ -1213,7 +1215,8 @@ const char * ecs_start(
             }
             else {
                 /* integers */
-                void (*convert_funcs[][2])(const struct endian_convert_t *) = {
+                static void (* const convert_funcs[][2])(
+				const struct endian_convert_t *) = {
                     {ecs_copy_uint8,      ecs_copy_uint8     },
                     {ecs_write_le_uint16, ecs_write_be_uint16},
                     {ecs_write_le_uint24, ecs_write_be_uint24},
@@ -1242,7 +1245,8 @@ const char * ecs_start(
             convert->src = pdo_map->domain->io_data + pdo_map->offset;
 
             if (pdo_map->datatype < 1008) {
-                void (*convert_funcs[])(const struct endian_convert_t *) = {
+                static void (* const convert_funcs[])(
+				const struct endian_convert_t *) = {
                     ecs_read_uint1, ecs_read_uint2,
                     ecs_read_uint3, ecs_read_uint4,
                     ecs_read_uint5, ecs_read_uint6,
@@ -1253,7 +1257,8 @@ const char * ecs_start(
                 convert->index = pdo_map->bit_pos;
             }
             else if (pdo_map->datatype > 3000) {
-                void (*convert_funcs[][2])(const struct endian_convert_t *) = {
+                static void (* const convert_funcs[][2])(
+				const struct endian_convert_t *) = {
                     {ecs_read_le_single, ecs_read_be_single},
                     {ecs_read_le_double, ecs_read_be_double},
                 };
@@ -1261,7 +1266,8 @@ const char * ecs_start(
                     convert_funcs[bytes / 4 - 1][pdo_map->bigendian];
             }
             else {
-                void (*convert_funcs[][2])(const struct endian_convert_t *) = {
+                static void (* const convert_funcs[][2])(
+				const struct endian_convert_t *) = {
                     {ecs_copy_uint8,     ecs_copy_uint8    },
                     {ecs_read_le_uint16, ecs_read_be_uint16},
                     {ecs_read_le_uint24, ecs_read_be_uint24},
