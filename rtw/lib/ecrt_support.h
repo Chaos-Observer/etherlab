@@ -15,7 +15,7 @@ struct pdo_map {
 
     /* The next values are used by the support layer */
     struct ecat_domain *domain;
-    size_t offset;
+    int offset;
     unsigned int bit_pos;
 };
 
