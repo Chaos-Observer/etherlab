@@ -25,10 +25,10 @@ methods
         rv.SlaveConfig.description = obj.slave{1};
 
         % Distributed clock
-        if dc_spec(1) ~= 18  %%Hm changed from 15
+        if dc_spec(1) ~= 18
             % DC Configuration from the default list
-            dc = el2262.dc;
-            rv.SlaveConfig.dc = dc(dc_spec(1),:);
+            dc_ = el2262.dc;
+            rv.SlaveConfig.dc = dc_(dc_spec(1),:);
         else
             % Custom DC
             rv.SlaveConfig.dc = dc_spec(2:end);
@@ -45,6 +45,11 @@ methods
             channels = 1:2;
         end
 
+        % Clear all SyncManagers
+        rv.SlaveConfig.sm{1} = {0, 0, []};
+        rv.SlaveConfig.sm{2} = {1, 0, []};
+        rv.SlaveConfig.sm{3} = {2, 1, []};
+        
         % Input syncmanager
         for i = channels
             rv.SlaveConfig.sm{i} = {i-1,0,el2262.pdos{i}};
@@ -57,7 +62,7 @@ methods
             gap = rem(os_fac,8);
             if (gap)
                 rv.SlaveConfig.sm{i}{3}{3} = ...
-                    {el2262.gap_pdo_idx(i) + gap - 1, [0,0,gap]};
+                    {el2262.gap_pdo_idx(i) + gap - 1, [0,0,8-gap]};
             end
         end
 
@@ -97,13 +102,13 @@ properties (Constant)
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-properties (Access = private, Constant)
+properties (Constant)
 
     % PDO list
-    pdos = {{ {hex2dec('1700'), [hex2dec('7800'),             1, 16]},
-              {hex2dec('1600'), [hex2dec('7000'),             1,  1]}}, 
-            { {hex2dec('1701'), [hex2dec('7800'),             2, 16]},
-              {hex2dec('1600'), [hex2dec('7000'),             2,  1]}},
+    pdos = {{ {hex2dec('1700'), [hex2dec('7800'),             1, 16]}, ...
+              {hex2dec('1600'), [hex2dec('7000'),             1,  1]}}, ...
+            { {hex2dec('1701'), [hex2dec('7800'),             2, 16]}, ...
+              {hex2dec('1601'), [hex2dec('7000'),             2,  1]}}, ...
             { {hex2dec('1702'), [hex2dec('1d09'), hex2dec('98'), 32]}}};
 
     % Starting index of gap PDO
