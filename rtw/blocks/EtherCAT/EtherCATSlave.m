@@ -275,7 +275,7 @@ classdef EtherCATSlave
         % The return value is a Nx7 array, where columns
         %       1:4   = [SmIdx,PdoIdx,PdoEntryIdx,0] address
         %       5:6   = [PdoEntryIndex,PdoEntrySyubIndex,BitLen]
-        function entry = findPdoEntries(Sm, dir)
+        function entry = findPdoEntries(Sm, dir, limit)
             if isempty(Sm)
                 entry = [];
                 return
@@ -328,6 +328,11 @@ classdef EtherCATSlave
             % - Swap columns 4 and 3
             if ~isempty(entry)
                 entry = entry(entry(:,5) ~= 0,[1,2,4,3,5:end]);
+            end
+
+            % Limit count
+            if nargin > 2
+                entry(limit+1:end,:) = [];
             end
         end
         

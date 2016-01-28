@@ -15,9 +15,9 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "ha"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Tue Jan 12 08:03:06 2016"
-  RTWModifiedTimeStamp	  374486518
-  ModelVersionFormat	  "1.%<AutoIncrement:1681>"
+  LastModifiedDate	  "Thu Jan 28 16:30:42 2016"
+  RTWModifiedTimeStamp	  375899441
+  ModelVersionFormat	  "1.%<AutoIncrement:1683>"
   ConfigurationManager	  "rcs"
   SampleTimeColors	  off
   SampleTimeAnnotations	  off
@@ -622,7 +622,7 @@ Library {
       System {
 	Name			"EtherCAT"
 	Location		[1091, 50, 1504, 460]
-	Open			on
+	Open			off
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
 	ScreenColor		"white"
@@ -735,7 +735,7 @@ Library {
 	  System {
 	    Name		    "Beckhoff"
 	    Location		    [836, 50, 1598, 614]
-	    Open		    on
+	    Open		    off
 	    ModelBrowserVisibility  off
 	    ModelBrowserWidth	    200
 	    ScreenColor		    "white"
@@ -2152,9 +2152,9 @@ Library {
 	      "te. If another block can set the sample time, choose -1 for inherited sample time."
 	      MaskPromptString	      "Master|Slave Index|Device Model |Revision|Vector Input|Sample Time|Debug Level"
 	      MaskStyleString	      "edit,edit,popup(EP2001-1000|EP2008-0001|EP2008-0002|EP2008-0022|EP2028-0001|EP2028-0002|"
-	      "EP2028-0032|EP2308-0000|EP2308-0001|EP2308-0002|EP2318-0001|EP2318-0002|EP2328-0001|EP2328-0002|EP2338-0001|EP2"
-	      "338-0002|EP2338-1001|EP2338-1002|EP2339-0021|EP2339-0022|EP2349-0021|EP2349-0022|EP2624|EP2624-0002|EP2809-0021"
-	      "|EP2809-0022),edit,checkbox,edit,edit"
+	      "EP2028-0032|EP2308-0000|EP2308-0001|EP2308-0002|EP2316-0003|EP2316-0008|EP2318-0001|EP2318-0002|EP2328-0001|EP2"
+	      "328-0002|EP2338-0001|EP2338-0002|EP2338-1001|EP2338-1002|EP2339-0021|EP2339-0022|EP2349-0021|EP2349-0022|EP2624"
+	      "|EP2624-0002|EP2809-0021|EP2809-0022),edit,checkbox,edit,edit"
 	      MaskTunableValueString  "off,off,off,off,off,off,off"
 	      MaskCallbackString      "||ep2xxx().updateRevision()||||"
 	      MaskEnableString	      "on,on,on,on,on,on,on"
