@@ -87,13 +87,13 @@ classdef el4xxx < EtherCATSlave
             'EL4001', hex2dec('0fa13052'), hex2dec('00120000'),13,  '0-10V';
             'EL4002', hex2dec('0fa23052'), hex2dec('00130000'), 1,  '0-10V';
             'EL4004', hex2dec('0fa43052'), hex2dec('00130000'), 1,  '0-10V';
-            'EL4008', hex2dec('0fa83052'), hex2dec('00130000'), 1,  '0-10V';
+            'EL4008', hex2dec('0fa83052'), hex2dec('00130000'),13,  '0-10V';
             'EL4011', hex2dec('0fab3052'), hex2dec('00130000'), 1, '0-20mA';
             'EL4012', hex2dec('0fac3052'), hex2dec('00130000'), 1, '0-20mA';
             'EL4014', hex2dec('0fae3052'), hex2dec('00130000'), 1, '0-20mA';
             'EL4018', hex2dec('0fb23052'), hex2dec('00130000'), 1, '0-20mA';
             'EL4021', hex2dec('0fb53052'), hex2dec('00130000'), 1, '4-20mA';
-            'EL4022', hex2dec('0fb63052'), hex2dec('00130000'), 1, '4-20mA';
+            'EL4022', hex2dec('0fb63052'), hex2dec('00130000'),13, '4-20mA';
             'EL4024', hex2dec('0fb83052'), hex2dec('00130000'), 1, '4-20mA';
             'EL4028', hex2dec('0fbc3052'), hex2dec('00130000'), 1, '4-20mA';
             'EL4031', hex2dec('0fbf3052'), hex2dec('00130000'), 1, '+/-10V';
