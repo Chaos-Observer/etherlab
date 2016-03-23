@@ -15,9 +15,9 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "ha"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Thu Jan 28 16:30:42 2016"
+  LastModifiedDate	  "Wed Mar 23 09:59:13 2016"
   RTWModifiedTimeStamp	  375899441
-  ModelVersionFormat	  "1.%<AutoIncrement:1683>"
+  ModelVersionFormat	  "1.%<AutoIncrement:1684>"
   ConfigurationManager	  "rcs"
   SampleTimeColors	  off
   SampleTimeAnnotations	  off
@@ -586,7 +586,7 @@ Library {
   System {
     Name		    "etherlab_lib"
     Location		    [796, 68, 1230, 276]
-    Open		    on
+    Open		    off
     ModelBrowserVisibility  off
     ModelBrowserWidth	    200
     ScreenColor		    "white"
@@ -3143,7 +3143,7 @@ Library {
       System {
 	Name			"Util"
 	Location		[796, 68, 1598, 698]
-	Open			off
+	Open			on
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
 	ScreenColor		"white"
@@ -3262,30 +3262,28 @@ Library {
 	  BlockType		  "S-Function"
 	  Name			  "Message"
 	  SID			  271
-	  Ports			  [2, 1]
+	  Ports			  [1, 1]
 	  Position		  [55, 186, 125, 224]
 	  LibraryVersion	  "1.1668"
 	  FunctionName		  "message"
-	  Parameters		  "prio,message_text,reset,invert,confirm,tsample"
+	  Parameters		  "prio,reset,invert,confirm,tsample"
 	  EnableBusSupport	  off
 	  MaskType		  "Generate system message"
 	  MaskDescription	  "This block generates a system message when the input port 1 is true.\n\nThe current time is outp"
 	  "ut on output port."
 	  MaskHelp		  "This block generates a system message when the input port 1 is true.\nSystem messages are logged and k"
-	  "ept in history.\n\n<h2>Parameters:</h2>\n\n<h4>Priority</h4>Select the message priority\n\n<h4>Message List</h4> En"
-	  "ter the message to be printed.\nIt must be a cell array of strings and have the same number of\nelements as port 1."
-	  "\n\n<h4>External Reset</h4>Message will be reset on external signal.\n\n<h4>Invert Input</h4>Invert input (0 = Gene"
-	  "rate message)\n\n<h4>Input confirm delay</h4>Delay time before message is raised.\n"
-	  MaskPromptString	  "Priority|Message List|External Reset|Invert Input|Input confirm delay [s]|Sample Time (-1 for i"
-	  "nherited)"
-	  MaskStyleString	  "popup(Emergency|Alert|Critical|Error|Warning|Notice|Information|Debug),edit,checkbox,checkbox,ed"
-	  "it,edit"
-	  MaskTunableValueString  "off,off,off,off,on,off"
-	  MaskCallbackString	  "|||||"
-	  MaskEnableString	  "on,on,on,on,on,on"
-	  MaskVisibilityString	  "on,on,on,on,on,on"
-	  MaskToolTipString	  "on,on,on,on,on,on"
-	  MaskVariables		  "prio=@1;message_text=@2;reset=@3;invert=@4;confirm=@5;tsample=@6;"
+	  "ept in history.\n\n<h2>Parameters:</h2>\n\n<h4>Priority</h4>Select the message priority\n\n<h4>External Reset</h4>M"
+	  "essage will be reset on external signal.\n\n<h4>Invert Input</h4>Invert input (0 = Generate message)\n\n<h4>Input c"
+	  "onfirm delay</h4>Delay time before message is raised.\n"
+	  MaskPromptString	  "Priority|External Reset|Invert Input|Input confirm delay [s]|Sample Time (-1 for inherited)"
+	  MaskStyleString	  "popup(Emergency|Alert|Critical|Error|Warning|Notice|Information|Debug),checkbox,checkbox,edit,ed"
+	  "it"
+	  MaskTunableValueString  "off,off,off,on,off"
+	  MaskCallbackString	  "||||"
+	  MaskEnableString	  "on,on,on,on,on"
+	  MaskVisibilityString	  "on,on,on,on,on"
+	  MaskToolTipString	  "on,on,on,on,on"
+	  MaskVariables		  "prio=@1;reset=@2;invert=@3;confirm=@4;tsample=@5;"
 	  MaskInitialization	  "m = {'Emergency', 'Alert', 'Critical', 'Error', ...\n    'Warning', 'Notice', 'Information', "
 	  "'Debug'};\ncmap = [\n    1 0 1;\n    1 0 1;\n    1 0 1;\n    1 0 0;\n    1 0.5 0.0;\n    0 0 1;\n    0 0 1;\n    0 "
 	  "0 1;\n    ]; \nc = cmap(prio,:);\npriority = m{prio};"
@@ -3295,7 +3293,7 @@ Library {
 	  MaskIconRotate	  "none"
 	  MaskPortRotate	  "default"
 	  MaskIconUnits		  "autoscale"
-	  MaskValueString	  "Error|{}|on|off|[]|-1"
+	  MaskValueString	  "Error|off|off||-1"
 	}
 	Block {
 	  BlockType		  "S-Function"
