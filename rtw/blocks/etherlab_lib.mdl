@@ -15,9 +15,9 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "ha"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Wed Oct  5 16:02:28 2016"
-  RTWModifiedTimeStamp	  397584147
-  ModelVersionFormat	  "1.%<AutoIncrement:1704>"
+  LastModifiedDate	  "Thu Oct  6 11:44:35 2016"
+  RTWModifiedTimeStamp	  397655063
+  ModelVersionFormat	  "1.%<AutoIncrement:1717>"
   ConfigurationManager	  "rcs"
   SampleTimeColors	  off
   SampleTimeAnnotations	  off
@@ -585,7 +585,7 @@ Library {
   }
   System {
     Name		    "etherlab_lib"
-    Location		    [864, 208, 1298, 416]
+    Location		    [905, 301, 1339, 509]
     Open		    on
     ModelBrowserVisibility  off
     ModelBrowserWidth	    200
@@ -599,7 +599,7 @@ Library {
     ShowPageBoundaries	    off
     ZoomFactor		    "100"
     ReportName		    "simulink-default.rpt"
-    SIDHighWatermark	    274
+    SIDHighWatermark	    278
     Block {
       BlockType		      SubSystem
       Name		      "EtherCAT"
@@ -621,7 +621,7 @@ Library {
       MaskIconUnits	      "pixels"
       System {
 	Name			"EtherCAT"
-	Location		[1219, 309, 1632, 719]
+	Location		[793, 434, 1206, 844]
 	Open			off
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
@@ -734,7 +734,7 @@ Library {
 	  MaskIconUnits		  "autoscale"
 	  System {
 	    Name		    "Beckhoff"
-	    Location		    [933, 182, 1695, 746]
+	    Location		    [893, 122, 1669, 820]
 	    Open		    off
 	    ModelBrowserVisibility  off
 	    ModelBrowserWidth	    200
@@ -747,6 +747,46 @@ Library {
 	    TiledPageScale	    1
 	    ShowPageBoundaries	    off
 	    ZoomFactor		    "100"
+	    Block {
+	      BlockType		      "S-Function"
+	      Name		      "EK1914_0"
+	      SID		      275
+	      Ports		      [2, 2]
+	      Position		      [630, 206, 700, 244]
+	      BackgroundColor	      "yellow"
+	      AttributesFormatString  "EK1914\\nM:0 Idx:1"
+	      FunctionName	      "ec_slave3"
+	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
+	      SFunctionModules	      "'ecrt_support'"
+	      EnableBusSupport	      off
+	      MaskType		      "EK1904"
+	      MaskDescription	      "Beckhoff EtherCAT SAFE digital input/output coupler"
+	      MaskHelp		      "web(etherlab_help_path('ek1914.html'), '-helpbrowser');"
+	      MaskPromptString	      "Master|Slave Index|Device Model |Standard IO|Safe IO|Sample Time (-1 for inherited)|Deb"
+	      "ug"
+	      MaskStyleString	      "edit,edit,popup(EK1914),checkbox,checkbox,edit,edit"
+	      MaskTunableValueString  "off,off,off,off,off,off,off"
+	      MaskCallbackString      "||||||"
+	      MaskEnableString	      "on,on,off,on,on,on,on"
+	      MaskVisibilityString    "on,on,off,on,on,on,off"
+	      MaskToolTipString	      "on,on,on,on,on,on,on"
+	      MaskVariables	      "master=@1;index=@2;model=&3;stdio=@4;safeio=@5;tsample=@6;debug=@7;"
+	      MaskInitialization      "Address = EtherCATSlave.formatAddress(master,index,tsample);\n\nrv = ek1914(stdio, saf"
+	      "eio);\n\ntext = sprintf('%s\\\\nM:%i Idx:%s', model, master, mat2str(index));\nif numel(rv.PortConfig.input) > "
+	      "1 || numel(rv.PortConfig.output) > 1\n    EtherCATSlave.setPortNames(...\n        {rv.PortConfig.input.portname"
+	      "},...\n        {rv.PortConfig.output.portname});\n\n    set_param(gcbh,'AttributesFormatString',text);\nelse\n "
+	      "   set_param(gcbh,'AttributesFormatString','');\n    set_param(gcbh,'MaskDisplay', strcat('disp(''',text,''')')"
+	      ");\nend"
+	      MaskDisplay	      "port_label('input', 1, 'FSoE')\nport_label('input', 2, 'StdOut')\nport_label('output', 1, 'F"
+	      "SoE')\nport_label('output', 2, 'StdIn')\n"
+	      MaskSelfModifiable      on
+	      MaskIconFrame	      on
+	      MaskIconOpaque	      on
+	      MaskIconRotate	      "none"
+	      MaskPortRotate	      "default"
+	      MaskIconUnits	      "autoscale"
+	      MaskValueString	      "0|1|EK1914|on|off|-1|"
+	    }
 	    Block {
 	      BlockType		      "S-Function"
 	      Name		      "EL1262_0"
@@ -787,6 +827,37 @@ Library {
 	      MaskTabNameString	      "Main,Main,Main,Main,Main,Main,Main,Oversampling/DC,Oversampling/DC,Oversampling/DC,Ove"
 	      "rsampling/DC,Oversampling/DC,Oversampling/DC,Oversampling/DC,Oversampling/DC,Oversampling/DC,Oversampling/DC,Ov"
 	      "ersampling/DC"
+	    }
+	    Block {
+	      BlockType		      "S-Function"
+	      Name		      "EL1904_0"
+	      SID		      276
+	      Ports		      [1, 1]
+	      Position		      [35, 506, 105, 544]
+	      BackgroundColor	      "yellow"
+	      FunctionName	      "ec_slave3"
+	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
+	      SFunctionModules	      "'ecrt_support'"
+	      EnableBusSupport	      off
+	      MaskType		      "EL1904"
+	      MaskDescription	      "Beckhoff EtherCAT SAFE digital input"
+	      MaskHelp		      "web(etherlab_help_path('el1904.html'), '-helpbrowser');"
+	      MaskPromptString	      "Master|Slave Index|Device Model |Safe inputs|Sample Time (-1 for inherited)|Debug"
+	      MaskStyleString	      "edit,edit,popup(EL1904),checkbox,edit,edit"
+	      MaskTunableValueString  "off,off,off,off,off,off"
+	      MaskCallbackString      "|||||"
+	      MaskEnableString	      "on,on,off,on,on,on"
+	      MaskVisibilityString    "on,on,off,on,on,off"
+	      MaskToolTipString	      "on,on,on,on,on,on"
+	      MaskVariables	      "master=@1;index=@2;model=&3;safein=@4;tsample=@5;debug=@6;"
+	      MaskInitialization      "Address = EtherCATSlave.formatAddress(master,index,tsample);\n\nrv = el1904(safein);"
+	      MaskDisplay	      "fprintf('%s\\nM:%i Idx:%s', model, master, mat2str(index))\n\n"
+	      MaskIconFrame	      on
+	      MaskIconOpaque	      on
+	      MaskIconRotate	      "none"
+	      MaskPortRotate	      "default"
+	      MaskIconUnits	      "autoscale"
+	      MaskValueString	      "0|1|EL1904|off|-1|"
 	    }
 	    Block {
 	      BlockType		      "S-Function"
@@ -863,6 +934,37 @@ Library {
 	      MaskTabNameString	      "Main,Main,Main,Main,Main,Main,Main,Oversampling/DC,Oversampling/DC,Oversampling/DC,Ove"
 	      "rsampling/DC,Oversampling/DC,Oversampling/DC,Oversampling/DC,Oversampling/DC,Oversampling/DC,Oversampling/DC,Ov"
 	      "ersampling/DC"
+	    }
+	    Block {
+	      BlockType		      "S-Function"
+	      Name		      "EL2904_0"
+	      SID		      277
+	      Ports		      [1, 1]
+	      Position		      [35, 571, 105, 609]
+	      BackgroundColor	      "yellow"
+	      FunctionName	      "ec_slave3"
+	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
+	      SFunctionModules	      "'ecrt_support'"
+	      EnableBusSupport	      off
+	      MaskType		      "EL2904"
+	      MaskDescription	      "Beckhoff EtherCAT SAFE digital output"
+	      MaskHelp		      "web(etherlab_help_path('el2904.html'), '-helpbrowser');"
+	      MaskPromptString	      "Master|Slave Index|Device Model |Safe outputs|Sample Time (-1 for inherited)|Debug"
+	      MaskStyleString	      "edit,edit,popup(EL2904),checkbox,edit,edit"
+	      MaskTunableValueString  "off,off,off,off,off,off"
+	      MaskCallbackString      "|||||"
+	      MaskEnableString	      "on,on,off,on,on,on"
+	      MaskVisibilityString    "on,on,off,on,on,off"
+	      MaskToolTipString	      "on,on,on,on,on,on"
+	      MaskVariables	      "master=@1;index=@2;model=&3;safeout=@4;tsample=@5;debug=@6;"
+	      MaskInitialization      "Address = EtherCATSlave.formatAddress(master,index,tsample);\n\nrv = el2904(safeout);\n"
+	      MaskDisplay	      "fprintf('%s\\nM:%i Idx:%s', model, master, mat2str(index))"
+	      MaskIconFrame	      on
+	      MaskIconOpaque	      on
+	      MaskIconRotate	      "none"
+	      MaskPortRotate	      "default"
+	      MaskIconUnits	      "autoscale"
+	      MaskValueString	      "0|1|EL2904|off|-1|"
 	    }
 	    Block {
 	      BlockType		      "S-Function"
