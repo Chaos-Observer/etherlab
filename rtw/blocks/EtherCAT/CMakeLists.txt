@@ -49,10 +49,11 @@ INSTALL (FILES
     ep31xx_1.m ep41xx_1.m ep43xx_1.m
     ep8309.m
 
-    ekxxxx.m
-    el1xxx.m el1262.m
-    el2xxx.m el2262.m
+    ekxxxx.m ek1914.m
+    el1xxx.m el1262.m el1904.m
+    el2xxx.m el2262.m el2904.m
     el30xx.m el31xx.m el320x.m el3255.m el331x.m el3356.m el37x2.m el31xx_1.m
+    el3403.m
     el4xxx.m
     el500x.m el5021.m el5101_0010.m el5101.m el515x.m
     el9xxx.m
