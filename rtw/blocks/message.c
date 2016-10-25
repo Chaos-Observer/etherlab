@@ -41,7 +41,7 @@ static void mdlInitializeSizes(SimStruct *S)
 
     /* Make CONFIRM tunable */
     if (mxGetNumberOfElements(CONFIRM))
-        ssSetSFcnParamTunable(S, 4, SS_PRM_TUNABLE);
+        ssSetSFcnParamTunable(S, 3, SS_PRM_TUNABLE);
 
     /* Process input ports */
     if (!ssSetNumInputPorts(S, 1 + EXTRESET))
@@ -159,7 +159,7 @@ static void mdlSetWorkWidths(SimStruct *S)
     /* Second parameter is "Confirm" */
     ssSetNumRWork(S, ssGetInputPortWidth(S,0));
 
-    ssRegDlgParamAsRunTimeParam(S, 4, 1, "Confirm", SS_DOUBLE);
+    ssRegDlgParamAsRunTimeParam(S, 3, 1, "Confirm", SS_DOUBLE);
 
     return;
 }
