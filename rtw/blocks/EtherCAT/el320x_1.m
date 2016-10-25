@@ -32,6 +32,8 @@ classdef el320x_1 < EtherCATSlave
             rv.PortConfig.output = ...
                 el320x_1.configurePorts('Ch.',pdo,sint(16),vector);
 
+            port_count = numel(rv.PortConfig.output);
+
             if status
                 pdo(:,3) = obj.slave{6};
 
@@ -46,7 +48,7 @@ classdef el320x_1 < EtherCATSlave
             end
 
             % Set the full scale range for temperature port
-            for i = 1:numel(rv.PortConfig.output)/2
+            for i = 1:port_count
                 rv.PortConfig.output(i).full_scale = obj.slave{4};
             end
             
