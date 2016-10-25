@@ -22,17 +22,18 @@ classdef el320x_1 < EtherCATSlave
 
             pdo = el320x_1.pdo;
             rv.SlaveConfig.sm = {{3,1, arrayfun(@(i) pdo(i,:), ...
-                                         1:pdo_count,...
+                                         obj.slave{5} + (0:pdo_count-1),...
                                          'UniformOutput', false)}};
 
-            pdo = repmat([0,0,8,0],pdo_count,1);
+            idx = size(pdo{obj.slave{5},2},1);
+            pdo = repmat([0,0,idx-1,0],pdo_count,1);
             pdo(:,2) = 0:pdo_count-1;
 
             rv.PortConfig.output = ...
                 el320x_1.configurePorts('Ch.',pdo,sint(16),vector);
 
             if status
-                pdo(:,3) = 4;
+                pdo(:,3) = obj.slave{6};
 
                 if vector
                     n = 1;
@@ -83,7 +84,7 @@ classdef el320x_1 < EtherCATSlave
                 model = el320x_1.models{i,1};
 
                 rv = el320x_1(model).configure(i&1,i&2,...
-                        1,1:4,1:4,1:4);
+                        1,1:8,1:8,1:8);
                 slave.testConfig(rv.SlaveConfig,rv.PortConfig);
             end
         end
@@ -128,16 +129,84 @@ classdef el320x_1 < EtherCATSlave
                                   hex2dec('1803'), 7, 1;
                                   hex2dec('1803'), 9, 1;
                                   hex2dec('6030'),17,16];
+                hex2dec('1a00'), [hex2dec('6000'), 1, 1;
+                                  hex2dec('6000'), 2, 1;
+                                  0              , 0, 4;
+                                  hex2dec('6000'), 7, 1;
+                                  0              , 0, 7;
+                                  hex2dec('6000'),15, 1;
+                                  hex2dec('6000'),16, 1;
+                                  hex2dec('6000'),17,16];
+                hex2dec('1a01'), [hex2dec('6010'), 1, 1;
+                                  hex2dec('6010'), 2, 1;
+                                  0              , 0, 4;
+                                  hex2dec('6010'), 7, 1;
+                                  0              , 0, 7;
+                                  hex2dec('6010'),15, 1;
+                                  hex2dec('6010'),16, 1;
+                                  hex2dec('6010'),17,16];
+                hex2dec('1a02'), [hex2dec('6020'), 1, 1;
+                                  hex2dec('6020'), 2, 1;
+                                  0              , 0, 4;
+                                  hex2dec('6020'), 7, 1;
+                                  0              , 0, 7;
+                                  hex2dec('6020'),15, 1;
+                                  hex2dec('6020'),16, 1;
+                                  hex2dec('6020'),17,16];
+                hex2dec('1a03'), [hex2dec('6030'), 1, 1;
+                                  hex2dec('6030'), 2, 1;
+                                  0              , 0, 4;
+                                  hex2dec('6030'), 7, 1;
+                                  0              , 0, 7;
+                                  hex2dec('6030'),15, 1;
+                                  hex2dec('6030'),16, 1;
+                                  hex2dec('6030'),17,16];
+                hex2dec('1a04'), [hex2dec('6040'), 1, 1;
+                                  hex2dec('6040'), 2, 1;
+                                  0              , 0, 4;
+                                  hex2dec('6040'), 7, 1;
+                                  0              , 0, 7;
+                                  hex2dec('6040'),15, 1;
+                                  hex2dec('6040'),16, 1;
+                                  hex2dec('6040'),17,16];
+                hex2dec('1a05'), [hex2dec('6050'), 1, 1;
+                                  hex2dec('6050'), 2, 1;
+                                  0              , 0, 4;
+                                  hex2dec('6050'), 7, 1;
+                                  0              , 0, 7;
+                                  hex2dec('6050'),15, 1;
+                                  hex2dec('6050'),16, 1;
+                                  hex2dec('6050'),17,16];
+                hex2dec('1a06'), [hex2dec('6060'), 1, 1;
+                                  hex2dec('6060'), 2, 1;
+                                  0              , 0, 4;
+                                  hex2dec('6060'), 7, 1;
+                                  0              , 0, 7;
+                                  hex2dec('6060'),15, 1;
+                                  hex2dec('6060'),16, 1;
+                                  hex2dec('6060'),17,16];
+                hex2dec('1a07'), [hex2dec('6070'), 1, 1;
+                                  hex2dec('6070'), 2, 1;
+                                  0              , 0, 4;
+                                  hex2dec('6070'), 7, 1;
+                                  0              , 0, 7;
+                                  hex2dec('6070'),15, 1;
+                                  hex2dec('6070'),16, 1;
+                                  hex2dec('6070'),17,16];
         };
 
-        %   Model   ProductCode           RevisionNo               TempScale
+        %   Model   ProductCode           RevisionNo          TempScale, PDOIdx, Stat.Idx
         models = {
-          'EL3201',       hex2dec('0c813052'), hex2dec('00100000'),  10;
-          'EL3201-0010',  hex2dec('0c813052'), hex2dec('0010000a'), 100;
-          'EL3201-0020',  hex2dec('0c813052'), hex2dec('00100014'), 100;
-          'EL3202',       hex2dec('0c823052'), hex2dec('00100000'),  10;
-          'EL3202-0010',  hex2dec('0c823052'), hex2dec('0010000a'), 100;
-          'EL3204',       hex2dec('0c843052'), hex2dec('00100000'),  10;
+          'EL3201',       hex2dec('0c813052'), hex2dec('00100000'),  10,      1, 4;
+          'EL3201-0010',  hex2dec('0c813052'), hex2dec('0010000a'), 100,      1, 4;
+          'EL3201-0020',  hex2dec('0c813052'), hex2dec('00100014'), 100,      1, 4;
+          'EL3202',       hex2dec('0c823052'), hex2dec('00100000'),  10,      1, 4;
+          'EL3202-0010',  hex2dec('0c823052'), hex2dec('0010000a'), 100,      1, 4;
+          'EL3202-0020',  hex2dec('0c823052'), hex2dec('00150014'),  10,      1, 4;
+          'EL3204',       hex2dec('0c843052'), hex2dec('00100000'),  10,      1, 4;
+          'EL3204-0200',  hex2dec('0c843052'), hex2dec('001100c8'),  10,      5, 3;
+          'EL3208',       hex2dec('0c883052'), hex2dec('00110000'),  10,      5, 3;
+          'EL3214',       hex2dec('0c8e3052'), hex2dec('00100000'),  10,      5, 3;
         };
     end
 end
