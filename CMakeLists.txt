@@ -34,7 +34,7 @@
 #############################################################################
 
 CMAKE_MINIMUM_REQUIRED (VERSION 2.6)
-PROJECT (etherlab)
+PROJECT (etherlab NONE)
 SET (CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS TRUE)
 
 #
@@ -53,13 +53,14 @@ SET (PATCH_LEVEL 0)
 SET (VERSION ${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_LEVEL})
 
 # Project path options
-IF (NOT PREFIX)         # Project root
+IF (NOT DEFINED PREFIX)         # Project root
     SET (PREFIX "/opt/etherlab")
 ENDIF ()
 
 SET (CMAKE_INSTALL_PREFIX "${PREFIX}")
 LIST (APPEND CMAKE_PREFIX_PATH "${PREFIX}")
 
+SET (CMAKE_INSTALL_LIBDIR "")   # Suppress warning from GNUInstallDirs
 INCLUDE (GNUInstallDirs)
 
 # Make sure that the project options are remembered
