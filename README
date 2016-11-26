@@ -1,5 +1,7 @@
 =============================================================================
 
+vim: tw=78 spelllang=en spell
+
 $Id$
 
 EtherLab is a Simulink Coder Target used to create user space
@@ -10,7 +12,7 @@ is a trademark of The MathWorks, Inc.
 References to these terms in this package are used in context of these terms
 to explain concepts.
 
-Copyright 2012 Richard Hacker (lerichi at gmx dot net)
+Copyright 2012-2016 Richard Hacker (lerichi at gmx dot net)
 
 This file is part of EtherLab.
 
@@ -26,8 +28,6 @@ more details.
 
 You should have received a copy of the GNU General Public License along
 with EtherLab See COPYING. If not, see <http://www.gnu.org/licenses/>.
-
-vim: tw=78 spelllang=en spell
 
 =============================================================================
 
@@ -79,6 +79,9 @@ Motivation
 
 Installation
 
+    From Debian or rpm package:
+        Install the package.
+
     From source files:
     You need:
         - the source tarball
@@ -91,27 +94,28 @@ Installation
         $ mkdir build
         $ cd build
         $ cmake ..
-        $ make install
-
-    From Debian or rpm package:
-        Install the package.
+        $ sudo make install
 
 Configuration
 
     Regardless whether you install using a package manager or from source
     code, the package has to be configured to work with MATLAB.
 
-    Start MATLAB, and call setup:
-    >> run /opt/etherlab/rtw/setup_etherlab.m
+    The package manager installs the data into:
+        /usr/share/etherlab
+    and from source, by default:
+        /usr/local/share/etherlab
 
-    This configures the package for use with Simulink. Note that the setup
-    script stores everything in /opt/etherlab and doesn't change anything in
-    your filesystem, except for adding and saving some paths
-    (/opt/etherlab/rtw/*) to your MATLAB path
-    ($(MATLAB_ROOT)/toolbox/local/pathdef.m) which is in your matlab
-    installation. If you don't have permission to change this file, the setup
-    script will complain. Somehow make sure that the required paths will be
-    found every time MATLAB is started.
+    This needs to be installed into the matlab installation:
+    # /usr/share/etherlab/install.sh $(MATLAB_ROOT)
+    # /usr/local/share/etherlab/install.sh $(MATLAB_ROOT)
+
+    Now start MATLAB, and call setup:
+    >> run(fullfile(matlabroot, 'etherlab', 'setup_etherlab.m'))
+
+    This configures the package for use with Simulink.  As part of the
+    configuration, the script saves the path
+    ($(MATLAB_ROOT)/toolbox/local/pathdef.m). Make sure it is writeable.
 
 Using EtherLab
 
@@ -146,13 +150,14 @@ Using EtherLab in a hosted environment
             $(MATLAB_ROOT)/extern/include
             $(MATLAB_ROOT)/simulink/include/
             $(MATLAB_ROOT)/rtw/c/src/
-    to the target somewhere (such as /opt/matlab).
+    to the target using the same directory structure.
 
     Dive into the directory containing <model>_etl_hrt -- not into the
     directory <model>_etl_hrt itself. Type
     $ make -C <model>_etl_hrt -f <model>.mk \
-                MATLAB_DIR=/opt/matlab ETHERLAB_DIR=/opt/etherlab
-    and there you go! (MATLAB_DIR and/or ETHERLAB_DIR may be omitted if that
+                MATLAB_DIR=$(MATLAB_ROOT) \
+                ETHERLAB_DIR=/usr/local/share/etherlab
+    and there you go! (MATLAB_DIR and/or ETHERLAB_DIR may be omitted if they
     is the same as on the host where the code is generated)
 
     If the code is generated on a windows host, you will have to edit
@@ -164,10 +169,12 @@ Removing EtherLab
 
     Installation using:
         - package manager: remove EtherLab
-        - source files: rm -rf /opt/etherlab/rtw
+        - source files: rm -rf /usr/local/share/etherlab
+                        rm -rf $MATLAB_ROOT/rtw/c/etherlab
+          
 
     From Matlab:
     >> pathtool
-    remove references to /opt/etherlab/rtw. Save path.
+    remove references to etherlab. Save path.
 
     Finished

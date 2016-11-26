@@ -48,24 +48,39 @@ SET (CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS TRUE)
 # - add tag release-x.x.x
 #
 SET (MAJOR_VERSION 2)
-SET (MINOR_VERSION 1)
+SET (MINOR_VERSION 2)
 SET (PATCH_LEVEL 0)
 SET (VERSION ${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_LEVEL})
 
-# Project path options
-IF (NOT DEFINED PREFIX)         # Project root
-    SET (PREFIX "/opt/etherlab")
-ENDIF ()
-
-SET (CMAKE_INSTALL_PREFIX "${PREFIX}")
-LIST (APPEND CMAKE_PREFIX_PATH "${PREFIX}")
-
-SET (CMAKE_INSTALL_LIBDIR "")   # Suppress warning from GNUInstallDirs
 INCLUDE (GNUInstallDirs)
 
+IF (DEFINED PREFIX)
+    MESSAGE (WARNING
+        "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
+        "PREFIX is deprecated and will be removed in future\n"
+        "INSTALL PROCESS HAS CHANGED! See ChangeLog and README\n"
+        "You can continue using PREFIX, but it would be better to update\n"
+        "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n")
+
+    SET (TARGETDIR "rtw")
+    SET (ETHERLAB_DIR "${PREFIX}/rtw")
+    SET (RPATH "-L$(ETHERLAB_DIR)/../$(PLATFORM_LIBDIR) -Wl,-rpath $(ETHERLAB_DIR)/../$(PLATFORM_LIBDIR)")
+    SET (OLDINCLUDES "-I$(ETHERLAB_DIR)/../include")
+    SET (TARGET_ROOT "${PREFIX}")
+
+ELSE ()
+
+    IF (NOT DEFINED TARGETDIR)
+        SET (TARGETDIR ${PROJECT_NAME})
+    ENDIF()
+    SET (ETHERLAB_DIR "${CMAKE_INSTALL_FULL_DATAROOTDIR}/${TARGETDIR}")
+    SET (TARGET_ROOT "${CMAKE_INSTALL_FULL_DATAROOTDIR}")
+
+ENDIF ()
+
 # Make sure that the project options are remembered
-SET (PREFIX "${PREFIX}" CACHE PATH
-    "Root directory for the project" FORCE)
+SET (TARGETDIR "${TARGETDIR}" CACHE PATH
+    "Subdirectory within ${TARGET_ROOT} as install root (default: ${PROJECT_NAME})" FORCE)
 
 # Search for mercurial, used to add ID information to the library
 LIST (APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules/")
@@ -74,7 +89,19 @@ IF (MERCURIAL_FOUND AND EXISTS "${CMAKE_SOURCE_DIR}/.hg")
 MERCURIAL_HG_INFO (${PROJECT_SOURCE_DIR} Package)
 ENDIF ()
 
-ADD_SUBDIRECTORY (rtw)
+INSTALL (DIRECTORY rtw/
+    DESTINATION "${ETHERLAB_DIR}"
+    USE_SOURCE_PERMISSIONS
+    PATTERN "*.in" EXCLUDE)
+INSTALL (DIRECTORY ${CMAKE_BINARY_DIR}/rtw/
+    DESTINATION "${ETHERLAB_DIR}")
+
+CONFIGURE_FILE("etherlab.spec.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/etherlab.spec")
+CONFIGURE_FILE("rtw/etherlab/Contents.m.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/rtw/etherlab/Contents.m")
+CONFIGURE_FILE("rtw/etherlab/etherlab_hrt.tmf.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/rtw/etherlab/etherlab_hrt.tmf")
 
 SET (CPACK_PACKAGE_DESCRIPTION_SUMMARY
     "Simulink Coder target using pdserv library")

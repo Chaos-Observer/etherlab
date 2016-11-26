@@ -134,7 +134,7 @@ LD = $(CC)
 CXX = g++
 OPT_OPTS = -O2
 WARN_OPTS = -Wall
-ETHERLAB_DIR = @CMAKE_INSTALL_PREFIX@
+ETHERLAB_DIR = @ETHERLAB_DIR@
 PLATFORM_LIBDIR = @CMAKE_INSTALL_LIBDIR@
 
 #------------------------------ Include Path -----------------------------------
@@ -155,10 +155,10 @@ ifneq ($(SHARED_SRC_DIR),)
 SHARED_INCLUDES = -I$(SHARED_SRC_DIR)
 endif
 
-INCLUDES = -I$(RELATIVE_PATH_TO_ANCHOR) $(MATLAB_INCLUDES) $(ADD_INCLUDES) $(USER_INCLUDES) \
+INCLUDES = -I$(RELATIVE_PATH_TO_ANCHOR) \
+        $(MATLAB_INCLUDES) $(ADD_INCLUDES) $(USER_INCLUDES) \
         $(MODELREF_INC_PATH) $(SHARED_INCLUDES) \
-        -I$(ETHERLAB_DIR)/rtw/include -I$(ETHERLAB_DIR)/include
-
+        -I$(ETHERLAB_DIR)/include @OLDINCLUDES@
 
 #-------------------------------- C Flags --------------------------------------
 
@@ -182,8 +182,7 @@ LDFLAGS  = $(DBG_FLAG) $(ADDITIONAL_LDFLAGS) $(EXTRA_LDFLAGS)
 
 #-------------------------- Additional Libraries ------------------------------
 
-SYSLIBS = -lm -L$(STAGING_DIR)$(ETHERLAB_DIR)/$(PLATFORM_LIBDIR) -lpdserv \
-    -Wl,-rpath=$(ETHERLAB_DIR)/$(PLATFORM_LIBDIR) -ldl -lrt -pthread
+SYSLIBS = @RPATH@ -lm -lpdserv -ldl -lrt -pthread
 
 ifneq ($(findstring rtipc.c,$(S_FUNCTIONS)),)
     SYSLIBS += -lrtipc
@@ -280,7 +279,7 @@ endif
 # Generate model symbol file
 module_payload.c: $(MODULE_PAYLOAD)
 	@echo Generating $@
-	@$(ETHERLAB_DIR)/rtw/bin/gen_payload.py $^ > $@
+	@$(ETHERLAB_DIR)/bin/gen_payload.py $^ > $@
 
 Makefile: $(MAKEFILE)
 	ln -s $< $@
@@ -305,7 +304,7 @@ endif
 %.o : $(RELATIVE_PATH_TO_ANCHOR)/%.cpp
 	$(cxx) -c $(WARN_OPTS) $(CXXFLAGS) "$<"
 
-%.o : $(ETHERLAB_DIR)/rtw/src/%.c
+%.o : $(ETHERLAB_DIR)/src/%.c
 	$(cc) -c $(WARN_OPTS) $(CFLAGS) $(GCC_WALL_FLAG_MAX) "$<"
 
 %.o : $(MATLAB_ROOT)/rtw/c/src/%.c
