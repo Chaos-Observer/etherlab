@@ -2,7 +2,7 @@
 % Encapsulation for oversampling digital input slave EL1262
 %
 % Copyright (C) 2016 Richard Hacker,
-% License: LGPL
+% License: GPLv3+
 %
 %
 classdef el2262 < EtherCATSlave

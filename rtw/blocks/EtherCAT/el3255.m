@@ -2,7 +2,7 @@
 % Encapsulation for Potentiometer Slave EL3255
 %
 % Copyright (C) 2013 Richard Hacker
-% License: LGPL
+% License: GPLv3+
 %
 classdef el3255 < EtherCATSlave
 

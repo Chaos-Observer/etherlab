@@ -6,7 +6,7 @@
  * Header function to get a string parameter
  *
  * Copyright (c) 2006, Richard Hacker
- * License: GPL
+ * License: GPLv3+
  */
 
 #include "simstruc.h"

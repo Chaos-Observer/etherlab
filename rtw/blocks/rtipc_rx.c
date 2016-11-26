@@ -3,7 +3,7 @@
  * SFunction to register input variables
  *
  * Copyright (c) 2012 Richard Hacker
- * License: GPL
+ * License: GPLv3+
  */
 
 

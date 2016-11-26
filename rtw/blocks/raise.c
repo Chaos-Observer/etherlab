@@ -6,7 +6,7 @@
  * SFunction to implement the raise function
  *
  * Copyright (c) 2006, Richard Hacker
- * License: GPL
+ * License: GPLv3+
  */
 
 

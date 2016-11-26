@@ -2,7 +2,7 @@
 % Encapsulation for oversampling analog input slave EL37x2
 %
 % Copyright (C) 2013 Richard Hacker
-% License: LGPL
+% License: GPLv3+
 %
 classdef el37x2 < EtherCATSlave
 

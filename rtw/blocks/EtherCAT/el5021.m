@@ -2,7 +2,7 @@
 % Encapsulation for Sin/Cos Encoder EL5021
 %
 % Copyright (C) 2013 Richard Hacker
-% License: LGPL
+% License: GPLv3+
 %
 classdef el5021 < EtherCATSlave
 

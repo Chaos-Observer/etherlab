@@ -12,7 +12,7 @@
 %% Richard Hacker
 %% IgH Essen GmbH
 %% 
-%% License: GPL
+%% License: GPLv3+
 
 %include "EtherCAT.tlc"
 

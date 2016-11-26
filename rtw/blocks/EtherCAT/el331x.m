@@ -2,7 +2,7 @@
 % Encapsulation for Thermocouple Slave EL331x
 %
 % Copyright (C) 2015 Richard Hacker
-% License: LGPL
+% License: GPLv3+
 %
 classdef el331x < EtherCATSlave
 

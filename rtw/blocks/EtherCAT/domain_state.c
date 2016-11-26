@@ -2,7 +2,7 @@
  * This S-Function implements the EtherCAT domain status function
  *
  * Copyright (c) 2008, Richard Hacker
- * License: GPL
+ * License: GPLv3+
  */
 
 

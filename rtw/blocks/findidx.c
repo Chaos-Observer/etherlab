@@ -4,7 +4,7 @@
 * This SFunction implements an event generator
 *
 * Copyright (c) 2008, Richard Hacker
-* License: GPL
+* License: GPLv3+
 *
 */
 

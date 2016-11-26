@@ -4,7 +4,7 @@
  * This SFunction implements a generic EtherCAT Slave.
  *
  * Copyright 2012, Richard Hacker
- * License: GPL
+ * License: GPLv3+
  *
  * Description:
  * This generic SFunction can be used to realise any EtherCAT slave that

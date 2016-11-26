@@ -3,7 +3,7 @@
 % ESI: Murrelektronik_IMPACT67.xml
 %
 % Copyright (C) 2014 Richard Hacker
-% License: LGPL
+% License: GPLv3+
 %
 classdef murr_dio < EtherCATSlave
 

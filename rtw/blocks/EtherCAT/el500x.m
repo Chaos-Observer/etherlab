@@ -2,7 +2,7 @@
 % SSI decoder EL5001, EL5001-0011, EL5002
 %
 % Copyright (C) 2013 Richard Hacker
-% License: LGPL
+% License: GPLv3+
 %
 classdef el500x < EtherCATSlave
 

@@ -3,7 +3,7 @@
 %
 % Copyright (C) 2013 Richard Hacker,
 %               2015 Wilhelm Hagemeister (modified EL37x2)
-% License: LGPL
+% License: GPLv3+
 %
 %
 classdef el1262 < EtherCATSlave

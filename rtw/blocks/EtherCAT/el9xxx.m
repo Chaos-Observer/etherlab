@@ -2,7 +2,7 @@
 % Encapsulation for Power Supply slaves EL9xxx
 %
 % Copyright (C) 2013 Richard Hacker
-% License: LGPL
+% License: GPLv3+
 %
 classdef el9xxx < EtherCATSlave
 

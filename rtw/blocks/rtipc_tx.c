@@ -3,7 +3,7 @@
  * SFunction to register output variables
  *
  * Copyright (c) 2012, Richard Hacker
- * License: GPL
+ * License: GPLv3+
  */
 
 
