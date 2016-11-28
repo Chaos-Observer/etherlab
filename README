@@ -1,6 +1,6 @@
 =============================================================================
 
-vim: tw=78 spelllang=en spell
+vim: tw=78 spelllang=en
 
 $Id$
 
@@ -167,14 +167,16 @@ Using EtherLab in a hosted environment
 
 Removing EtherLab
 
-    Installation using:
+    First remove etherlab from matlab (this is not done automatically, not
+    even when using package managers):
+        - call /usr/local/share/etherlab/uninstall.sh <MATLABROOT>
+
+        - From Matlab:
+        >> pathtool
+        remove references to etherlab. Save path.
+
+    Now remove installation base:
         - package manager: remove EtherLab
         - source files: rm -rf /usr/local/share/etherlab
-                        rm -rf $MATLAB_ROOT/rtw/c/etherlab
           
-
-    From Matlab:
-    >> pathtool
-    remove references to etherlab. Save path.
-
     Finished
