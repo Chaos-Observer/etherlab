@@ -1,9 +1,6 @@
-%
 % EtherLab (License GPLv3+)
-% Version @VERSION@ @DATE@
-% PKGID @Package_HG_ID@
+% Version @VERSION@ (@Package_HG_ID@) @DATE@
 %
-
 % Copyright (C) 2012 Richard Hacker, IgH GmbH
 % Generated from Contents.m.in
 
