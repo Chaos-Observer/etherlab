@@ -1047,6 +1047,10 @@ init_slave(size_t nst, const struct ec_slave *slave)
 
     /* Configure distributed clocks for slave if assign_activate is set */
     if (slave->dc_config.assign_activate) {
+        if (slave->dc_config.cycle_time0 + slave->dc_config.cycle_time1 <= 0) {
+            failed_method = "(ecrt_slave_config_dc: CycleTimeSYNC0 + CycleTimeSYNC1 > 0)";
+            goto out_slave_failed;
+        }
         ecrt_slave_config_dc(slave_config,
                 slave->dc_config.assign_activate,
                 slave->dc_config.cycle_time0,

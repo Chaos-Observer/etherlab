@@ -172,11 +172,13 @@ user@host:~$ ethercat slaves
         </table>
         </tt>
 
-        <p/>The values of CycleTimeSyncX and ShiftTimeSyncX are in nanoseconds.
+        <p/>The values of <tt>CycleTimeSyncX</tt> and <tt>ShiftTimeSyncX</tt>
+        are in nanoseconds.
 
-        <p/>These vector specifies the values for <tt>CycleTime0</tt> (ESC 0x9A0),
-        <tt>CycleTime1</tt> (ESC 0x9A4) and <tt>StartTime</tt> (ESC 0x990) for
-        the slave in nanoseconds and <tt>AssignActivate</tt> (ESC 0x980).
+        <p/>These vector specifies the values for <tt>CycleTime0</tt> (ESC
+        0x9A0), <tt>CycleTime1</tt> (ESC 0x9A4) and <tt>StartTime</tt> (ESC
+        0x990) for the slave in nanoseconds and <tt>AssignActivate</tt> (ESC
+        0x980).
 
         <p/>The value for <tt>CycleTime0</tt> is calculated as:
 <pre>if CycleTimeSync0 ~= 0
@@ -189,6 +191,11 @@ else
         CycleTime0 = 0
 endif</pre>
 
+        <p/>Choosing a negative value for <tt>CycleTimeSync0Factor</tt>
+        chooses a cycle time smaller than the block's sample time. This is
+        typically used for oversampling. Setting
+        <tt>CycleTimeSync0Factor</tt>&nbsp;&gt;&nbsp;1 is quite unusual.
+
         The value for <tt>CycleTime1</tt> is calculated as:
 <pre>if CycleTimeSync1 ~= 0
         T1 = CycleTimeSync1
@@ -197,26 +204,35 @@ else if CycleTimeSync1Factor &gt; 0
 else if CycleTimeSync1Factor &lt; 0
         T1 = BlockSampleTime * 1e9 * -CycleTimeSync1Factor
 else
-        T1 = 0
+        T1 = SampleTime &gt; CycleTime0 ? SampleTime : CycleTime0
 endif
 CycleTime1 = T1 - CycleTime0 + ShiftTimeSync1</pre>
-
-        The value for <tt>ShiftTime</tt> is calculated as:
-<pre>if ShiftTimeSync0Factor &gt; 0
-        ShiftTime = ShiftTimeSync0 + CycleTime0 *  ShiftTimeSync0Factor
-else if ShiftTimeSync0Factor &lt; 0
-        ShiftTime = ShiftTimeSync0 + CycleTime0 / -ShiftTimeSync0Factor
-else
-        ShiftTime = ShiftTimeSync0
-endif</pre>
-        The value of <tt>ShiftTime</tt> is used to calculate the start time of
-        the internal clocks.
 
         <p/>Take particular note how the sign of factor chooses
         BlockSampleTime or CycleTime0!
 
-        <p/>Usually it is a bad idea to use fixed times for cycle times
-        (<tt>CycleTimeSyncX</tt>). Using factors
+        <p/>Usually, <tt>CycleTimeSync1Factor</tt>&nbsp;=&nbsp;-1 (thus
+        choosing BlockSampleTime) when
+        <tt>CycleTimeSync0Factor</tt>&nbsp;&lt;&nbsp;0 (oversampling). On the
+        other hand, set <tt>CycleTimeSync1Factor</tt>&nbsp;=&nbsp;1 when
+        <tt>CycleTimeSync0Factor</tt>&nbsp;=&nbsp;1. If
+        <tt>CycleTimeSync1Factor</tt> is inadvertently set to zero, an
+        appropriate value is chosen automatically (but beware of automatisms -
+        they hit you when you least expect it!).
+
+        <p/>Make sure that CycleTime0&nbsp;+&nbsp;CycleTime1&nbsp;&gt;&nbsp;0!
+
+        <p/>The value for <tt>ShiftTime</tt> is calculated as:
+<pre>if ShiftTimeSync0Factor &gt;= 0
+        ShiftTime = ShiftTimeSync0 + CycleTime0 *  ShiftTimeSync0Factor
+else
+        ShiftTime = ShiftTimeSync0 + CycleTime0 / -ShiftTimeSync0Factor
+endif</pre>
+        The value of <tt>ShiftTime</tt> is used to calculate the start time of
+        the internal clocks.
+
+        <p/>Setting a non-zero value for <tt>CycleTimeSyncX</tt> is usually a
+        bad idea because it disregards changes to sample time.  Using factors
         (<tt>CycleTimeSyncXFactor</tt>) increases flexibility because it
         relates to the model's sample time.
 

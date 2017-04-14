@@ -724,12 +724,17 @@
   %% See OpMode:CycleTimeSync1 in
   %%     ETG.2001_V1i0i9_G_R_EtherCATSlaveInformationAnnotations.pdf
   %if DC.Time[2]
-    %assign CycleTime1 = DC.Time[2]
+    %assign T1 = DC.Time[2]
+  %elseif DC.Factor[2] > 0
+    %% A multiple of SYNC0
+    %assign T1 = CycleTime0 *  DC.Factor[2]
+  %elseif DC.Factor[2] < 0
+    %% A multiple of sample time
+    %assign T1 = SampleTime * -DC.Factor[2]
   %else
-    %assign CycleTime1 = DC.Factor[2] >= 0 ? CycleTime0 *  DC.Factor[2] ...
-                                           : SampleTime * -DC.Factor[2]
+    %assign T1 = SampleTime > CycleTime0 ? SampleTime : CycleTime0
   %endif
-  %assign CycleTime1 = CycleTime1 - CycleTime0 + DC.Time[3]
+  %assign CycleTime1 = T1 - CycleTime0 + DC.Time[3]
 
   %% ShiftTime     (For start time ESC Reg 0x0993:0x0990)
   %assign ShiftTime = DC.Time[1] + (DC.Factor[1] >= 0 ...
