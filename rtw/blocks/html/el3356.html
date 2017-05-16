@@ -29,6 +29,14 @@ vim:tw=78
         27mV. This mode is not calibrated by the manufacturor. (Only the
         bridge measurement mode RMB is calibrated).
 
+        <p/>The following PDO's are used:
+        <ul>
+            <li>Control: #x1600</li>
+            <li>RMB Value: #x1A00 (Status), #x1A01 (RMB Value: int32)</li>
+            <li>dual ADC: #x1A04, #x1A06</li>
+            <li>Timestamp (EL3356-0010): #x1A03</li>
+        </ul>
+
         <p/>Block inputs are the binary control inputs.
         <ol>
             <li>Start calibration</li>
@@ -41,10 +49,9 @@ vim:tw=78
         <p/>Block outputs:
         <ul>
             <li>The first output port is RMB value or ADC Value</li>
-            <li>1 status port for RMB; 2 ports for ADC</li>
-        with input range of ca. 13V and
-        27mV. This mode is not calibrated by the manufacturor. (Only the
-        bridge measurement mode RMB is calibrated).
+            <li>1 status port for RMB; 2 ports for ADC with input range of ca.
+            13V and 27mV. This mode is not calibrated by the manufacturor.
+            (Only the bridge measurement mode RMB is calibrated).</li>
             <li>Time signal (EL3356-0010 using DC)</li>
         </ul>
 
@@ -70,6 +77,14 @@ vim:tw=78
         <h3>2 ch ADC only</h3>
         The terminal is used as a dual ADC, instead of default RMB mode.
 
+        <h3>RMB Range [mV/V]</h3>
+        Enter a value for full scale, e.g. "4.0". A gain is calculated so that
+        +-MAXINT appears on the raw output port when the RMB reaches this value.
+        The gain is written to SDO #x8000:21 and thus overwrite any previously
+        (permanently) stored value upon startup.
+
+        <p/>Leaving this value empty ("[]") will leave the SDO untouched.
+
         <h3>Distributed clock</h3>
         Only available for EL3356-0010
 
@@ -80,5 +95,26 @@ vim:tw=78
         This is a real32 value, while the mask input can only accept integer
         values. To convert, use matlab's num2hex() function:
         <br/>e.g. <tt>hex2dec(num2hex(single(20.0)))</tt>
+
+        <h3>RMB scaling factor</h3>
+        When using the slave in RMB mode, it has a generous selection of gains
+        and offsets that it uses to calculate the output value which makes it
+        quite confusing to configure. A careful study of the calculation
+        algorithm is required.
+
+        <p/>Moreover, the values are stored in non-volatile memory on the slave.
+        This enables the user to calibrate the slave with sensor data (SDOs
+        #x8000:[23,25]) and thus get a consistent output. The disadvantage is
+        that the data needs to be reconfigured every time the slave is replaced.
+
+        <p/>When the <b>RMB Range [mv/V]</b> mask configuration option is used, a
+        value for SDO #x8000:21 (Gain) is calculated and written, overwriting
+        any previously stored value. The gain is calculated as follows:
+        <pre>Gain = 2.0/5.0/1000.0*2^31/range</pre>
+
+        When using RMB Range, it is thus recommended that all SDOs involved in
+        the calculation (especially #x8000:[24,26,27]) to be at their factory
+        default values (see the documentation), and #x8000:[23,25] close to
+        them.
     </body>
 </html>

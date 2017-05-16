@@ -16,7 +16,7 @@ methods
     end
 
     %========================================================================
-    function rv = configure(obj,adc,dc_spec,scaling,sdo_config)
+    function rv = configure(obj,adc,range,dc_spec,scaling,sdo_config)
         % Whether this is EL3356, not EL3356-0010
         % The predefined PDO and DC structures are for EL3356-0010
         % The EL3356 does not have all these features
@@ -153,6 +153,17 @@ methods
         sdo = el3356.sdo;
         rv.SlaveConfig.sdo = num2cell([sdo(obj.slave{5},:), ...
                                        reshape(sdo_config(obj.slave{5}),[],1)]);
+        
+        % Append range SDO if specified
+        if range
+            % Calculate a gain so that output = 2^31 when RMB = 100%
+            % The initial factor within parenthesis simply inverses the
+            % gains of 8000:23, 8000:24 and 8000:27
+            gain = (2.0/5.0/1000.0)*2^31/range;
+            rv.SlaveConfig.sdo(end+1,:) = ...
+                num2cell([obj.range_sdo, hex2dec(num2hex(single(gain)))]);
+        end
+
     end
 end
 
@@ -212,6 +223,9 @@ properties (Constant)
            hex2dec('8010'), hex2dec('15'), 16;
            hex2dec('8020'), hex2dec('06'),  8;
            hex2dec('8020'), hex2dec('15'), 16];
+
+    % SDO to specify gain (used for range)
+    range_sdo = [hex2dec('8000'), hex2dec('21'), 32];
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -266,6 +280,7 @@ properties (Access = private, Constant)
     dc = [              0,0,0,0,0,0,0,0,0,0;    % SM-Synchron
            hex2dec('320'),0,1,0,0,0,0,1,0,0;    % DC-Synchron
            hex2dec('320'),0,1,0,0,1,0,1,0,0];   % DC-Synchron (input based)
+
 end     % properties
 
 end     % classdef
