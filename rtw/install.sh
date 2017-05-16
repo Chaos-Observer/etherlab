@@ -39,7 +39,7 @@ fi
     cd $(dirname $0)
 
     echo "Copying files from $(pwd) to ${DST}"
-    cp -a bin blocks etherlab include setup_etherlab.m src switch_etherlab.m "${DST}"
+    cp -a --remove-destination bin blocks etherlab include setup_etherlab.m src switch_etherlab.m "${DST}"
 
 #    # Replace line containing "ETHERLAB_DIR ="
 #    ed -s ${DST}/etherlab/etherlab_hrt.tmf <<-EOF
