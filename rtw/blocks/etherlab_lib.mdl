@@ -15,9 +15,9 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "ha"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Wed Jul 12 23:49:37 2017"
-  RTWModifiedTimeStamp	  421804149
-  ModelVersionFormat	  "1.%<AutoIncrement:1696>"
+  LastModifiedDate	  "Thu Jul 13 00:11:54 2017"
+  RTWModifiedTimeStamp	  421805485
+  ModelVersionFormat	  "1.%<AutoIncrement:1697>"
   ConfigurationManager	  "rcs"
   SampleTimeColors	  off
   SampleTimeAnnotations	  off
@@ -877,8 +877,8 @@ Library {
 	      MaskHelp		      "web(etherlab_help_path('el1xxx.html'), '-helpbrowser');\n"
 	      MaskPromptString	      "Master|Slave Index|Device Model |Revision|Vector Outputs|Sample Time|Debug Level"
 	      MaskStyleString	      "edit,edit,popup(EL1002|EL1004|EL1004-0010|EL1008|EL1012|EL1014|EL1014-0010|EL1018|EL1024"
-	      "|EL1034|EL1084|EL1088|EL1094|EL1098|EL1104|EL1114|EL1124|EL1134|EL1144|EL1202|EL1702|EL1712|EL1712-0020|EL1722|"
-	      "EL1804|EL1808|EL1809|EL1814|EL1819|EL1862|EL1862-0010|EL1872|EL1889),edit,checkbox,edit,edit"
+	      "|EL1034|EL1084|EL1088|EL1094|EL1098|EL1104|EL1114|EL1124|EL1134|EL1144|EL1202|EL1702|EL1702-0020|EL1712|EL1712-"
+	      "0020|EL1722|EL1804|EL1808|EL1809|EL1814|EL1819|EL1862|EL1862-0010|EL1872|EL1889),edit,checkbox,edit,edit"
 	      MaskTunableValueString  "off,off,off,off,off,off,off"
 	      MaskCallbackString      "||el1xxx().updateRevision()||||"
 	      MaskEnableString	      "on,on,on,on,on,on,on"

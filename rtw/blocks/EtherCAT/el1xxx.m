@@ -88,6 +88,8 @@ classdef el1xxx < EtherCATSlave
             'EL1018', hex2dec('03fa3052'), hex2dec('00100000'), 5,  8;
             'EL1024', hex2dec('04003052'), hex2dec('00100000'), 5,  4;
             'EL1034', hex2dec('040a3052'), hex2dec('00100000'), 5,  4;
+            % EL1052    Diagnostics
+            % EL1054    Diagnostics
             'EL1084', hex2dec('043c3052'), hex2dec('00100000'), 5,  4;
             'EL1088', hex2dec('04403052'), hex2dec('00100000'), 5,  8;
             'EL1094', hex2dec('04463052'), hex2dec('00100000'), 5,  4;
@@ -98,7 +100,13 @@ classdef el1xxx < EtherCATSlave
             'EL1134', hex2dec('046e3052'), hex2dec('00100000'), 5,  4;
             'EL1144', hex2dec('04783052'), hex2dec('00100000'), 5,  4;
             'EL1202', hex2dec('04b23052'), hex2dec('00100000'),21,  2;
+            % EL1252    Timestamp
+            % EL1252-0050       Timestamp
+            % EL1382    Thermistor with error
+            % EL15xx    See EL15xx.xml
             'EL1702', hex2dec('06a63052'), hex2dec('00100000'), 5,  2;
+            'EL1702-0020', ...
+                      hex2dec('06a63052'), hex2dec('00100014'), 5,  2;
             'EL1712', hex2dec('06b03052'), hex2dec('00100000'), 5,  2;
             'EL1712-0020', ...
                       hex2dec('06b03052'), hex2dec('00100014'), 5,  2;
@@ -108,11 +116,13 @@ classdef el1xxx < EtherCATSlave
             'EL1809', hex2dec('07113052'), hex2dec('00100000'), 5, 16;
             'EL1814', hex2dec('07163052'), hex2dec('00100000'), 5,  4;
             'EL1819', hex2dec('071b3052'), hex2dec('00100000'), 5, 16;
+            % EL1859    Digital input/output
             'EL1862', hex2dec('07463052'), hex2dec('00100000'), 5, 16;
             'EL1862-0010', ...
                       hex2dec('07463052'), hex2dec('0010000A'), 5, 16;
             'EL1872', hex2dec('07503052'), hex2dec('00100000'), 5, 16;
             'EL1889', hex2dec('07613052'), hex2dec('00100000'), 5, 16;
+            % EL1904    Safety
         };
 
     end
