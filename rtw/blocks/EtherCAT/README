@@ -1,0 +1,5 @@
+To update models in the library, first edit the definition (el2xxx.m),
+check it:
+el2xxx.test('/path/to/xml')
+then click on the block in the library and update:
+el2xxx().updateModels()
