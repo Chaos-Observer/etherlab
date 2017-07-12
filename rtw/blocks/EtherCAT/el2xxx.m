@@ -66,15 +66,25 @@ classdef el2xxx < EtherCATSlave
         %====================================================================
         function test(p)
             ei = EtherCATInfo(fullfile(p,'Beckhoff EL2xxx.xml'));
-            for i = 1:size(el2xxx.models,1)
-                fprintf('Testing %s\n', el2xxx.models{i,1});
-                slave = ei.getSlave(el2xxx.models{i,2},...
-                        'revision', el2xxx.models{i,3});
+            models = el2xxx.models(strncmp(el2xxx.models(:,1), 'EL', 2), :);
+            el2xxx.testModels(ei, models);
 
-                rv = el2xxx(el2xxx.models{i,1}).configure(i&1,0);
+            ei = EtherCATInfo(fullfile(p,'Beckhoff EM2xxx.xml'));
+            models = el2xxx.models(strncmp(el2xxx.models(:,1), 'EM', 2), :);
+            el2xxx.testModels(ei, models);
+        end
+
+        %====================================================================
+        function testModels(ei, models)
+            for i = 1:size(models,1)
+                fprintf('Testing %s\n', models{i,1});
+                slave = ei.getSlave(models{i,2},...
+                        'revision', models{i,3});
+
+                rv = el2xxx(models{i,1}).configure(i&1,0);
                 slave.testConfig(rv.SlaveConfig,rv.PortConfig);
 
-                rv = el2xxx(el2xxx.models{i,1}).configure(i&1,1);
+                rv = el2xxx(models{i,1}).configure(i&1,1);
                 slave.testConfig(rv.SlaveConfig,rv.PortConfig);
             end
         end
@@ -123,6 +133,7 @@ classdef el2xxx < EtherCATSlave
             'EL2002', hex2dec('07d23052'), hex2dec('00100000'), 2, 1,  0;
             'EL2004', hex2dec('07d43052'), hex2dec('00100000'), 4, 1,  0;
             'EL2008', hex2dec('07d83052'), hex2dec('00100000'), 8, 1,  0;
+            % EL2014 Special device with diagnostics
             'EL2022', hex2dec('07e63052'), hex2dec('00100000'), 2, 1,  0;
             'EL2024', hex2dec('07e83052'), hex2dec('00100000'), 4, 1,  0;
             'EL2024-0010', ...
@@ -136,9 +147,16 @@ classdef el2xxx < EtherCATSlave
             'EL2202', hex2dec('089a3052'), hex2dec('00100000'), 2, 1,  0;
             'EL2202-0100', ...
                       hex2dec('089a3052'), hex2dec('00100064'), 2, 1,  0;
+            % EL2212 Special device with PWM
+            % EL2252 Special device with timestamp
+            % EL2258 Special device with multi-timestamp
+            % EL2262 Special device with oversample
+            % EL25xx See EL25xx.xml
             'EL2602', hex2dec('0a2a3052'), hex2dec('00100000'), 2, 1,  0;
+            % EL2602-0010
             'EL2612', hex2dec('0a343052'), hex2dec('00100000'), 2, 1,  0;
             'EL2622', hex2dec('0a3e3052'), hex2dec('00100000'), 2, 1,  0;
+            % EL2622-0010
             'EL2624', hex2dec('0a403052'), hex2dec('00100000'), 4, 1,  0;
             'EL2652', hex2dec('0a5c3052'), hex2dec('00100000'), 2, 1,  0;
             'EL2712', hex2dec('0a983052'), hex2dec('00100000'), 2, 1,  0;
@@ -146,18 +164,26 @@ classdef el2xxx < EtherCATSlave
             'EL2722-0010', ...
                       hex2dec('0aa23052'), hex2dec('0010000A'), 2, 1,  0;
             'EL2732', hex2dec('0aac3052'), hex2dec('00100000'), 2, 1,  0;
+            'EL2784', hex2dec('0ae03052'), hex2dec('00100000'), 4, 1,  0;
+            'EL2788', hex2dec('0ae43052'), hex2dec('00100000'), 8, 1,  0;
+            'EL2794', hex2dec('0aea3052'), hex2dec('00100000'), 4, 1,  0;
             'EL2798', hex2dec('0aee3052'), hex2dec('00100000'), 8, 1,  0;
             'EL2808', hex2dec('0af83052'), hex2dec('00100000'), 8, 1,  0;
             'EL2809', hex2dec('0af93052'), hex2dec('00100000'),16, 1,  0;
+            % EL2819 Special device with lots of diagnostics
             'EL2828', hex2dec('0b0c3052'), hex2dec('00100000'), 8, 1,  0;
-            'EL2872', hex2dec('0b383052'), hex2dec('00100000'), 8, 1,  0;
-            'EL2889', hex2dec('0b493052'), hex2dec('00100000'),16, 1,  0;
+            'EL2872', hex2dec('0b383052'), hex2dec('00100000'),16, 1,  0;
             'EL2872-0010', ...
-                      hex2dec('0B383052'), hex2dec('0010000A'), 8, 1,  0;
+                      hex2dec('0b383052'), hex2dec('00100000'),16, 1,  0;
+            'EL2889', hex2dec('0b493052'), hex2dec('00100000'),16, 1,  0;
+            % EL2901    Safety
+            % EL2902    Safety
+            % EL2904    Safety
             'EL2004-0000-0000', ...
                       hex2dec('07d43052'), hex2dec('00000000'), 4, 21, 0;
             'EL2032-0000-0000', ...
                       hex2dec('07f03052'), hex2dec('00000000'), 2, 21,25;
+            'EM2042', hex2dec('07fa3452'), hex2dec('00100000'),16, 1,  0;
         };
 
     end

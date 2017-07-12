@@ -15,9 +15,9 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "ha"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Tue May 16 11:48:25 2017"
-  RTWModifiedTimeStamp	  416836081
-  ModelVersionFormat	  "1.%<AutoIncrement:1695>"
+  LastModifiedDate	  "Wed Jul 12 23:49:37 2017"
+  RTWModifiedTimeStamp	  421804149
+  ModelVersionFormat	  "1.%<AutoIncrement:1696>"
   ConfigurationManager	  "rcs"
   SampleTimeColors	  off
   SampleTimeAnnotations	  off
@@ -986,9 +986,9 @@ Library {
 	      MaskPromptString	      "Master|Slave Index|Device Model |Revision|Vector Inputs|Diag Port|Sample Time (-1 for i"
 	      "nherited)|Debug"
 	      MaskStyleString	      "edit,edit,popup(EL2002|EL2004|EL2008|EL2022|EL2024|EL2024-0010|EL2032|EL2034|EL2042|EL20"
-	      "84|EL2088|EL2124|EL2202|EL2202-0100|EL2602|EL2612|EL2622|EL2624|EL2652|EL2712|EL2722|EL2722-0010|EL2732|EL2798|"
-	      "EL2808|EL2809|EL2828|EL2872|EL2889|EL2872-0010|EL2004-0000-0000|EL2032-0000-0000),edit,checkbox,checkbox,edit,e"
-	      "dit"
+	      "84|EL2088|EL2124|EL2202|EL2202-0100|EL2602|EL2612|EL2622|EL2624|EL2652|EL2712|EL2722|EL2722-0010|EL2732|EL2784|"
+	      "EL2788|EL2794|EL2798|EL2808|EL2809|EL2828|EL2872|EL2872-0010|EL2889|EL2004-0000-0000|EL2032-0000-0000|EM2042),e"
+	      "dit,checkbox,checkbox,edit,edit"
 	      MaskTunableValueString  "off,off,off,off,off,off,off,off"
 	      MaskCallbackString      "||el2xxx().modelChanged()|||||"
 	      MaskEnableString	      "on,on,on,on,on,off,on,on"
