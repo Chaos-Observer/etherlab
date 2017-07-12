@@ -15,9 +15,9 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "ha"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Thu Jul 13 00:11:54 2017"
-  RTWModifiedTimeStamp	  421805485
-  ModelVersionFormat	  "1.%<AutoIncrement:1697>"
+  LastModifiedDate	  "Thu Jul 13 00:50:49 2017"
+  RTWModifiedTimeStamp	  421807839
+  ModelVersionFormat	  "1.%<AutoIncrement:1698>"
   ConfigurationManager	  "rcs"
   SampleTimeColors	  off
   SampleTimeAnnotations	  off
@@ -599,7 +599,7 @@ Library {
     ShowPageBoundaries	    off
     ZoomFactor		    "100"
     ReportName		    "simulink-default.rpt"
-    SIDHighWatermark	    277
+    SIDHighWatermark	    278
     Block {
       BlockType		      SubSystem
       Name		      "EtherCAT"
@@ -734,7 +734,7 @@ Library {
 	  MaskIconUnits		  "autoscale"
 	  System {
 	    Name		    "Beckhoff"
-	    Location		    [686, 50, 1448, 742]
+	    Location		    [103, 50, 865, 742]
 	    Open		    off
 	    ModelBrowserVisibility  off
 	    ModelBrowserWidth	    200
@@ -1631,7 +1631,7 @@ Library {
 	    Block {
 	      BlockType		      "S-Function"
 	      Name		      "EL3403_0"
-	      SID		      277
+	      SID		      278
 	      Ports		      [0, 5]
 	      Position		      [380, 431, 465, 489]
 	      BackgroundColor	      "[0.909804, 0.819608, 0.321569]"
@@ -1645,23 +1645,21 @@ Library {
 	      MaskDescription	      "Beckhoff 3-phase power measurement terminal"
 	      MaskHelp		      "web(etherlab_help_path('el3403.html'), '-helpbrowser');"
 	      MaskPromptString	      "Master|Slave Index|Device Model |Variants|Current Transformation Ratio 1:|Voltage Trans"
-	      "formation Ratio 1:|Sample Time (-1 inherited)|Revision|Debug|Low pass filter (F800:01)|High pass filter (F800:0"
-	      "2)|Measuring method (F800:03)|Frequency channel (F800:05)|Reference channel (F800:0E)|Zero cross timeout (F800:"
-	      "21)|Line cycle (F800:22)"
+	      "formation Ratio 1:|Sample Time (-1 inherited)|Revision|Debug|Frequency channel (F800:05)|Reference channel (F80"
+	      "0:0E)|Zero cross timeout (F800:21)|Line cycle (F800:22)"
 	      MaskStyleString	      "edit,edit,popup(EL3403|EL3403-0010|EL3403-0026|EL3403-0100|EL3403-0111|EL3403-0126),chec"
-	      "kbox,edit,edit,edit,edit,edit,checkbox,checkbox,popup(3-wire delta; 4-wire star),popup(Phase L1|Phase L2|Phase "
-	      "L3),popup(Phase L1|Phase L2|Phase L3),edit,edit"
-	      MaskTunableValueString  "off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off"
-	      MaskCallbackString      "|||||||||||||||"
-	      MaskEnableString	      "on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on"
-	      MaskVisibilityString    "on,on,on,on,on,on,on,off,off,on,on,on,on,on,on,on"
-	      MaskToolTipString	      "on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on"
+	      "kbox,edit,edit,edit,edit,edit,popup(Phase L1|Phase L2|Phase L3),popup(Phase L1|Phase L2|Phase L3),edit,edit"
+	      MaskTunableValueString  "off,off,off,off,off,off,off,off,off,off,off,off,off"
+	      MaskCallbackString      "||||||||||||"
+	      MaskEnableString	      "on,on,on,on,on,on,on,on,on,on,on,on,on"
+	      MaskVisibilityString    "on,on,on,on,on,on,on,off,off,on,on,on,on"
+	      MaskToolTipString	      "on,on,on,on,on,on,on,on,on,on,on,on,on"
 	      MaskVariables	      "master=@1;index=@2;model=&3;variant=@4;current=@5;voltage=@6;tsample=@7;revision=&8;debug="
-	      "@9;lp=@10;hp=@11;method=@12;freq=@13;ref=@14;zerocross=@15;cycle=@16;"
+	      "@9;freq=@10;ref=@11;zerocross=@12;cycle=@13;"
 	      MaskInitialization      "Address = EtherCATSlave.formatAddress(master,index,tsample);\n\nrv = el3403(model).con"
-	      "figure(variant,current,voltage,...\n    [lp, hp, method-1, freq-1, ref-1, zerocross, cycle]);\n\nEtherCATSlave."
-	      "setPortNames(...\n    {rv.PortConfig.input.portname},...\n    {rv.PortConfig.output.portname});\n\nset_param(gc"
-	      "b,'AttributesFormatString',...\n    sprintf('%s\\nM:%i Idx:%s',...\n            model,master,mat2str(index)))\n"
+	      "figure(variant,current,voltage,...\n    [freq-1, ref-1, zerocross, cycle]);\n\nEtherCATSlave.setPortNames(...\n"
+	      "    {rv.PortConfig.input.portname},...\n    {rv.PortConfig.output.portname});\n\nset_param(gcb,'AttributesForma"
+	      "tString',...\n    sprintf('%s\\nM:%i Idx:%s',...\n            model,master,mat2str(index)))\n"
 	      MaskDisplay	      "port_label('output', 1, 'Current')\nport_label('output', 2, 'Voltage')\nport_label('output',"
 	      " 3, 'Power')\nport_label('output', 4, 'Zero Crossing Fail')\nport_label('output', 5, 'Seq. Fail')\n"
 	      MaskSelfModifiable      on
@@ -1670,9 +1668,8 @@ Library {
 	      MaskIconRotate	      "none"
 	      MaskPortRotate	      "default"
 	      MaskIconUnits	      "normalized"
-	      MaskValueString	      "0|1|EL3403|off|1|1|-1||0|on|on|3-wire delta; 4-wire star|Phase L1|Phase L1|5|10"
-	      MaskTabNameString	      "Main,Main,Main,Main,Main,Main,Main,Main,Main,Settings,Settings,Settings,Settings,Setti"
-	      "ngs,Settings,Settings"
+	      MaskValueString	      "0|1|EL3403|off|1|1|-1|[223031378 1441792]|0|Phase L1|Phase L1|5|10"
+	      MaskTabNameString	      "Main,Main,Main,Main,Main,Main,Main,Main,Main,Settings,Settings,Settings,Settings"
 	    }
 	    Block {
 	      BlockType		      "S-Function"

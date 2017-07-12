@@ -58,13 +58,10 @@ classdef el3403 < EtherCATSlave
             end
 
             rv.SlaveConfig.sdo = {
-                hex2dec('f800'),  1,  8, sdo(1);
-                hex2dec('f800'),  2,  8, sdo(2);
-                hex2dec('f800'),  3,  8, sdo(3);
-                hex2dec('f800'),  5,  8, sdo(4);
-                hex2dec('f800'), 14,  8, sdo(5);
-                hex2dec('f800'), 33, 16, sdo(6);
-                hex2dec('f800'), 34, 16, sdo(7)};
+                hex2dec('f800'),  5,  8, sdo(1);
+                hex2dec('f800'), 14,  8, sdo(2);
+                hex2dec('f800'), 33, 16, sdo(3);
+                hex2dec('f800'), 34, 16, sdo(4)};
         end
     end
 
