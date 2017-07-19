@@ -34,7 +34,7 @@
 #############################################################################
 
 CMAKE_MINIMUM_REQUIRED (VERSION 2.6)
-PROJECT (etherlab NONE)
+PROJECT (etherlab C)    # Need C for detecting CMAKE_INSTALL_LIBDIR
 SET (CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS TRUE)
 
 #
@@ -52,7 +52,6 @@ SET (MINOR_VERSION 2)
 SET (PATCH_LEVEL 0)
 SET (VERSION ${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_LEVEL})
 
-SET (CMAKE_INSTALL_LIBDIR "")
 INCLUDE (GNUInstallDirs)
 
 IF (DEFINED PREFIX)
