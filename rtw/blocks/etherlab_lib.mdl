@@ -15,9 +15,9 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "ha"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Thu Jul 13 00:50:49 2017"
-  RTWModifiedTimeStamp	  421807839
-  ModelVersionFormat	  "1.%<AutoIncrement:1698>"
+  LastModifiedDate	  "Thu Jul 27 23:26:37 2017"
+  RTWModifiedTimeStamp	  423098796
+  ModelVersionFormat	  "1.%<AutoIncrement:1701>"
   ConfigurationManager	  "rcs"
   SampleTimeColors	  off
   SampleTimeAnnotations	  off
@@ -599,7 +599,7 @@ Library {
     ShowPageBoundaries	    off
     ZoomFactor		    "100"
     ReportName		    "simulink-default.rpt"
-    SIDHighWatermark	    278
+    SIDHighWatermark	    279
     Block {
       BlockType		      SubSystem
       Name		      "EtherCAT"
@@ -3348,7 +3348,8 @@ Library {
 	  MaskType		  "Trigger Events"
 	  MaskDescription	  "This block is used to generate an events on its output.\n\nChecking the \"One Shot\" option will"
 	  " generate only one event, otherwise a whole chain of events is generated for every count that the parameter value w"
-	  "as incremented.\n"
+	  "as incremented.\n\nWidth specifies output port width. If -1 is chosen, an input port appears, propagating the width"
+	  " to the output."
 	  MaskHelp		  "A typical problem with interactive constants, e.g. those that are connected to push buttons on the des"
 	  "ktop, is that the events get lost due to it being set and reset too within one calculation cycle and thus is \"lost"
 	  "\".\n\nThis typically happens with push buttons acting on a constant. Sometimes the user presses and releases the p"
@@ -3374,7 +3375,7 @@ Library {
 	  MaskIconRotate	  "none"
 	  MaskPortRotate	  "default"
 	  MaskIconUnits		  "autoscale"
-	  MaskValueString	  "1|on|Boolean|0"
+	  MaskValueString	  "1|on|Boolean|inf"
 	}
 	Block {
 	  BlockType		  "S-Function"
@@ -3473,7 +3474,7 @@ Library {
 	  MaskIconRotate	  "none"
 	  MaskPortRotate	  "default"
 	  MaskIconUnits		  "autoscale"
-	  MaskValueString	  "Error|off|off||-1"
+	  MaskValueString	  "Error|off|off|[]|-1"
 	}
 	Block {
 	  BlockType		  "S-Function"
@@ -3502,6 +3503,36 @@ Library {
 	  MaskPortRotate	  "default"
 	  MaskIconUnits		  "autoscale"
 	  MaskValueString	  "'SIG01'|off|-1"
+	}
+	Block {
+	  BlockType		  "S-Function"
+	  Name			  "Width\npropagation"
+	  SID			  279
+	  Ports			  [2]
+	  Position		  [225, 195, 265, 235]
+	  FunctionName		  "propagate_width"
+	  Parameters		  "count,width"
+	  EnableBusSupport	  off
+	  MaskType		  "Propagate width"
+	  MaskDescription	  "This block forces all input ports to have the same width\nif width is a positive integer, otherw"
+	  "ise the width of\nport 1 is propagated to all ports."
+	  MaskPromptString	  "Port Count|Width (-1 = inherited)"
+	  MaskStyleString	  "edit,edit"
+	  MaskTunableValueString  "off,off"
+	  MaskCallbackString	  "|"
+	  MaskEnableString	  "on,on"
+	  MaskVisibilityString	  "on,on"
+	  MaskToolTipString	  "on,on"
+	  MaskVariables		  "count=@1;width=@2;"
+	  MaskInitialization	  "if width <= 0\n    width = -1;\n    widthstr = '=';\nelse\n    widthstr = num2str(width);\nen"
+	  "d\n"
+	  MaskDisplay		  "plot([0.05,0.95;0.3,0.7]',[0.5,0.5;0.3,0.7]')\ntext(0.5,0.8,widthstr)"
+	  MaskIconFrame		  on
+	  MaskIconOpaque	  on
+	  MaskIconRotate	  "none"
+	  MaskPortRotate	  "default"
+	  MaskIconUnits		  "normalized"
+	  MaskValueString	  "2|-1"
 	}
 	Block {
 	  BlockType		  "S-Function"

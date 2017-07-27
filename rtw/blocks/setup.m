@@ -13,6 +13,7 @@ mex rtipc_rx.c
 mex event.c
 mex findidx.c
 mex message.c
+mex propagate_width.c
 
 run EtherCAT/setup.m
 

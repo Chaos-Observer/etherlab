@@ -1,0 +1,12 @@
+%%
+%% This implements the propagate_width block
+%%
+%% Copyright (C) 2017
+%% Richard Hacker
+%% IgH Essen GmbH
+%% 
+%% License: GPLv3+
+
+%implements "propagate_width" "C"
+
+%% This block has no computations
