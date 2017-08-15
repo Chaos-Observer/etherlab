@@ -2,11 +2,9 @@ function setup_etherlab()
 
 if ~length(strfind(path,pwd))
     disp(['Adding ' pwd ' to $MATLABPATH']);
-    addpath(pwd);
-    addpath([pwd '/etherlab']);
-else
-    disp('EtherLAB search directories are already in $MATLABPATH')
 end
+addpath(pwd);
+addpath([pwd '/etherlab']);
 
 run blocks/setup.m
 

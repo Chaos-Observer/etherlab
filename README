@@ -111,10 +111,13 @@ Configuration
     # /usr/local/share/etherlab/install.sh $(MATLAB_ROOT)
 
     Now start MATLAB, and call setup:
-    >> run(fullfile(matlabroot, 'etherlab', 'setup_etherlab.m'))
+    >> run(fullfile(matlabroot, 'rtw/c/etherlab', 'setup_etherlab.m'))
 
-    This configures the package for use with Simulink.  As part of the
-    configuration, the script saves the path
+    This configures the package for use with Simulink. As it compiles
+    mex functions, make sure that directories below
+    $(matlabroot)/rtw/c/etherlab/ are writeable by the matlab user.
+
+    During configuration, paths are added to matlabpath and saved to
     ($(MATLAB_ROOT)/toolbox/local/pathdef.m). Make sure it is writeable.
 
 Using EtherLab
