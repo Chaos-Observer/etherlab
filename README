@@ -147,9 +147,9 @@ Using EtherLab in a hosted environment
 
     Now copy the directory <model>_etl_hrt to the target machine. Also copy
     the following files from your MATLAB installation:
-            $(MATLAB_ROOT)/extern/include
-            $(MATLAB_ROOT)/simulink/include/
-            $(MATLAB_ROOT)/rtw/c/src/
+            ${MATLAB_ROOT}/extern/include
+            ${MATLAB_ROOT}/simulink/include/
+            ${MATLAB_ROOT}/rtw/c/src/
     to the target using the same directory structure.
 
     Dive into the directory containing <model>_etl_hrt -- not into the
