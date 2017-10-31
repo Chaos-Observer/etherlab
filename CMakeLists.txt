@@ -102,10 +102,10 @@ INSTALL (FILES ${CMAKE_SOURCE_DIR}/README
 
 CONFIGURE_FILE("etherlab.spec.in"
     "${CMAKE_CURRENT_BINARY_DIR}/etherlab.spec")
-CONFIGURE_FILE("rtw/etherlab/Contents.m.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/rtw/etherlab/Contents.m")
-CONFIGURE_FILE("rtw/etherlab/etherlab_hrt.tmf.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/rtw/etherlab/etherlab_hrt.tmf")
+CONFIGURE_FILE("rtw/Contents.m.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/rtw/Contents.m")
+CONFIGURE_FILE("rtw/etherlab_hrt.tmf.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/rtw/etherlab_hrt.tmf")
 
 SET (CPACK_PACKAGE_DESCRIPTION_SUMMARY
     "Simulink Coder target using pdserv library")

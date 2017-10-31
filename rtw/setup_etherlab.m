@@ -4,7 +4,6 @@ if ~length(strfind(path,pwd))
     disp(['Adding ' pwd ' to $MATLABPATH']);
 end
 addpath(pwd);
-addpath([pwd '/etherlab']);
 
 run blocks/setup.m
 

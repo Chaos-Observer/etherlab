@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -e
+shopt -s extglob
 
 MATLABROOT="$1"
 TARGET="$2"
@@ -32,22 +33,12 @@ fi
 DST="${MATLABROOT}/rtw/c/${TARGET}"
 
 if [ ! -d "${DST}" ]; then
+    echo Creating folder ${DST}...
     mkdir "${DST}"
 fi
 
-( 
-    cd $(dirname $0)
+# Requires shopt -s extglob
+cp -a --remove-destination $(dirname $0)/!(include|src|$(basename $0)) ${DST}
 
-    echo "Copying files from $(pwd) to ${DST}"
-    cp -a --remove-destination bin blocks etherlab include setup_etherlab.m src switch_etherlab.m "${DST}"
-
-#    # Replace line containing "ETHERLAB_DIR ="
-#    ed -s ${DST}/etherlab/etherlab_hrt.tmf <<-EOF
-#		/^ETHERLAB_DIR/,c
-#		ETHERLAB_DIR = ${DST}
-#		.
-#        w
-#		EOF
-)
-echo "Files copied"
+echo "Files copied to ${DST}"
 echo "Now start matlab and execute 'run ${DST}/setup_etherlab.m'"
