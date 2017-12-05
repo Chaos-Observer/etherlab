@@ -82,6 +82,8 @@ Installation
     From Debian or rpm package:
         Install the package.
 
+        This installs the package into /usr/share/etherlab
+
     From source files:
     You need:
         - the source tarball
@@ -96,29 +98,80 @@ Installation
         $ cmake ..
         $ sudo make install
 
-Configuration
+    This installs the package into /usr/local/share/etherlab
 
-    Regardless whether you install using a package manager or from source
-    code, the package has to be configured to work with MATLAB.
+    Once installed, the files need to be copied to MATLAB and configured
+    before use. See the next section.
 
-    The package manager installs the data into:
-        /usr/share/etherlab
-    and from source, by default:
+    Power users:
+        The files are installed into the data directory as defined by cmake
+        for your platform. The default data directory is:
+        ${CMAKE_INSTALL_PREFIX}/${DATAROOTDIR}/${TARGETDIR}
+
+        where the defaults are:
+          CMAKE_INSTALL_PREFIX = /usr/local
+          DATAROOTDIR = share
+          TARGETDIR = etherlab
+
+        Thus, by default your files are installed to
         /usr/local/share/etherlab
 
-    This needs to be installed into the matlab installation:
-    # /usr/share/etherlab/install.sh $(MATLAB_ROOT)
-    # /usr/local/share/etherlab/install.sh $(MATLAB_ROOT)
+        To install more than one EtherLab version simultaneously, use the
+        TARGETDIR variable when configuring:
+        $ cmake -DTARGETDIR=etherlab_Vxx ..
+        for example. This will install to /usr/local/share/etherlab_Vxx
 
-    Now start MATLAB, and call setup:
-    >> run(fullfile(matlabroot, 'rtw/c/etherlab', 'setup_etherlab.m'))
+        You can also change the variables CMAKE_INSTALL_PREFIX and
+        DATAROOTDIR, but this is usually not required.
 
-    This configures the package for use with Simulink. As it compiles
-    mex functions, make sure that directories below
-    $(matlabroot)/rtw/c/etherlab/ are writeable by the matlab user.
+Configuration
 
-    During configuration, paths are added to matlabpath and saved to
-    ($(MATLAB_ROOT)/toolbox/local/pathdef.m). Make sure it is writeable.
+    This section uses MATLAB_ROOT as a generic variable that points to the
+    head of the MATLAB installation. Either you know it by heart, or call
+    >> matlabroot
+    from MATLAB's command line.
+
+    Regardless whether you install using a package manager or from source
+    code, another two steps are required before EtherLab can be used:
+
+    1) Copy the files from the installation path to MATLAB:
+
+        This is done with a script:
+        # /usr/share/etherlab/install.sh $(MATLAB_ROOT)
+        or (from source install):
+        # /usr/local/share/etherlab/install.sh $(MATLAB_ROOT)
+
+        The files are copied to $(MATLAB_ROOT)/rtw/c/etherlab. Make sure this
+        directory is writeable by you.
+
+    2) Compile the files to be used by MATLAB:
+        Start MATLAB and call:
+        >> run(fullfile(matlabroot, 'rtw/c/etherlab', 'setup_etherlab.m'))
+
+        This configures the package for use with Simulink. As it compiles mex
+        functions, make sure that directories below
+        $(MATLAB_ROOT)/rtw/c/etherlab/ are writeable by the matlab user.
+
+        During configuration, paths are added to matlabpath and saved to
+        ($(MATLAB_ROOT)/toolbox/local/pathdef.m). Make sure it is writeable.
+
+
+    Power users:
+        The default installation directory of the files in MATLAB is:
+        $(MATLAB_ROOT)/rtw/c/etherlab, where the last directory can be
+        changed by using the optional second parameter when calling install.sh:
+        $ /usr/local/share/etherlab/install.sh $(MATLAB_ROOT) etherlab_Vxx
+
+        This will install to $(MATLAB_ROOT)/rtw/c/etherlab_Vxx
+
+        Using this feature, many parallel installations of EtherLab is
+        possible. To switch between them, call:
+        >> switch_etherlab('etherlab_Vxx')
+        from MATLAB. This will change matlabpath to point to the new
+        directory!
+
+        Of coarse (as a power user), you know how to adapt the run()
+        command in step 2) above appropriately.
 
 Using EtherLab
 
@@ -132,7 +185,7 @@ Using EtherLab
     within the diagram also works). Voilà, you have an executable! Call it and
     be happy.
 
-Using EtherLab in a hosted environment
+Using EtherLab in a hosted environment (power users)
 
     MATLAB, Simulink and Simulink Coder is a significant financial investment
     that is typically installed only on a limited number of systems. These
@@ -172,7 +225,7 @@ Removing EtherLab
 
     First remove etherlab from matlab (this is not done automatically, not
     even when using package managers):
-        - call /usr/local/share/etherlab/uninstall.sh <MATLABROOT>
+        - call /usr/local/share/etherlab/uninstall.sh $(MATLAB_ROOT)
 
         - From Matlab:
         >> pathtool

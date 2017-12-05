@@ -8,13 +8,15 @@
 #  This is the main cmake file for EtherLab target for Real-Time Workshop(TM)
 #  target of Mathworks.
 #
-#  The following options can be specified on the command line of cmake to
-#  change the installation paths (Defaults are in <>)
-#       -DPREFIX=</opt/etherlab>
+#  The files are installed to:
+#       ${CMAKE_INSTALL_PREFIX}/${DATAROOTDIR}/${TARGETDIR}
 #
-#  For debugging, use the
-#       -DCMAKE_BUILD_TYPE=Debug|Release|RelWithDebInfo|MinSizeRel
-#  option
+#  where the defaults are (depending on your platform):
+#       CMAKE_INSTALL_PREFIX = /usr/local
+#       DATAROOTDIR = share
+#       TARGETDIR = etherlab
+#
+#  For detailed instructions, see README
 #
 #  This file is part of the EtherLab package.
 #
