@@ -126,7 +126,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <stdlib.h>     // malloc
+#include <stdlib.h>     // calloc()
+#include <alloca.h>     // alloca()
 #include <string.h>
 #include <dlfcn.h>
 #include <syslog.h>
@@ -151,8 +152,8 @@
                                    */
 
 /* To quote a string */
-#define STR(x) #x
-#define QUOTE(x) STR(x)
+#define _STR(x) #x
+#define QUOTE(x) _STR(x)
 
 #define EXPAND_CONCAT(name1, name2) name1 ## name2
 #define CONCAT(name1, name2) EXPAND_CONCAT(name1, name2)
@@ -250,12 +251,6 @@ bool daemonize = false; /**< Become a daemon. */
 char *pidPath = ""; /**< Path of PID file (empty for no PID file). */
 int phase = -1;      /**< Phase to start task 0..100 */
 
-static rtwCAPI_ModelMappingInfo* mmi;
-static const rtwCAPI_DimensionMap* dimMap;
-static const rtwCAPI_DataTypeMap* dTypeMap;
-static const rtwCAPI_SampleTimeMap* sampleTimeMap;
-static const uint_T* dimArray;
-static void ** dataAddressMap;
 static void *exe;      /* Pointer to this executable. */
 
 const char* rt_OneStepMain(RT_MODEL *s, uint_T);
@@ -552,11 +547,11 @@ int get_compound_data_type(const char *mwName, size_t size)
             return 0;
     }
     n = strlen(mwName);
-    compound_name = malloc(n + 20);
+    compound_name = alloca(n + 20);     // including _description
     strcpy(compound_name, mwName);
     strcpy(compound_name+n, "_description");
     compound_desc = dlsym(exe, compound_name);
-    free(compound_name);
+
     if (!compound_desc)
         return 0;
 
@@ -657,12 +652,85 @@ int read_signal(
 }
 
 
+/****************************************************************************
+ * Create dimension array, taking care of Matlab's quirks:
+ * 1) Adjacent memory locations in C is row wise, in Matlab column wise
+ * 2) Vectors are horizontal
+ *
+ * Thus the C matrix will be displayed to be transposed
+ *
+ * !! The returned size_t array must be free()ed if ndim > 2
+ */
+static size_t *
+create_dim(
+        /* Input */
+        const rtwCAPI_DimensionMap* dimMap,
+        size_t dimIndex,
+        const uint_T* dimArray,
+
+        /* Output */
+        uint8_T *ndim)
+{
+    uint_T dimArrayIndex = rtwCAPI_GetDimArrayIndex(dimMap, dimIndex);
+    size_t numDims = rtwCAPI_GetNumDims(dimMap, dimIndex);
+
+    static size_t defaultDim[2];
+    size_t *dim = defaultDim;
+
+    if (numDims == 1) {
+        /* Only one dimension */
+        dim[0] = dimArray[dimArrayIndex];
+    }
+    else if (numDims == 2) {
+        if (dimArray[dimArrayIndex] == 1) {
+            // A vector or matrix with one row
+            numDims = 1;
+            dim[0] = dimArray[dimArrayIndex + 1];
+        }
+        else if (rtwCAPI_GetOrientation(dimMap, dimIndex)
+                == rtwCAPI_MATRIX_COL_MAJOR) {
+            dim[0] = dimArray[dimArrayIndex + 1];
+            dim[1] = dimArray[dimArrayIndex];
+        }
+        else {
+            dim[0] = dimArray[dimArrayIndex];
+            dim[1] = dimArray[dimArrayIndex + 1];
+        }
+    }
+    else {
+        /* Reverse the order of the nD-Matrix.
+         * Matlab's Matrices run coherently from the first to the last index,
+         * while in C it is exactly the other way round. The intention here
+         * is to present the arrays in a way that is compatable to C.
+         *
+         * e.g. in Matlab A(2,1,1) and A(3,1,1) are adjacent, whereas
+         * in C, A[1][1][2] and A[1][1][3] are adjacent.
+         */
+        size_t i;
+        dim = calloc(numDims, sizeof(size_t));
+        for (i = 0; i < numDims; ++i)
+            dim[i] = dimArray[dimArrayIndex + (numDims - 1) - i];
+    }
+
+    *ndim = numDims;
+    return dim;
+}
+
 /****************************************************************************/
 
 /** Register a signal with PdServ.
  */
-const char *register_signal(struct thread_task *task,
-        const rtwCAPI_Signals* signals, size_t idx)
+    const char *
+register_signal(
+        struct thread_task *task,
+        const rtwCAPI_Signals* signals,
+        size_t idx,
+        rtwCAPI_ModelMappingInfo* mmi,
+        const rtwCAPI_DimensionMap* dimMap,
+        const rtwCAPI_DataTypeMap* dTypeMap,
+        const uint_T* dimArray,
+        const rtwCAPI_SampleTimeMap* sampleTimeMap,
+        void ** dataAddressMap)
 {
     uint_T addrMapIndex    = rtwCAPI_GetSignalAddrIdx(signals, idx);
     /* size_t sysNum = rtwCAPI_GetSignalSysNum(signals, idx); */
@@ -673,16 +741,22 @@ const char *register_signal(struct thread_task *task,
     uint16_T dimIndex        = rtwCAPI_GetSignalDimensionIdx(signals, idx);
     uint8_T  sTimeIndex      = rtwCAPI_GetSignalSampleTimeIdx(signals, idx);
 
+    uint8_T ndim;
+    size_t *dim = create_dim(dimMap, dimIndex, dimArray, &ndim);
+
     const void *address =
         rtwCAPI_GetDataAddress(dataAddressMap, addrMapIndex);
-    uint_T dimArrayIndex = rtwCAPI_GetDimArrayIndex(dimMap, dimIndex);
     int data_type = get_etl_data_type(
             rtwCAPI_GetDataTypeMWName(dTypeMap, dataTypeIndex),
             rtwCAPI_GetDataTypeSLId(dTypeMap, dataTypeIndex),
             rtwCAPI_GetDataTypeSize(dTypeMap, dataTypeIndex),
             rtwCAPI_GetDataIsComplex(dTypeMap, dataTypeIndex));
-    size_t pathLen = strlen(blockPath) + strlen(signalName) + 9;
-    uint8_T ndim = rtwCAPI_GetNumDims(dimMap, dimIndex);
+
+    // Path has 1 slash, a port number (uint16_T = 5 digits)
+    // and a terminating \0 extra
+    size_t pathLen = strlen(blockPath) + strlen(signalName) + 7;
+    char *path = alloca(pathLen);
+
 #if !MT
     const real_T *sampleTime =
         rtwCAPI_GetSamplePeriodPtr(sampleTimeMap, sTimeIndex);
@@ -693,21 +767,11 @@ const char *register_signal(struct thread_task *task,
     const char *prev_signal_path, *next_signal_path;
 
     struct pdvariable *signal;
-    char *path;
-    size_t arrayDim[2], *dim = arrayDim;
-
-    size_t i;
-    const char *err = 0;
+    const char* err = 0;
 
     /* Only allow built-in data types */
     if (!data_type)
-        return NULL;
-
-    path = malloc(pathLen);
-    if (!path) {
-        err = "No memory";
         goto out;
-    }
 
     /* Check that the data type is compatible */
     if (rtwCAPI_GetDataIsPointer(dTypeMap, dataTypeIndex)) {
@@ -763,52 +827,6 @@ const char *register_signal(struct thread_task *task,
     }
 #endif
 
-    if (ndim == 1) {
-        /* Only one dimension */
-        dim[0] = dimArray[dimArrayIndex];
-    }
-    else if (ndim == 2) {
-        if (dimArray[dimArrayIndex] == 1
-                || dimArray[dimArrayIndex + 1] == 1) {
-            ndim = 1;
-            dim[0] = dimArray[dimArrayIndex] * dimArray[dimArrayIndex + 1];
-        }
-        else if (rtwCAPI_GetOrientation(dimMap, dimIndex)
-                == rtwCAPI_MATRIX_COL_MAJOR) {
-            dim[0] = dimArray[dimArrayIndex + 1];
-            dim[1] = dimArray[dimArrayIndex];
-        }
-        else {
-            dim[0] = dimArray[dimArrayIndex];
-            dim[1] = dimArray[dimArrayIndex + 1];
-        }
-    }
-    else {
-        /* Multidimenstional array. Copy array specification */
-        dim = calloc(ndim, sizeof(size_t));
-        if (!dim) {
-            err = "No memory";
-            goto out;
-        }
-
-        /* Reverse the order of the nD-Matrix.
-         * Matlab's Matrices run coherently from the first to the last index,
-         * while in C it is exactly the other way round. The intention here
-         * is to present the arrays in a way that is compatable to C.
-         *
-         * e.g. in Matlab A(2,1,1) and A(3,1,1) are adjacent, whereas
-         * in C, A[1][1][2] and A[1][1][3] are adjacent.
-         */
-        for (i = 0; i < ndim; ++i)
-            dim[i] = dimArray[dimArrayIndex + (ndim - 1) - i];
-    }
-
-#if 0
-    printf("%s task[%u], decim=%u, dt=%u, %p, ndim=%u, %p\n",
-            path, tid - (tid && FIRST_TID),
-            decimation, data_type, address, ndim, dim);
-#endif
-
     //printf("Reg with dt=%i\n", data_type);
 #ifdef PDSERV3
     signal = pdserv_signal(task->pdtask, decimation,
@@ -822,12 +840,12 @@ const char *register_signal(struct thread_task *task,
         pdserv_set_alias(signal, signalName);
 
 out:
-    free(path);
-    if (dim != arrayDim)
+    if (ndim > 2)
         free(dim);
-    if (err) {
-        printf("%s\n", err);
-    }
+
+    if (err)
+        printf("Error registering signal %s: %s\n", path, err);
+
     return err;
 }
 
@@ -835,8 +853,16 @@ out:
 
 /** Register a parameter with PdServ.
  */
-const char *register_parameter( struct pdserv *pdserv,
-        const rtwCAPI_BlockParameters* params, size_t idx)
+    const char *
+register_parameter(
+        struct pdserv *pdserv,
+        const rtwCAPI_BlockParameters* params,
+        size_t idx,
+        rtwCAPI_ModelMappingInfo* mmi,
+        const rtwCAPI_DimensionMap* dimMap,
+        const rtwCAPI_DataTypeMap* dTypeMap,
+        const uint_T* dimArray,
+        void ** dataAddressMap)
 {
     uint_T addrMapIndex = rtwCAPI_GetBlockParameterAddrIdx(params, idx);
     const char *blockPath = rtwCAPI_GetBlockParameterBlockPath(params, idx);
@@ -844,10 +870,14 @@ const char *register_parameter( struct pdserv *pdserv,
     uint16_T dataTypeIndex = rtwCAPI_GetBlockParameterDataTypeIdx(params, idx);
     uint16_T dimIndex = rtwCAPI_GetBlockParameterDimensionIdx(params, idx);
 
+    uint8_T ndim;
+    size_t *dim = create_dim(dimMap, dimIndex, dimArray, &ndim);
+
     void *address = rtwCAPI_GetDataAddress(dataAddressMap, addrMapIndex);
-    uint_T dimArrayIndex = rtwCAPI_GetDimArrayIndex(dimMap, dimIndex);
-    size_t pathLen = strlen(blockPath) + strlen(paramName) + 9;
-    uint8_T ndim = rtwCAPI_GetNumDims(dimMap, dimIndex);
+
+    // Path has 1 slash and a terminating \0 extra
+    const size_t pathLen = strlen(blockPath) + strlen(paramName) + 2;
+    char *path = alloca(pathLen);
 
     int data_type = get_etl_data_type(
             rtwCAPI_GetDataTypeMWName(dTypeMap, dataTypeIndex),
@@ -855,21 +885,11 @@ const char *register_parameter( struct pdserv *pdserv,
             rtwCAPI_GetDataTypeSize(dTypeMap, dataTypeIndex),
             rtwCAPI_GetDataIsComplex(dTypeMap, dataTypeIndex));
 
-    char *path;
-    size_t arrayDim[2], *dim = arrayDim;
-
-    size_t i;
-    const char *err = 0;
+    const char* err = 0;
 
     /* Only allow built-in data types */
     if (!data_type)
-        return NULL;
-
-    path = malloc(pathLen);
-    if (!path) {
-        err = "No memory";
         goto out;
-    }
 
     /* Check that the data type is compatible */
     if (rtwCAPI_GetDataIsPointer(dTypeMap, dataTypeIndex)) {
@@ -885,37 +905,72 @@ const char *register_parameter( struct pdserv *pdserv,
 
     snprintf(path, pathLen, "%s/%s", blockPath, paramName);
 
-    if (ndim == 1) {
-        /* Only one dimension */
-        dim[0] = dimArray[dimArrayIndex];
-    }
-    else if (ndim == 2) {
-        if (dimArray[dimArrayIndex] == 1
-                || dimArray[dimArrayIndex + 1] == 1) {
-            ndim = 1;
-            dim[0] = dimArray[dimArrayIndex] * dimArray[dimArrayIndex + 1];
-        }
-        else if (rtwCAPI_GetOrientation(dimMap, dimIndex)
-                == rtwCAPI_MATRIX_COL_MAJOR) {
-            dim[0] = dimArray[dimArrayIndex + 1];
-            dim[1] = dimArray[dimArrayIndex];
-        }
-        else {
-            dim[0] = dimArray[dimArrayIndex];
-            dim[1] = dimArray[dimArrayIndex + 1];
-        }
-    }
-    else {
-        /* Multidimenstional array. Copy array specification */
-        dim = calloc(ndim, sizeof(size_t));
-        if (!dim) {
-            err = "No memory";
-            goto out;
-        }
+#ifdef PDSERV3
+    pdserv_parameter(pdserv, path, 0666, data_type, address, ndim, dim,
+            write_parameter, 0);
+#else
+    pdserv_parameter(pdserv, path, 0666, data_type, address, ndim, dim, 0, 0);
+#endif
 
-        for (i = 0; i < ndim; ++i)
-            dim[i] = dimArray[dimArrayIndex + (ndim - 1) - i];
+out:
+    if (ndim > 2)
+        free(dim);
+
+    if (err)
+        printf("Error registering signal %s: %s\n", path, err);
+
+    return err;
+}
+
+/****************************************************************************/
+
+/** Register a model parameter with PdServ.
+ */
+    const char *
+register_model_parameter(
+        struct pdserv *pdserv,
+        const rtwCAPI_ModelParameters* params,
+        size_t idx,
+        rtwCAPI_ModelMappingInfo* mmi,
+        const rtwCAPI_DimensionMap* dimMap,
+        const rtwCAPI_DataTypeMap* dTypeMap,
+        const uint_T* dimArray,
+        void ** dataAddressMap)
+{
+    uint_T addrMapIndex = rtwCAPI_GetModelParameterAddrIdx(params, idx);
+    const char *paramName = rtwCAPI_GetModelParameterName(params, idx);
+    uint16_T dataTypeIndex = rtwCAPI_GetModelParameterDataTypeIdx(params, idx);
+    uint16_T dimIndex = rtwCAPI_GetModelParameterDimensionIdx(params, idx);
+
+    uint8_T ndim;
+    size_t *dim = create_dim(dimMap, dimIndex, dimArray, &ndim);
+
+    void *address = rtwCAPI_GetDataAddress(dataAddressMap, addrMapIndex);
+    static const char* prefix = QUOTE(PARAMETER_PREFIX);
+
+    // Path has 2 slashes and a terminating \0 extra
+    const size_t pathLen = strlen(prefix) + strlen(paramName) + 3;
+    char *path = alloca(pathLen);
+
+    int data_type = get_etl_data_type(
+            rtwCAPI_GetDataTypeMWName(dTypeMap, dataTypeIndex),
+            rtwCAPI_GetDataTypeSLId(dTypeMap, dataTypeIndex),
+            rtwCAPI_GetDataTypeSize(dTypeMap, dataTypeIndex),
+            rtwCAPI_GetDataIsComplex(dTypeMap, dataTypeIndex));
+
+    const char* err = 0;
+
+    /* Only allow built-in data types */
+    if (!data_type)
+        goto out;
+
+    /* Check that the data type is compatible */
+    if (rtwCAPI_GetDataIsPointer(dTypeMap, dataTypeIndex)) {
+        err = "Cannot interact with pointer data types.";
+        goto out;
     }
+
+    snprintf(path, pathLen, "/%s/%s", prefix, paramName);
 
 #ifdef PDSERV3
     pdserv_parameter(pdserv, path, 0666, data_type, address, ndim, dim,
@@ -925,12 +980,12 @@ const char *register_parameter( struct pdserv *pdserv,
 #endif
 
 out:
-    free(path);
-    if (dim != arrayDim)
+    if (ndim > 2)
         free(dim);
-    if (err) {
-        printf("%s\n", err);
-    }
+
+    if (err)
+        printf("Error registering signal %s: %s\n", path, err);
+
     return err;
 }
 
@@ -938,30 +993,33 @@ out:
 
 /** Initialize all model variables.
  */
-const char *
+    const char *
 rtw_capi_init(RT_MODEL *S,
         struct pdserv *pdserv, struct thread_task *task)
 {
-    const rtwCAPI_Signals* signals;
-    const rtwCAPI_BlockParameters* params;
+    rtwCAPI_ModelMappingInfo* mmi = &(rtmGetDataMapInfo(S).mmi);
+    const rtwCAPI_DimensionMap* dimMap = rtwCAPI_GetDimensionMap(mmi);
+    const rtwCAPI_DataTypeMap* dTypeMap = rtwCAPI_GetDataTypeMap(mmi);
+    const uint_T* dimArray = rtwCAPI_GetDimensionArray(mmi);
+    const rtwCAPI_SampleTimeMap* sampleTimeMap = rtwCAPI_GetSampleTimeMap(mmi);
+    void ** dataAddressMap = rtwCAPI_GetDataAddressMap(mmi);
+    const rtwCAPI_Signals* signals = rtwCAPI_GetSignals(mmi);
+    const rtwCAPI_BlockParameters* params = rtwCAPI_GetBlockParameters(mmi);
+    const rtwCAPI_ModelParameters* model_params = rtwCAPI_GetModelParameters(mmi);
     size_t i;
 
-    mmi = &(rtmGetDataMapInfo(S).mmi);
-    dimMap = rtwCAPI_GetDimensionMap(mmi);
-    dTypeMap = rtwCAPI_GetDataTypeMap(mmi);
-    dimArray = rtwCAPI_GetDimensionArray(mmi);
-    sampleTimeMap = rtwCAPI_GetSampleTimeMap(mmi);
-    dataAddressMap = rtwCAPI_GetDataAddressMap(mmi);
+    for (i = 0; i < rtwCAPI_GetNumSignals(mmi); ++i)
+        register_signal(task, signals, i,
+                mmi, dimMap, dTypeMap, dimArray, sampleTimeMap, dataAddressMap);
 
-    signals = rtwCAPI_GetSignals(mmi);
-    for (i = 0; signals && i < rtwCAPI_GetNumSignals(mmi); ++i) {
-        register_signal(task, signals, i);
-    }
+    for (i = 0; i < rtwCAPI_GetNumBlockParameters(mmi); ++i)
+        register_parameter(pdserv, params, i,
+                mmi, dimMap, dTypeMap, dimArray, dataAddressMap);
 
-    params = rtwCAPI_GetBlockParameters(mmi);
-    for (i = 0; params && i < rtwCAPI_GetNumBlockParameters(mmi); ++i) {
-        register_parameter(pdserv, params, i);
-    }
+
+    for (i = 0; i < rtwCAPI_GetNumModelParameters(mmi); ++i)
+        register_model_parameter(pdserv, model_params, i,
+                mmi, dimMap, dTypeMap, dimArray, dataAddressMap);
 
     return NULL;
 }

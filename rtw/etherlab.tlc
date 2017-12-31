@@ -48,7 +48,7 @@
   rtwoptions(1).closecallback = '';
   rtwoptions(1).makevariable  = '';
 
-  rtwoptions(2).prompt         = 'BIO Buffer time:	';
+  rtwoptions(2).prompt         = 'BIO Buffer time';
   rtwoptions(2).type           = 'Edit';
   rtwoptions(2).default        = '2';
   rtwoptions(2).tlcvariable    = 'BufferTime';
@@ -58,7 +58,7 @@
      'saved in the realtime process when the user buddy is',sprintf('\n'), ...
      'prevented from collecting these'];
 
-  rtwoptions(3).prompt       = 'Maximum Task overrun count:	';
+  rtwoptions(3).prompt       = 'Maximum Task overrun count';
   rtwoptions(3).type         = 'Edit';
   rtwoptions(3).default      = '1';
   rtwoptions(3).tlcvariable  = 'OverrunCount';
@@ -66,7 +66,7 @@
   rtwoptions(3).tooltip      = ...
     ['Exit realtime model if task overruns exceeds this amount'];
 
-  rtwoptions(4).prompt       = 'Stack Size prefault:	';
+  rtwoptions(4).prompt       = 'Stack Size prefault';
   rtwoptions(4).type         = 'Edit';
   rtwoptions(4).default      = '2000';
   rtwoptions(4).tlcvariable  = 'StackSize';
@@ -79,6 +79,16 @@
      'model is unloaded. The stack utilization is printed then.', ...
      sprintf('\n'), ...
      'Keep ~500 bytes free.' ];
+
+  rtwoptions(5).prompt       = 'Model parameter path prefix';
+  rtwoptions(5).type         = 'Edit';
+  rtwoptions(5).default      = 'ModelParameter';
+  rtwoptions(5).tlcvariable  = 'ParameterPrefix';
+  rtwoptions(5).makevariable = 'PARAMETER_PREFIX';
+  rtwoptions(5).tooltip      = ...
+    ['This prefix is prepended to global model parameters', ...
+     sprintf('\n'), ...
+     'defined in the model explorer.'];
 
   %----------------------------------------%
   % Configure RTW code generation settings %
