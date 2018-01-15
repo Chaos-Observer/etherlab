@@ -59,8 +59,6 @@
 
   %addtorecord block BlockSampleTime LibBlockSampleTime(block)
 
-  %addtorecord block ConstantIdent WriteConstants(block)
-
 %endfunction
 
 
@@ -117,26 +115,28 @@
   %if !LibBlockNumOutputPorts(block)
     %return
   %endif
+  %%
+  %assign FilterOffset = 0
 
   /* %<Type> Block: %<Name> */
   %%
-  %foreach idx = LibBlockNumOutputPorts(block)
+  %foreach portIdx = LibBlockNumOutputPorts(block)
     %%
-    %assign port = SFcnParamSettings[OutputPortIdx[idx]]
+    %assign port = SFcnParamSettings[OutputPortIdx[portIdx]]
     %%
     %if !port.DWorkIndex
-      /* Output Port %<idx+1> written directly by slave */
+      /* Output Port %<portIdx+1> written directly by slave */
       %continue
     %endif
     %%
-    /* Output Port %<idx+1> */
-    %assign PortWidth = LibBlockOutputSignalWidth(idx)
+    /* Output Port %<portIdx+1> */
+    %assign PortWidth = LibBlockOutputSignalWidth(portIdx)
     %assign rollRegions = [0:%<PortWidth-1>]
     %%
     %if port.Param[2] == -1
       %% No filter
       %%
-      %assign RollVars = ["y%<idx>", "<dwork>/DWORK%<port.DWorkIndex>"]
+      %assign RollVars = ["y%<portIdx>", "<dwork>/DWORK%<port.DWorkIndex>"]
       %%
       %assign   gain = port.Param[0] != -1
       %assign offset = port.Param[1] != -1
@@ -145,8 +145,8 @@
       %assign   gainParam =   gain ? SFcnParamSettings[port.Param[0]] : empty
       %assign offsetParam = offset ? SFcnParamSettings[port.Param[1]] : empty
       %%
-      %assign   gainTuneable =   gain &&   gainParam.Name != ""
-      %assign offsetTuneable = offset && offsetParam.Name != ""
+      %assign   gainTuneable = ISFIELD(  gainParam, "Name")
+      %assign offsetTuneable = ISFIELD(offsetParam, "Name")
       %%
       %% Add gain parameter name to RollVars if it is tuneable
       %if gainTuneable
@@ -160,6 +160,16 @@
       %%
       %trace RollVars=%<RollVars>
       { real_T value;
+      %%
+      %if WILL_ROLL(rollRegions, RollThreshold)
+        %if gain && !gainTuneable && SIZE(gainParam.Value,1) > 1
+          %<LibGenConstVectWithInit(gainParam.Value,tSS_DOUBLE,"gain")>
+        %endif
+        %%
+        %if offset && !offsetTuneable && SIZE(offsetParam.Value,1) > 1
+          %<LibGenConstVectWithInit(offsetParam.Value,tSS_DOUBLE,"offset")>
+        %endif
+      %endif
 
       %roll sigIdx = rollRegions, lcv = RollThreshold, block, ...
                 "Roller", RollVars
@@ -170,46 +180,52 @@
         %endif
         %%
         %if gainTuneable
-          %assign m = LibBlockParameter(%<gainParam.Name>,"",lcv,sigIdx)
+          %assign m = gainParam.Element < 0 ...
+            ? LibBlockParameter(%<gainParam.Name>,"",lcv,sigIdx) ...
+            : LibBlockParameter(%<gainParam.Name>,"","",gainParam.Element)
         %elseif gain
-          %assign m = GetBlockConstParam(lcv,sigIdx,gainParam)
+          %assign m = GetBlockConstParam(lcv,sigIdx,gainParam,"gain")
         %endif
         %if gain
           value *= %<m>;
         %endif
         %%
         %if offsetTuneable
-          %assign c = LibBlockParameter(%<offsetParam.Name>,"",lcv,sigIdx)
+          %assign c = offsetParam.Element < 0 ...
+            ? LibBlockParameter(%<offsetParam.Name>,"",lcv,sigIdx) ...
+            : LibBlockParameter(%<offsetParam.Name>,"","",offsetParam.Element)
         %elseif offset
-          %assign c = GetBlockConstParam(lcv,sigIdx,offsetParam)
+          %assign c = GetBlockConstParam(lcv,sigIdx,offsetParam,"offset")
         %endif
         %if offset
           value += %<c>;
         %endif
         %%
-        %<LibBlockOutputSignal(idx,"",lcv,sigIdx)> = value;
+        %<LibBlockOutputSignal(portIdx,"",lcv,sigIdx)> = value;
         %%
       %endroll
       }
       %%
     %else
       %%
-      %assign param = SFcnParamSettings[port.Param[2]]
       %assign RollVars = BlockSampleTime ? ["Xd"] : ["Xc"]
       %%
       %roll sigIdx = rollRegions, lcv = RollThreshold, block, ...
                 "Roller", RollVars
         %%
-        %assign FilterIdx = sigIdx + param.FilterIndex
+        %assign FilterIdx = sigIdx + FilterOffset
         %assign FilterLcv = ...
               (lcv != "" && FilterIdx) ? "%<lcv>+%<FilterIdx>" : lcv
         %assign state = BlockSampleTime ...
-                  ?  LibBlockDiscreteState("",FilterLcv,FilterIdx) ...
-                  :  LibBlockContinuousState("",FilterLcv,FilterIdx)
+                  ? LibBlockDiscreteState("",FilterLcv,FilterIdx) ...
+                  : LibBlockContinuousState("",FilterLcv,FilterIdx)
         %%
-        %<LibBlockOutputSignal(idx,"",lcv,sigIdx)> = %<state>;
+        %<LibBlockOutputSignal(portIdx,"",lcv,sigIdx)> = %<state>;
         %%
       %endroll
+      %%
+      %assign FilterOffset = FilterOffset + LibBlockOutputSignalWidth(portIdx)
+      %%
     %endif
   %endforeach
   %return
@@ -238,8 +254,9 @@
   %endif
   %%
   %if BlockSampleTime && FilterCount
+    %assign FilterOffset = 0
     %foreach idx = LibBlockNumOutputPorts(block)
-      %<WriteFilter(block,idx)>
+      %assign FilterOffset = WriteFilter(block,idx,FilterOffset)
     %endforeach
   %endif
   %%
@@ -284,8 +301,8 @@
     %assign   gainParam =   gain ? SFcnParamSettings[port.Param[0]] : empty
     %assign offsetParam = offset ? SFcnParamSettings[port.Param[1]] : empty
     %%
-    %assign   gainTuneable =   gain &&   gainParam.Name != ""
-    %assign offsetTuneable = offset && offsetParam.Name != ""
+    %assign   gainTuneable = ISFIELD(  gainParam, "Name")
+    %assign offsetTuneable = ISFIELD(offsetParam, "Name")
     %%
     %% Add gain parameter name to RollVars if it is tuneable
     %if gainTuneable
@@ -319,24 +336,38 @@
       %%
       { real_T value;
       %%
+      %if WILL_ROLL(rollRegions, RollThreshold)
+        %if gain && !gainTuneable && SIZE(gainParam.Value,1) > 1
+          %<LibGenConstVectWithInit(gainParam.Value,tSS_DOUBLE,"gain")>
+        %endif
+        %%
+        %if offset && !offsetTuneable && SIZE(offsetParam.Value,1) > 1
+          %<LibGenConstVectWithInit(offsetParam.Value,tSS_DOUBLE,"offset")>
+        %endif
+      %endif
+
       %roll sigIdx = rollRegions, lcv = RollThreshold, block, ...
               "Roller", RollVars
 
         value = %<LibBlockInputSignal(idx,"",lcv,sigIdx)>;
         %%
         %if gainTuneable
-          %assign m = LibBlockParameter(%<gainParam.Name>,"",lcv,sigIdx)
+          %assign m = gainParam.Element < 0 ...
+            ? LibBlockParameter(%<gainParam.Name>,"",lcv,sigIdx) ...
+            : LibBlockParameter(%<gainParam.Name>,"","",gainParam.Element)
         %elseif gain
-          %assign m = GetBlockConstParam(lcv,sigIdx,gainParam)
+          %assign m = GetBlockConstParam(lcv,sigIdx,gainParam,"gain")
         %endif
         %if gain
           value *= %<m>;
         %endif
         %%
         %if offsetTuneable
-          %assign c = LibBlockParameter(%<offsetParam.Name>,"",lcv,sigIdx)
+          %assign c = offsetParam.Element < 0 ...
+            ? LibBlockParameter(%<offsetParam.Name>,"",lcv,sigIdx) ...
+            : LibBlockParameter(%<offsetParam.Name>,"","",offsetParam.Element)
         %elseif offset
-          %assign c = GetBlockConstParam(lcv,sigIdx,offsetParam)
+          %assign c = GetBlockConstParam(lcv,sigIdx,offsetParam,"offset")
         %endif
         %if offset
           value += %<c>;
@@ -347,12 +378,13 @@
         %endif
         %%
         %if hasMinMax
-            %<LibBlockDWork(dwork,"",lcv,sigIdx)> = value > %<max>
-                    ? %<max>
-                    : (value < %<min> ? %<min> : value);
-        %else
-            %<LibBlockDWork(dwork,"",lcv,sigIdx)> = value;
+          if (value > %<max>)
+            value = %<max>;
+          if (value < %<min>)
+            value = %<min>;
         %endif
+        %%
+        %<LibBlockDWork(dwork,"",lcv,sigIdx)> = value;
       %endroll
       }
     %endif
@@ -366,20 +398,21 @@
     /* %<Type> Block: %<Name> 
      * Continuous low pass filter
      */
+    %assign FilterOffset = 0
     %foreach idx = LibBlockNumOutputPorts(block)
-      %<WriteFilter(block,idx)>
+      %assign FilterOffset = WriteFilter(block,idx,FilterOffset)
     %endforeach
   %endif
 %endfunction
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%function WriteFilter(block,idx) Output
+%function WriteFilter(block,idx,FilterOffset) Output
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   %%
   %assign port = SFcnParamSettings[OutputPortIdx[idx]]
   %%
   %if port.Param[2] == -1
-    %return
+    %return FilterOffset
   %endif
   %assign filterParam = SFcnParamSettings[port.Param[2]]
   %%
@@ -397,9 +430,9 @@
   %assign   gainParam =   gain ? SFcnParamSettings[port.Param[0]] : empty
   %assign offsetParam = offset ? SFcnParamSettings[port.Param[1]] : empty
   %%
-  %assign   gainTuneable =   gain &&   gainParam.Name != ""
-  %assign offsetTuneable = offset && offsetParam.Name != ""
-  %assign filterTuneable =           filterParam.Name != ""
+  %assign   gainTuneable = ISFIELD(  gainParam, "Name")
+  %assign offsetTuneable = ISFIELD(offsetParam, "Name")
+  %assign filterTuneable = ISFIELD(filterParam, "Name")
   %%
   %% Add gain parameter name to RollVars if it is tuneable
   %if gainTuneable
@@ -419,6 +452,19 @@
   %trace RollVars=%<RollVars>
   %%
   { real_T value;
+  %if WILL_ROLL(rollRegions, RollThreshold)
+    %if gain && !gainTuneable && SIZE(gainParam.Value,1) > 1
+      %<LibGenConstVectWithInit(gainParam.Value,tSS_DOUBLE,"gain")>
+    %endif
+    %%
+    %if offset && !offsetTuneable && SIZE(offsetParam.Value,1) > 1
+      %<LibGenConstVectWithInit(offsetParam.Value,tSS_DOUBLE,"offset")>
+    %endif
+    %%
+    %if filter && !filterTuneable && SIZE(filterParam.Value,1) > 1
+      %<LibGenConstVectWithInit(filterParam.Value,tSS_DOUBLE,"filter")>
+    %endif
+  %endif
 
   %roll sigIdx = rollRegions, lcv = RollThreshold, block, ...
             "Roller", RollVars
@@ -431,30 +477,36 @@
     %endif
     %%
     %if gainTuneable
-      %assign m = LibBlockParameter(%<gainParam.Name>,"",lcv,sigIdx)
+      %assign m = gainParam.Element < 0 ...
+        ? LibBlockParameter(%<gainParam.Name>,"",lcv,sigIdx) ...
+        : LibBlockParameter(%<gainParam.Name>,"","",gainParam.Element)
     %elseif gain
-      %assign m = GetBlockConstParam(lcv,sigIdx,gainParam)
+      %assign m = GetBlockConstParam(lcv,sigIdx,gainParam,"gain")
     %endif
     %if gain
       value *= %<m>;
     %endif
     %%
     %if offsetTuneable
-      %assign c = LibBlockParameter(%<offsetParam.Name>,"",lcv,sigIdx)
+      %assign c = offsetParam.Element < 0 ...
+        ? LibBlockParameter(%<offsetParam.Name>,"",lcv,sigIdx) ...
+        : LibBlockParameter(%<offsetParam.Name>,"","",offsetParam.Element)
     %elseif offset
-      %assign c = GetBlockConstParam(lcv,sigIdx,offsetParam)
+      %assign c = GetBlockConstParam(lcv,sigIdx,offsetParam,"offset")
     %endif
     %if offset
       value += %<c>;
     %endif
     %%
     %if filterTuneable
-      %assign k = LibBlockParameter(%<filterParam.Name>,"",lcv,sigIdx)
+      %assign k = filterParam.Element < 0 ...
+        ? LibBlockParameter(%<filterParam.Name>,"",lcv,sigIdx) ...
+        : LibBlockParameter(%<filterParam.Name>,"","",filterParam.Element)
     %else
-      %assign k = GetBlockConstParam(lcv,sigIdx,filterParam)
+      %assign k = GetBlockConstParam(lcv,sigIdx,filterParam,"filter")
     %endif
     %%
-    %assign FilterIdx = sigIdx + filterParam.FilterIndex
+    %assign FilterIdx = sigIdx + FilterOffset
     %assign FilterLcv = (lcv != "" && FilterIdx) ? "%<lcv>+%<FilterIdx>" : lcv
     %if BlockSampleTime
       %assign d0 = LibBlockDiscreteState("",FilterLcv,FilterIdx)
@@ -469,6 +521,9 @@
     %endif
   %endroll
   }
+  %%
+  %return FilterOffset + PortWidth
+  %%
 %endfunction
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -525,19 +580,19 @@
 %endfunction
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%function GetBlockConstParam(lcv,sigIdx,param)
+%function GetBlockConstParam(lcv,sigIdx,param,varName)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  %assign ConstIdx = sigIdx + param.ConstIndex
+  %assign value = param.Value
 
-  %if param.NumConst == 1
-    %return "%<ConstVector[param.ConstIndex]>"
+  %if SIZE(value,1) == 1
+    %return "%<value[0]>"
   %elseif lcv == ""
-    %return "%<ConstVector[ConstIdx]>"
+    %return "%<value[sigIdx]>"
   %else
-    %if ConstIdx
-      %assign lcv = "%<lcv>+%<ConstIdx>"
+    %if sigIdx
+      %assign lcv = "%<lcv>+%<sigIdx>"
     %endif
-    %return "%<ConstantIdent>[%<lcv>]"
+    %return "%<varName>[%<lcv>]"
   %endif
 
 %endfunction
@@ -932,26 +987,4 @@
 
   %return varName
 
-%endfunction
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%function WriteConstants(block)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-  %assign ConstantCount = SIZE(ConstVector,1)
-
-  %if !ConstantCount
-    %return "NULL"
-  %endif
-
-  %assign ident = "constant_slave_%<EtherCATSlaveId>"
-
-  %openfile buf
-    /* Constant values for %<Type> Block: %<Name>  */
-    %<LibGenConstVectWithInit(ConstVector,tSS_DOUBLE,ident)>
-  %closefile buf
-  %<LibSetSourceFileSection(CompiledModel.EtherCAT.model_c, \
-        "Definitions", buf)>
-
-  %return ident
 %endfunction

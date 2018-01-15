@@ -252,33 +252,34 @@ slave.PortConfig.output(2).pdo = [ 0 1 0 0;
         <p/> The port will have as many elements as <b>pdo</b> has rows (N).
 
         <p/> <tt>pdo_data_type</tt> is a value that specifies which data type
-        the PDO Entry is interpreted as:
+        to interpret the  PDO Entry as. Valid values are:
+
         <table cellspacing="2" align="center"
             width="50%">
 
             <tr><th width="25%">Value</th><th>Data Type</th></tr>
 
-            <tr><td>1001</td><td>Boolean</td></tr>
-            <tr><td>1002</td><td>Bit2</td></tr>
-            <tr><td>1003</td><td>Bit3</td></tr>
-            <tr><td>1004</td><td>Bit4</td></tr>
-            <tr><td>1005</td><td>Bit5</td></tr>
-            <tr><td>1006</td><td>Bit6</td></tr>
-            <tr><td>1007</td><td>Bit7</td></tr>
-            <tr><td>1008</td><td>Unsigned8</td></tr>
-            <tr><td>1016</td><td>Unsigned16</td></tr>
-            <tr><td>1024</td><td>Unsigned24</td></tr>
-            <tr><td>1032</td><td>Unsigned32</td></tr>
-            <tr><td>1040</td><td>Unsigned40</td></tr>
-            <tr><td>1048</td><td>Unsigned48</td></tr>
-            <tr><td>1056</td><td>Unsigned56</td></tr>
-            <tr><td>1064</td><td>Unsigned64</td></tr>
-            <tr><td>2008</td><td>Integer8</td></tr>
-            <tr><td>2016</td><td>Integer16</td></tr>
-            <tr><td>2032</td><td>Integer32</td></tr>
-            <tr><td>2064</td><td>Integer64</td></tr>
-            <tr><td>3032</td><td>Real32</td></tr>
-            <tr><td>3064</td><td>Real64</td></tr>
+            <tr><td>uint(1)</td><td>Boolean</td></tr>
+            <tr><td>uint(2)</td><td>Bit2</td></tr>
+            <tr><td>uint(3)</td><td>Bit3</td></tr>
+            <tr><td>uint(4)</td><td>Bit4</td></tr>
+            <tr><td>uint(5)</td><td>Bit5</td></tr>
+            <tr><td>uint(6)</td><td>Bit6</td></tr>
+            <tr><td>uint(7)</td><td>Bit7</td></tr>
+            <tr><td>uint(8)</td><td>Unsigned8</td></tr>
+            <tr><td>uint(16)</td><td>Unsigned16</td></tr>
+            <tr><td>uint(24)</td><td>Unsigned24</td></tr>
+            <tr><td>uint(32)</td><td>Unsigned32</td></tr>
+            <tr><td>uint(40)</td><td>Unsigned40</td></tr>
+            <tr><td>uint(48)</td><td>Unsigned48</td></tr>
+            <tr><td>uint(56)</td><td>Unsigned56</td></tr>
+            <tr><td>uint(64)</td><td>Unsigned64</td></tr>
+            <tr><td>sint(08)</td><td>Integer8</td></tr>
+            <tr><td>sint(16)</td><td>Integer16</td></tr>
+            <tr><td>sint(32)</td><td>Integer32</td></tr>
+            <tr><td>sint(64)</td><td>Integer64</td></tr>
+            <tr><td>float('single')</td><td>Real32</td></tr>
+            <tr><td>float('double')</td><td>Real64</td></tr>
         </table>
 
         <p/> The data type must match the PDO Entry's BitLen. The remainder of
@@ -301,11 +302,22 @@ slave.PortConfig.output(3).pdo = [ 0,0,0,0;
         <tt>full_scale</tt> apply the following operation:
         <pre>output = filter((PDO_Entry / full_scale) * gain + offset);</pre>
 
-        <p/> <tt>Gain</tt>, <tt>offset</tt> and <tt>filter</tt> are either
-        empty (or not even specified), a scalar or a vector with as many
-        elements as <b>pdo</b> field has rows. If it is empty, the operation
-        is not applied. A scalar operates on every PDO Entry whereas the
-        vector will be applied element for element.
+        <p/> <tt>Gain</tt>, <tt>offset</tt> and <tt>filter</tt> can be
+        spedified using either:
+        <ul>
+            <li>vector or scalar: This creates an anonymous parameter</li>
+            <li>struct('name', name, 'value', value): Creates a parameter
+            accessible during runtime for the port</li>
+            <li>struct('parameter', idx): Uses block parameter at idx as a
+            vector</li>
+            <li>struct('parameter', idx, 'element', idx): Uses the scalar
+            block parameter element idx</li>
+            <li>cell array {'name', value}: Alternative to the second
+            option</li>
+        </ul>
+
+        <p/>Parameters can either be a scalar or a vector, where the vector
+        size must match the port width.
 
         <p/> Specifying any of gain, offset, full_scale or filter causes the
         output's data type to be set to double.
@@ -337,5 +349,23 @@ slave.PortConfig.output(3).pdo = [ 0,0,0,0;
         following operation:
         <pre>PDO_Entry = (input * gain + offset) * full_scale;</pre>
 
+        <h2>Block Parameter Config</h2>
+        This is a very difficult feature to use. It creates a block parameter
+        that can be accessed from any port as a parameter during runtime when
+        specifying PortConfig's gain, offset and filter options when specified
+        using struct('parameter', idx, 'element', idx) in PortConfig.
+
+        <p/>The parameter specification is a name value map as a list of
+        structs using struct('name', ..., 'value, ...).
+
+        <p/>A much more complex specification references model wide parameters
+        from the "Model Workspace". The difficulty lies in the way it is
+        specified. You need to edit the generic slave (option "Look under
+        mask") and append the "Model Workspace" names after the sixth
+        "S-Function parameters". They are then referenced using:
+        <br/>struct('name', ..., 'mask_index', 6+x)
+
+        <p/>For further instructions see the mex file itself or examples from
+        the installation ;)
     </body>
 </html>

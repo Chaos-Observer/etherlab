@@ -72,6 +72,19 @@
  *          EntrySubIndex: SubIndex of Pdo Entry ( >= 0 )
  *          BitLen:     number of bits (>0)
  *
+ * PARAMETER_CONFIG: Vector structure with fields:
+ *      .name = char
+ *          Mandatory parameter name.
+ *
+ *      .value = vector
+ *          Parameter value
+ *
+ *      .mask_index = idx
+ *          Index of a S-Function mask parameter. In this case, the value
+ *          will be taken from there and .value above is ignored.
+ *          This is very powerful, as it allows model wide parameters to be
+ *          used.
+ *
  * PORT_CONFIG:      Vector structure with fields
  *      .output := outputspec*     Block outputs; The number of elements
  *                                  correspond to the number of ports
@@ -129,9 +142,20 @@
  *                      3032: Real32
  *                      3064: Real64
  *
- *      ParamSpec  := {'Name', vector}   Named value, will be a parameter
+ *      ParamSpec  :=  []              Empty, do nothing
  *                   | vector          Constant anonymous real_T value
- *                   | []              Empty, do nothing
+ *
+ *                   | {'Name', vector}
+ *                   | struct('name', name,
+ *                            'value', value)
+ *                       Named value, will be a parameter
+ *
+ *                   | struct('parameter', idx)
+ *                       Value references a mask parameter as a vector
+ *
+ *                   | struct('parameter', idx,
+ *                            'element', idx)
+ *                       Value references a mask parameter as a scalar
  *
  *                   The vector can have none, 1 or the same
  *                   number of elements as there are pdo's
@@ -163,14 +187,17 @@
 #define __attribute__(x)
 #endif
 
-enum {
-    ADDRESS = 0,
-    SLAVE_CONFIG,
-    PORT_CONFIG,
-    DEBUG,
-    TSAMPLE,
-    PARAM_COUNT
-};
+#define ADDRESS         0
+#define SLAVE_CONFIG    1
+#define PORT_CONFIG     2
+#define DEBUG           3
+#define TSAMPLE         4
+#define PARAM_COUNT     5
+
+/* New version of ec_slave3 accept a parameter configuration that
+ * must be specified after PARAM_COUNT. The first element is
+ * parameter specification, the rest are runtime parameters. */
+#define PARAMETER_CONFIG 5
 
 static const struct datatype_info {
     uint_T id;
@@ -202,7 +229,7 @@ static const struct datatype_info {
     { 3032, "Real32",     32, SS_SINGLE  }, /* 19 */
     { 3064, "Real64",     64, SS_DOUBLE  }, /* 20 */
 
-    {    0,                                           },
+    {    0,                              },
 };
 
 static const struct datatype_info *type_bool   = &datatype_info[0];
@@ -293,13 +320,27 @@ struct ecat_slave {
         int32_T  value[4];
     } dc_opmode;
 
+    /* Structure for setting a port parameter */
+    struct parameter {
+        char_T *name;
+        int32_T count;
+        real_T *value;
+        int_T mask_idx;
+    } *parameter, *parameter_end;
+
     struct io_port {
         /* Structure for setting a port parameter */
-        struct output_param {
-            char_T *name;
-            int32_T  count;
-            real_T *value;
-        } *gain, *offset, *filter;
+        struct param_spec {
+            /* Parameter structure. This may be local or it can
+             * point to a structure in slave->parameter, seee is_ref */
+            struct parameter* ptr;
+
+            /* ptr references a value in slave->parameter */
+            boolean_T is_ref;
+
+            /* Starting index of parameter in ptr; -1 for all */
+            int32_T element_idx;
+        } gain, offset, filter;
 
         struct port_pdo {
             const struct pdo_entry *entry;
@@ -307,7 +348,6 @@ struct ecat_slave {
         } *pdo, *pdo_end;
 
         int32_T  dwork_idx;
-        int32_T filter_idx;
 
         real_T fullscale;
 
@@ -326,7 +366,6 @@ struct ecat_slave {
 
     int_T filter_count;
     int_T dwork_count;
-    int_T const_count;
 };
 
 static char_T msg[512];
@@ -572,22 +611,17 @@ get_string_field(const struct ecat_slave *slave,
     return 0;
 
 not_available:
+
     if (dflt == (char_T*)1)
         return 0;
-    if (!dflt || !(len = strlen(dflt))) {
-        *dest = NULL;
-        if (!len) {
-            pr_error(slave, p_ctxt, field_name, line_no,
-                    "Default string is empty");
-            return -1;
-        }
-        else {
-            pr_error(slave, p_ctxt, field_name, line_no,
-                    "String is not allowed to be empty ('')");
-            return -1;
-        }
+
+    if (!dflt) {
+        pr_error(slave, p_ctxt, field_name, line_no,
+                "String is not allowed to be empty ('')");
+        return -1;
     }
-    len++;
+
+    len = strlen(dflt) + 1;
     CHECK_CALLOC(slave->S, len, 1, *dest);
     strcpy(*dest, dflt);
     return 0;
@@ -1149,95 +1183,275 @@ get_slave_config(struct ecat_slave *slave)
 /****************************************************************************
  * parameter specification is of the form:
  *    []
+ *    | [value]
+ *    | { 'string', [value] }
+ *    | { 'string', uint32_t(mask index) }
+ * anything else is an error
+ ****************************************************************************/
+static int_T
+get_parameter_config(struct ecat_slave *slave)
+{
+    const mxArray *spec = ssGetSFcnParam(slave->S, PARAMETER_CONFIG);
+    char_T ctxt[30];
+    const char_T *p_ctxt = "PARAMETER_CONFIG";
+    int_T idx, count;
+
+    if (!mxIsStruct(spec)
+            || !(count = mxGetNumberOfElements(spec)))
+        return 0;
+
+    pr_debug(slave, NULL, NULL, 0,
+            "------------Parsing global parameters ---------\n");
+
+    CHECK_CALLOC(slave->S, count, sizeof(struct parameter), slave->parameter);
+    slave->parameter_end = slave->parameter + count;
+
+    for (idx = 0; idx < count; ++idx) {
+        struct parameter* param = slave->parameter + idx;
+        const mxArray *array;
+        const char *name;
+        int_T i;
+        real_T val, *p_val;
+
+        snprintf(ctxt, sizeof(ctxt), "%s(%i)", p_ctxt, idx+1);
+        RETURN_ON_ERROR(get_string_field(slave, ctxt, __LINE__,
+                spec, idx, "name", NULL, &param->name));
+
+        name = "mask_index";
+        RETURN_ON_ERROR((i = get_numeric_field(slave, ctxt, __LINE__,
+                spec, idx, 1, 1, 0, name, &val)));
+        if (!i) {
+            param->mask_idx = val;
+
+            if (param->mask_idx <= PARAMETER_CONFIG
+                    || param->mask_idx >= ssGetNumSFcnParams(slave->S)) {
+                pr_error(slave, ctxt, name, __LINE__,
+                        "Index %i does not point to a "
+                        "valid mask parameter.",
+                        param->mask_idx);
+                return -1;
+            }
+            ssSetSFcnParamTunable(slave->S, param->mask_idx, SS_PRM_TUNABLE);
+
+            /* Make spec point to mask parameter */
+            array = ssGetSFcnParam(slave->S, param->mask_idx);
+        }
+        else {
+            name = "value";
+            array = mxGetField(spec, idx, name);
+            param->mask_idx = -1;
+        }
+
+        /* Get the value from *array */
+        if (!array
+                || !mxIsDouble(array)
+                || !(p_val = mxGetPr(array))
+                || !(param->count = mxGetNumberOfElements(array))) {
+            pr_error(slave, ctxt, name, __LINE__,
+                    "Value invalid or missing\n");
+            return -1;
+        }
+
+        if (param->mask_idx < 0) {
+            /* Hard wired value */
+            CHECK_CALLOC(slave->S,
+                    param->count, sizeof(real_T), param->value);
+            for (i = 0; i < param->count; ++i)
+                param->value[i] = *p_val++;
+        }
+        else {
+            /* value from mask parameter */
+            param->value = p_val;
+        }
+
+        /* debugging */
+        pr_debug(slave, NULL, "", 1, "%s: ",
+                param->name ? param->name : "(Constant)");
+        if (param->mask_idx >= 0)
+            pr_debug(slave, NULL, NULL, 0,
+                    "(Mask parameter %i) ", param->mask_idx);
+        for (i = 0; i < param->count; ++i)
+            pr_debug(slave, NULL, NULL, 0, "%g,",
+                    param->value[i]);
+        pr_debug(slave, NULL, NULL, 0, "\n");
+
+        slave->runtime_param_count++;
+    }
+
+    return 0;
+}
+
+
+/****************************************************************************
+ * parameter specification is of the form:
+ *    []
  *    | value
  *    | { 'string', value }
+ *    | { uint32_t(mask index), <element, <isVector>> }
  * anything else is an error
  ****************************************************************************/
 static int_T
 get_port_parameter(struct ecat_slave *slave, const char_T *p_ctxt,
-        const mxArray *port_spec, struct io_port *port, uint_T count,
-        uint_T element, struct output_param **param, const char_T *name)
+        const mxArray *port_spec, struct io_port *port,
+        uint_T element, struct param_spec *param, const char_T *name)
 {
     const mxArray *spec = mxGetField(port_spec, element, name);
-    char_T ctxt[30];
-    real_T *val;
-    int_T i;
-    size_t n;
+    const mxArray *name_spec = 0, *value_spec;
+    const int_T port_width = port->pdo_end - port->pdo;
+    char_T name_ctxt[30], value_ctxt[30];
+    int_T i, spec_count;
 
-    if (!spec || !(n = mxGetNumberOfElements(spec)))
+    if (!spec || !(spec_count = mxGetNumberOfElements(spec)))
         return 0;
 
-    if (mxIsCell(spec) && n == 2 && mxIsEmpty(mxGetCell(spec,1)))
-        return 0;
+    param->element_idx = -1;
 
-    CHECK_CALLOC(slave->S, 1, sizeof(struct output_param), *param);
+    if (mxIsDouble(spec)) {
+        /* Anonymous array of numbers */
+        value_spec = spec;
 
-    if (mxIsCell(spec)) {
-        const mxArray *param_name;
+        snprintf(value_ctxt, sizeof(value_ctxt), "%s", name);
+    }
+    else if (mxIsCell(spec)) {
+        /* {'Name', value} specification */
 
-        if (n != 2) {
+        if (spec_count < 2) {
             pr_error(slave, p_ctxt, name, __LINE__,
-                    "Expected a cell array with 2 elements {'name', [value]}");
+                    "Need a cell array with 2 elements");
             return -1;
         }
 
-        param_name = mxGetCell(spec, 0);
-        if (!param_name || !mxIsChar(param_name)
-                || !(n = mxGetNumberOfElements(param_name))) {
-            snprintf(ctxt, sizeof(ctxt), "%s{1}", name);
-            pr_error(slave, p_ctxt, ctxt, __LINE__,
-                    "Parameter name not a valid string");
+        /* Evaluate first elements of cell array */
+        name_spec  = mxGetCell(spec, 0);
+        value_spec = mxGetCell(spec, 1);
+
+        /* Write contexts */
+        snprintf( name_ctxt, sizeof( name_ctxt), "%s{1}", name);
+        snprintf(value_ctxt, sizeof(value_ctxt), "%s{2}", name);
+    }
+    else if (mxIsStruct(spec)) {
+        const mxArray *param_spec   = mxGetField(spec, 0, "parameter");
+        const mxArray *element_spec = mxGetField(spec, 0, "element");
+        name_spec                   = mxGetField(spec, 0, "name");
+        value_spec                  = mxGetField(spec, 0, "value");
+
+        if (name_spec) {
+            if (!value_spec) {
+                pr_error(slave, p_ctxt, name, __LINE__,
+                        "Field 'value' missing");
+                return -1;
+            }
+
+            if (param_spec || element_spec) {
+                pr_error(slave, p_ctxt, name, __LINE__,
+                        "Cannot specify 'name' "
+                        "together with 'parameter' or 'element'.");
+                return -1;
+            }
+
+            snprintf(name_ctxt, sizeof(name_ctxt), "%s.name", name);
+            snprintf(value_ctxt, sizeof(value_ctxt), "%s.value", name);
+        }
+        else if (value_spec) {
+            pr_error(slave, p_ctxt, name, __LINE__,
+                    "Cannot specify 'value' without 'name'");
             return -1;
         }
-        CHECK_CALLOC(slave->S, n+1, sizeof(char_T), (*param)->name);
-        if (mxGetString(param_name, (*param)->name, n+1)) {
-            snprintf(ctxt, sizeof(ctxt), "%s{1}", name);
-            pr_error(slave, p_ctxt, ctxt, __LINE__,
-                    "Parameter name not a valid string");
+        else if (!param_spec) {
+            pr_error(slave, p_ctxt, name, __LINE__,
+                    "Field 'parameter' missing");
+            return -1;
+        }
+        else {
+            param->is_ref = true;
+
+            param->ptr =
+                slave->parameter + (int_T)mxGetScalar(param_spec);
+            /* Check the pointer */
+            if (param->ptr < slave->parameter
+                    || param->ptr >= slave->parameter_end) {
+                snprintf(value_ctxt, sizeof(value_ctxt),
+                        "%s.parameter", name);
+                pr_error(slave, p_ctxt, value_ctxt, __LINE__,
+                        "Index %zi does not point "
+                        "to a valid mask parameter.",
+                        param->ptr - slave->parameter);
+                return -1;
+            }
+
+            if (element_spec) {
+                param->element_idx = mxGetScalar(element_spec);
+                if (param->element_idx < 0
+                        || param->element_idx >= param->ptr->count) {
+                    snprintf(value_ctxt, sizeof(value_ctxt),
+                            "%s.element", name);
+                    pr_error(slave, p_ctxt, value_ctxt, __LINE__,
+                            "Mask parameter index %i "
+                            "is not in the range [0,%i)",
+                            param->element_idx,
+                            param->ptr->count);
+                    return -1;
+                }
+            }
+        }
+    }
+    else {
+        pr_error(slave, p_ctxt, name, __LINE__,
+                "Specification invalid.");
+        return -1;
+    }
+
+    if (value_spec) {
+        real_T *val;
+
+        spec_count = mxGetNumberOfElements(value_spec);
+        if (!spec_count)
+            return 0;
+
+        if (!mxIsDouble(value_spec)
+                || !(val = mxGetPr(value_spec))) {
+            pr_error(slave, p_ctxt, value_ctxt, __LINE__,
+                    "Value not a valid numeric.");
             return -1;
         }
 
-        spec = mxGetCell(spec, 1);
-        snprintf(ctxt, sizeof(ctxt), "%s{2}", name);
-        if (!(n = mxGetNumberOfElements(spec))) {
-            pr_error(slave, p_ctxt, ctxt, __LINE__,
-                    "Parameter value vector is empty");
+        CHECK_CALLOC(slave->S, 1, sizeof(struct parameter), param->ptr);
+        param->ptr->count = spec_count;
+        param->ptr->mask_idx = -1;
+        CHECK_CALLOC(slave->S, spec_count,
+                sizeof(real_T), param->ptr->value);
+        
+        for (i = 0; i < spec_count; ++i)
+            param->ptr->value[i] = val[i];
+    }
+
+    if (name_spec) {
+        param->ptr->name = mxArrayToString(name_spec);
+        if (!param->ptr->name || !strlen(param->ptr->name)) {
+            pr_error(slave, p_ctxt, name_ctxt, __LINE__,
+                    "Parameter name not a valid string");
             return -1;
         }
         slave->runtime_param_count++;
     }
-    else {
-        snprintf(ctxt, sizeof(ctxt), "%s", name);
-        slave->const_count += n;
-    }
 
-    if (n && mxIsDouble(spec) && (val = mxGetPr(spec))) {
-        if (n != 1 && n != count) {
-            pr_error(slave, p_ctxt, ctxt, __LINE__,
-                    (count > 1
-                     ? "Parameter value must have 1 or %u elements"
-                     : "Parameter value must have 1 element only"),
-                    count);
-            return -1;
-        }
-
-        CHECK_CALLOC(slave->S, n, sizeof(real_T), (*param)->value);
-        (*param)->count = n;
-
-        for (i = 0; i < n; ++i)
-            (*param)->value[i] = val[i];
-    }
-    else {
-        pr_error(slave, p_ctxt, ctxt, __LINE__,
-                 "Parameter value is not a valid vector");
+    /* Check for matching parameter and port widths */
+    if (param->element_idx < 0
+            && param->ptr->count > 1
+            && param->ptr->count != port_width) {
+        pr_error(slave, p_ctxt, name, __LINE__,
+                "Parameter and port widths do not match.");
         return -1;
     }
 
-    pr_debug(slave, NULL, "", 3, "%s parameter: ", name);
-    pr_debug(slave, NULL, NULL, 0,
-            (*param)->name ? "name: '%s' :" : "constant: ", (*param)->name);
-    for (i = 0; i < (*param)->count; ++i)
-        pr_debug(slave, NULL, NULL, 0, "%f,", (*param)->value[i]);
+    /* Debugging */
+    pr_debug(slave, NULL, "", 3, "%s parameter: '%s'=", name,
+            param->ptr->name ?  param->ptr->name : "(const)");
+    for (i = 0;
+            i < port_width && (param->element_idx < 0 || !i);
+            ++i)
+        pr_debug(slave, NULL, NULL, 0, "%f,",
+                param->ptr->value[i + param->element_idx]);
     pr_debug(slave, NULL, NULL, 0, "\n");
 
     return 0;
@@ -1246,8 +1460,7 @@ get_port_parameter(struct ecat_slave *slave, const char_T *p_ctxt,
 /****************************************************************************/
 static int
 get_port_raw_pdo_spec (struct ecat_slave *slave, const char_T *p_ctxt,
-        const mxArray *port_spec, struct io_port *port, size_t idx,
-        real_T *val, enum sm_direction dir)
+        struct io_port *port, real_T *val, enum sm_direction dir)
 {
     size_t i, rows;
     const struct sync_manager *sm;
@@ -1475,9 +1688,9 @@ get_data_type(struct ecat_slave *slave, const char_T *p_ctxt,
 static int
 get_port_pdo_spec (struct ecat_slave *slave, const char_T *p_ctxt,
         const mxArray *port_spec, struct io_port *port, size_t idx,
-        real_T *val, size_t rows, enum sm_direction dir)
+        real_T *val, int_T rows, enum sm_direction dir)
 {
-    size_t j;
+    int_T j;
     real_T real;
 
     /* Read the PDO data type */
@@ -1497,7 +1710,7 @@ get_port_pdo_spec (struct ecat_slave *slave, const char_T *p_ctxt,
         sm = slave->sync_manager + (size_t)val[j];
         if (sm < slave->sync_manager
                 || sm >= slave->sync_manager_end) {
-            snprintf(element, sizeof(element), "pdo(%zu,1)", j+1);
+            snprintf(element, sizeof(element), "pdo(%i,1)", j+1);
             pr_error(slave, p_ctxt, element, __LINE__,
                     "SyncManager row index %zi out of range [0,%zu)",
                     (ssize_t)val[j],
@@ -1506,7 +1719,7 @@ get_port_pdo_spec (struct ecat_slave *slave, const char_T *p_ctxt,
         }
 
         if (sm->direction != dir) {
-            snprintf(element, sizeof(element), "pdo(%zu,1)", j+1);
+            snprintf(element, sizeof(element), "pdo(%i,1)", j+1);
             pr_warn(slave, p_ctxt, element, __LINE__,
                     "SyncManager direction is incorrect\n");
         }
@@ -1514,7 +1727,7 @@ get_port_pdo_spec (struct ecat_slave *slave, const char_T *p_ctxt,
         pdo = sm->pdo + (size_t)val[j + rows];
         if (pdo < sm->pdo
                 || pdo >= sm->pdo_end) {
-            snprintf(element, sizeof(element), "pdo(%zu,2)", j+1);
+            snprintf(element, sizeof(element), "pdo(%i,2)", j+1);
             pr_error(slave, p_ctxt, element, __LINE__,
                     "Pdo row index %zi out of range [0,%zu)",
                     (ssize_t)val[j + rows],
@@ -1525,7 +1738,7 @@ get_port_pdo_spec (struct ecat_slave *slave, const char_T *p_ctxt,
         port->pdo[j].entry = pdo->entry + (size_t)val[j + 2*rows];
         if (port->pdo[j].entry < pdo->entry
                 || port->pdo[j].entry >= pdo->entry_end) {
-            snprintf(element, sizeof(element), "pdo(%zu,3)", j+1);
+            snprintf(element, sizeof(element), "pdo(%i,3)", j+1);
             pr_error(slave, p_ctxt, element, __LINE__,
                     "PdoEntry row index %zi out of range [0,%zu)",
                     (ssize_t)val[j + 2*rows],
@@ -1534,14 +1747,14 @@ get_port_pdo_spec (struct ecat_slave *slave, const char_T *p_ctxt,
         }
 
         if (!port->pdo[j].entry->index) {
-            snprintf(element, sizeof(element), "pdo(%zu,3)", j+1);
+            snprintf(element, sizeof(element), "pdo(%i,3)", j+1);
             pr_error(slave, p_ctxt, element, __LINE__,
                     "Cannot choose Pdo Entry #x0000");
             return -1;
         }
 
         if (port->pdo[j].entry->bitlen % port->data_type->mant_bits) {
-            snprintf(element, sizeof(element), "pdo(%zu,3)", j+1);
+            snprintf(element, sizeof(element), "pdo(%i,3)", j+1);
             pr_error(slave, p_ctxt, element, __LINE__,
                     "Data type specified for port (%s) does not "
                     "match the pdo's bit length (%u)",
@@ -1553,7 +1766,7 @@ get_port_pdo_spec (struct ecat_slave *slave, const char_T *p_ctxt,
         port->pdo[j].element_idx = val[j + 3*rows];
         if (port->data_type->mant_bits * (port->pdo[j].element_idx + 1)
                 > port->pdo[j].entry->bitlen) {
-            snprintf(element, sizeof(element), "pdo(%zu,4)", j+1);
+            snprintf(element, sizeof(element), "pdo(%i,4)", j+1);
             pr_error(slave, p_ctxt, element, __LINE__,
                     "Element index %zi out of range [0,%u)",
                     (ssize_t)val[j + 3*rows],
@@ -1577,24 +1790,22 @@ get_port_pdo_spec (struct ecat_slave *slave, const char_T *p_ctxt,
     port->big_endian = real != 0.0;
 
     RETURN_ON_ERROR (get_port_parameter(slave, p_ctxt, port_spec,
-                port, rows, idx, &port->gain, "gain"));
+                port, idx, &port->gain, "gain"));
     RETURN_ON_ERROR (get_port_parameter(slave, p_ctxt, port_spec,
-                port, rows, idx, &port->offset, "offset"));
+                port, idx, &port->offset, "offset"));
 
     if (dir == EC_SM_INPUT) {
         RETURN_ON_ERROR (get_port_parameter(slave, p_ctxt, port_spec,
-                    port, rows, idx, &port->filter, "filter"));
-        if (port->filter) {
-            port->filter_idx = slave->filter_count;
+                    port, idx, &port->filter, "filter"));
+        if (port->filter.ptr)
             slave->filter_count += port->pdo_end - port->pdo;
-        }
     }
 
     RETURN_ON_ERROR(get_numeric_field(slave, p_ctxt, __LINE__,
                 port_spec, idx, 0, 1, 0,
                 "full_scale", &port->fullscale));
 
-    if (port->gain || port->offset || port->filter
+    if (port->gain.ptr || port->offset.ptr || port->filter.ptr
             || port->fullscale) {
         /* Data type is always double if gain, offset, filter
          * or fullscale is used */
@@ -1652,7 +1863,7 @@ get_port_config(struct ecat_slave *slave, const char_T *section,
         char_T ctxt[50];
         const mxArray *pdo_spec;
         real_T *val;
-        size_t rows, cols, numel;
+        int_T rows, cols, numel;
 
         snprintf(ctxt, sizeof(ctxt), "%s.%s(%zu)", param, section, i+1);
 
@@ -1676,7 +1887,7 @@ get_port_config(struct ecat_slave *slave, const char_T *section,
             /* When there are only 2 elements, use PDO Raw mode.
              * The whole PDO is presented as a byte array */
             RETURN_ON_ERROR(get_port_raw_pdo_spec(slave, ctxt,
-                        port_spec, port, i, val, dir));
+                        port, val, dir));
         }
         else if (cols == 4) {
             /* PDO specification is an Nx4 numeric matrix */
@@ -1689,6 +1900,7 @@ get_port_config(struct ecat_slave *slave, const char_T *section,
                     " or 2 element vector");
             return -1;
         }
+
         port++;
     }
 
@@ -1714,17 +1926,48 @@ get_ioport_config(struct ecat_slave *slave)
     return 0;
 }
 
+static void
+slave_port_mem_op(
+    struct io_port *port_start, const struct io_port *port_end,
+    void (*method)(void*))
+{
+    const struct io_port *port;
+
+    for (port = port_start; port != port_end; port++) {
+        if (port->gain.ptr && !port->gain.is_ref) {
+            (*method)(port->gain.ptr->name);
+            (*method)(port->gain.ptr->value);
+            (*method)(port->gain.ptr);
+        }
+
+        if (port->offset.ptr && !port->offset.is_ref) {
+            (*method)(port->offset.ptr->name);
+            (*method)(port->offset.ptr->value);
+            (*method)(port->offset.ptr);
+        }
+
+        if (port->filter.ptr && !port->filter.is_ref) {
+            (*method)(port->filter.ptr->name);
+            (*method)(port->filter.ptr->value);
+            (*method)(port->filter.ptr);
+        }
+
+        (*method)(port->pdo);
+    }
+    (*method)(port_start);
+}
+
 /* This function is used to operate on the allocated memory with a generic
  * operator. This function is used to fix or release allocated memory.
  */
 static void
 slave_mem_op(struct ecat_slave *slave, void (*method)(void*))
 {
-    const struct io_port *port;
     const struct sync_manager *sm;
     const struct pdo *pdo;
     const struct soe_config *soe;
     const struct sdo_config *sdo;
+    const struct parameter *param;
 
     (*method)(slave->type);
 
@@ -1743,51 +1986,15 @@ slave_mem_op(struct ecat_slave *slave, void (*method)(void*))
     }
     (*method)(slave->sync_manager);
 
-    for (port = slave->o_port; port != slave->o_port_end; port++) {
-        if (port->gain) {
-            (*method)(port->gain->name);
-            (*method)(port->gain->value);
-        }
-        (*method)(port->gain);
-
-        if (port->offset) {
-            (*method)(port->offset->name);
-            (*method)(port->offset->value);
-        }
-        (*method)(port->offset);
-
-        if (port->filter) {
-            (*method)(port->filter->name);
-            (*method)(port->filter->value);
-        }
-        (*method)(port->filter);
-
-        (*method)(port->pdo);
+    for (param = slave->parameter; param != slave->parameter_end; ++param) {
+        if (param->mask_idx < 0)
+            (*method)(param->value);
+        (*method)(param->name);
     }
-    (*method)(slave->o_port);
+    (*method)(slave->parameter);
 
-    for (port = slave->i_port; port != slave->i_port_end; port++) {
-        if (port->gain) {
-            (*method)(port->gain->name);
-            (*method)(port->gain->value);
-        }
-        (*method)(port->gain);
-
-        if (port->offset) {
-            (*method)(port->offset->name);
-            (*method)(port->offset->value);
-        }
-        (*method)(port->offset);
-
-        if (port->filter) {
-            (*method)(port->filter->name);
-            (*method)(port->filter->value);
-        }
-        (*method)(port->filter);
-
-        (*method)(port->pdo);
-    }
-    (*method)(slave->i_port);
+    slave_port_mem_op(slave->o_port, slave->o_port_end, method);
+    slave_port_mem_op(slave->i_port, slave->i_port_end, method);
 
     (*method)(slave);
 }
@@ -1803,17 +2010,22 @@ slave_mem_op(struct ecat_slave *slave, void (*method)(void*))
  */
 static void mdlInitializeSizes(SimStruct *S)
 {
-    uint_T i;
+    int_T i;
     struct ecat_slave *slave;
     const struct io_port *port;
 
-    ssSetNumSFcnParams(S, PARAM_COUNT);  /* Number of expected parameters */
+    /* Make sure there are at least PARAM_COUNT parameters */
+    i = ssGetSFcnParamsCount(S);
+    if (i < PARAM_COUNT)
+        i = PARAM_COUNT;
+
+    ssSetNumSFcnParams(S, i);  /* Number of expected parameters */
     if (ssGetNumSFcnParams(S) != ssGetSFcnParamsCount(S)) {
         /* Return if number of expected != number of actual parameters */
         return;
     }
 
-    for( i = 0; i < PARAM_COUNT; i++)
+    for( i = 0; i < ssGetNumSFcnParams(S); i++)
         ssSetSFcnParamTunable(S, i, SS_PRM_NOT_TUNABLE);
 
     /* allocate memory for slave structure */
@@ -1826,6 +2038,10 @@ static void mdlInitializeSizes(SimStruct *S)
     if (get_slave_info(slave)) return;
 
     if (get_slave_config(slave)) return;
+
+    if (ssGetNumSFcnParams(S) > PARAM_COUNT
+            && get_parameter_config(slave))
+        return;
 
     if (get_ioport_config(slave)) return;
 
@@ -1908,7 +2124,8 @@ static void mdlSetInputPortDataType(SimStruct *S, int_T p, DTypeId id)
     /* Check whether the data type is compatible with the PDO data type or is
      * SS_SINGLE or SS_DOUBLE */
     if (port->data_type->sl_type != id) {
-        if (id != SS_DOUBLE && id != SS_SINGLE && port->data_type != type_bool) {
+        if (id != SS_DOUBLE
+                && id != SS_SINGLE && port->data_type != type_bool) {
             snprintf(msg, sizeof(msg),
                     "Trying to set data type of input port %i to %s,\n"
                     "whereas PDO has data type %s. Choose PDO data type\n"
@@ -1933,7 +2150,7 @@ static void mdlSetInputPortDataType(SimStruct *S, int_T p, DTypeId id)
 static void mdlSetInputPortWidth(SimStruct *S, int_T port, int_T width)
 {
     struct ecat_slave *slave = ssGetUserData(S);
-    uint_T max_width = slave->i_port[port].pdo_end - slave->i_port[port].pdo;
+    int_T max_width = slave->i_port[port].pdo_end - slave->i_port[port].pdo;
 
     if (!slave)
         return;
@@ -1964,9 +2181,8 @@ static void mdlSetDefaultPortDataTypes(SimStruct *S)
         return;
 
     for (port = slave->i_port; port != slave->i_port_end; port++, i++) {
-        if (ssGetInputPortDataType(S, i) == DYNAMICALLY_TYPED) {
+        if (ssGetInputPortDataType(S, i) == DYNAMICALLY_TYPED)
             ssSetInputPortDataType(S, i, port->data_type->sl_type);
-        }
     }
 }
 
@@ -1984,17 +2200,17 @@ static void mdlSetDefaultPortDimensionInfo(SimStruct *S)
         return;
 
     for (port = slave->i_port; port != slave->i_port_end; port++, i++) {
-        if (ssGetInputPortWidth(S, i) == DYNAMICALLY_SIZED) {
+        if (ssGetInputPortWidth(S, i) == DYNAMICALLY_SIZED)
             ssSetInputPortWidth(S, i, port->pdo_end - port->pdo);
-        }
     }
 }
 
-uint_T
-create_runtime_parameter(SimStruct *S, int_T idx, struct output_param *p)
+static uint_T
+create_runtime_parameter(SimStruct *S,
+        int_T idx, struct parameter *p, boolean_T is_ref)
 {
     ssParamRec rtp;
-    if (!p || !p->name)
+    if (!p || !p->name || is_ref)
         return 0;
 
     rtp.name = p->name;
@@ -2004,21 +2220,50 @@ create_runtime_parameter(SimStruct *S, int_T idx, struct output_param *p)
     rtp.complexSignal = 0;
     rtp.data = p->value;
     rtp.dataAttributes = NULL;
-    rtp.nDlgParamIndices = 0;
-    rtp.dlgParamIndices = NULL;
-    rtp.transformed = RTPARAM_TRANSFORMED;
+    if (p->mask_idx < 0) {
+        rtp.nDlgParamIndices = 0;
+        rtp.dlgParamIndices = NULL;
+        rtp.transformed = RTPARAM_TRANSFORMED;
+    }
+    else {
+        rtp.nDlgParamIndices = 1;
+        rtp.dlgParamIndices = &p->mask_idx;
+        rtp.transformed = RTPARAM_NOT_TRANSFORMED;
+    }
     rtp.outputAsMatrix = 0;
     ssSetRunTimeParamInfo(S, idx, &rtp);
 
     return 1;
 }
 
+static uint_T
+mdl_set_port_work_widths(SimStruct* S,
+    uint_T param_idx, const struct io_port *port, int_T port_width)
+{
+    param_idx += create_runtime_parameter (S,
+            param_idx, port->gain.ptr, port->gain.is_ref);
+    param_idx += create_runtime_parameter (S,
+            param_idx, port->offset.ptr, port->offset.is_ref);
+    param_idx += create_runtime_parameter (S,
+            param_idx, port->filter.ptr, port->filter.is_ref);
+
+    if (port->dwork_idx) {
+        ssSetDWorkWidth(S, port->dwork_idx-1, port_width);
+        ssSetDWorkDataType(S, port->dwork_idx-1,
+                port->data_type->sl_type);
+    }
+
+    return param_idx;
+}
+
 #define MDL_SET_WORK_WIDTHS
 static void mdlSetWorkWidths(SimStruct *S)
 {
     struct ecat_slave *slave = ssGetUserData(S);
+    struct parameter *param;
     const struct io_port *port;
     uint_T param_idx = 0;
+    int_T i;
 
     if (!slave)
         return;
@@ -2027,32 +2272,16 @@ static void mdlSetWorkWidths(SimStruct *S)
 
     ssSetNumDWork(S, slave->dwork_count);
 
-    for (port = slave->o_port; port != slave->o_port_end; port++) {
-        param_idx += create_runtime_parameter (S, param_idx, port->gain);
-        param_idx += create_runtime_parameter (S, param_idx, port->offset);
-        param_idx += create_runtime_parameter (S, param_idx, port->filter);
+    for (param = slave->parameter; param != slave->parameter_end; ++param)
+        param_idx += create_runtime_parameter(S, param_idx, param, false);
 
-        if (port->dwork_idx) {
-            ssSetDWorkWidth(S, port->dwork_idx-1,
-                    ssGetOutputPortWidth(S, port - slave->o_port));
-            ssSetDWorkDataType(S, port->dwork_idx-1,
-                    port->data_type->sl_type);
-            /*ssSetDWorkRTWIdentifier(S, port->dwork_idx-1, "KKKKK");*/
-        }
-    }
+    for (port = slave->o_port, i = 0; port != slave->o_port_end; port++, i++)
+        param_idx = mdl_set_port_work_widths(S,
+                param_idx, port, ssGetOutputPortWidth(S, i));
 
-    for (port = slave->i_port; port != slave->i_port_end; port++) {
-        param_idx += create_runtime_parameter (S, param_idx, port->gain);
-        param_idx += create_runtime_parameter (S, param_idx, port->offset);
-
-        if (port->dwork_idx) {
-            ssSetDWorkWidth(S, port->dwork_idx-1,
-                    ssGetInputPortWidth(S, port - slave->i_port));
-            ssSetDWorkDataType(S, port->dwork_idx-1,
-                    port->data_type->sl_type);
-            /*ssSetDWorkRTWIdentifier(S, port->dwork_idx-1, "KKKKK");*/
-        }
-    }
+    for (port = slave->i_port, i = 0; port != slave->i_port_end; port++, i++)
+        param_idx = mdl_set_port_work_widths(S,
+                param_idx, port, ssGetInputPortWidth(S, i));
 }
 
 /* Function: mdlOutputs =====================================================
@@ -2096,11 +2325,36 @@ static void mdlTerminate(SimStruct *S)
 }
 
 static int_T
-mdlRTWWritePort(struct ecat_slave *slave, const struct io_port *port,
-        int_T *param_idx, int_T *const_idx, real_T *constants)
+mdlRTWWritePortParameter(struct ecat_slave *slave,
+        int_T *param_idx, int32_T *param_spec_idx,
+        const struct param_spec* param_spec)
+{
+    const struct parameter *param = param_spec->ptr;
+    if (!param)
+        return 0;
+
+    if (param->name) {
+        if (!ssWriteRTWParamSettings(slave->S, 2,
+                    SSWRITE_VALUE_QSTR, "Name", param->name,
+
+                    SSWRITE_VALUE_DTYPE_NUM, "Element",
+                    &param_spec->element_idx, DTINFO(SS_INT32, 0)))
+            return -1;
+    }
+    else if (!ssWriteRTWParamSettings(slave->S, 1,
+                SSWRITE_VALUE_VECT, "Value", param->value, param->count))
+        return -1;
+    *param_spec_idx = (*param_idx)++;
+
+    return 0;
+}
+
+static int_T
+mdlRTWWritePort(struct ecat_slave *slave,
+        const struct io_port *port, int_T *idx)
 {
     uint32_T (*pdo_spec)[3];
-    int32_T param[3] = {-1, -1, -1};
+    int32_T param_idx[3] = {-1,-1,-1};
     const struct port_pdo *pdo;
     size_t i;
     enum {
@@ -2109,66 +2363,12 @@ mdlRTWWritePort(struct ecat_slave *slave, const struct io_port *port,
         PS_ElementIndex,
     };
 
-    if (port->gain) {
-        if (!ssWriteRTWParamSettings(slave->S, 3,
-                    SSWRITE_VALUE_QSTR, "Name",
-                    (port->gain->name ? port->gain->name : ""),
-
-                    SSWRITE_VALUE_DTYPE_NUM, "ConstIndex",
-                    const_idx, DTINFO(SS_INT32, 0),
-
-                    SSWRITE_VALUE_DTYPE_NUM, "NumConst",
-                    &port->gain->count, DTINFO(SS_INT32, 0)))
-            return -1;
-        param[0] = (*param_idx)++;
-
-        if (!port->gain->name) {
-            memcpy(constants + *const_idx, port->gain->value,
-                    port->gain->count * sizeof(real_T));
-            *const_idx += port->gain->count;
-        }
-    }
-    if (port->offset) {
-        if (!ssWriteRTWParamSettings(slave->S, 3,
-                    SSWRITE_VALUE_QSTR, "Name",
-                    (port->offset->name ? port->offset->name : ""),
-
-                    SSWRITE_VALUE_DTYPE_NUM, "ConstIndex",
-                    const_idx, DTINFO(SS_INT32, 0),
-
-                    SSWRITE_VALUE_DTYPE_NUM, "NumConst",
-                    &port->offset->count, DTINFO(SS_INT32, 0)))
-            return -1;
-        param[1] = (*param_idx)++;
-
-        if (!port->offset->name) {
-            memcpy(constants + *const_idx, port->offset->value,
-                    port->offset->count * sizeof(real_T));
-            *const_idx += port->offset->count;
-        }
-    }
-    if (port->filter) {
-        if (!ssWriteRTWParamSettings(slave->S, 4,
-                    SSWRITE_VALUE_QSTR, "Name",
-                    (port->filter->name ? port->filter->name : ""),
-
-                    SSWRITE_VALUE_DTYPE_NUM, "FilterIndex",
-                    &port->filter_idx, DTINFO(SS_INT32, 0),
-
-                    SSWRITE_VALUE_DTYPE_NUM, "ConstIndex",
-                    const_idx, DTINFO(SS_INT32, 0),
-
-                    SSWRITE_VALUE_DTYPE_NUM, "NumConst",
-                    &port->filter->count, DTINFO(SS_INT32, 0)))
-            return -1;
-        param[2] = (*param_idx)++;
-
-        if (!port->filter->name) {
-            memcpy(constants + *const_idx, port->filter->value,
-                    port->filter->count * sizeof(real_T));
-            *const_idx += port->filter->count;
-        }
-    }
+    if (mdlRTWWritePortParameter(slave, idx, param_idx + 0, &port->gain))
+        return -1;
+    if (mdlRTWWritePortParameter(slave, idx, param_idx + 1, &port->offset))
+        return -1;
+    if (mdlRTWWritePortParameter(slave, idx, param_idx + 2, &port->filter))
+        return -1;
 
     pdo_spec = mxCalloc(port->pdo_end - port->pdo, sizeof(*pdo_spec));
     for (pdo = port->pdo, i = 0; pdo != port->pdo_end; pdo++, i++) {
@@ -2188,7 +2388,7 @@ mdlRTWWritePort(struct ecat_slave *slave, const struct io_port *port,
                 &port->big_endian, DTINFO(SS_BOOLEAN,0),
 
                 SSWRITE_VALUE_DTYPE_VECT, "Param",
-                param, 3, DTINFO(SS_INT32,0),
+                param_idx, 3, DTINFO(SS_INT32, 0),
 
                 SSWRITE_VALUE_NUM, "FullScale",
                 port->fullscale,
@@ -2207,9 +2407,7 @@ static void mdlRTW(SimStruct *S)
 {
     struct ecat_slave *slave = ssGetUserData(S);
     int_T param_idx = 0;
-    int_T const_idx = 0;
     int32_T *config_idx;
-    real_T *constants;
     size_t n;
 
     const struct io_port *port;
@@ -2411,12 +2609,11 @@ static void mdlRTW(SimStruct *S)
         mxFree(pdo_entry_info);
     }
 
-    constants = mxCalloc(slave->const_count, sizeof(real_T));
     n = slave->o_port_end - slave->o_port;
     config_idx = mxCalloc(n, sizeof(*config_idx));
     for (port = slave->o_port, n = 0;
             port != slave->o_port_end; port++, n++) {
-        if (mdlRTWWritePort(slave, port, &param_idx, &const_idx, constants))
+        if (mdlRTWWritePort(slave, port, &param_idx))
             return;
 
         config_idx[n] = param_idx++;
@@ -2429,7 +2626,7 @@ static void mdlRTW(SimStruct *S)
     config_idx = mxCalloc(n, sizeof(*config_idx));
     for (port = slave->i_port, n = 0;
             port != slave->i_port_end; port++, n++) {
-        if (mdlRTWWritePort(slave, port, &param_idx, &const_idx, constants))
+        if (mdlRTWWritePort(slave, port, &param_idx))
             return;
 
         config_idx[n] = param_idx++;
@@ -2437,11 +2634,6 @@ static void mdlRTW(SimStruct *S)
     if (!ssWriteRTWVectParam(S, "InputPortIdx", config_idx, SS_INT32, n))
         return;
     mxFree (config_idx);
-
-    if (!ssWriteRTWVectParam(S, "ConstVector",
-                constants, SS_DOUBLE, const_idx))
-        return;
-    mxFree (constants);
 
     if (!ssWriteRTWScalarParam(S,
                 "FilterCount", &slave->filter_count, SS_INT32))

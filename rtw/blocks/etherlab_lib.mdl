@@ -15,9 +15,9 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "ha"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Thu Jul 27 23:26:37 2017"
-  RTWModifiedTimeStamp	  423098796
-  ModelVersionFormat	  "1.%<AutoIncrement:1701>"
+  LastModifiedDate	  "Mon Jan 15 01:04:24 2018"
+  RTWModifiedTimeStamp	  437879039
+  ModelVersionFormat	  "1.%<AutoIncrement:1702>"
   ConfigurationManager	  "rcs"
   SampleTimeColors	  off
   SampleTimeAnnotations	  off
@@ -3034,22 +3034,22 @@ Library {
 	  Position		  [96, 33, 174, 73]
 	  BackgroundColor	  "yellow"
 	  FunctionName		  "ec_slave3"
-	  Parameters		  "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample"
+	  Parameters		  "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample,param"
 	  SFunctionModules	  "'ecrt_support'"
 	  EnableBusSupport	  off
 	  MaskType		  "Generic EtherCAT Slave"
 	  MaskDescription	  "The generic EtherCAT Slave is used to create any slave not contained\nin this library. A mask in"
 	  "put variable, <b>EtherCAT Slave Configuration</b>,\nhas to be set up by the user. This configures the slave.\n"
 	  MaskHelp		  "web(etherlab_help_path('generic.html'), '-helpbrowser');"
-	  MaskPromptString	  "Master|Slave Index|EtherCAT Slave Configuration struct. (SlaveConfig, PortConfig)|Sample Time|D"
-	  "ebug"
-	  MaskStyleString	  "edit,edit,edit,edit,edit"
-	  MaskTunableValueString  "off,off,off,off,off"
-	  MaskCallbackString	  "||||"
-	  MaskEnableString	  "on,on,on,on,on"
-	  MaskVisibilityString	  "on,on,on,on,off"
-	  MaskToolTipString	  "on,on,on,on,on"
-	  MaskVariables		  "master=@1;index=@2;rv=@3;tsample=@4;debug=@5;"
+	  MaskPromptString	  "Master|Slave Index|EtherCAT Slave Configuration struct. (SlaveConfig, PortConfig)|Block Paramet"
+	  "ers|Sample Time|Debug"
+	  MaskStyleString	  "edit,edit,edit,edit,edit,edit"
+	  MaskTunableValueString  "off,off,off,off,off,off"
+	  MaskCallbackString	  "|||||"
+	  MaskEnableString	  "on,on,on,on,on,on"
+	  MaskVisibilityString	  "on,on,on,on,on,off"
+	  MaskToolTipString	  "on,on,on,on,on,on"
+	  MaskVariables		  "master=@1;index=@2;rv=@3;param=@4;tsample=@5;debug=@6;"
 	  MaskInitialization	  "Address = EtherCATSlave.formatAddress(master,index,tsample);\n\nif ~isfield(rv,'PortConfig') "
 	  "|| isempty(rv)\n   rv.PortConfig = [];\nend\n\nif ~isfield(rv,'SlaveConfig') || isempty(rv)\n   rv.SlaveConfig = []"
 	  ";\nend\n\nif ~isfield(rv.SlaveConfig,'description') || isempty(rv)\n   slave_name = 'unknown';\nelse\n   slave_name"
@@ -3060,7 +3060,7 @@ Library {
 	  MaskIconRotate	  "none"
 	  MaskPortRotate	  "default"
 	  MaskIconUnits		  "autoscale"
-	  MaskValueString	  "0|1|[]|0|0"
+	  MaskValueString	  "0|1|[]|[]|0|0"
 	}
 	Block {
 	  BlockType		  "S-Function"
