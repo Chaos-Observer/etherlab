@@ -15,16 +15,11 @@
  * See the individual functions for more details.
  * */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#else
-//#error "Don't have config.h"
-#endif
-
 #include <stdint.h>
 #include <stdio.h>
 #include <stddef.h>
 #include <time.h>
+#include <endian.h>
 #include "ecrt_support.h"
 
 #if MT
@@ -37,7 +32,7 @@
 #endif
 
 /* The following message gets repeated quite frequently. */
-char *no_mem_msg = "Could not allocate memory";
+const char *no_mem_msg = "Could not allocate memory";
 char errbuf[256];
 
 #if 0
@@ -56,9 +51,7 @@ char errbuf[256];
  * @member:     the name of the member within the struct.
  *
  */
-#define container_of(ptr, type, member) ({                      \
-        const typeof( ((type *)0)->member ) *__mptr = (ptr);    \
-        (type *)( (char *)__mptr - offsetof(type,member) );})
+#define container_of(ptr, type) (type *)((char *)ptr - offsetof(type,list))
 
 /*
  * Simple doubly linked list implementation.
@@ -85,10 +78,10 @@ static void INIT_LIST_HEAD(struct list_head *list)
  * @head:	the head for your list.
  * @member:	the name of the list_struct within the struct.
  */
-#define list_for_each(pos, head, member)				\
-	for (pos = container_of((head)->next, typeof(*pos), member);	\
-	     &pos->member != (head); 	                                \
-	     pos = container_of(pos->member.next, typeof(*pos), member))
+#define list_for_each(pos, head, type)                  \
+	for (pos = container_of((head)->next, type);    \
+	     &pos->list != (head);                      \
+	     pos = container_of(pos->list.next, type))
 
 /**
  * list_add_tail - add a new entry
@@ -157,7 +150,7 @@ struct ecat_domain {
     struct endian_convert_t *input_convert_list;
     struct endian_convert_t *output_convert_list;
 
-    void *io_data;              /* IO data is located here */
+    uint8_t *io_data;              /* IO data is located here */
 };
 
 /** EtherCAT master.
@@ -224,7 +217,7 @@ static struct ecat_data {
 static void
 ecs_copy_uint8(const struct endian_convert_t *c)
 {
-    *(uint8_t*)c->dst = *(uint8_t*)c->src;
+    *(uint8_t*)c->dst = *(const uint8_t*)c->src;
 }
 
 /*****************************************************************/
@@ -309,7 +302,7 @@ ecs_write_uint7(const struct endian_convert_t *c)
 static void
 ecs_write_le_uint16(const struct endian_convert_t *c)
 {
-    *(uint16_t*)c->dst = htole16(*(uint16_t*)c->src);
+    *(uint16_t*)c->dst = htole16(*(const uint16_t*)c->src);
 }
 
 /*****************************************************************/
@@ -317,7 +310,7 @@ ecs_write_le_uint16(const struct endian_convert_t *c)
 static void
 ecs_write_le_uint24(const struct endian_convert_t *c)
 {
-    uint32_t value = htole32(*(uint32_t*)c->src);
+    uint32_t value = htole32(*(const uint32_t*)c->src);
 
     *(uint16_t*)c->dst = value >> 8;
     ((uint8_t*)c->dst)[2] = value;
@@ -328,7 +321,7 @@ ecs_write_le_uint24(const struct endian_convert_t *c)
 static void
 ecs_write_le_uint32(const struct endian_convert_t *c)
 {
-    *(uint32_t*)c->dst = htole32(*(uint32_t*)c->src);
+    *(uint32_t*)c->dst = htole32(*(const uint32_t*)c->src);
 }
 
 /*****************************************************************/
@@ -336,7 +329,7 @@ ecs_write_le_uint32(const struct endian_convert_t *c)
 static void
 ecs_write_le_uint40(const struct endian_convert_t *c)
 {
-    uint64_t value = htole64(*(uint64_t*)c->src);
+    uint64_t value = htole64(*(const uint64_t*)c->src);
 
     *(uint32_t*)c->dst = value >> 8;
     ((uint8_t*)c->dst)[4] = value;
@@ -347,7 +340,7 @@ ecs_write_le_uint40(const struct endian_convert_t *c)
 static void
 ecs_write_le_uint48(const struct endian_convert_t *c)
 {
-    uint64_t value = htole64(*(uint64_t*)c->src);
+    uint64_t value = htole64(*(const uint64_t*)c->src);
 
     *(uint32_t*)c->dst = value >> 16;
     ((uint16_t*)c->dst)[2] = value;
@@ -358,7 +351,7 @@ ecs_write_le_uint48(const struct endian_convert_t *c)
 static void
 ecs_write_le_uint56(const struct endian_convert_t *c)
 {
-    uint64_t value = htole64(*(uint64_t*)c->src);
+    uint64_t value = htole64(*(const uint64_t*)c->src);
 
     *(uint32_t*)c->dst = value >> 24;
     ((uint16_t*)c->dst)[2] = value >> 8;
@@ -370,7 +363,7 @@ ecs_write_le_uint56(const struct endian_convert_t *c)
 static void
 ecs_write_le_uint64(const struct endian_convert_t *c)
 {
-    *(uint64_t*)c->dst = htole64(*(uint64_t*)c->src);
+    *(uint64_t*)c->dst = htole64(*(const uint64_t*)c->src);
 }
 
 /*****************************************************************/
@@ -378,7 +371,7 @@ ecs_write_le_uint64(const struct endian_convert_t *c)
 static void
 ecs_write_le_single(const struct endian_convert_t *c)
 {
-    *(uint32_t*)c->dst = htole32(*(uint32_t*)c->src);
+    *(uint32_t*)c->dst = htole32(*(const uint32_t*)c->src);
 }
 
 /*****************************************************************/
@@ -386,7 +379,7 @@ ecs_write_le_single(const struct endian_convert_t *c)
 static void
 ecs_write_le_double(const struct endian_convert_t *c)
 {
-    *(uint64_t*)c->dst = htole64(*(uint64_t*)c->src);
+    *(uint64_t*)c->dst = htole64(*(const uint64_t*)c->src);
 }
 
 /*****************************************************************/
@@ -394,7 +387,7 @@ ecs_write_le_double(const struct endian_convert_t *c)
 static void
 ecs_write_be_uint16(const struct endian_convert_t *c)
 {
-    *(uint16_t*)c->dst = htobe16(*(uint16_t*)c->src);
+    *(uint16_t*)c->dst = htobe16(*(const uint16_t*)c->src);
 }
 
 /*****************************************************************/
@@ -402,7 +395,7 @@ ecs_write_be_uint16(const struct endian_convert_t *c)
 static void
 ecs_write_be_uint24(const struct endian_convert_t *c)
 {
-    uint32_t value = htobe32(*(uint32_t*)c->src);
+    uint32_t value = htobe32(*(const uint32_t*)c->src);
 
     *(uint16_t*)c->dst = value >> 8;
     ((uint8_t*)c->dst)[2] = value;
@@ -413,7 +406,7 @@ ecs_write_be_uint24(const struct endian_convert_t *c)
 static void
 ecs_write_be_uint32(const struct endian_convert_t *c)
 {
-    *(uint32_t*)c->dst = htobe32(*(uint32_t*)c->src);
+    *(uint32_t*)c->dst = htobe32(*(const uint32_t*)c->src);
 }
 
 /*****************************************************************/
@@ -421,7 +414,7 @@ ecs_write_be_uint32(const struct endian_convert_t *c)
 static void
 ecs_write_be_uint40(const struct endian_convert_t *c)
 {
-    uint64_t value = htobe64(*(uint64_t*)c->src);
+    uint64_t value = htobe64(*(const uint64_t*)c->src);
 
     *(uint32_t*)c->dst = value >> 8;
     ((uint8_t*)c->dst)[4] = value;
@@ -432,7 +425,7 @@ ecs_write_be_uint40(const struct endian_convert_t *c)
 static void
 ecs_write_be_uint48(const struct endian_convert_t *c)
 {
-    uint64_t value = htobe64(*(uint64_t*)c->src);
+    uint64_t value = htobe64(*(const uint64_t*)c->src);
 
     *(uint32_t*)c->dst = value >> 16;
     ((uint16_t*)c->dst)[2] = value;
@@ -443,7 +436,7 @@ ecs_write_be_uint48(const struct endian_convert_t *c)
 static void
 ecs_write_be_uint56(const struct endian_convert_t *c)
 {
-    uint64_t value = htobe64(*(uint64_t*)c->src);
+    uint64_t value = htobe64(*(const uint64_t*)c->src);
 
     *(uint32_t*)c->dst = value >> 24;
     ((uint16_t*)c->dst)[2] = value >> 8;
@@ -455,7 +448,7 @@ ecs_write_be_uint56(const struct endian_convert_t *c)
 static void
 ecs_write_be_uint64(const struct endian_convert_t *c)
 {
-    *(uint64_t*)c->dst = htobe64(*(uint64_t*)c->src);
+    *(uint64_t*)c->dst = htobe64(*(const uint64_t*)c->src);
 }
 
 /*****************************************************************/
@@ -463,7 +456,7 @@ ecs_write_be_uint64(const struct endian_convert_t *c)
 static void
 ecs_write_be_single(const struct endian_convert_t *c)
 {
-    *(uint32_t*)c->dst = htobe32(*(uint32_t*)c->src);
+    *(uint32_t*)c->dst = htobe32(*(const uint32_t*)c->src);
 }
 
 /*****************************************************************/
@@ -471,7 +464,7 @@ ecs_write_be_single(const struct endian_convert_t *c)
 static void
 ecs_write_be_double(const struct endian_convert_t *c)
 {
-    *(uint64_t*)c->dst = htobe64(*(uint64_t*)c->src);
+    *(uint64_t*)c->dst = htobe64(*(const uint64_t*)c->src);
 }
 
 /*****************************************************************/
@@ -536,7 +529,7 @@ ecs_read_uint7(const struct endian_convert_t *c)
 static void
 ecs_read_le_uint16(const struct endian_convert_t *c)
 {
-    *(uint16_t*)c->dst = le16toh(*(uint16_t*)c->src);
+    *(uint16_t*)c->dst = le16toh(*(const uint16_t*)c->src);
 }
 
 /*****************************************************************/
@@ -545,7 +538,7 @@ static void
 ecs_read_le_uint24(const struct endian_convert_t *c)
 {
     *(uint32_t*)c->dst =
-        ((uint32_t) le16toh(*(uint16_t*)(c->src + 1)) << 8)
+        ((uint32_t) le16toh(*(const uint16_t*)(c->src + 1)) << 8)
         + *c->src;
 }
 
@@ -554,7 +547,7 @@ ecs_read_le_uint24(const struct endian_convert_t *c)
 static void
 ecs_read_le_uint32(const struct endian_convert_t *c)
 {
-    *(uint32_t*)c->dst = le32toh(*(uint32_t*)c->src);
+    *(uint32_t*)c->dst = le32toh(*(const uint32_t*)c->src);
 }
 
 /*****************************************************************/
@@ -563,7 +556,7 @@ static void
 ecs_read_le_uint40(const struct endian_convert_t *c)
 {
     *(uint64_t*)c->dst =
-        ((uint64_t) le32toh(*(uint32_t*)(c->src + 1)) << 8)
+        ((uint64_t) le32toh(*(const uint32_t*)(c->src + 1)) << 8)
         + *c->src;
 }
 
@@ -573,8 +566,8 @@ static void
 ecs_read_le_uint48(const struct endian_convert_t *c)
 {
     *(uint64_t*)c->dst =
-        ((uint64_t)le32toh(*(uint32_t*)(c->src+2)) << 16)
-        + le16toh(*(uint16_t*)c->src);
+        ((uint64_t)le32toh(*(const uint32_t*)(c->src+2)) << 16)
+        + le16toh(*(const uint16_t*)c->src);
 }
 
 /*****************************************************************/
@@ -583,8 +576,8 @@ static void
 ecs_read_le_uint56(const struct endian_convert_t *c)
 {
     *(uint64_t*)c->dst =
-        ((uint64_t)le32toh(*(uint32_t*)(c->src+3)) << 24)
-        + ((uint64_t)le16toh(*(uint16_t*)(c->src+1)) <<  8)
+        ((uint64_t)le32toh(*(const uint32_t*)(c->src+3)) << 24)
+        + ((uint64_t)le16toh(*(const uint16_t*)(c->src+1)) <<  8)
         + *c->src;
 }
 
@@ -593,7 +586,7 @@ ecs_read_le_uint56(const struct endian_convert_t *c)
 static void
 ecs_read_le_uint64(const struct endian_convert_t *c)
 {
-    *(uint64_t*)c->dst = le64toh(*(uint64_t*)c->src);
+    *(uint64_t*)c->dst = le64toh(*(const uint64_t*)c->src);
 }
 
 /*****************************************************************/
@@ -601,7 +594,7 @@ ecs_read_le_uint64(const struct endian_convert_t *c)
 static void
 ecs_read_le_single(const struct endian_convert_t *c)
 {
-    *(uint32_t*)c->dst = le32toh(*(uint32_t*)c->src);
+    *(uint32_t*)c->dst = le32toh(*(const uint32_t*)c->src);
 }
 
 /*****************************************************************/
@@ -609,7 +602,7 @@ ecs_read_le_single(const struct endian_convert_t *c)
 static void
 ecs_read_le_double(const struct endian_convert_t *c)
 {
-    *(uint64_t*)c->dst = le64toh(*(uint64_t*)c->src);
+    *(uint64_t*)c->dst = le64toh(*(const uint64_t*)c->src);
 }
 
 /*****************************************************************/
@@ -617,7 +610,7 @@ ecs_read_le_double(const struct endian_convert_t *c)
 static void
 ecs_read_be_uint16(const struct endian_convert_t *c)
 {
-    *(uint16_t*)c->dst = be16toh(*(uint16_t*)c->src);
+    *(uint16_t*)c->dst = be16toh(*(const uint16_t*)c->src);
 }
 
 /*****************************************************************/
@@ -626,7 +619,7 @@ static void
 ecs_read_be_uint24(const struct endian_convert_t *c)
 {
     *(uint32_t*)c->dst = ((uint32_t)*c->src << 16)
-        + be16toh(*(uint16_t*)(c->src + 1));
+        + be16toh(*(const uint16_t*)(c->src + 1));
 }
 
 /*****************************************************************/
@@ -634,7 +627,7 @@ ecs_read_be_uint24(const struct endian_convert_t *c)
 static void
 ecs_read_be_uint32(const struct endian_convert_t *c)
 {
-    *(uint32_t*)c->dst = be32toh(*(uint32_t*)c->src);
+    *(uint32_t*)c->dst = be32toh(*(const uint32_t*)c->src);
 }
 
 /*****************************************************************/
@@ -643,7 +636,7 @@ static void
 ecs_read_be_uint40(const struct endian_convert_t *c)
 {
     *(uint64_t*)c->dst = ((uint64_t)*c->src << 32)
-        + be32toh(*(uint32_t*)(c->src+1));
+        + be32toh(*(const uint32_t*)(c->src+1));
 }
 
 /*****************************************************************/
@@ -652,8 +645,8 @@ static void
 ecs_read_be_uint48(const struct endian_convert_t *c)
 {
     *(uint64_t*)c->dst =
-        ((uint64_t)be16toh(*(uint16_t*)c->src) << 32)
-        + be32toh(*(uint32_t*)(c->src+2));
+        ((uint64_t)be16toh(*(const uint16_t*)c->src) << 32)
+        + be32toh(*(const uint32_t*)(c->src+2));
 }
 
 /*****************************************************************/
@@ -663,8 +656,8 @@ ecs_read_be_uint56(const struct endian_convert_t *c)
 {
     *(uint64_t*)c->dst =
         ((uint64_t)*c->src << 48)
-        + ((uint64_t)be16toh(*(uint16_t*)(c->src+1)) << 32)
-        + be32toh(*(uint32_t*)(c->src+3));
+        + ((uint64_t)be16toh(*(const uint16_t*)(c->src+1)) << 32)
+        + be32toh(*(const uint32_t*)(c->src+3));
 }
 
 /*****************************************************************/
@@ -672,7 +665,7 @@ ecs_read_be_uint56(const struct endian_convert_t *c)
 static void
 ecs_read_be_uint64(const struct endian_convert_t *c)
 {
-    *(uint64_t*)c->dst = be64toh(*(uint64_t*)c->src);
+    *(uint64_t*)c->dst = be64toh(*(const uint64_t*)c->src);
 }
 
 /*****************************************************************/
@@ -680,7 +673,7 @@ ecs_read_be_uint64(const struct endian_convert_t *c)
 static void
 ecs_read_be_single(const struct endian_convert_t *c)
 {
-    *(uint32_t*)c->dst = be32toh(*(uint32_t*)c->src);
+    *(uint32_t*)c->dst = be32toh(*(const uint32_t*)c->src);
 }
 
 
@@ -689,7 +682,7 @@ ecs_read_be_single(const struct endian_convert_t *c)
 static void
 ecs_read_be_double(const struct endian_convert_t *c)
 {
-    *(uint64_t*)c->dst = be64toh(*(uint64_t*)c->src);
+    *(uint64_t*)c->dst = be64toh(*(const uint64_t*)c->src);
 }
 
 /*****************************************************************/
@@ -708,7 +701,7 @@ ecs_receive(size_t tid)
     struct ecat_domain *domain;
     struct endian_convert_t *conversion_list;
         
-    list_for_each(master, &ecat_data.master_list, list) {
+    list_for_each(master, &ecat_data.master_list, struct ecat_master) {
 
 #if MT
         sem_wait(&master->lock);
@@ -719,7 +712,7 @@ ecs_receive(size_t tid)
             ecrt_master_state(master->handle, &master->state);
         }
         
-        list_for_each(domain, &master->domain_list, list) {
+        list_for_each(domain, &master->domain_list, struct ecat_domain) {
 
             if (domain->tid != tid)
                 continue;
@@ -755,11 +748,11 @@ ecs_send(size_t tid)
     struct ecat_domain *domain;
     struct endian_convert_t *conversion_list;
 
-    list_for_each(master, &ecat_data.master_list, list) {
+    list_for_each(master, &ecat_data.master_list, struct ecat_master) {
 #if MT
         sem_wait(&master->lock);
 #endif
-        list_for_each(domain, &master->domain_list, list) {
+        list_for_each(domain, &master->domain_list, struct ecat_domain) {
 
             if (domain->tid != tid)
                 continue;
@@ -803,7 +796,7 @@ get_master(
 {
     struct ecat_master *master;
 
-    list_for_each(master, &ecat_data.master_list, list) {
+    list_for_each(master, &ecat_data.master_list, struct ecat_master) {
 
         if (master->id == master_id) {
 
@@ -848,7 +841,7 @@ get_domain( struct ecat_master *master, unsigned int domain_id,
 
     /* Go through every master's domain list to see whether the
      * required domain exists */
-    list_for_each(domain, &master->domain_list, list) {
+    list_for_each(domain, &master->domain_list, struct ecat_domain) {
         if (domain->id == domain_id
                 && ((domain->output && output) || (domain->input && input))
                 && domain->tid == tid) {
@@ -944,7 +937,7 @@ out_slave_failed:
 /***************************************************************************/
 
 static const char *
-init_slave(size_t nst, const struct ec_slave *slave)
+init_slave(const struct ec_slave *slave)
 {
     struct ecat_master *master;
     struct ecat_domain *domain;
@@ -1086,7 +1079,7 @@ init_slave(size_t nst, const struct ec_slave *slave)
             return err;
     }
 
-    list_for_each(sdo_req, &ec_slave_sdo_head, list) {
+    list_for_each(sdo_req, &ec_slave_sdo_head, struct ec_slave_sdo) {
         if (sdo_req->master != slave->master
                 || sdo_req->alias != slave->alias
                 || sdo_req->position != slave->position)
@@ -1132,13 +1125,14 @@ int ecs_sdo_handler(
 
 const char * ecs_start( 
         const struct ec_slave *slave_head,
-        unsigned int *st,       /* List of sample times in nanoseconds */
+        unsigned int *st,
         size_t nst,
         unsigned int single_tasking     /* Set if the model is single tasking,
                                          * even though there are more than one
                                          * sample time */
         )
 {
+    (void)st;
     const char *err;
     const struct ec_slave *slave;
     struct ecat_master *master;
@@ -1148,12 +1142,12 @@ const char * ecs_start(
 
     for (slave = slave_head; slave; slave = slave->next) {
     pr_debug("init: %i\n", __LINE__);
-        if ((err = init_slave(nst, slave)))
+        if ((err = init_slave(slave)))
             goto out;
     }
     pr_debug("init: %i\n", __LINE__);
 
-    list_for_each(master, &ecat_data.master_list, list) {
+    list_for_each(master, &ecat_data.master_list, struct ecat_master) {
         struct ecat_domain *domain;
 
         pr_debug("init: %i\n", __LINE__);
@@ -1163,7 +1157,7 @@ const char * ecs_start(
             return errbuf;
         }
 
-        list_for_each(domain, &master->domain_list, list) {
+        list_for_each(domain, &master->domain_list, struct ecat_domain) {
             domain->io_data = ecrt_domain_data(domain->handle);
             pr_debug("domain %p master=%u domain=%u, IP=%u, OP=%u, tid=%u\n",
                     domain->io_data, domain->master->id, domain->id,
@@ -1298,6 +1292,7 @@ out:
 
 void ecs_end(size_t nst)
 {
+    (void)nst;
 }
 
 /***************************************************************************/

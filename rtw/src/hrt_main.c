@@ -248,7 +248,7 @@ char *base_name = NULL; /**< basename of executable for usage() output. */
 int priority = -1; /**< Task priority, -1 means RT (maximum). */
 char *pdserv_config = NULL; /**< Path to PdServ configuration file. */
 bool daemonize = false; /**< Become a daemon. */
-char *pidPath = ""; /**< Path of PID file (empty for no PID file). */
+const char *pidPath = ""; /**< Path of PID file (empty for no PID file). */
 int phase = -1;      /**< Phase to start task 0..100 */
 
 static void *exe;      /* Pointer to this executable. */
@@ -306,6 +306,7 @@ static struct thread_task task[NUMTASKS];
 const struct timespec *
 get_etl_world_time(size_t tid)
 {
+    (void)tid;
     return &task[0].world_time;
 }
 
@@ -317,6 +318,7 @@ get_etl_world_time(size_t tid)
 const char *
 rt_OneStepMain(RT_MODEL *S, uint_T tid)
 {
+    (void)tid;
     real_T tnext;
 
     tnext = rt_SimGetNextSampleHit();
@@ -525,7 +527,7 @@ int get_compound_data_type(const char *mwName, size_t size)
         int dtype;
     };
     static struct compound_list compound_list_head = {
-        &compound_list_head
+        &compound_list_head, NULL, 0
     };
     struct compound_list *list;
     const void *compound_desc;
@@ -618,7 +620,10 @@ int write_parameter(
         struct timespec* time,
         void* priv_data)
 {
+    (void)param;
+    (void)priv_data;
     struct thread_task *p_task = task + NUMTASKS;
+
     while (p_task != task)
         pthread_mutex_lock(&(--p_task)->param_lock);
 
@@ -640,6 +645,7 @@ int read_signal(
         struct timespec* time,
         void* priv_data)
 {
+    (void)signal;
     struct thread_task* task = priv_data;
 
     pthread_rwlock_rdlock(&task->signal_lock);
@@ -732,6 +738,7 @@ register_signal(
         const rtwCAPI_SampleTimeMap* sampleTimeMap,
         void ** dataAddressMap)
 {
+    (void)mmi;
     uint_T addrMapIndex    = rtwCAPI_GetSignalAddrIdx(signals, idx);
     /* size_t sysNum = rtwCAPI_GetSignalSysNum(signals, idx); */
     const char *blockPath  = rtwCAPI_GetSignalBlockPath(signals, idx);
@@ -864,6 +871,7 @@ register_parameter(
         const uint_T* dimArray,
         void ** dataAddressMap)
 {
+    (void)mmi;
     uint_T addrMapIndex = rtwCAPI_GetBlockParameterAddrIdx(params, idx);
     const char *blockPath = rtwCAPI_GetBlockParameterBlockPath(params, idx);
     const char *paramName = rtwCAPI_GetBlockParameterName(params, idx);
@@ -937,6 +945,7 @@ register_model_parameter(
         const uint_T* dimArray,
         void ** dataAddressMap)
 {
+    (void)mmi;
     uint_T addrMapIndex = rtwCAPI_GetModelParameterAddrIdx(params, idx);
     const char *paramName = rtwCAPI_GetModelParameterName(params, idx);
     uint16_T dataTypeIndex = rtwCAPI_GetModelParameterDataTypeIdx(params, idx);
@@ -1016,7 +1025,6 @@ rtw_capi_init(RT_MODEL *S,
         register_parameter(pdserv, params, i,
                 mmi, dimMap, dTypeMap, dimArray, dataAddressMap);
 
-
     for (i = 0; i < rtwCAPI_GetNumModelParameters(mmi); ++i)
         register_model_parameter(pdserv, model_params, i,
                 mmi, dimMap, dTypeMap, dimArray, dataAddressMap);
@@ -1087,7 +1095,7 @@ void stack_prefault(void)
 
 /** Remove the PID file.
  */
-void remove_pid_file()
+void remove_pid_file(void)
 {
     int ret;
 
@@ -1102,7 +1110,7 @@ void remove_pid_file()
 
 /** Create the PID file.
  */
-void create_pid_file()
+void create_pid_file(void)
 {
     int fd, ret, len;
     char str[32];
@@ -1174,7 +1182,7 @@ void get_options(int argc, char **argv)
         {"start-phase",   required_argument, NULL, 'f'},
         {"daemon",        no_argument,       NULL, 'd'},
         {"help",          no_argument,       NULL, 'h'},
-        {}
+        {NULL,            no_argument,       NULL,   0}
     };
 
     do {
@@ -1311,9 +1319,11 @@ int main(int argc, char **argv)
 
     /* Set task priority. */
     {
-        struct sched_param param = {};
-        if (priority == -1)
-            priority = sched_get_priority_max(SCHED_FIFO);
+        struct sched_param param = {
+            priority == -1
+             ? sched_get_priority_max(SCHED_FIFO)
+             : priority
+        };
 
         param.sched_priority = priority;
         if (sched_setscheduler(0, SCHED_FIFO, &param) == -1) {
