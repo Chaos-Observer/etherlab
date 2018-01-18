@@ -53,6 +53,7 @@
   rtwoptions(2).default        = '2';
   rtwoptions(2).tlcvariable    = 'BufferTime';
   rtwoptions(2).makevariable   = 'BUFFER_TIME';
+  rtwoptions(2).modelReferenceParameterCheck = 'off';
   rtwoptions(2).tooltip        = ...
     ['Specify how long in seconds Block IO signals must be',sprintf('\n'), ...
      'saved in the realtime process when the user buddy is',sprintf('\n'), ...
@@ -63,6 +64,7 @@
   rtwoptions(3).default      = '1';
   rtwoptions(3).tlcvariable  = 'OverrunCount';
   rtwoptions(3).makevariable = 'OVERRUNMAX';
+  rtwoptions(3).modelReferenceParameterCheck = 'off';
   rtwoptions(3).tooltip      = ...
     ['Exit realtime model if task overruns exceeds this amount'];
 
@@ -71,6 +73,7 @@
   rtwoptions(4).default      = '2000';
   rtwoptions(4).tlcvariable  = 'StackSize';
   rtwoptions(4).makevariable = 'STACKSIZE';
+  rtwoptions(4).modelReferenceParameterCheck = 'off';
   rtwoptions(4).tooltip      = ...
     ['This is the stack size reserved for the real time task.', ...
      sprintf('\n'), ...
@@ -85,10 +88,38 @@
   rtwoptions(5).default      = 'ModelParameter';
   rtwoptions(5).tlcvariable  = 'ParameterPrefix';
   rtwoptions(5).makevariable = 'PARAMETER_PREFIX';
+  rtwoptions(5).modelReferenceParameterCheck = 'off';
   rtwoptions(5).tooltip      = ...
     ['This prefix is prepended to global model parameters', ...
      sprintf('\n'), ...
      'defined in the model explorer.'];
+
+  if verLessThan('simulink', '9.0')
+    rtwoptions(7).type = 'NonUI';
+    rtwoptions(7).makevariable = 'MAT_FILE';
+
+    rtwoptions(8).type = 'NonUI';
+    rtwoptions(8).makevariable = 'DEFINES_CUSTOM';
+
+    rtwoptions(9).type = 'NonUI';
+    rtwoptions(9).makevariable = 'SYSTEM_LIBS';
+
+    rtwoptions(10).type = 'NonUI';
+    rtwoptions(10).makevariable = 'CODE_INTERFACE_PACKAGING';
+
+    rtwoptions(11).type = 'NonUI';
+    rtwoptions(11).default      = '1';
+    rtwoptions(11).makevariable = 'CLASSIC_INTERFACE';
+
+    rtwoptions(12).type = 'NonUI';
+    rtwoptions(12).makevariable = 'GENERATE_ALLOC_FCN';
+
+    rtwoptions(13).type = 'NonUI';
+    rtwoptions(13).makevariable = 'COMBINE_OUTPUT_UPDATE_FCNS';
+
+    rtwoptions(14).type = 'NonUI';
+    rtwoptions(14).makevariable = 'MULTI_INSTANCE_CODE';
+  end
 
   %----------------------------------------%
   % Configure RTW code generation settings %

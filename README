@@ -206,6 +206,7 @@ Using EtherLab in a hosted environment (power users)
             ${MATLAB_ROOT}/extern/include
             ${MATLAB_ROOT}/simulink/include/
             ${MATLAB_ROOT}/rtw/c/src/
+            ${MATLAB_ROOT}/rtw/c/tools/
     to the target using the same directory structure.
 
     Dive into the directory containing <model>_etl_hrt -- not into the
