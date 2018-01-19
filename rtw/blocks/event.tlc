@@ -15,7 +15,7 @@
 
   /* %<Type> Block: %<Name>
    */
-  %assign RollVars = ["Y", "IWork", "P"]
+  %assign RollVars = ["Y", "DWork", "P"]
   %roll sigIdx = RollRegions, lcv = RollThreshold, block, ...
       "Roller", RollVars
     %%
@@ -23,17 +23,17 @@
     %%
     %if SingleShot
       %<output> = %<LibBlockParameter(Trigger, "", lcv, sigIdx)> !=
-        %<LibBlockIWork(TriggerCounter, "", lcv, sigIdx)>;
-      %<LibBlockIWork(TriggerCounter, "", lcv, sigIdx)> = \
+        %<LibBlockDWork(DWORK1, "", lcv, sigIdx)>;
+      %<LibBlockDWork(DWORK1, "", lcv, sigIdx)> = \
         %<LibBlockParameter(Trigger, "", lcv, sigIdx)>;
     %else
       if (%<output>) {
         %<output> = 0;
       }
       else if (%<LibBlockParameter(Trigger, "", lcv, sigIdx)> != \
-                %<LibBlockIWork(TriggerCounter, "", lcv, sigIdx)>) {
+                %<LibBlockDWork(DWORK1, "", lcv, sigIdx)>) {
         %<output> = 1;
-        %<LibBlockIWork(TriggerCounter, "", lcv, sigIdx)>++;
+        %<LibBlockDWork(DWORK1, "", lcv, sigIdx)>++;
       }
     %endif
   %endroll

@@ -15,9 +15,9 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "ha"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Mon Jan 15 01:04:24 2018"
+  LastModifiedDate	  "Fri Jan 19 18:29:01 2018"
   RTWModifiedTimeStamp	  437879039
-  ModelVersionFormat	  "1.%<AutoIncrement:1702>"
+  ModelVersionFormat	  "1.%<AutoIncrement:1703>"
   ConfigurationManager	  "rcs"
   SampleTimeColors	  off
   SampleTimeAnnotations	  off
@@ -3342,6 +3342,7 @@ Library {
 	  Ports			  [0, 1]
 	  Position		  [55, 116, 125, 154]
 	  BackgroundColor	  "yellow"
+	  LibraryVersion	  "1.1702"
 	  FunctionName		  "event"
 	  Parameters		  "width,singleshot,dtype,tsample"
 	  EnableBusSupport	  off
@@ -3360,7 +3361,7 @@ Library {
 	  "enerated and the internal counter is set to the parameter value.\n* Without this option, the internal counter is in"
 	  "cremented until it equals the parameter value, generating one event pulse for every increment.\n"
 	  MaskPromptString	  "Width|Single shot|Data Type|Sample Time"
-	  MaskStyleString	  "edit,checkbox,popup(Boolean|Unsigned Integer),edit"
+	  MaskStyleString	  "edit,checkbox,popup(Boolean|Unsigned Integer|Dynamically Typed),edit"
 	  MaskTunableValueString  "off,off,off,off"
 	  MaskCallbackString	  "|||"
 	  MaskEnableString	  "on,on,on,on"
@@ -3368,14 +3369,14 @@ Library {
 	  MaskToolTipString	  "on,on,on,on"
 	  MaskVariables		  "width=@1;singleshot=@2;dtype_str=&3;tsample=@4;"
 	  MaskInitialization	  "switch dtype_str\n    case 'Unsigned Integer'\n        dtype = 32;\n    case 'Boolean'\n     "
-	  "   dtype = 1;\n    otherwise\n        dtype = 1;\nend\n"
+	  "   dtype = 1;\n    case 'Dynamically Typed';\n        dtype = -1;\n    otherwise\n        dtype = 1;\nend\n"
 	  MaskDisplay		  "disp('Event')\n"
 	  MaskIconFrame		  on
 	  MaskIconOpaque	  on
 	  MaskIconRotate	  "none"
 	  MaskPortRotate	  "default"
 	  MaskIconUnits		  "autoscale"
-	  MaskValueString	  "1|on|Boolean|inf"
+	  MaskValueString	  "-1|on|Boolean|eval(get_param(bdroot,'FixedStep'))"
 	}
 	Block {
 	  BlockType		  "S-Function"

@@ -34,6 +34,7 @@ static void mdlInitializeSizes(SimStruct *S)
 {
     int_T i;
     int_T width = WIDTH;
+    int_T type;
 
     ssSetNumSFcnParams(S, PARAM_COUNT);  /* Number of expected parameters */
     if (ssGetNumSFcnParams(S) != ssGetSFcnParamsCount(S)) {
@@ -44,52 +45,49 @@ static void mdlInitializeSizes(SimStruct *S)
     for( i = 0; i < PARAM_COUNT; i++)
         ssSetSFcnParamTunable(S, i, SS_PRM_NOT_TUNABLE);
 
-    /* Process input ports */
-    if (!ssSetNumInputPorts(S, width < 0 ? 1 : 0))
-        return;
     if (!ssSetNumOutputPorts(S, 1))
         return;
 
     /* Width of input and output ports */
-    if (width < 0) {
-        ssSetInputPortWidth(S, 0, DYNAMICALLY_SIZED);
-        ssSetInputPortDataType(S, 0, DYNAMICALLY_TYPED);
-
-        ssSetOutputPortWidth(S, 0, DYNAMICALLY_SIZED);
-    }
-    else
-        ssSetOutputPortWidth(S, 0, width);
+    ssSetOutputPortWidth(S, 0, width > 0 ? width : DYNAMICALLY_SIZED);
 
     /* Output port data type */
     switch (DTYPE) {
+        case -1:
+            type = DYNAMICALLY_TYPED; /* Same as input */
+            break;
         case 1:
-            ssSetOutputPortDataType(S, 0, SS_BOOLEAN);
+            type = SS_BOOLEAN;
             break;
         case 8:
-            ssSetOutputPortDataType(S, 0, SS_UINT8);
+            type = SS_UINT8;
             break;
         case -8:
-            ssSetOutputPortDataType(S, 0, SS_INT8);
+            type = SS_INT8;
             break;
         case 16:
-            ssSetOutputPortDataType(S, 0, SS_UINT16);
+            type = SS_UINT16;
             break;
         case -16:
-            ssSetOutputPortDataType(S, 0, SS_INT16);
+            type = SS_INT16;
             break;
         case 32:
-            ssSetOutputPortDataType(S, 0, SS_UINT32);
+            type = SS_UINT32;
             break;
         case -32:
-            ssSetOutputPortDataType(S, 0, SS_INT32);
+            type = SS_INT32;
             break;
         default:
             ssSetErrorStatus(S, "Unknown data type");
+            return;
     }
+    ssSetOutputPortDataType(S, 0, type);
 
     ssSetNumSampleTimes(S, 1);
-    ssSetNumIWork(S, ssGetOutputPortWidth(S,0));
-    ssSetUserData(S, 0);
+
+    ssSetNumDWork(S, 1);
+    ssSetDWorkWidth(S, 0, DYNAMICALLY_SIZED);
+    ssSetDWorkDataType(S, 0, SS_UINT32);
 
     ssSetOptions(S,
             SS_OPTION_WORKS_WITH_CODE_REUSE
@@ -114,7 +112,7 @@ static void mdlSetWorkWidths(SimStruct *S)
 {
     int_T width = ssGetOutputPortWidth(S,0);
 
-    ssSetNumIWork(S, width);
+    ssSetDWorkWidth(S, 0, width);
 
     ssParamRec p;
     p.name = "Trigger";
@@ -165,9 +163,6 @@ static void mdlRTW(SimStruct *S)
     int_T single_shot = SINGLESHOT;
 
     if (!ssWriteRTWScalarParam(S, "SingleShot", &single_shot, SS_INT32))
-        return;
-    if (!ssWriteRTWWorkVect(S, "IWork", 1,
-                "TriggerCounter", ssGetOutputPortWidth(S,0)))
         return;
 }
 
