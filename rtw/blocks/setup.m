@@ -1,6 +1,6 @@
 function setup()
 
-if ~length(strfind(path,pwd))
+if isempty(strfind(path,pwd))
     disp(['Adding ' pwd ' to $MATLABPATH']);
     addpath(pwd);
 end
@@ -14,6 +14,12 @@ mex event.c
 mex findidx.c
 mex message.c
 mex propagate_width.c
+
+if verLessThan('simulink', '9.0')
+    system('rm *.slx');
+else
+    system('rm *.mdl');
+end
 
 run EtherCAT/setup.m
 

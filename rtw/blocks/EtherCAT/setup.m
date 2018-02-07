@@ -1,6 +1,6 @@
 function setup()
 
-if ~length(strfind(path,pwd))
+if isempty(strfind(path,pwd))
     disp(['Adding ' pwd ' to $MATLABPATH']);
     addpath(pwd);
 end
