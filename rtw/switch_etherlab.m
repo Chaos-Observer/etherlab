@@ -5,7 +5,7 @@ function switch_etherlab(el_path)
 %   
 %   switch_etherlab('/new/etherlab/path')
 
-p = strjoin({el_path; 'etherlab'; 'Contents.m'}, filesep);
+p = strjoin({el_path; 'Contents.m'}, filesep);
 try
     run(p);
 catch
@@ -23,7 +23,6 @@ v = find(cell2mat(cellfun(@(x) ~isempty(x), ...
         
 rmpath(p{v});
 addpath(el_path);
-addpath(strjoin({el_path; 'etherlab'}, filesep));
 addpath(strjoin({el_path; 'blocks'}, filesep));
 addpath(strjoin({el_path; 'blocks'; 'EtherCAT'}, filesep));
 
