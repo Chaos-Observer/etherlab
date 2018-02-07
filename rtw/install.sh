@@ -3,26 +3,22 @@
 set -e
 shopt -s extglob
 
-MATLABROOT="$1"
+DEST="$1"
 TARGET="$2"
 
 function usage {
-    echo "Usage: $0 <MATLABROOT> [TARGET]"
+    echo "Usage: $0 <DEST> [TARGET]"
     echo "where:"
-    echo "    <MATLABROOT> root to matlab"
+    echo "    <DEST> base install directory"
     echo "    <TARGET> directory to install to (default: etherlab)"
     echo
-    echo "Installs etherlab to \$MATLABROOT/rtw/c/\$TARGET"
+    echo "If \$DEST is a matlab directory (\$DEST/rtw/c exists),"
+    echo "this command installs etherlab to \$DEST/rtw/c/\$TARGET,"
+    echo "otherwise etherlab is installed to \$DEST/\$TARGET."
     exit 0
 }
 
-if [ -z "${MATLABROOT}" ]; then
-    usage
-fi
-
-
-if [ ! -d "${MATLABROOT}/rtw/c" ]; then
-    echo "error: ${MATLABROOT} is not the root of matlab"
+if [ -z "${DEST}" ]; then
     usage
 fi
 
@@ -30,11 +26,15 @@ if [ -z "${TARGET}" ]; then
     TARGET=etherlab
 fi
 
-DST="${MATLABROOT}/rtw/c/${TARGET}"
+if test -d "${DEST}/rtw/c"; then
+    DST="${DEST}/rtw/c/${TARGET}"
+else
+    DST="${DEST}/${TARGET}"
+fi
 
 if [ ! -d "${DST}" ]; then
     echo Creating folder ${DST}...
-    mkdir "${DST}"
+    mkdir -p "${DST}"
 fi
 
 # Requires shopt -s extglob
