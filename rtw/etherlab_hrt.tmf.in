@@ -261,7 +261,7 @@ ifeq ($(MODELREF_TARGET_TYPE), NONE)
        endif
        OTHER_SRC = 
     endif
-    SRCS               += $(MODEL).$(TARGET_LANG_EXT) $(MAIN_SRC) $(OTHER_SRC) $(EXT_SRC) 
+    SRCS               += $(MODEL).$(TARGET_LANG_EXT) $(MAIN_SRC) $(OTHER_SRC) $(EXT_SRC) $(SOLVER)
 else
     # Model reference coder target
     PRODUCT            = $(MODELLIB)
