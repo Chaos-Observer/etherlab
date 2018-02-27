@@ -94,6 +94,16 @@
      sprintf('\n'), ...
      'defined in the model explorer.'];
 
+  rtwoptions(6).prompt       = 'Version script';
+  rtwoptions(6).type         = 'Edit';
+  rtwoptions(6).default      = 'ModelVersion';
+  rtwoptions(6).tlcvariable  = 'VersionScript';
+  rtwoptions(6).modelReferenceParameterCheck = 'off';
+  rtwoptions(6).tooltip      = ...
+    ['This function script is executed during TLC to generate a version string.', ...
+     sprintf('\n'), ...
+     'This must be a valid matlab function returning a string.'];
+
   if verLessThan('simulink', '9.0')
     rtwoptions(7).type = 'NonUI';
     rtwoptions(7).makevariable = 'MAT_FILE';

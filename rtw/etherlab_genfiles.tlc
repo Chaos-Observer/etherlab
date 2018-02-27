@@ -12,7 +12,13 @@
 %% the .rtw file
 %with CompiledModel 
   %openfile header = "%<Name>_header.c"
-    const char *%<Name>_version = "%<ModelVersion>";
+    const char *%<Name>_version = \
+    %if VersionScript == "ModelVersion"
+        "%<ModelVersion>"
+    %else
+        "%<FEVAL(VersionScript)>"
+    %endif
+    ;
     const char *%<Name>_generator = "%<Version>";
     const char *%<Name>_date = "%<GeneratedOn>";
   %closefile header
