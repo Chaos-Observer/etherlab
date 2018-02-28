@@ -104,7 +104,7 @@
      sprintf('\n'), ...
      'This must be a valid matlab function returning a string.'];
 
-  if verLessThan('simulink', '9.0')
+  if verLessThan('simulink', '8.1')     % 2013a
     rtwoptions(7).type = 'NonUI';
     rtwoptions(7).makevariable = 'MAT_FILE';
 
