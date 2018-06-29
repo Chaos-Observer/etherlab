@@ -27,8 +27,15 @@
 
   %<InitETL()>
 
+  %% MasterSampleTime is used to detect whether the task is prepared
+  %% for EtherCAT
+  %assign MasterSampleTime = []
+  %foreach i = ETL.NumSt
+    %assign MasterSampleTime = MasterSampleTime + 0.0
+  %endforeach
+
   %addtorecord CompiledModel EtherCAT { ...
-              MasterSampleTime [] ...
+              MasterSampleTime MasterSampleTime ...
               Pdo "pdo" ...
               Slave "slave" ...
               SlaveOwner "" ...
@@ -49,7 +56,6 @@
     /* Zero terminated list of sample times for EtherCAT */
     unsigned int ec_st[%<ETL.NumSt>] = {
     %foreach tid = ETL.NumSt
-        %assign EtherCAT.MasterSampleTime = EtherCAT.MasterSampleTime + 0.0
         %assign StepSize = LibGetClockTickStepSize(tid + LibGetTID01EQ())
         %<CAST("Unsigned", StepSize*1000000000 + 0.5)>,
     %endforeach
@@ -116,12 +122,8 @@
     %%%endforeach 
 
     %% Get RTW Task ID of the block
-    %assign tid = LibGetGlobalTIDFromLocalSFcnTID(0)
-
-    %assign ETL_tid = ETL.tid[tid]
-
-    %% And the Step Size thereof
-    %assign Ts = LibGetClockTickStepSize(tid)
+    %assign ETL_tid = ETLBlockTID()
+    %assign Ts = ETLBlockSampleTime()
 
     %if !LibNumDiscreteSampleTimes()
       %assign msg = "Sample Time: There are no discrete sample times defined\n" + \
@@ -140,8 +142,9 @@
     %trace "Added new Task for SampleTime %<Ts> @ %<ETL_tid>"
 
     %% Note: LibIsSampleHit() is undocumented!
-    %if ETL.tid[tid] || !LibIsContinuous(0)
-      %assign SendCondition = "%<LibIsSampleHit(tid)>"
+    %if ETL_tid || !LibIsContinuous(0)
+      %assign sl_tid = LibGetGlobalTIDFromLocalSFcnTID(0)
+      %assign SendCondition = "%<LibIsSampleHit(sl_tid)>"
     %else
       %assign SendCondition = "%<LibTID()> == 0 && %<LibIsMajorTimeStep()>"
     %endif

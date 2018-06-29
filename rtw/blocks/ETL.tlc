@@ -20,9 +20,6 @@
 %%      ErrStr: a char* that can be used to report initialization errors
 %%      NumSt:  Integer Number of discrete sample times
 %%      SampleTime: Float vector, sample time of each task
-%%      tid:    Integer vector, mapping the value of
-%%              LibGetGlobalTIDFromLocalSFcnTID(0) to the task's discrete
-%%              task index.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   %if EXISTS(CompiledModel.ETL)
@@ -38,24 +35,11 @@
     %assign NumSt = NumSt - LibGetTID01EQ()
   %endif
 
-  %assign SampleTime = []
-  %foreach i = NumSt
-    %assign SampleTime = SampleTime ...
-        + LibGetClockTickStepSize(i + LibGetTID01EQ())
-  %endforeach
-
-  %assign tid = []
-  %foreach i = NumSampleTimes
-    %assign tid = tid + (i ? i - LibGetTID01EQ() : 0)
-  %endforeach
-
   %trace "Initializing ETL Interface"
   %addtorecord CompiledModel ETL { ...
               ErrMsg "etl_errbuf" ...
               ErrStr "errstr_rc" ...
               NumSt  NumSt ...
-              SampleTime SampleTime ...
-              tid tid ...
               }
 
   %with CompiledModel
@@ -68,10 +52,35 @@
     %<LibSetSourceFileSection(model_c, "Declarations", buf)>
 
     %openfile buf
+
+    /* Returns true if calculation function is in main execution */
+    int ETL_is_major_step(void)
+    {
+      return %<LibIsContinuous(0) ? LibIsMajorTimeStep() : 1>;
+    }
+    %closefile buf
+    %<LibSetSourceFileSection(model_c, "Functions", buf)>
+
+    %openfile buf
     const char __attribute__((unused)) *%<ETL.ErrStr>;
     %closefile buf
     %<LibMdlStartCustomCode(buf, "header")>
   
   %endwith
 
+%endfunction
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function ETLBlockTID() void
+%% This function returns the true tid of a block
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  %assign tid = LibGetGlobalTIDFromLocalSFcnTID(0)
+  %return tid - (tid && LibGetTID01EQ())
+%endfunction
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function ETLBlockSampleTime() void
+%% This function returns the block's sample time
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  %return LibGetClockTickStepSize(LibGetGlobalTIDFromLocalSFcnTID(0))
 %endfunction

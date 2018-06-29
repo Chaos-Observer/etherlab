@@ -24,16 +24,9 @@
     %<InitETL()>
 
     %trace "Initializing EtherLAB IO Interface"
-    %if LibNumDiscreteSampleTimes() > 1
-      %assign Tid01Eq = %<ISEQUAL(LibGetClockTickStepSize(0), \
-                          LibGetClockTickStepSize(1))>
-    %else
-      %assign Tid01Eq = 0
-    %endif
     %addtorecord CompiledModel EtherLABIO { ...
                 NumTasks 0 ...
                 VarSpace "rt_var_space" ...
-                Tid01Eq %<Tid01Eq> ...
                 }
 
     %with CompiledModel
@@ -52,7 +45,7 @@
       /* Initialising Generic IO Layer */
       %<EtherLABIO.VarSpace> = rt_get_var_space( \
           "%<LibGetModelName()>", \
-          %<LibNumDiscreteSampleTimes()>);
+          %<ETL.NumSt>);
       if (!%<EtherLABIO.VarSpace>) {
           snprintf(%<ETL.ErrMsg>, sizeof(%<ETL.ErrMsg>),
                    "Could not initialise Generic IO Layer");
@@ -100,13 +93,9 @@
 
   %with EtherLABIO
     %% Get Task ID of the block
-    %assign tid = LibGetGlobalTIDFromLocalSFcnTID(0)
+    %assign tid = ETLBlockTID()
     %% And the Step Size thereof
-    %assign Ts = LibGetClockTickStepSize(tid)
-
-    %if EtherLABIO.Tid01Eq && tid == 1
-        %assign tid = 0
-    %endif
+    %assign Ts = ETLBlockSampleTime()
 
     %addtorecord block EtherLABIOTid tid
 

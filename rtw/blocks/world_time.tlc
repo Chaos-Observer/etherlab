@@ -14,8 +14,7 @@
 %function Outputs( block, system) Output
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   %%
-  %assign tid = LibGetGlobalTIDFromLocalSFcnTID(0)
-  %assign tid = tid && LibGetTID01EQ() ? tid - 1 : 0
+  %assign tid = ETLBlockTID()
   %%
 
   /* %<Type> Block: %<Name>

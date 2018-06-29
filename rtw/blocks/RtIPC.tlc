@@ -81,20 +81,18 @@
 %endfunction
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%function InitRtIPCTask(tid) void
+%function InitRtIPCTask(etid) void
 %% This function checks whether the RtIPC task has been initialised
 %% before already, which is demonstrated by the existance of variable 
-%% CompiledModel.RtIPC.GroupHandle[tid]
+%% CompiledModel.RtIPC.GroupHandle[etid]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-  %assign etid = ETL.tid[tid]
 
   %if !SIZE(RtIPC.GroupHandle[etid],1)
 
-    %assign Ts = ETL.SampleTime[etid]
+    %assign Ts = ETLBlockSampleTime()
     %assign RtIPC.GroupHandle[etid] = "rtipc_group[%<etid>]"
 
-    %trace "Added new Task for SampleTime %<Ts> @ %<tid>"
+    %trace "Added new Task for SampleTime %<Ts> @ %<etid>"
 
     %openfile buf
 
@@ -107,6 +105,7 @@
     %<LibMdlStartCustomCode(buf, "execution")>
 
     %if etid || !LibIsContinuous(0)
+      %assign tid = LibGetGlobalTIDFromLocalSFcnTID(0)
       %assign Trigger = "%<LibIsSampleHit(tid)>"
     %else
       %assign Trigger = "%<LibTID()> == 0 && %<LibIsMajorTimeStep()>"

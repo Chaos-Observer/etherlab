@@ -21,7 +21,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %function BlockInstanceSetup( block, system ) void
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  %assign tid = LibGetGlobalTIDFromLocalSFcnTID(0)
+  %assign tid = ETLBlockTID()
   %addtorecord block RtIPCHandle InitRtIPCTask(tid)
 %endfunction
 

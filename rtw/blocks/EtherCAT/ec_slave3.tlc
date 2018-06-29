@@ -53,11 +53,9 @@
 %function BlockInstanceSetup( block, system ) void
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-  %addtorecord block EtherCATTid InitEtherCATTask(block,system)
+  InitEtherCATTask(block,system)
 
   %addtorecord block EtherCATSlaveId GetEtherCATId()
-
-  %addtorecord block BlockSampleTime LibBlockSampleTime(block)
 
 %endfunction
 
@@ -80,7 +78,7 @@
    */
   static struct ec_slave %<slave_config> = {
       NULL,             /* Linked list */
-      %<EtherCATTid>, /* TID */ \
+      %<ETLBlockTID()>, /* TID */ \
       %<MasterId>, %<DomainId>, %<SlaveAlias>, %<SlavePosition>, \
       /* MasterId, DomainId, SlaveAlias, SlavePosition */
       %<VendorId>, %<SPRINTF("0x%08X", ProductCode)>, \
@@ -208,7 +206,8 @@
       %%
     %else
       %%
-      %assign RollVars = BlockSampleTime ? ["Xd"] : ["Xc"]
+      %assign discrete = LibBlockSampleTime(block)
+      %assign RollVars = discrete ? ["Xd"] : ["Xc"]
       %%
       %roll sigIdx = rollRegions, lcv = RollThreshold, block, ...
                 "Roller", RollVars
@@ -216,7 +215,7 @@
         %assign FilterIdx = sigIdx + FilterOffset
         %assign FilterLcv = ...
               (lcv != "" && FilterIdx) ? "%<lcv>+%<FilterIdx>" : lcv
-        %assign state = BlockSampleTime ...
+        %assign state = discrete ...
                   ? LibBlockDiscreteState("",FilterLcv,FilterIdx) ...
                   : LibBlockContinuousState("",FilterLcv,FilterIdx)
         %%
@@ -248,12 +247,13 @@
   %%
   %%
   %assign NumInputs = LibBlockNumInputPorts(block)
-  %if BlockSampleTime && FilterCount || NumInputs
+  %assign discrete = LibBlockSampleTime(block)
+  %if discrete && FilterCount || NumInputs
     /* %<Type> Block: %<Name> 
      */
   %endif
   %%
-  %if BlockSampleTime && FilterCount
+  %if discrete && FilterCount
     %assign FilterOffset = 0
     %foreach idx = LibBlockNumOutputPorts(block)
       %assign FilterOffset = WriteFilter(block,idx,FilterOffset)
@@ -508,6 +508,7 @@
     %%
     %assign FilterIdx = sigIdx + FilterOffset
     %assign FilterLcv = (lcv != "" && FilterIdx) ? "%<lcv>+%<FilterIdx>" : lcv
+    %assign BlockSampleTime = LibBlockSampleTime(block)
     %if BlockSampleTime
       %assign d0 = LibBlockDiscreteState("",FilterLcv,FilterIdx)
       %<d0> += (value - %<d0>) * %<BlockSampleTime> / %<k>;
@@ -763,9 +764,7 @@
   %endif
   %assign DC = SFcnParamSettings[DcOpMode]
 
-  %assign SampleTime = block.BlockSampleTime ...
-        ? block.BlockSampleTime : LibGetClockTickStepSize(LibGetTID01EQ())
-  %assign SampleTime = CAST("Number", SampleTime * 1000000000.0)
+  %assign SampleTime = CAST("Number", ETLBlockSampleTime() * 1000000000.0)
 
   %% CycleTime0    (ESC Reg 0x09A3:0x09A0)
   %if DC.Time[0]
