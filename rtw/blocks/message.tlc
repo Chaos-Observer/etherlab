@@ -1,8 +1,12 @@
 %implements "message" "C"
 
+%include "ETL.tlc"
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %function BlockTypeSetup( block, system) void
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  %<InitETL()>
+
   %<LibAddToCommonIncludes("<time.h>")>
   %<LibAddToCommonIncludes("<pdserv.h>")>
 

@@ -31,8 +31,6 @@ static void mdlInitializeSizes(SimStruct *S)
 {
     int_T i;
     const mxArray* message_list = MESSAGELIST;
-    static const char* error =
-        "Message list is not a cell array of strings";
 
     ssSetNumSFcnParams(S, PARAM_COUNT);  /* Number of expected parameters */
     if (ssGetNumSFcnParams(S) != ssGetSFcnParamsCount(S)) {
@@ -47,14 +45,16 @@ static void mdlInitializeSizes(SimStruct *S)
     if (mxGetNumberOfElements(CONFIRM))
         ssSetSFcnParamTunable(S, 4, SS_PRM_TUNABLE);
 
-    if (mxGetNumberOfElements(message_list) && !mxIsCell(message_list)) {
-        ssSetErrorStatus(S, error);
-        return;
-    }
-
-    for (i = 0; i < mxGetNumberOfElements(message_list); ++i) {
-        if (!mxIsChar(mxGetCell(message_list, i))) {
-            ssSetErrorStatus(S, error);
+    if (!mxIsEmpty(message_list)) {
+        if (mxIsChar(message_list)) {
+            /* For a char array, only one row is allowed */
+            if (mxGetM(message_list) != 1) {
+                ssSetErrorStatus(S, "Message string matrix is not allowed");
+                return;
+            }
+        }
+        else if (!mxIsCell(message_list)) {
+            ssSetErrorStatus(S, "Message list is not a cell array of strings");
             return;
         }
     }
@@ -111,9 +111,11 @@ static void mdlSetInputPortWidth(SimStruct *S, int_T port, int_T width)
 
         ssSetOutputPortWidth(S, 0, width);
 
-        if (ssGetInputPortConnected(S, 0)
-                && mxGetNumberOfElements(messages)
-                && mxGetNumberOfElements(messages) < width) {
+        int_T m_count = mxIsChar(messages)
+            ? mxGetM(messages)
+            : mxGetNumberOfElements(messages);
+
+        if (m_count && width > m_count) {
             ssSetErrorStatus(S, "Message list too short");
             return;
         }
@@ -219,7 +221,8 @@ static void mdlTerminate(SimStruct *S)
  */
 char* createStringList(const mxArray* list, int_T* count)
 {
-    const int numel = mxGetNumberOfElements(list);
+    const int numel = mxIsChar(list)
+        ? mxGetM(list) : mxGetNumberOfElements(list);
     char ** const strList = alloca(numel * sizeof(char*));
     char *str, *src;
     char *dst;
@@ -228,16 +231,23 @@ char* createStringList(const mxArray* list, int_T* count)
 
     *count = numel;
 
-    for (i = 0; i < numel; ++i) {
+    if (mxIsChar(list)) {
+        /* Fetch string from char array */
+        strList[0] = mxArrayToString(list);
+    }
+    else {
         /* Fetch string from cell array */
-        strList[i] = mxArrayToString(mxGetCell(list,i));
+        for (i = 0; i < numel; ++i)
+            strList[i] = mxArrayToString(mxGetCell(list,i));
+    }
 
-        /* Compute string length, adding 1 for every '\' and '"' */
-        for (src = strList[i]; *src; ++src)
-            len += 1 + (*src == '\\' || *src == '"');
+    for (i = 0; i < numel; ++i) {
+            /* Compute string length, adding 1 for every '\' and '"' */
+            for (src = strList[i]; *src; ++src)
+                len += 1 + (*src == '\\' || *src == '"');
 
-        /* Add 3 characters for opening ", closing " and comma separator */
-        len += 3;
+            /* Add 3 characters for opening ", closing " and comma separator */
+            len += 3;
     }
 
     /* Create memory for string, with 3 more characters
