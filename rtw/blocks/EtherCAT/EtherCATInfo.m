@@ -51,7 +51,7 @@ classdef EtherCATInfo < XmlNode
                 return
             end
 
-            if nargin > 3
+            if nargin > 3 && ~isempty(slaves)
                 switch class
                 case 'class'
                     slaves = slaves(cellfun(@(s) (s.RevisionNumber & 65535) == revision, ...
