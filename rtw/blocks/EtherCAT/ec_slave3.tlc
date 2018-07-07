@@ -53,7 +53,7 @@
 %function BlockInstanceSetup( block, system ) void
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-  InitEtherCATTask(block,system)
+  %<InitEtherCATTask(block,system)>
 
   %addtorecord block EtherCATSlaveId GetEtherCATId()
 
