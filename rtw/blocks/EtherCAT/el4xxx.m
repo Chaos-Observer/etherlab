@@ -99,7 +99,7 @@ classdef el4xxx < EtherCATSlave
             'EL4031', hex2dec('0fbf3052'), hex2dec('00130000'), 1, '+/-10V';
             'EL4032', hex2dec('0fc03052'), hex2dec('00130000'), 1, '+/-10V';
             'EL4034', hex2dec('0fc23052'), hex2dec('00130000'), 1, '+/-10V';
-            'EL4038', hex2dec('0fc63052'), hex2dec('00130000'), 1, '+/-10V';
+            'EL4038', hex2dec('0fc63052'), hex2dec('00130000'),13, '+/-10V';
             'EL4102', hex2dec('10063052'), hex2dec('03fa0000'),11,  '0-10V';
             'EL4104', hex2dec('10083052'), hex2dec('03f90000'), 1,  '0-10V';
             'EL4112', hex2dec('10103052'), hex2dec('03fb0000'),11, '0-20mA';
