@@ -59,10 +59,12 @@ classdef el320x_1 < EtherCATSlave
                       [element(1:pdo_count), technology(1:pdo_count),...
                        resistance(1:pdo_count)]]';
 
-            rv.SlaveConfig.sdo = ...
-                num2cell( [hex2dec('8000'),hex2dec(' 6'), 8,double(filter > 1);
-                           hex2dec('8000'),hex2dec('15'),16,max(0,filter-2);
-                           config]);
+            if filter > 1
+                rv.SlaveConfig.sdo = ...
+                    num2cell( [hex2dec('8000'),hex2dec(' 6'), 8,double(filter > 1);
+                               hex2dec('8000'),hex2dec('15'),16,max(0,filter-2);
+                               config]);
+            end
         end
     end
 
