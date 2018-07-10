@@ -1319,11 +1319,9 @@ int main(int argc, char **argv)
 
     /* Set task priority. */
     {
-        struct sched_param param = {
-            priority == -1
-             ? sched_get_priority_max(SCHED_FIFO)
-             : priority
-        };
+        struct sched_param param;
+        if (priority == -1)
+            priority = sched_get_priority_max(SCHED_FIFO);
 
         param.sched_priority = priority;
         if (sched_setscheduler(0, SCHED_FIFO, &param) == -1) {
