@@ -246,6 +246,7 @@ struct compound_desc {
 
 char *base_name = NULL; /**< basename of executable for usage() output. */
 int priority = -1; /**< Task priority, -1 means RT (maximum). */
+int dilation = 1; /** Time dilation factor */
 char *pdserv_config = NULL; /**< Path to PdServ configuration file. */
 bool daemonize = false; /**< Become a daemon. */
 const char *pidPath = ""; /**< Path of PID file (empty for no PID file). */
@@ -1162,6 +1163,9 @@ void usage(FILE *f)
             "                              Default: -1 (None)\n"
             "  --daemon         -d         Become a daemon before cyclic "
                                            "operation.\n"
+            "  --time-dilation  -D <fact>  Cyclic time dilation factor.\n"
+            "       No other timings are affected. This is useful for very\n"
+            "       fast running simulation tasks causing overruns.\n"
             "  --help           -h         Show this help.\n",
             base_name);
 }
@@ -1180,13 +1184,14 @@ void get_options(int argc, char **argv)
         {"pdserv-config", required_argument, NULL, 'c'},
         {"pid-file",      required_argument, NULL, 'i'},
         {"start-phase",   required_argument, NULL, 'f'},
+        {"time-dilation", required_argument, NULL, 'D'},
         {"daemon",        no_argument,       NULL, 'd'},
         {"help",          no_argument,       NULL, 'h'},
         {NULL,            no_argument,       NULL,   0}
     };
 
     do {
-        c = getopt_long(argc, argv, "p:c:i:f:dh", longOptions, NULL);
+        c = getopt_long(argc, argv, "p:c:i:f:D:dh", longOptions, NULL);
 
         switch (c) {
             case 'p':
@@ -1199,6 +1204,14 @@ void get_options(int argc, char **argv)
                         fprintf(stderr, "Invalid priority: %s\n", optarg);
                         exit(1);
                     }
+                }
+                break;
+
+            case 'D':
+                dilation = atoi(optarg);
+                if (dilation < 1) {
+                    fprintf(stderr, "Invalid dilation: %s\n", optarg);
+                    exit(1);
                 }
                 break;
 
@@ -1295,7 +1308,7 @@ int main(int argc, char **argv)
     for (p_task = task; p_task != task + NUMTASKS; ++p_task) {
         p_task->S = S;
         p_task->sl_tid = (p_task - task) + FIRST_TID;
-        p_task->sample_time = rtmGetSampleTime(S, p_task->sl_tid);
+        p_task->sample_time = rtmGetSampleTime(S, p_task->sl_tid) * dilation;
         p_task->pdtask = pdserv_create_task(pdserv, p_task->sample_time, 0);
 
         pthread_rwlock_init(&p_task->signal_lock, &rwlock_attr);
