@@ -9,12 +9,6 @@
 %endfunction
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%function BlockInstanceSetup( block, system) void
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  %addtorecord block EtherCATTid InitEtherCATTask(block,system)
-%endfunction
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %function Start( block, system) Output
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -24,20 +18,20 @@
   %if IODomain
     %<LibBlockPWork(DomainPtr, "", "", 0)> = \
         ecs_get_domain_ptr(%<MasterId>, %<DomainId>, 1, 1, \
-                %<EtherCATTid>, &%<ETL.ErrStr>);
+                %<ETLBlockTID()>, &%<ETL.ErrStr>);
     %assign DomainIdx = 1
   %else
     %assign DomainIdx = 0
     %if Input
       %<LibBlockPWork(DomainPtr, "", "", DomainIdx)> = \
           ecs_get_domain_ptr(%<MasterId>, %<DomainId>, 1, 0, \
-                  %<EtherCATTid>, &%<ETL.ErrStr>);
+                  %<ETLBlockTID()>, &%<ETL.ErrStr>);
       %assign DomainIdx = DomainIdx + 1
     %endif
     %if Output
       %<LibBlockPWork(DomainPtr, "", "", DomainIdx)> = \
           ecs_get_domain_ptr(%<MasterId>, %<DomainId>, 0, 1, \
-                  %<EtherCATTid>, &%<ETL.ErrStr>);
+                  %<ETLBlockTID()>, &%<ETL.ErrStr>);
       %assign DomainIdx = DomainIdx + 1
     %endif
   %endif

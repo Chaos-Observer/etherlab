@@ -261,7 +261,9 @@ int get_etl_data_type (const char *mwName,
 
 struct thread_task {
     RT_MODEL *S;
-    uint_T sl_tid;
+    unsigned int tid;
+    unsigned int sl_tid;
+    pthread_key_t *key;
     unsigned int *running;
     const char *err;
     double sample_time;
@@ -273,12 +275,6 @@ struct thread_task {
     pthread_rwlock_t signal_lock;
     const char* (*rt_OneStep)(RT_MODEL*, uint_T);
 };
-
-# if TID01EQ == 1
-#  define FIRST_TID 1
-# else
-#  define FIRST_TID 0
-# endif
 
 #define NSEC_PER_SEC (1000000000)
 
@@ -344,8 +340,14 @@ rt_OneStepMain(RT_MODEL *S, uint_T tid)
 
 #else /* MT */
 
-#define NUMTASKS (NUMST - FIRST_TID)
+#if TID01EQ
+# define NUMTASKS (NUMST - 1)
+#else
+# define NUMTASKS NUMST
+#endif
+
 static struct thread_task task[NUMTASKS];
+pthread_key_t tid_key;
 
 const struct timespec *
 get_etl_world_time(size_t tid)
@@ -369,6 +371,7 @@ get_etl_world_time(size_t tid)
 const char *
 rt_OneStepMain(RT_MODEL *S, uint_T tid)
 {
+    (void)tid;
     real_T tnext;
 
     /*******************************************
@@ -383,8 +386,8 @@ rt_OneStepMain(RT_MODEL *S, uint_T tid)
 
     rtsiSetSolverStopTime(rtmGetRTWSolverInfo(S),tnext);
 
-    MdlOutputs(FIRST_TID);
-    MdlUpdate(FIRST_TID);
+    MdlOutputs(0);
+    MdlUpdate(0);
 
     if (rtmGetSampleTime(S,0) == CONTINUOUS_SAMPLE_TIME) {
         rt_UpdateContinuousStates(S);
@@ -392,7 +395,7 @@ rt_OneStepMain(RT_MODEL *S, uint_T tid)
         rt_SimUpdateDiscreteTaskTime(rtmGetTPtr(S), rtmGetTimingData(S), 0);
     }
 
-#if FIRST_TID == 1
+#if TID01EQ
     rt_SimUpdateDiscreteTaskTime(rtmGetTPtr(S), rtmGetTimingData(S), 1);
 #endif
 
@@ -440,6 +443,10 @@ void *run_task(void *p)
                     end_time = thread->monotonic_time;
 
     syslog(LOG_INFO, "Starting task with dt = %u ns.", dt);
+
+#if MT
+    pthread_setspecific(tid_key, &thread->tid);
+#endif
 
     while (!thread->err && *thread->running
             && !clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME,
@@ -831,7 +838,7 @@ register_signal(
 #else
     decimation = 1;
     if (tid >= 0) {
-        task += tid - (tid && FIRST_TID);
+        task += tid - (tid && TID01EQ);
     }
 #endif
 
@@ -1304,10 +1311,15 @@ int main(int argc, char **argv)
     pthread_rwlockattr_setkind_np(&rwlock_attr,
             PTHREAD_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP);
 
+#if MT
+    pthread_key_create(&tid_key, 0);
+#endif
+
     /* Create necessary pdserv tasks */
     for (p_task = task; p_task != task + NUMTASKS; ++p_task) {
         p_task->S = S;
-        p_task->sl_tid = (p_task - task) + FIRST_TID;
+        p_task->tid = p_task - task;
+        p_task->sl_tid = p_task->tid + TID01EQ;
         p_task->sample_time = rtmGetSampleTime(S, p_task->sl_tid) * dilation;
         p_task->pdtask = pdserv_create_task(pdserv, p_task->sample_time, 0);
 
@@ -1432,6 +1444,10 @@ int main(int argc, char **argv)
     MdlTerminate();
     if (pidPath[0])
         remove_pid_file();
+
+#if MT
+    pthread_key_delete(tid_key);
+#endif
 
 out:
     if (err) {

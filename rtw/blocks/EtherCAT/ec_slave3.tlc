@@ -16,7 +16,6 @@
 
 %include "EtherCAT.tlc"
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %function BlockTypeSetup( block, system ) void
 %% This function checks whether the EtherCAT system has been called once
@@ -52,11 +51,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %function BlockInstanceSetup( block, system ) void
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-  %<InitEtherCATTask(block,system)>
-
   %addtorecord block EtherCATSlaveId GetEtherCATId()
-
 %endfunction
 
 

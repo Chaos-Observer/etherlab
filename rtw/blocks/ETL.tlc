@@ -56,13 +56,22 @@
     /* Returns true if calculation function is in main execution */
     int ETL_is_major_step(void)
     {
-      return %<LibIsContinuous(0) ? LibIsMajorTimeStep() : 1>;
+      return %<LibIsMajorTimeStep()>;
     }
     %closefile buf
     %<LibSetSourceFileSection(model_c, "Functions", buf)>
 
     %openfile buf
     const char __attribute__((unused)) *%<ETL.ErrStr>;
+
+    /* Zero terminated list of sample times for EtherCAT */
+    unsigned int etl_st[] = {
+    %foreach tid = ETL.NumSt
+        %assign Ts = LibGetClockTickStepSize(tid + LibGetTID01EQ())
+        %<CAST("Unsigned", Ts*1000000000 + 0.5)>,
+    %endforeach
+        0U
+    };
     %closefile buf
     %<LibMdlStartCustomCode(buf, "header")>
   

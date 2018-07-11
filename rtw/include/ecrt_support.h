@@ -70,19 +70,20 @@ struct ec_slave {
     struct pdo_map *pdo_map;
 };
 
-void ecs_send(size_t tid);
-void ecs_receive(size_t tid);
+void ecs_send(void);
+void ecs_receive(void);
 
-void ecs_end(size_t nst);
-
-const char *ecs_start( 
-        const struct ec_slave *slave_head,
+const char *ecs_init(
         unsigned int *st,       /* List of sample times in nanoseconds */
         size_t nst,             /* Number of sample times */
         unsigned int single_tasking     /* Set if the model is single tasking,
                                          * even though there are more than one
                                          * sample time */
         );
+void ecs_end(size_t nst);
+
+const char *ecs_start_slaves(
+        const struct ec_slave *slave_head);
 
 const char *ecs_setup_master(
         unsigned int master_id, 

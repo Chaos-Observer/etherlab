@@ -20,10 +20,12 @@
 #include <stddef.h>
 #include <time.h>
 #include <endian.h>
+#include <pthread.h>
 #include "ecrt_support.h"
 
 #if MT
 #include <semaphore.h>
+extern pthread_key_t tid_key;
 #endif
 
 #ifndef EC_TIMESPEC2NANO
@@ -35,8 +37,11 @@
 const char *no_mem_msg = "Could not allocate memory";
 char errbuf[256];
 
+extern int ETL_is_major_step(void);
+
 #if 0
 #  define pr_debug(fmt, args...) printf(fmt, args)
+#define DEBUG_IO
 #else
 #  define pr_debug(fmt, args...)
 #endif
@@ -143,6 +148,7 @@ struct ecat_domain {
 
     unsigned int tid;           /* Id of the corresponding RealTime Workshop
                                  * task */
+    unsigned int tid_trigger;
 
     size_t  input_count;
     size_t output_count;
@@ -165,6 +171,7 @@ struct ecat_master {
 
     unsigned int fastest_tid;   /* Fastest RTW task id that uses this 
                                  * master */
+    unsigned int tid_trigger;
 
     struct task_stats *task_stats; /* Index into global task_stats */
 
@@ -189,6 +196,7 @@ struct ecat_master {
  */
 static struct ecat_data {
     unsigned int nst;           /* Number of unique RTW sample times */
+    const unsigned int *st;
     unsigned int single_tasking;
 
     /* This list is used to store all masters during the registration
@@ -695,30 +703,55 @@ ecs_read_be_double(const struct endian_convert_t *c)
  *  - calls ecrt_domain_process() for every domain in this task
  */
 void
-ecs_receive(size_t tid)
+ecs_receive(void)
 {
     struct ecat_master *master;
     struct ecat_domain *domain;
     struct endian_convert_t *conversion_list;
+    int trigger;
+    unsigned int tid = 0;
+
+#if MT
+    tid = *(unsigned int*)pthread_getspecific(tid_key);
+#endif
+
+    if (!tid && !ETL_is_major_step())
+        return;
         
     list_for_each(master, &ecat_data.master_list, struct ecat_master) {
 
 #if MT
         sem_wait(&master->lock);
+        trigger = master->fastest_tid == tid;
+#else
+        trigger = !--master->tid_trigger;
 #endif
 
-        if (master->fastest_tid == tid) {
+        if (trigger) {
             ecrt_master_receive(master->handle);
             ecrt_master_state(master->handle, &master->state);
+
+#ifdef DEBUG_IO
+            pr_debug("%s master(%i)\n", __func__, master->fastest_tid);
+#endif
         }
         
         list_for_each(domain, &master->domain_list, struct ecat_domain) {
 
-            if (domain->tid != tid)
+#if MT
+            trigger = domain->tid != tid;
+#else
+            trigger = --domain->tid_trigger;
+#endif
+            if (trigger)
                 continue;
 
             ecrt_domain_process(domain->handle);
             ecrt_domain_state(domain->handle, &domain->state);
+
+#ifdef DEBUG_IO
+            pr_debug("%s domain(%i)\n", __func__, domain->tid);
+#endif
 
             if (!domain->input)
                 continue;
@@ -742,20 +775,41 @@ ecs_receive(size_t tid)
  * - calls ecrt_master_send() for every domain in this task
  */
 void
-ecs_send(size_t tid)
+ecs_send(void)
 {
     struct ecat_master *master;
     struct ecat_domain *domain;
     struct endian_convert_t *conversion_list;
+    int trigger;
+    unsigned int tid = 0;
+
+#if MT
+    tid = *(unsigned int*)pthread_getspecific(tid_key);
+#endif
+
+    if (!tid && !ETL_is_major_step())
+        return;
 
     list_for_each(master, &ecat_data.master_list, struct ecat_master) {
+
 #if MT
         sem_wait(&master->lock);
 #endif
+
         list_for_each(domain, &master->domain_list, struct ecat_domain) {
 
-            if (domain->tid != tid)
+#if MT
+            trigger = domain->tid != tid;
+#else
+            trigger = domain->tid_trigger;
+#endif
+            if (trigger)
                 continue;
+            domain->tid_trigger = domain->tid;
+
+#ifdef DEBUG_IO
+            pr_debug("%s domain(%i)\n", __func__, domain->tid);
+#endif
 
             if (domain->output) {
                 for (conversion_list = domain->output_convert_list;
@@ -767,8 +821,14 @@ ecs_send(size_t tid)
             ecrt_domain_queue(domain->handle);
         }
 
-        if (master->fastest_tid == tid) {
+#if MT
+        trigger = master->fastest_tid == tid;
+#else
+        trigger = !master->tid_trigger;
+#endif
+        if (trigger) {
             struct timespec tp;
+            master->tid_trigger = master->fastest_tid;
 
             clock_gettime(CLOCK_MONOTONIC, &tp);
             ecrt_master_application_time(master->handle,
@@ -781,6 +841,10 @@ ecs_send(size_t tid)
 
             ecrt_master_sync_slave_clocks(master->handle);
             ecrt_master_send(master->handle);
+
+#ifdef DEBUG_IO
+            pr_debug("%s master(%i)\n", __func__, master->fastest_tid);
+#endif
         }
 #if MT
         sem_post(&master->lock);
@@ -796,12 +860,20 @@ get_master(
 {
     struct ecat_master *master;
 
+#if !MT
+    /* Note that ecs_setup_master() sets tid to ~0U! */
+    if (tid < ecat_data.nst)
+        tid = ecat_data.st[tid] / ecat_data.st[0];
+#endif
+
     list_for_each(master, &ecat_data.master_list, struct ecat_master) {
 
         if (master->id == master_id) {
 
-            if (master->fastest_tid > tid)
+            if (master->fastest_tid > tid) {
                 master->fastest_tid = tid;
+                master->tid_trigger = master->fastest_tid;
+            }
 
             return master;
         }
@@ -810,6 +882,7 @@ get_master(
     master = calloc(1, sizeof(struct ecat_master));
     master->id = master_id;
     master->fastest_tid = tid;
+    master->tid_trigger = tid;
 #if MT
     sem_init(&master->lock, 0, 1);
 #endif
@@ -836,6 +909,10 @@ get_domain( struct ecat_master *master, unsigned int domain_id,
 {
     struct ecat_domain *domain;
 
+#if !MT
+    tid = ecat_data.st[tid] / ecat_data.st[0];
+#endif
+
     pr_debug("get_domain(master=%u, domain=%u, input=%u, output=%u, tid=%u)\n",
             master->id, domain_id, input, output, tid);
 
@@ -858,6 +935,7 @@ get_domain( struct ecat_master *master, unsigned int domain_id,
     domain = calloc(1, sizeof(struct ecat_domain));
     domain->id = domain_id;
     domain->tid = tid;
+    domain->tid_trigger = domain->tid;
     domain->master = master;
     domain->input  =  input != 0;
     domain->output = output != 0;
@@ -896,7 +974,7 @@ register_pdos( ec_slave_config_t *slave_config, struct ecat_domain *domain,
                 domain->handle,
                 &pdo_map->bit_pos);
 
-        pr_debug("offset=%i %i\n", pdo_map->offset, pdo_map_end - pdo_map);
+        pr_debug("offset=%i %li\n", pdo_map->offset, pdo_map_end - pdo_map);
 
         pdo_map->domain = domain;
         if (dir)
@@ -1123,22 +1201,30 @@ int ecs_sdo_handler(
 
 /***************************************************************************/
 
-const char * ecs_start( 
-        const struct ec_slave *slave_head,
+const char *ecs_init( 
         unsigned int *st,
         size_t nst,
         unsigned int single_tasking     /* Set if the model is single tasking,
-                                         * even though there are more than one
+                                         * even though there is more than one
                                          * sample time */
         )
 {
-    (void)st;
+    ecat_data.nst = nst;
+    ecat_data.st  = st;
+    ecat_data.single_tasking = single_tasking;
+
+    return 0;
+}
+
+/***************************************************************************/
+
+const char * ecs_start_slaves( 
+        const struct ec_slave *slave_head
+        )
+{
     const char *err;
     const struct ec_slave *slave;
     struct ecat_master *master;
-
-    ecat_data.nst = nst;
-    ecat_data.single_tasking = single_tasking;
 
     for (slave = slave_head; slave; slave = slave->next) {
     pr_debug("init: %i\n", __LINE__);
