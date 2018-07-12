@@ -56,7 +56,7 @@
     /* Returns true if calculation function is in main execution */
     int ETL_is_major_step(void)
     {
-      return %<LibIsMajorTimeStep()>;
+      return %<LibIsContinuous(0) ? LibIsMajorTimeStep() : 1>;
     }
     %closefile buf
     %<LibSetSourceFileSection(model_c, "Functions", buf)>
