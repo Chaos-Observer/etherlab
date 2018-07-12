@@ -136,7 +136,6 @@
 
 #include "rtmodel.h"
 #include "rtwtypes.h"
-#include "rt_nonfinite.h"
 #include "rt_sim.h"
 
 #ifdef PDSERV_VERSION_CODE
@@ -158,7 +157,6 @@
 #define EXPAND_CONCAT(name1, name2) name1 ## name2
 #define CONCAT(name1, name2) EXPAND_CONCAT(name1, name2)
 #define MODEL_VERSION        CONCAT(MODEL, _version)
-#define RT_MODEL             CONCAT(MODEL, _rtModel)
 
 #ifndef max
 #define max(x1, x2) ((x1) > (x2) ? (x1) : (x2))
@@ -198,14 +196,30 @@ struct pdserv *get_pdserv_ptr(void)
     return pdserv;
 }
 
-extern RT_MODEL *MODEL(void);
+#define RTM             CONCAT(MODEL, _M)
 
+#if CLASSIC_INTERFACE
+
+#define RT_MODEL        CONCAT(MODEL, _rtModel)
+#define MdlOutput       MdlOutputs
+
+extern RT_MODEL *MODEL(void);       /* used to initialize model */
 extern void MdlInitializeSizes(void);
 extern void MdlInitializeSampleTimes(void);
 extern void MdlStart(void);
 extern void MdlOutputs(int_T tid);
 extern void MdlUpdate(int_T tid);
 extern void MdlTerminate(void);
+
+#else  // CLASSIC_INTERFACE
+
+#define MdlUpdate       CONCAT(MODEL, _update)
+#define MdlInitialize   CONCAT(MODEL, _initialize)
+#define MdlTerminate    CONCAT(MODEL, _terminate)
+#define MdlOutput       CONCAT(MODEL, _output)
+#define MdlGetCAPIStaticMap CONCAT(MODEL, _GetCAPIStaticMap)
+
+#endif  // CLASSIC_INTERFACE
 
 extern const char *MODEL_VERSION;
 
@@ -254,13 +268,12 @@ int phase = -1;      /**< Phase to start task 0..100 */
 
 static void *exe;      /* Pointer to this executable. */
 
-const char* rt_OneStepMain(RT_MODEL *s, uint_T);
-const char* rt_OneStepTid(RT_MODEL *s, uint_T);
+const char* rt_OneStepMain(uint_T);
+const char* rt_OneStepTid(uint_T);
 int get_etl_data_type (const char *mwName,
         uint8_T slDataId, size_t size, unsigned int isComplex);
 
 struct thread_task {
-    RT_MODEL *S;
     unsigned int tid;
     unsigned int sl_tid;
     pthread_key_t *key;
@@ -273,7 +286,7 @@ struct thread_task {
     pthread_t thread;
     pthread_mutex_t param_lock;
     pthread_rwlock_t signal_lock;
-    const char* (*rt_OneStep)(RT_MODEL*, uint_T);
+    const char* (*rt_OneStep)(uint_T);
 };
 
 #define NSEC_PER_SEC (1000000000)
@@ -313,27 +326,32 @@ get_etl_world_time(size_t tid)
  * service routine (ISR) with minor modifications.
  */
 const char *
-rt_OneStepMain(RT_MODEL *S, uint_T tid)
+rt_OneStepMain(uint_T tid)
 {
     (void)tid;
-    real_T tnext;
 
+#if CLASSIC_INTERFACE
+    real_T tnext;
     tnext = rt_SimGetNextSampleHit();
-    rtsiSetSolverStopTime(rtmGetRTWSolverInfo(S),tnext);
+    rtsiSetSolverStopTime(rtmGetRTWSolverInfo(RTM),tnext);
 
     MdlOutputs(0);
     MdlUpdate(0);
 
-    rt_SimUpdateDiscreteTaskSampleHits(rtmGetNumSampleTimes(S),
-                                       rtmGetTimingData(S),
-                                       rtmGetSampleHitPtr(S),
-                                       rtmGetTPtr(S));
+    rt_SimUpdateDiscreteTaskSampleHits(rtmGetNumSampleTimes(RTM),
+                                       rtmGetTimingData(RTM),
+                                       rtmGetSampleHitPtr(RTM),
+                                       rtmGetTPtr(RTM));
 
-    if (rtmGetSampleTime(S,0) == CONTINUOUS_SAMPLE_TIME) {
-        rt_UpdateContinuousStates(S);
+    if (rtmGetSampleTime(RTM,0) == CONTINUOUS_SAMPLE_TIME) {
+        rt_UpdateContinuousStates(RTM);
     }
+#else
+    MdlOutput();
+    MdlUpdate();
+#endif
 
-    return rtmGetErrorStatusFlag(S);
+    return rtmGetErrorStatus(RTM);
 }
 
 /****************************************************************************/
@@ -369,37 +387,43 @@ get_etl_world_time(size_t tid)
  *      is attached to an interrupt.
  */
 const char *
-rt_OneStepMain(RT_MODEL *S, uint_T tid)
+rt_OneStepMain(uint_T tid)
 {
     (void)tid;
-    real_T tnext;
 
     /*******************************************
      * Step the model for the base sample time *
      *******************************************/
 
+#if CLASSIC_INTERFACE
+    real_T tnext;
     tnext = rt_SimUpdateDiscreteEvents(
-                rtmGetNumSampleTimes(S),
-                rtmGetTimingData(S),
-                rtmGetSampleHitPtr(S),
-                rtmGetPerTaskSampleHitsPtr(S));
+                rtmGetNumSampleTimes(RTM),
+                rtmGetTimingData(RTM),
+                rtmGetSampleHitPtr(RTM),
+                rtmGetPerTaskSampleHitsPtr(RTM));
 
-    rtsiSetSolverStopTime(rtmGetRTWSolverInfo(S),tnext);
+    rtsiSetSolverStopTime(rtmGetRTWSolverInfo(RTM),tnext);
 
     MdlOutputs(0);
     MdlUpdate(0);
 
-    if (rtmGetSampleTime(S,0) == CONTINUOUS_SAMPLE_TIME) {
-        rt_UpdateContinuousStates(S);
+    if (rtmGetSampleTime(RTM,0) == CONTINUOUS_SAMPLE_TIME) {
+        rt_UpdateContinuousStates(RTM);
     } else {
-        rt_SimUpdateDiscreteTaskTime(rtmGetTPtr(S), rtmGetTimingData(S), 0);
+        rt_SimUpdateDiscreteTaskTime(rtmGetTPtr(RTM), rtmGetTimingData(RTM), 0);
     }
 
 #if TID01EQ
-    rt_SimUpdateDiscreteTaskTime(rtmGetTPtr(S), rtmGetTimingData(S), 1);
+    rt_SimUpdateDiscreteTaskTime(rtmGetTPtr(RTM), rtmGetTimingData(RTM), 1);
 #endif
 
-    return rtmGetErrorStatusFlag(S);
+#else
+    MdlOutput(0);
+    MdlUpdate(0);
+#endif
+
+    return rtmGetErrorStatus(RTM);
 }
 
 /****************************************************************************/
@@ -415,15 +439,17 @@ rt_OneStepMain(RT_MODEL *S, uint_T tid)
  *      is attached to an interrupt.
  */
 const char *
-rt_OneStepTid(RT_MODEL *S, uint_T tid)
+rt_OneStepTid(uint_T tid)
 {
-    MdlOutputs(tid);
+    MdlOutput(tid);
 
     MdlUpdate(tid);
 
-    rt_SimUpdateDiscreteTaskTime(rtmGetTPtr(S), rtmGetTimingData(S), tid);
+#if CLASSIC_INTERFACE
+    rt_SimUpdateDiscreteTaskTime(rtmGetTPtr(RTM), rtmGetTimingData(RTM), tid);
+#endif
 
-    return rtmGetErrorStatusFlag(S);
+    return rtmGetErrorStatus(RTM);
 
 }
 
@@ -467,7 +493,7 @@ void *run_task(void *p)
 
         /* Lock parameters and execute task */
         pthread_mutex_lock(&thread->param_lock);
-        thread->err = thread->rt_OneStep(thread->S, thread->sl_tid);
+        thread->err = thread->rt_OneStep(thread->sl_tid);
         pthread_mutex_unlock(&thread->param_lock);
         pdserv_update(thread->pdtask, &thread->world_time);
 
@@ -1011,10 +1037,9 @@ out:
 /** Initialize all model variables.
  */
     const char *
-rtw_capi_init(RT_MODEL *S,
-        struct pdserv *pdserv, struct thread_task *task)
+rtw_capi_init(struct pdserv *pdserv, struct thread_task *task)
 {
-    rtwCAPI_ModelMappingInfo* mmi = &(rtmGetDataMapInfo(S).mmi);
+    rtwCAPI_ModelMappingInfo* mmi = &(rtmGetDataMapInfo(RTM).mmi);
     const rtwCAPI_DimensionMap* dimMap = rtwCAPI_GetDimensionMap(mmi);
     const rtwCAPI_DataTypeMap* dTypeMap = rtwCAPI_GetDataTypeMap(mmi);
     const uint_T* dimArray = rtwCAPI_GetDimensionArray(mmi);
@@ -1044,32 +1069,38 @@ rtw_capi_init(RT_MODEL *S,
 
 /** Execute model.
  */
-const char *init_application(RT_MODEL *S)
+const char *init_application(void)
 {
     const char *errmsg;
 
     /************************
      * Initialize the model *
      ************************/
+#if CLASSIC_INTERFACE
+    MODEL();
     MdlInitializeSizes();
     MdlInitializeSampleTimes();
 
     if ((errmsg = rt_SimInitTimingEngine(
-                    rtmGetNumSampleTimes(S),
-                    rtmGetStepSize(S),
-                    rtmGetSampleTimePtr(S),
-                    rtmGetOffsetTimePtr(S),
-                    rtmGetSampleHitPtr(S),
-                    rtmGetSampleTimeTaskIDPtr(S),
-                    rtmGetTStart(S),
-                    &rtmGetSimTimeStep(S),
-                    &rtmGetTimingData(S)))) {
+                    rtmGetNumSampleTimes(RTM),
+                    rtmGetStepSize(RTM),
+                    rtmGetSampleTimePtr(RTM),
+                    rtmGetOffsetTimePtr(RTM),
+                    rtmGetSampleHitPtr(RTM),
+                    rtmGetSampleTimeTaskIDPtr(RTM),
+                    rtmGetTStart(RTM),
+                    &rtmGetSimTimeStep(RTM),
+                    &rtmGetTimingData(RTM)))) {
         return errmsg;
     }
-    rt_CreateIntegrationData(S);
-
+    rt_CreateIntegrationData(RTM);
     MdlStart();
-    if ((errmsg = rtmGetErrorStatus(S))) {
+#else
+    MdlInitialize();
+#endif
+
+
+    if ((errmsg = rtmGetErrorStatus(RTM))) {
         MdlTerminate();
         return errmsg;
     }
@@ -1271,11 +1302,14 @@ void get_options(int argc, char **argv)
  */
 int main(int argc, char **argv)
 {
-    RT_MODEL *S;
     unsigned int running = 1;
     const char *err = NULL;
     struct thread_task* p_task;
     pthread_rwlockattr_t rwlock_attr;
+#if !CLASSIC_INTERFACE
+    const rtwCAPI_SampleTimeMap *sampleTimeMap
+        = rtwCAPI_GetSampleTimeMapFromStaticMap(MdlGetCAPIStaticMap());
+#endif
 
     /* Set defaults for command-line options. */
     base_name = basename(argv[0]);
@@ -1303,9 +1337,6 @@ int main(int argc, char **argv)
         pdserv_config_file(pdserv, pdserv_config);
     }
 
-    /* Initialize model */
-    S = MODEL();
-
     /* Initialize rwlock attributes */
     pthread_rwlockattr_init(&rwlock_attr);
     pthread_rwlockattr_setkind_np(&rwlock_attr,
@@ -1315,12 +1346,29 @@ int main(int argc, char **argv)
     pthread_key_create(&tid_key, 0);
 #endif
 
+    /* Initialize model */
+    if ((err = init_application())) {
+        pdserv_exit(pdserv);
+        goto out;
+    }
+
     /* Create necessary pdserv tasks */
     for (p_task = task; p_task != task + NUMTASKS; ++p_task) {
-        p_task->S = S;
+        double ts;
+#if CLASSIC_INTERFACE
+        ts = rtmGetSampleTime(RTM, p_task->sl_tid);
+#else
+        int i = 0;
+        while (i < NUMST
+                && ((unsigned)rtwCAPI_GetSampleTimeTID(sampleTimeMap, i)
+                    != p_task->sl_tid))
+            ++i;
+        ts = rtwCAPI_GetSamplePeriod(sampleTimeMap, i);
+#endif
+
         p_task->tid = p_task - task;
         p_task->sl_tid = p_task->tid + TID01EQ;
-        p_task->sample_time = rtmGetSampleTime(S, p_task->sl_tid) * dilation;
+        p_task->sample_time = ts * dilation;
         p_task->pdtask = pdserv_create_task(pdserv, p_task->sample_time, 0);
 
         pthread_rwlock_init(&p_task->signal_lock, &rwlock_attr);
@@ -1330,7 +1378,7 @@ int main(int argc, char **argv)
     pthread_rwlockattr_destroy(&rwlock_attr);
 
     /* Register signals and parameters */
-    if ((err = rtw_capi_init(S, pdserv, task))) {
+    if ((err = rtw_capi_init(pdserv, task))) {
         pdserv_exit(pdserv);
         goto out;
     }
@@ -1361,11 +1409,6 @@ int main(int argc, char **argv)
 
     /* Provoke the first stack fault before cyclic operation. */
     stack_prefault();
-
-    if ((err = init_application(S))) {
-        pdserv_exit(pdserv);
-        goto out;
-    }
 
     if (pidPath[0])
         create_pid_file();
