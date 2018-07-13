@@ -1355,19 +1355,23 @@ int main(int argc, char **argv)
     /* Create necessary pdserv tasks */
     for (p_task = task; p_task != task + NUMTASKS; ++p_task) {
         double ts;
-#if CLASSIC_INTERFACE
-        ts = rtmGetSampleTime(RTM, p_task->sl_tid);
-#else
-        int i = 0;
-        while (i < NUMST
-                && ((unsigned)rtwCAPI_GetSampleTimeTID(sampleTimeMap, i)
-                    != p_task->sl_tid))
-            ++i;
-        ts = rtwCAPI_GetSamplePeriod(sampleTimeMap, i);
-#endif
 
         p_task->tid = p_task - task;
         p_task->sl_tid = p_task->tid + TID01EQ;
+
+#if CLASSIC_INTERFACE
+        ts = rtmGetSampleTime(RTM, p_task->sl_tid);
+#else
+        {
+            int i = 0;
+            while (i < NUMST
+                    && ((unsigned)rtwCAPI_GetSampleTimeTID(sampleTimeMap, i)
+                        != p_task->sl_tid))
+                ++i;
+            ts = rtwCAPI_GetSamplePeriod(sampleTimeMap, i);
+        }
+#endif
+
         p_task->sample_time = ts * dilation;
         p_task->pdtask = pdserv_create_task(pdserv, p_task->sample_time, 0);
 
