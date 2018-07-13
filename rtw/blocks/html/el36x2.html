@@ -1,0 +1,52 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+"http://www.w3.org/TR/1999/REC-html401-19991224/loose.dtd">
+<!--
+vim:tw=78
+-->
+<html lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <title>EtherLab :: EL36x2</title>
+        <link rel="stylesheet" href="docstyle.css" type="text/css">
+        <meta name="generator" content="DocBook XSL Stylesheets V1.52.2">
+        <meta http-equiv="Content-Script-Type" content="text/javascript">
+        <meta name="toctype" content="ug">
+        <script language="JavaScript" src="docscripts.js"></script>
+    </head>
+    <body>
+        <h1>Beckhoff EL36x2 24-bit analog input terminal</h1>
+
+        The EL36x2 family of input slaves are high resolution wide range
+        analog input terminals.
+
+        Supported slaves are:
+        <ul>
+          <li>EL3602: +-10V, +-5V, +-2.5V +-1.25V voltage input</li>
+          <li>EL3602-0002: +-200mV voltage input</li>
+          <li>EL3602-0010: +-75mV voltage input</li>
+          <li>EL3602-0020: EL3602 with calibration certificate</li>
+          <li>EL3612: 0..20mA current input</li>
+          <li>EL3612-0020: EL3612 with calibration certificate</li>
+        </ul>
+
+
+        <p/>Apart from the <a href="general.html">common slave options</a>, the
+        following options configure the slave:
+
+        <h3>Vector output</h3>
+        The channels are presented as a vector or scalars for further processing.
+
+        <h3>Status port</h3>
+        Output status information (PDO Entry #x6000:7)
+
+        <h3>1 Ch. only</h3>
+        Only use first input channel (reduces EtherCAT frame size, increases
+        conversion speed)
+
+        <h3>CoE/Filter</h3>
+        Choose a filter frequency. Filter is always active, see documentation.
+
+        <h3>CoE/Range</h3>
+        Select voltage range (EL3602 only).
+    </body>
+</html>

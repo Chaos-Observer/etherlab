@@ -15,9 +15,9 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "ha"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Fri Jun 29 16:39:02 2018"
-  RTWModifiedTimeStamp	  452173934
-  ModelVersionFormat	  "1.%<AutoIncrement:1704>"
+  LastModifiedDate	  "Fri Jul 13 07:43:22 2018"
+  RTWModifiedTimeStamp	  453368596
+  ModelVersionFormat	  "1.%<AutoIncrement:1734>"
   ConfigurationManager	  "rcs"
   SampleTimeColors	  off
   SampleTimeAnnotations	  off
@@ -585,7 +585,7 @@ Library {
   }
   System {
     Name		    "etherlab_lib"
-    Location		    [686, 50, 1120, 258]
+    Location		    [155, 202, 589, 410]
     Open		    on
     ModelBrowserVisibility  off
     ModelBrowserWidth	    200
@@ -597,9 +597,9 @@ Library {
     TiledPaperMargins	    [0.500000, 0.500000, 0.500000, 0.500000]
     TiledPageScale	    1
     ShowPageBoundaries	    off
-    ZoomFactor		    "100"
+    ZoomFactor		    "126"
     ReportName		    "simulink-default.rpt"
-    SIDHighWatermark	    280
+    SIDHighWatermark	    281
     Block {
       BlockType		      SubSystem
       Name		      "EtherCAT"
@@ -621,7 +621,7 @@ Library {
       MaskIconUnits	      "pixels"
       System {
 	Name			"EtherCAT"
-	Location		[686, 50, 1099, 460]
+	Location		[616, 50, 1029, 460]
 	Open			off
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
@@ -734,7 +734,7 @@ Library {
 	  MaskIconUnits		  "autoscale"
 	  System {
 	    Name		    "Beckhoff"
-	    Location		    [103, 50, 865, 742]
+	    Location		    [781, 177, 1543, 869]
 	    Open		    off
 	    ModelBrowserVisibility  off
 	    ModelBrowserWidth	    200
@@ -1469,7 +1469,7 @@ Library {
 	      Name		      "EL331x_0"
 	      SID		      268
 	      Ports		      [1, 1]
-	      Position		      [395, 366, 465, 404]
+	      Position		      [395, 446, 465, 484]
 	      BackgroundColor	      "[0.909804, 0.819608, 0.321569]"
 	      LoadFcn		      "el331x().checkModelName"
 	      FunctionName	      "ec_slave3"
@@ -1633,7 +1633,7 @@ Library {
 	      Name		      "EL3403_0"
 	      SID		      278
 	      Ports		      [0, 5]
-	      Position		      [380, 431, 465, 489]
+	      Position		      [380, 511, 465, 569]
 	      BackgroundColor	      "[0.909804, 0.819608, 0.321569]"
 	      AttributesFormatString  "EL3403\nM:0 Idx:1"
 	      LoadFcn		      "el3403().checkModelName()"
@@ -1673,10 +1673,54 @@ Library {
 	    }
 	    Block {
 	      BlockType		      "S-Function"
+	      Name		      "EL36x2_0"
+	      SID		      281
+	      Ports		      [0, 1]
+	      Position		      [395, 286, 465, 324]
+	      BackgroundColor	      "[0.909804, 0.819608, 0.321569]"
+	      LoadFcn		      "el36x2().checkModelName()"
+	      FunctionName	      "ec_slave3"
+	      Parameters	      "Address,rv.SlaveConfig,rv.PortConfig,debug,tsample,rv.Parameter,scale,offset"
+	      SFunctionModules	      "'ecrt_support'"
+	      EnableBusSupport	      off
+	      MaskType		      "EL36x2"
+	      MaskDescription	      "Beckhoff 24-bit analog input terminal"
+	      MaskHelp		      "web(etherlab_help_path('el36x2.html'), '-helpbrowser');"
+	      MaskPromptString	      "Master|Slave Index|Device Model |Revision|Vector Output|Status port|1 Ch. only|Output S"
+	      "cale|Output Offset|Sample Time|Debug|Filter (#x8000:15)|Range Ch.1 (#x8000:19)|Range Ch.2 (#x8010:19)"
+	      MaskStyleString	      "edit,edit,popup(EL3602|EL3602-0002|EL3602-0010|EL3602-0020|EL3612|EL3612-0020),edit,chec"
+	      "kbox,checkbox,checkbox,edit,edit,edit,edit,popup(50 Hz|60 Hz|100 Hz|500 Hz|1 kHz|2 kHz|3.75 kHz|7.5 kHz|15 kHz|"
+	      "30 kHz|5 Hz|10 Hz),popup(+/- 10 V|+/- 5 V|+/- 2.5 V|+/- 1.25 V),popup(+/- 10 V|+/- 5 V|+/- 2.5 V|+/- 1.25 V)"
+	      MaskTunableValueString  "off,off,off,off,off,off,off,off,off,off,off,off,off,off"
+	      MaskCallbackString      "||el36x2.modelChanged||||el36x2.channelCountChanged|||||||"
+	      MaskEnableString	      "on,on,on,on,on,on,on,on,on,on,on,on,on,on"
+	      MaskVisibilityString    "on,on,on,off,on,on,on,on,on,on,off,on,on,on"
+	      MaskToolTipString	      "on,on,on,on,on,on,on,on,on,on,on,on,on,on"
+	      MaskVariables	      "master=@1;index=@2;model=&3;revision=&4;vector=@5;status=@6;one_ch=@7;scale=@8;offset=@9;t"
+	      "sample=@10;debug=@11;sdo_x8000_15=@12;sdo_x8000_19=@13;sdo_x8010_19=@14;"
+	      MaskInitialization      "Address = EtherCATSlave.formatAddress(master,index,tsample);\n\nrv = el36x2(model).con"
+	      "figure(one_ch,vector,status,...\n    [numel(scale), 6; numel(offset), 7],...\n    sdo_x8000_15-1,...\n    [sdo_"
+	      "x8000_19,sdo_x8010_19]-1);\n\nif ~status || vector || model(6) == '1' || one_ch\n    set_param(gcb,'AttributesF"
+	      "ormatString','');\n\n    set_param(gcb,'MaskDisplay',...\n        sprintf('disp(''%s\\\\nM:%i Idx:%s'')',...\n "
+	      "       model,master,mat2str(index)))\nelse\n    EtherCATSlave.setPortNames({},...\n        {rv.PortConfig.outpu"
+	      "t.portname})\n    \n    set_param(gcb,'AttributesFormatString',...\n        sprintf('%s\\nM:%i Idx:%s',...\n   "
+	      "     model,master,mat2str(index)))\nend\n"
+	      MaskDisplay	      "disp('EL3602\\nM:0 Idx:1')"
+	      MaskSelfModifiable      on
+	      MaskIconFrame	      on
+	      MaskIconOpaque	      on
+	      MaskIconRotate	      "none"
+	      MaskPortRotate	      "default"
+	      MaskIconUnits	      "normalized"
+	      MaskValueString	      "0|1|EL3602||on|off|on|[]|[]|0||50 Hz|+/- 10 V|+/- 10 V"
+	      MaskTabNameString	      "Main,Main,Main,Main,Main,Main,Main,Main,Main,Main,Main,CoE,CoE,CoE"
+	    }
+	    Block {
+	      BlockType		      "S-Function"
 	      Name		      "EL37x2_0"
 	      SID		      253
 	      Ports		      [0, 2]
-	      Position		      [395, 286, 465, 324]
+	      Position		      [395, 366, 465, 404]
 	      BackgroundColor	      "[0.909804, 0.819608, 0.321569]"
 	      LoadFcn		      "el37x2().checkModelName()"
 	      FunctionName	      "ec_slave3"
@@ -2168,9 +2212,9 @@ Library {
 	      "ePDO|el51xx.updatePDO|el51xx.updatePDO|el51xx.updatePDO|el51xx.updatePDO|el51xx.updatePDO|el51xx.updatePDO|el51"
 	      "xx.updatePDO|el51xx.updatePDO|||EtherCATSlave.updateCustomDCEnable()|||||||||||||||||||||||||||||||||||||||||||"
 	      "||||||||||"
-	      MaskEnableString	      "on,on,on,on,on,on,off,off,on,on,on,off,off,off,off,off,on,on,on,off,off,off,off,off,off"
-	      ",off,off,off,off,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,o"
-	      "n,on,on,on,on,on,on,on,on,on,on,on"
+	      MaskEnableString	      "on,on,on,on,off,on,off,off,off,on,on,off,off,off,off,off,on,on,on,off,off,off,off,off,o"
+	      "ff,off,off,off,off,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on,on"
+	      ",on,on,on,on,on,on,on,on,on,on,on,on"
 	      MaskVisibilityString    "on,on,on,off,off,on,on,on,off,on,on,on,on,on,on,on,on,off,on,on,on,on,on,on,on,on,on,o"
 	      "n,on,on,on,on,on,on,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,off,on,off,off,off,"
 	      "off,off,off,off,off,off,off,off,off,off,off,off,off,off,off"
@@ -2210,7 +2254,7 @@ Library {
 	      MaskValueString	      "0|1|EL5101||off|on|off|off|off|on|off|off|off|off|off|off|-1|0|FreeRun/SM-Synchron|hex2d"
 	      "ec('320')    % EL51x1: '320'; El5152: '720'|0|1|0|0|off|0|1|0|0|off|off|off|on|off|off|off|off|Enable pos. gate"
 	      "|off|off|on|on|off|off|us|Rising edge|10000|100|100|100|100|1600|100|65535|off|off|off|Enable pos. gate|off|off"
-	      "|on|on|off|off|us|Rising edge|10000|100|100|100|500|1600"
+	      "|on|on|off|off|us|Rising edge|10000|100|100|100|100|1600"
 	      MaskTabNameString	      "Main,Main,Main,Main,Main,Main,Main,Main,Main,Main,Main,Main,Main,Main,Main,Main,Main,M"
 	      "ain,Distributed Clocks,Distributed Clocks,Distributed Clocks,Distributed Clocks,Distributed Clocks,Distributed "
 	      "Clocks,Distributed Clocks,Distributed Clocks,Distributed Clocks,Distributed Clocks,Distributed Clocks,CoE #x800"
