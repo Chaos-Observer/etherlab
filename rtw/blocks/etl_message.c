@@ -8,7 +8,7 @@
 *
 */
 
-#define S_FUNCTION_NAME  message
+#define S_FUNCTION_NAME  etl_message
 #define S_FUNCTION_LEVEL 2
 
 #include "simstruc.h"

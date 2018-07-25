@@ -12,7 +12,7 @@ mex rtipc_tx.c
 mex rtipc_rx.c
 mex event.c
 mex findidx.c
-mex message.c
+mex etl_message.c
 mex propagate_width.c
 
 if verLessThan('simulink', '9.0')
