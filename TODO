@@ -6,3 +6,5 @@ $Id$
 - Cleanup hrt_main.c: use libdaemon?
 - cleanup Code Generation options for EtherLab
 - Finalize Signal Slot mechanism
+- Model terminate with stop time, with terminate()
+- Model superrating
