@@ -1,5 +1,7 @@
 %implements "world_time" "C"
 
+%include "ETL.tlc"
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %function BlockTypeSetup( block, system) void
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
