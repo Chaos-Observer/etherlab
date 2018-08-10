@@ -711,30 +711,37 @@ create_dim(
         /* Output */
         uint8_T *ndim)
 {
-    uint_T dimArrayIndex = rtwCAPI_GetDimArrayIndex(dimMap, dimIndex);
-    size_t numDims = rtwCAPI_GetNumDims(dimMap, dimIndex);
-
     static size_t defaultDim[2];
     size_t *dim = defaultDim;
+    size_t numDims = rtwCAPI_GetNumDims(dimMap, dimIndex);
+    rtwCAPI_Orientation orientation =
+        rtwCAPI_GetOrientation(dimMap, dimIndex);
 
-    if (numDims == 1) {
+    dimArray += rtwCAPI_GetDimArrayIndex(dimMap, dimIndex);
+
+    if (orientation == rtwCAPI_SCALAR) {
+        dim[0] = 1;
+        numDims = 1;
+    }
+    else if (numDims == 1) {
         /* Only one dimension */
-        dim[0] = dimArray[dimArrayIndex];
+        dim[0] = *dimArray;
     }
     else if (numDims == 2) {
-        if (dimArray[dimArrayIndex] == 1) {
+        if (orientation == rtwCAPI_VECTOR
+                || (orientation == rtwCAPI_MATRIX_COL_MAJOR
+                    && dimArray[1] == 1)) {
             // A vector or matrix with one row
             numDims = 1;
-            dim[0] = dimArray[dimArrayIndex + 1];
+            dim[0] = dimArray[0] * dimArray[1];
         }
-        else if (rtwCAPI_GetOrientation(dimMap, dimIndex)
-                == rtwCAPI_MATRIX_COL_MAJOR) {
-            dim[0] = dimArray[dimArrayIndex + 1];
-            dim[1] = dimArray[dimArrayIndex];
+        else if (orientation == rtwCAPI_MATRIX_COL_MAJOR) {
+            dim[0] = dimArray[1];
+            dim[1] = dimArray[0];
         }
         else {
-            dim[0] = dimArray[dimArrayIndex];
-            dim[1] = dimArray[dimArrayIndex + 1];
+            dim[0] = dimArray[0];
+            dim[1] = dimArray[1];
         }
     }
     else {
@@ -748,8 +755,9 @@ create_dim(
          */
         size_t i;
         dim = calloc(numDims, sizeof(size_t));
+        dimArray += numDims;
         for (i = 0; i < numDims; ++i)
-            dim[i] = dimArray[dimArrayIndex + (numDims - 1) - i];
+            dim[i] = *--dimArray;
     }
 
     *ndim = numDims;
