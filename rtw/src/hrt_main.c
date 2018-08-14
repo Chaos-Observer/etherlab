@@ -115,6 +115,7 @@
  ****************************************************************************/
 
 #include <stdio.h>
+#include <assert.h>
 #include <time.h>
 #include <pthread.h>
 #include <sys/mman.h>
@@ -182,6 +183,10 @@
 # error "must define NCSTATES"
 #endif
 
+#ifndef CLASSIC_INTERFACE
+# error "must define CLASSIC_INTERFACE"
+#endif
+
 /*====================*
  * External functions *
  *====================*/
@@ -202,6 +207,7 @@ struct pdserv *get_pdserv_ptr(void)
 
 #define RT_MODEL        CONCAT(MODEL, _rtModel)
 #define MdlOutput       MdlOutputs
+#define MdlInitializeDataMapInfo MODEL
 
 extern RT_MODEL *MODEL(void);       /* used to initialize model */
 extern void MdlInitializeSizes(void);
@@ -213,11 +219,15 @@ extern void MdlTerminate(void);
 
 #else  // CLASSIC_INTERFACE
 
-#define MdlUpdate       CONCAT(MODEL, _update)
-#define MdlInitialize   CONCAT(MODEL, _initialize)
-#define MdlTerminate    CONCAT(MODEL, _terminate)
-#define MdlOutput       CONCAT(MODEL, _output)
-#define MdlGetCAPIStaticMap CONCAT(MODEL, _GetCAPIStaticMap)
+#define MdlUpdate                CONCAT(MODEL, _update)
+#define MdlInitialize            CONCAT(MODEL, _initialize)
+#define MdlTerminate             CONCAT(MODEL, _terminate)
+#define MdlOutput                CONCAT(MODEL, _output)
+#define MdlStep                  CONCAT(MODEL, _step)
+#define MdlGetCAPIStaticMap      CONCAT(MODEL, _GetCAPIStaticMap)
+#define MdlInitializeDataMapInfo CONCAT(MODEL, _InitializeDataMapInfo)
+
+extern void MdlInitializeDataMapInfo(void);
 
 #endif  // CLASSIC_INTERFACE
 
@@ -347,8 +357,12 @@ rt_OneStepMain(uint_T tid)
         rt_UpdateContinuousStates(RTM);
     }
 #else
+#   if ONESTEPFCN
+    MdlStep();
+#   else
     MdlOutput();
     MdlUpdate();
+#   endif
 #endif
 
     return rtmGetErrorStatus(RTM);
@@ -419,8 +433,12 @@ rt_OneStepMain(uint_T tid)
 #endif
 
 #else
+#   if ONESTEPFCN
+    MdlStep(0);
+#   else
     MdlOutput(0);
     MdlUpdate(0);
+#   endif
 #endif
 
     return rtmGetErrorStatus(RTM);
@@ -441,12 +459,17 @@ rt_OneStepMain(uint_T tid)
 const char *
 rt_OneStepTid(uint_T tid)
 {
-    MdlOutput(tid);
-
-    MdlUpdate(tid);
-
 #if CLASSIC_INTERFACE
+    MdlOutput(tid);
+    MdlUpdate(tid);
     rt_SimUpdateDiscreteTaskTime(rtmGetTPtr(RTM), rtmGetTimingData(RTM), tid);
+#else
+#   if ONESTEPFCN
+    MdlStep(tid);
+#   else
+    MdlOutput(tid);
+    MdlUpdate(tid);
+#   endif
 #endif
 
     return rtmGetErrorStatus(RTM);
@@ -1085,7 +1108,6 @@ const char *init_application(void)
      * Initialize the model *
      ************************/
 #if CLASSIC_INTERFACE
-    MODEL();
     MdlInitializeSizes();
     MdlInitializeSampleTimes();
 
@@ -1345,6 +1367,9 @@ int main(int argc, char **argv)
         pdserv_config_file(pdserv, pdserv_config);
     }
 
+    /* Initialize model mapping info */
+    MdlInitializeDataMapInfo();
+
     /* Initialize rwlock attributes */
     pthread_rwlockattr_init(&rwlock_attr);
     pthread_rwlockattr_setkind_np(&rwlock_attr,
@@ -1354,15 +1379,9 @@ int main(int argc, char **argv)
     pthread_key_create(&tid_key, 0);
 #endif
 
-    /* Initialize model */
-    if ((err = init_application())) {
-        pdserv_exit(pdserv);
-        goto out;
-    }
-
     /* Create necessary pdserv tasks */
     for (p_task = task; p_task != task + NUMTASKS; ++p_task) {
-        double ts;
+        double ts = 0.0;
 
         p_task->tid = p_task - task;
         p_task->sl_tid = p_task->tid + TID01EQ;
@@ -1371,14 +1390,17 @@ int main(int argc, char **argv)
         ts = rtmGetSampleTime(RTM, p_task->sl_tid);
 #else
         {
+            /* The tasks are unordered in sampleTimeMap, have to find the
+             * right task with rtwCAPI_GetSampleTimeTID() */
             int i = 0;
-            while (i < NUMST
-                    && ((unsigned)rtwCAPI_GetSampleTimeTID(sampleTimeMap, i)
-                        != p_task->sl_tid))
-                ++i;
-            ts = rtwCAPI_GetSamplePeriod(sampleTimeMap, i);
+            for (i = 0; !ts && i < NUMST; ++i) {
+                if (!(rtwCAPI_GetSampleTimeTID(sampleTimeMap, i)
+                            - p_task->sl_tid))
+                    ts = rtwCAPI_GetSamplePeriod(sampleTimeMap, i);
+            }
         }
 #endif
+        assert(ts != 0.0);
 
         p_task->sample_time = ts * dilation;
         p_task->pdtask = pdserv_create_task(pdserv, p_task->sample_time, 0);
@@ -1421,6 +1443,12 @@ int main(int argc, char **argv)
 
     /* Provoke the first stack fault before cyclic operation. */
     stack_prefault();
+
+    /* Initialize model */
+    if ((err = init_application())) {
+        pdserv_exit(pdserv);
+        goto out;
+    }
 
     if (pidPath[0])
         create_pid_file();
