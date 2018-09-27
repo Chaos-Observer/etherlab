@@ -31,13 +31,9 @@
        %assign message_list_ident = "NULL"
      %endif
 
-     %assign prio = ["EMERG_EVENT", "ALERT_EVENT", "CRIT_EVENT", ...
-        "ERROR_EVENT", "WARN_EVENT", "NOTICE_EVENT", "INFO_EVENT", ...
-        "DEBUG_EVENT"]
      %<LibBlockPWork(EventPtr,"","",0)> = \
        pdserv_event(get_pdserv_ptr(), \
          "%<FEVAL("blockpath", LibGetFormattedBlockPath(block))>", \
-         %<prio[SFcnParamSettings.Priority-1]>, \
          %<LibBlockInputSignalWidth(0)>);
 
      pdserv_event_set_text(
@@ -57,6 +53,9 @@
   %%
   %assign invert = SFcnParamSettings.Invert ? "!" : ""
   %%
+  %assign prio = ["EMERG_EVENT", "ALERT_EVENT", "CRIT_EVENT", ...
+     "ERROR_EVENT", "WARN_EVENT", "NOTICE_EVENT", "INFO_EVENT", ...
+     "DEBUG_EVENT"]
 
   /* %<Type> Block: %<Name>
    */
@@ -87,7 +86,7 @@
 
             %<y> = 1.0e-9 * time->tv_nsec + time->tv_sec;
             pdserv_event_set(%<LibBlockPWork(EventPtr,"","",0)>, \
-                    %<SignalIdx>, 1, time);
+                    %<SignalIdx>, %<prio[SFcnParamSettings.Priority-1]>, time);
         %%
         %if EXISTS(delay)
           }
@@ -101,8 +100,8 @@
       %endif
           if (%<ResetTest>) {
             %<y> = 0.0;
-            pdserv_event_set(%<LibBlockPWork(EventPtr,"","",0)>, \
-                    %<SignalIdx>, 0, get_etl_world_time(%<tid>));
+            pdserv_event_reset(%<LibBlockPWork(EventPtr,"","",0)>, \
+                    %<SignalIdx>, get_etl_world_time(%<tid>));
           }
       %if EXISTS(delay)
         }
