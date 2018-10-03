@@ -40,5 +40,11 @@ fi
 # Requires shopt -s extglob
 cp -a --remove-destination $(dirname $0)/!(include|src|$(basename $0)) ${DST}
 
+# rtwbuild crashes if rtw/Contents.m exists!
+# ver('rtw') returns an unacceptable value in that case
+if test "$(basename $DST)" != "rtw"; then
+  mv ${DST}/etherlab/Contents.m ${DST}
+fi
+
 echo "Files copied to ${DST}"
 echo "Now start matlab and execute 'run ${DST}/setup_etherlab.m'"

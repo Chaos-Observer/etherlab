@@ -141,7 +141,7 @@ endif
 
 #--------------------------- Tool Specifications -------------------------------
 
-ETHERLAB_DIR = @ETHERLAB_DIR@
+ETHERLAB_DIR = @TMF_ROOT@
 PLATFORM_LIBDIR = @CMAKE_INSTALL_LIBDIR@
 
 WARN_ON_GLNX = 1
@@ -166,7 +166,7 @@ endif
 
 INCLUDES = -I. -I$(RELATIVE_PATH_TO_ANCHOR) $(MATLAB_INCLUDES) $(ADD_INCLUDES) $(USER_INCLUDES) \
 	$(INSTRUMENT_INCLUDES)  $(MODELREF_INC_PATH) $(SHARED_INCLUDES) \
-        -I$(ETHERLAB_DIR)/include @OLDINCLUDES@
+        -I$(ETHERLAB_DIR)/@INSTALL_PATH@/include -I$(ETHERLAB_DIR)/include
 RTM_CC_OPTS = -DUSE_RTMODEL
 
 #-------------------------------- C Flags --------------------------------------
@@ -208,7 +208,7 @@ CFLAGS   = $(DBG_FLAG) $(CC_OPTS) $(DEFINES_CUSTOM) $(CPP_REQ_DEFINES) $(INCLUDE
 CPPFLAGS = $(CPP_ANSI_OPTS) $(DBG_FLAG) $(CPP_OPTS) $(CC_OPTS) $(DEFINES_CUSTOM) $(CPP_REQ_DEFINES) $(INCLUDES) $(EXTRA_CFLAGS)
 #-------------------------- Additional Libraries ------------------------------
 
-SYSTEM_LIBS += @RPATH@ -lm -lpdserv -ldl -lrt -pthread
+SYSTEM_LIBS += -L$(ETHERLAB_DIR)/$(PLATFORM_LIBDIR) @RPATH@ -lm -lpdserv -ldl -lrt -pthread
 
 ifneq ($(findstring rtipc.c,$(S_FUNCTIONS)),)
     SYSTEM_LIBS += -lrtipc
@@ -327,7 +327,7 @@ endif
 %.o : $(RELATIVE_PATH_TO_ANCHOR)/%.cpp
 	$(cpp) -c $(CPPFLAGS) $(GCC_WALL_FLAG_MAX) "$<"
 
-%.o : $(ETHERLAB_DIR)/src/%.c
+%.o : $(ETHERLAB_DIR)/@INSTALL_PATH@/src/%.c
 	$(cc) -c $(CFLAGS) $(GCC_WALL_FLAG) "$<"
 
 |>START_EXPAND_RULES<|%.o : |>EXPAND_DIR_NAME<|/%.c

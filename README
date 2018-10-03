@@ -211,11 +211,9 @@ Using EtherLab in a hosted environment (power users)
 
     Dive into the directory containing <model>_etl_hrt -- not into the
     directory <model>_etl_hrt itself. Type
-    $ make -C <model>_etl_hrt -f <model>.mk \
-                MATLAB_DIR=$(MATLAB_ROOT) \
-                ETHERLAB_DIR=/usr/local/share/etherlab
-    and there you go! (MATLAB_DIR and/or ETHERLAB_DIR may be omitted if they
-    is the same as on the host where the code is generated)
+    $ make -C <model>_etl_hrt -f <model>.mk MATLAB_ROOT=${MATLAB_ROOT}
+    and there you go! (MATLAB_ROOT may be omitted if the path on the host
+    and target machines does not change)
 
     If the code is generated on a windows host, you will have to edit
     <model>_etl_hrt/<model>.mk and remove references to drive letters (e.g.

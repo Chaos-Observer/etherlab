@@ -56,6 +56,11 @@ SET (VERSION ${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_LEVEL})
 
 INCLUDE (GNUInstallDirs)
 
+# In this section, define
+#    - ETHERLAB_DIR:    Directory where all the files are copied
+#    - TMF_ROOT:        path for ETHERLAB_DIR in TMF
+#    - INSTALL_PATH:    path relative to ETHERLAB_DIR in TMF where include/
+#                       and src/ are located
 IF (DEFINED PREFIX)
     MESSAGE (WARNING
         "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
@@ -64,19 +69,22 @@ IF (DEFINED PREFIX)
         "You can continue using PREFIX, but it would be better to update\n"
         "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n")
 
+    SET (RPATH "-Wl,-rpath=$(ETHERLAB_DIR)/$(PLATFORM_LIBDIR)")
+
     SET (TARGETDIR "rtw")
-    SET (ETHERLAB_DIR "${PREFIX}/rtw")
-    SET (RPATH "-L$(ETHERLAB_DIR)/../$(PLATFORM_LIBDIR) -Wl,-rpath=$(ETHERLAB_DIR)/../$(PLATFORM_LIBDIR)")
-    SET (OLDINCLUDES "-I$(ETHERLAB_DIR)/../include")
-    SET (TARGET_ROOT "${PREFIX}")
+    SET (INSTALL_PATH "${TARGETDIR}")
+    SET (ETHERLAB_DIR "${PREFIX}/${TARGETDIR}")
+    SET (TMF_ROOT "${PREFIX}")
 
 ELSE ()
 
     IF (NOT DEFINED TARGETDIR)
         SET (TARGETDIR ${PROJECT_NAME})
     ENDIF()
-    SET (ETHERLAB_DIR "${CMAKE_INSTALL_FULL_DATAROOTDIR}/${TARGETDIR}")
-    SET (TARGET_ROOT "${CMAKE_INSTALL_FULL_DATAROOTDIR}")
+
+    SET (INSTALL_PATH "${CMAKE_INSTALL_DATADIR}/${TARGETDIR}")
+    SET (ETHERLAB_DIR "${CMAKE_INSTALL_FULL_DATADIR}/${TARGETDIR}")
+    SET (TMF_ROOT "${CMAKE_INSTALL_PREFIX}")
 
 ENDIF ()
 
@@ -110,8 +118,8 @@ INSTALL (FILES ${CMAKE_SOURCE_DIR}/README
 
 CONFIGURE_FILE("etherlab.spec.in"
     "${CMAKE_CURRENT_BINARY_DIR}/etherlab.spec")
-CONFIGURE_FILE("rtw/Contents.m.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/rtw/Contents.m")
+CONFIGURE_FILE("rtw/etherlab/Contents.m.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/rtw/etherlab/Contents.m")
 CONFIGURE_FILE("rtw/etherlab_hrt.tmf.in"
     "${CMAKE_CURRENT_BINARY_DIR}/rtw/etherlab_hrt.tmf")
 
