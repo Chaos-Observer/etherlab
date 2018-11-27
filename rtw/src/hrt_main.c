@@ -1506,8 +1506,7 @@ int main(int argc, char **argv)
 #endif
     }
 
-    syslog(LOG_INFO, "Starting main thread with dt = %u ns.",
-            (unsigned int)(p_task->sample_time * 1e9 + 0.5));
+    syslog(LOG_INFO, "Starting main thread.");
 
     /* Now run main task */
     run_task(&task[0]);
