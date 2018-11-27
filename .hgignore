@@ -1,7 +1,14 @@
 syntax: glob
 
+**.cmake
 **.orig
 **.sw?
 **/bak/
 **~
 ./build*
+CMakeCache.txt
+CMakeFiles
+Makefile
+etherlab.spec
+rtw/etherlab/Contents.m
+rtw/etherlab_hrt.tmf
