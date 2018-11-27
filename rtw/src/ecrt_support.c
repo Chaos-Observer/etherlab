@@ -1,11 +1,11 @@
-/* This is the EtherCAT support layer for EtherLab. It is linked to every 
- * model and deals with the complexity of registering EtherCAT terminals 
+/* This is the EtherCAT support layer for EtherLab. It is linked to every
+ * model and deals with the complexity of registering EtherCAT terminals
  * on different EtherCAT masters for various sample times.
- * 
+ *
  * The code is used as follows:
  *      - Initialise structures using ecs_init()
  *      - Register EtherCAT slaves using ecs_reg_pdo() or ecs_reg_pdo_range()
- *      - If a slave requires SDO configuration objects, register them 
+ *      - If a slave requires SDO configuration objects, register them
  *        using ecs_reg_sdo()
  *      - Before going into the cyclic real time mode, call ecs_start().
  *      - In the cyclic mode, call ecs_process() to input new values
@@ -169,7 +169,7 @@ struct ecat_master {
                                  * it is reworked into an array for faster
                                  * access */
 
-    unsigned int fastest_tid;   /* Fastest RTW task id that uses this 
+    unsigned int fastest_tid;   /* Fastest RTW task id that uses this
                                  * master */
     unsigned int tid_trigger;
 
@@ -200,7 +200,7 @@ static struct ecat_data {
     unsigned int single_tasking;
 
     /* This list is used to store all masters during the registration
-     * process. Thereafter this list is reworked in ecs_start(), moving 
+     * process. Thereafter this list is reworked in ecs_start(), moving
      * the masters and domains into the st[] struct below */
     struct list_head master_list;
 
@@ -699,7 +699,7 @@ ecs_read_be_double(const struct endian_convert_t *c)
  *
  * It does the following:
  *  - calls ecrt_master_receive() for every master whose fastest domain is in
- *    this task. 
+ *    this task.
  *  - calls ecrt_domain_process() for every domain in this task
  */
 void
@@ -717,7 +717,7 @@ ecs_receive(void)
 
     if (!tid && !ETL_is_major_step())
         return;
-        
+
     list_for_each(master, &ecat_data.master_list, struct ecat_master) {
 
 #if MT
@@ -735,7 +735,7 @@ ecs_receive(void)
             pr_debug("%s master(%i)\n", __func__, master->fastest_tid);
 #endif
         }
-        
+
         list_for_each(domain, &master->domain_list, struct ecat_domain) {
 
 #if MT
@@ -994,7 +994,7 @@ register_pdos( ec_slave_config_t *slave_config, struct ecat_domain *domain,
         }
         else {
             if (pdo_map->bit_pos) {
-                snprintf(errbuf, sizeof(errbuf), 
+                snprintf(errbuf, sizeof(errbuf),
                         "Pdo Entry #x%04X.%u is not byte aligned",
                         pdo_map->pdo_entry_index,
                         pdo_map->pdo_entry_subindex);
@@ -1007,7 +1007,7 @@ register_pdos( ec_slave_config_t *slave_config, struct ecat_domain *domain,
     return NULL;
 
 out_slave_failed:
-    snprintf(errbuf, sizeof(errbuf), 
+    snprintf(errbuf, sizeof(errbuf),
             "%s() failed ", failed_method);
     return errbuf;
 }
@@ -1047,7 +1047,7 @@ init_slave(const struct ec_slave *slave)
             sdo != &slave->sdo_config[slave->sdo_config_count]; sdo++) {
         if (sdo->byte_array) {
             if (sdo->sdo_subindex >= 0) {
-                if (ecrt_slave_config_sdo(slave_config, 
+                if (ecrt_slave_config_sdo(slave_config,
                             sdo->sdo_index, sdo->sdo_subindex,
                             (const uint8_t*)sdo->byte_array,
                             sdo->value)) {
@@ -1103,7 +1103,7 @@ init_slave(const struct ec_slave *slave)
     }
 
     /* Send SoE configuration to the slave */
-    for (soe = slave->soe_config; 
+    for (soe = slave->soe_config;
             soe != &slave->soe_config[slave->soe_config_count]; soe++) {
         if (ecrt_slave_config_idn(slave_config,
                     0, /* drive_no */
@@ -1170,7 +1170,7 @@ init_slave(const struct ec_slave *slave)
     return NULL;
 
 out_slave_failed:
-    snprintf(errbuf, sizeof(errbuf), 
+    snprintf(errbuf, sizeof(errbuf),
             "%s() failed while configuring slave %u:%u",
             failed_method, slave->alias, slave->position);
     return errbuf;
@@ -1178,10 +1178,10 @@ out_slave_failed:
 
 /***************************************************************************/
 int ecs_sdo_handler(
-        unsigned int master_id, 
-        unsigned int alias, 
-        unsigned int position, 
-        unsigned int len, 
+        unsigned int master_id,
+        unsigned int alias,
+        unsigned int position,
+        unsigned int len,
         void **addr)
 {
     struct ec_slave_sdo *s = malloc(sizeof(struct ec_slave_sdo));
@@ -1201,7 +1201,7 @@ int ecs_sdo_handler(
 
 /***************************************************************************/
 
-const char *ecs_init( 
+const char *ecs_init(
         unsigned int *st,
         size_t nst,
         unsigned int single_tasking     /* Set if the model is single tasking,
@@ -1218,7 +1218,7 @@ const char *ecs_init(
 
 /***************************************************************************/
 
-const char * ecs_start_slaves( 
+const char * ecs_start_slaves(
         const struct ec_slave *slave_head
         )
 {
@@ -1388,7 +1388,7 @@ ecs_setup_master( unsigned int master_id,
         unsigned int refclk_sync_dec, void **master_p)
 {
     const char *errmsg;
-    /* Get the master structure, making sure not to change the task it 
+    /* Get the master structure, making sure not to change the task it
      * is currently assigned to */
     struct ecat_master *master = get_master(master_id, ~0U, &errmsg);
 
@@ -1407,7 +1407,7 @@ ecs_setup_master( unsigned int master_id,
 /***************************************************************************/
 
 ec_domain_t *
-ecs_get_domain_ptr(unsigned int master_id, unsigned int domain_id, 
+ecs_get_domain_ptr(unsigned int master_id, unsigned int domain_id,
         char input, char output, unsigned int tid, const char **errmsg)
 {
     struct ecat_master *master;
