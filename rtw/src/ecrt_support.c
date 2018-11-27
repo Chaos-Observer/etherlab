@@ -23,15 +23,14 @@
 #include <pthread.h>
 #include "ecrt_support.h"
 
+extern pthread_key_t monotonic_time_key;
+
 #if MT
 #include <semaphore.h>
 extern pthread_key_t tid_key;
 #endif
 
-#ifndef EC_TIMESPEC2NANO
-#define EC_TIMESPEC2NANO(TV) \
-    (((TV).tv_sec - 946684800ULL) * 1000000000ULL + (TV).tv_nsec)
-#endif
+#define ETL_TIMESPEC2NANO(TV) ((TV).tv_sec * 1000000000ULL + (TV).tv_nsec)
 
 /* The following message gets repeated quite frequently. */
 const char *no_mem_msg = "Could not allocate memory";
@@ -711,6 +710,9 @@ ecs_receive(void)
     int trigger;
     unsigned int tid = 0;
 
+    struct timespec *monotonic_time =
+        (struct timespec *) pthread_getspecific(monotonic_time_key);
+
 #if MT
     tid = *(unsigned int*)pthread_getspecific(tid_key);
 #endif
@@ -728,6 +730,10 @@ ecs_receive(void)
 #endif
 
         if (trigger) {
+#ifdef EC_HAVE_SYNC_TO
+            ecrt_master_application_time(master->handle,
+                    ETL_TIMESPEC2NANO(*monotonic_time));
+#endif
             ecrt_master_receive(master->handle);
             ecrt_master_state(master->handle, &master->state);
 
@@ -830,12 +836,20 @@ ecs_send(void)
             struct timespec tp;
             master->tid_trigger = master->fastest_tid;
 
+#ifndef EC_HAVE_SYNC_TO
             clock_gettime(CLOCK_MONOTONIC, &tp);
             ecrt_master_application_time(master->handle,
-                    EC_TIMESPEC2NANO(tp));
+                    ETL_TIMESPEC2NANO(tp));
+#endif
 
             if (master->refclk_trigger_init && !--master->refclk_trigger) {
+#ifdef EC_HAVE_SYNC_TO
+                clock_gettime(CLOCK_MONOTONIC, &tp);
+                ecrt_master_sync_reference_clock_to(master->handle,
+                        ETL_TIMESPEC2NANO(tp));
+#else
                 ecrt_master_sync_reference_clock(master->handle);
+#endif
                 master->refclk_trigger = master->refclk_trigger_init;
             }
 

@@ -299,6 +299,8 @@ struct thread_task {
     const char* (*rt_OneStep)(uint_T);
 };
 
+pthread_key_t monotonic_time_key;
+
 #define NSEC_PER_SEC (1000000000)
 
 #undef timeradd
@@ -493,9 +495,17 @@ void *run_task(void *p)
 
     syslog(LOG_INFO, "Starting task with dt = %u ns.", dt);
 
+    pthread_setspecific(monotonic_time_key, &thread->monotonic_time);
 #if MT
     pthread_setspecific(tid_key, &thread->tid);
 #endif
+
+    uint64_t t64 = 1000000000ULL * thread->monotonic_time.tv_sec
+        + thread->monotonic_time.tv_nsec;
+    syslog(LOG_INFO, "Start time   %" PRIu64, t64);
+    clock_gettime(CLOCK_MONOTONIC, &start_time);
+    t64 = 1000000000ULL * start_time.tv_sec + start_time.tv_nsec;
+    syslog(LOG_INFO, "Current time %" PRIu64, t64);
 
     while (!thread->err && *thread->running
             && !clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME,
@@ -1375,6 +1385,7 @@ int main(int argc, char **argv)
     pthread_rwlockattr_setkind_np(&rwlock_attr,
             PTHREAD_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP);
 
+    pthread_key_create(&monotonic_time_key, 0);
 #if MT
     pthread_key_create(&tid_key, 0);
 #endif
@@ -1527,6 +1538,7 @@ int main(int argc, char **argv)
     if (pidPath[0])
         remove_pid_file();
 
+    pthread_key_delete(monotonic_time_key);
 #if MT
     pthread_key_delete(tid_key);
 #endif
