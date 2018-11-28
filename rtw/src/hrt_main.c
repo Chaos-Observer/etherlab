@@ -313,8 +313,10 @@ inline void timeradd(struct timespec *t, unsigned int dt)
     }
 }
 
-#define DIFF_NS(A, B) (((long long) (B).tv_sec - (A).tv_sec) * NSEC_PER_SEC + \
-        (B).tv_nsec - (A).tv_nsec)
+#define DIFF_NS(A, B) (((long long) (B).tv_sec - (A).tv_sec) * NSEC_PER_SEC \
+        + (B).tv_nsec - (A).tv_nsec)
+
+#define TIMESPEC_TO_NS(TS) (NSEC_PER_SEC * (TS).tv_sec + (TS).tv_nsec)
 
 #define ABS(X) ((X) >= 0 ? (X) : -(X))
 
@@ -500,12 +502,15 @@ void *run_task(void *p)
     pthread_setspecific(tid_key, &thread->tid);
 #endif
 
-    uint64_t t64 = 1000000000ULL * thread->monotonic_time.tv_sec
-        + thread->monotonic_time.tv_nsec;
-    syslog(LOG_INFO, "Start time   %" PRIu64, t64);
     clock_gettime(CLOCK_MONOTONIC, &start_time);
-    t64 = 1000000000ULL * start_time.tv_sec + start_time.tv_nsec;
-    syslog(LOG_INFO, "Current time %" PRIu64, t64);
+    int64_t diff_us = DIFF_NS(thread->monotonic_time, start_time) / 1000;
+    if (diff_us > 0) {
+        syslog(LOG_INFO, "Started %" PRId64 " µs too late!", diff_us);
+    }
+    else {
+        syslog(LOG_INFO, "Waiting %" PRId64 " µs"
+                " until first run (sufficiently early)!", -diff_us);
+    }
 
     while (!thread->err && *thread->running
             && !clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME,
@@ -1471,9 +1476,13 @@ int main(int argc, char **argv)
      * threads, specifically to enable phasing */
     p_task = task + NUMTASKS-1;
     clock_gettime(CLOCK_MONOTONIC, &p_task->monotonic_time);
+
+    // Move starting time to the future. Otherwise tasks will be
+    // too late from the beginning (for MT this can be 20 ms).
+    timeradd(&p_task->monotonic_time, 100000000ULL); // 100 ms
+
     if (phase >= 0) {
-        uint64_t t64 = 1000000000ULL * p_task->monotonic_time.tv_sec
-            + p_task->monotonic_time.tv_nsec;
+        uint64_t t64 = TIMESPEC_TO_NS(p_task->monotonic_time);
         uint64_t dt = p_task->sample_time * 1e9;
         unsigned int phase_shift = dt - (t64 % dt);
 
