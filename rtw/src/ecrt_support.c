@@ -710,9 +710,6 @@ ecs_receive(void)
     int trigger;
     unsigned int tid = 0;
 
-    struct timespec *monotonic_time =
-        (struct timespec *) pthread_getspecific(monotonic_time_key);
-
 #if MT
     tid = *(unsigned int*)pthread_getspecific(tid_key);
 #endif
@@ -731,6 +728,9 @@ ecs_receive(void)
 
         if (trigger) {
 #ifdef EC_HAVE_SYNC_TO
+            struct timespec *monotonic_time =
+                (struct timespec *) pthread_getspecific(monotonic_time_key);
+
             ecrt_master_application_time(master->handle,
                     ETL_TIMESPEC2NANO(*monotonic_time));
 #endif
