@@ -295,7 +295,7 @@ properties (Access = private, Constant)
                                 hex2dec('6070'), 17, 16]}}};
 
     % Numeric value for SDO #x800n0:19
-    tc_code = [0:10,100:104];
+    tc_code = [0:10,100:102,104];
     resolution_code = [0,2,3];
 
     % All known sdo's
