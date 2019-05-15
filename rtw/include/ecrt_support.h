@@ -36,7 +36,7 @@ struct sdo_config {
     /* SDO values. Used by EtherCAT functions */
     uint16_t sdo_index;
     int16_t sdo_subindex; /* May be -1 to indicate complete access */
-    uint32_t value;     /* Scalar value or nelem in case of byte_array */
+    double value;         /* Scalar value or nelem in case of byte_array */
     const char *byte_array;
 };
 

@@ -1080,38 +1080,92 @@ init_slave(const struct ec_slave *slave)
             }
         }
         else {
+            union {
+                uint8_t   u8;
+                int8_t    s8;
+                uint16_t u16;
+                int16_t  s16;
+                uint32_t u32;
+                int32_t  s32;
+                uint64_t u64;
+                int64_t  s64;
+                float    f32;
+                double   f64;
+            } value;
+            const void *data = 0;
+            size_t len = 0;
+
             switch (sdo->datatype) {
                 case 1008U:
-                    if (ecrt_slave_config_sdo8(slave_config,
-                                sdo->sdo_index, sdo->sdo_subindex,
-                                (uint8_t)sdo->value)) {
-                        failed_method = "ecrt_slave_config_sdo8";
-                        goto out_slave_failed;
-                    }
+                    value.u8 = sdo->value;
+                    data = &value.u8;
+                    len = 1;
+                    break;
+
+                case 2008U:
+                    value.s8 = sdo->value;
+                    data = &value.s8;
+                    len = 1;
                     break;
 
                 case 1016U:
-                    if (ecrt_slave_config_sdo16(slave_config,
-                                sdo->sdo_index, sdo->sdo_subindex,
-                                (uint16_t)sdo->value)) {
-                        failed_method = "ecrt_slave_config_sdo16";
-                        goto out_slave_failed;
-                    }
+                    EC_WRITE_U16(&value.u16, sdo->value);
+                    data = &value.u16;
+                    len = 2;
+                    break;
+
+                case 2016U:
+                    EC_WRITE_S16(&value.s16, sdo->value);
+                    data = &value.s16;
+                    len = 2;
                     break;
 
                 case 1032U:
-                    if (ecrt_slave_config_sdo32(slave_config,
-                                sdo->sdo_index, sdo->sdo_subindex,
-                                sdo->value)) {
-                        failed_method = "ecrt_slave_config_sdo32";
-                        goto out_slave_failed;
-                    }
+                    EC_WRITE_U32(&value.u32, sdo->value);
+                    data = &value.u32;
+                    len = 4;
                     break;
 
-                default:
-                    failed_method = "ecrt_slave_config_sdo_unknown";
-                    goto out_slave_failed;
+                case 2032U:
+                    EC_WRITE_S32(&value.s32, sdo->value);
+                    data = &value.s32;
+                    len = 4;
                     break;
+
+                case 1064U:
+                    EC_WRITE_U64(&value.u64, sdo->value);
+                    data = &value.u64;
+                    len = 8;
+                    break;
+
+                case 2064U:
+                    EC_WRITE_S64(&value.s64, sdo->value);
+                    data = &value.s64;
+                    len = 8;
+                    break;
+
+#ifdef EC_WRITE_REAL
+                case 3032U:
+                    EC_WRITE_REAL(&value.f32, sdo->value);
+                    data = &value.f32;
+                    len = 4;
+                    break;
+#endif
+
+#ifdef EC_WRITE_LREAL
+                case 3064U:
+                    EC_WRITE_LREAL(&value.f64, sdo->value);
+                    data = &value.f64;
+                    len = 8;
+                    break;
+#endif
+            }
+
+            if (len && ecrt_slave_config_sdo(slave_config,
+                        sdo->sdo_index, sdo->sdo_subindex,
+                        (const uint8_t*)data, len)) {
+                failed_method = "ecrt_slave_config_sdo";
+                goto out_slave_failed;
             }
         }
     }

@@ -1,5 +1,8 @@
 $Id$
 
+- SDO values can now be any data type, including floats
+  This affects EL3356, see ReleaseNotes.txt
+
 Version 2.1:
 
 - Added support for SDO read/write in source files

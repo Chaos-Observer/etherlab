@@ -31,8 +31,13 @@
  *            Index,       -1,      0, [Byte, Byte, ...] }
  *
  *          Value and Byte must be double-typed.
+ *
+ *          Example:
  *          Row 1 configures a single value
- *                BitLen = one of 8, 16, 32
+ *                BitLen = one of  8,  16,  32,  64: uintX_t
+ *                                -8, -16, -32, -64: intX_t
+ *                                             0.32: single
+ *                                             0.64: double
  *          Row 2 configures a variable array intepreted as uint8
  *          Row 3 configures a variable array using complete access
  *
@@ -236,6 +241,11 @@ static const struct datatype_info *type_bool   = &datatype_info[0];
 static const struct datatype_info *type_uint8  = &datatype_info[7];
 static const struct datatype_info *type_uint16 = &datatype_info[8];
 static const struct datatype_info *type_uint32 = &datatype_info[10];
+static const struct datatype_info *type_uint64 = &datatype_info[14];
+static const struct datatype_info *type_sint8  = &datatype_info[15];
+static const struct datatype_info *type_sint16 = &datatype_info[16];
+static const struct datatype_info *type_sint32 = &datatype_info[17];
+static const struct datatype_info *type_sint64 = &datatype_info[18];
 static const struct datatype_info *type_single = &datatype_info[19];
 static const struct datatype_info *type_double = &datatype_info[20];
 
@@ -267,7 +277,7 @@ struct ecat_slave {
         const struct datatype_info *datatype;
 
         /* Configuration value or array length if it is used */
-        uint_T value;
+        real_T value;
         uint8_T *byte_array;
 
     } *sdo_config, *sdo_config_end;
@@ -816,7 +826,7 @@ get_slave_sdo(struct ecat_slave *slave, const mxArray* array,
         char_T ctxt[50];
         real_T *pval;
         size_t nelem;
-        size_t bitlen;
+        int bitlen;
 
         snprintf(ctxt, sizeof(ctxt), "%s.sdo{Row=%zu}", context, i+1);
         snprintf(value_ctxt, sizeof(value_ctxt), "sdo{%zu,4}", i+1);
@@ -839,7 +849,7 @@ get_slave_sdo(struct ecat_slave *slave, const mxArray* array,
         /* BitLen */
         RETURN_ON_ERROR (get_numeric_scalar(slave, ctxt, __LINE__,
                     i + 2*rows, array, &val));
-        bitlen = val;
+        bitlen = round(val*100);
 
         /* Value */
         valueCell = mxGetCell(array, i + 3*rows);
@@ -853,6 +863,8 @@ get_slave_sdo(struct ecat_slave *slave, const mxArray* array,
         }
 
         if (bitlen) {
+            int warn = 0;
+
             /* Single value */
             if (nelem > 1) {
                 pr_error(slave, context, value_ctxt, __LINE__,
@@ -861,31 +873,84 @@ get_slave_sdo(struct ecat_slave *slave, const mxArray* array,
             }
 
             switch (bitlen) {
-                case 8:
+                case 800:
+                case 100800:
                     sdo_config->datatype = type_uint8;
+                    warn = 1;
                     break;
 
-                case 16:
+                case 1600:
+                case 101600:
                     sdo_config->datatype = type_uint16;
+                    warn = 1;
+                    break;
+
+                case 3200:
+                case 103200:
+                    sdo_config->datatype = type_uint32;
+                    warn = 1;
+                    break;
+
+                case 6400:
+                case 106400:
+                    sdo_config->datatype = type_uint64;
+                    warn = 1;
+                    break;
+
+                case -800:
+                case 200800:
+                    sdo_config->datatype = type_sint8;
+                    break;
+
+                case -1600:
+                case 201600:
+                    sdo_config->datatype = type_sint16;
+                    break;
+
+                case -3200:
+                case 203200:
+                    sdo_config->datatype = type_sint32;
+                    break;
+
+                case -6400:
+                case 206400:
+                    sdo_config->datatype = type_sint64;
                     break;
 
                 case 32:
-                    sdo_config->datatype = type_uint32;
+                case 303200:
+                    sdo_config->datatype = type_single;
+                    break;
+
+                case 64:
+                case 306400:
+                    sdo_config->datatype = type_double;
                     break;
 
                 default:
                     {
-                        char_T sdo_ctxt[20];
+                        char_T sdo_ctxt[50];
 
                         snprintf(sdo_ctxt, sizeof(sdo_ctxt),
                                 "sdo{%zu,3} = %i", i+1, (int)val);
                         pr_error(slave, context, sdo_ctxt, __LINE__,
-                                "SDO BitLen must be one of 8,16,32");
+                                "Invalid SDO BitLen specified");
                     }
                     return -1;
             }
 
             sdo_config->value = *pval;
+
+            if (warn && sdo_config->value < 0.0) {
+                char_T sdo_ctxt[50];
+
+                snprintf(sdo_ctxt, sizeof(sdo_ctxt),
+                        "sdo{%zu,3} = %g (#x%04X:%02x)",
+                        i+1, sdo_config->value,
+                        sdo_config->index, sdo_config->subindex);
+                pr_warn(slave, context, sdo_ctxt, __LINE__,
+                        "Negative value for unsigned integer\n");
+            }
         }
         else {
             /* SDO value is an array */
@@ -917,11 +982,11 @@ get_slave_sdo(struct ecat_slave *slave, const mxArray* array,
         }
         else {
             pr_debug(slave, NULL, "", 2,
-                    "Index=#x%04X SubIndex=%u BitLen=%u Value=%u\n",
+                    "Index=#x%04X:%02x=%g (%s)\n",
                     slave->sdo_config[i].index,
                     slave->sdo_config[i].subindex,
-                    slave->sdo_config[i].datatype->mant_bits,
-                    slave->sdo_config[i].value);
+                    slave->sdo_config[i].value,
+                    slave->sdo_config[i].datatype->name);
         }
     }
 
@@ -1168,7 +1233,7 @@ get_slave_config(struct ecat_slave *slave)
 
                 for (entry = pdo->entry; entry != pdo->entry_end; entry++) {
                     pr_debug(slave, NULL, "", 4,
-                            "Index=#x%04X SubIndex=%u BitLen=%2u\n",
+                            "Index=#x%04X:%02x BitLen=%2u\n",
                             entry->index,
                             entry->subindex,
                             entry->bitlen);
@@ -2487,8 +2552,8 @@ static void mdlRTW(SimStruct *S)
                     SSWRITE_VALUE_DTYPE_NUM, "DataTypeId",
                     &sdo->datatype->id, DTINFO(SS_UINT32, 0),
 
-                    SSWRITE_VALUE_DTYPE_NUM, "Value",
-                    &sdo->value, DTINFO(SS_UINT32, 0)))
+                    SSWRITE_VALUE_NUM, "Value",
+                    sdo->value))
                 return;
         }
         config_idx[n] = param_idx++;
