@@ -214,7 +214,7 @@ properties (Constant)
            hex2dec('8000'), hex2dec('11'), 16;
            hex2dec('8000'), hex2dec('12'), 16;
            hex2dec('8000'), hex2dec('13'), 16;
-           hex2dec('8000'), hex2dec('14'), 32;
+           hex2dec('8000'), hex2dec('14'), 0.32;
            hex2dec('8000'), hex2dec('29'), 16;
            hex2dec('8000'), hex2dec('2a'), 32;
            hex2dec('8000'), hex2dec('31'), 16;

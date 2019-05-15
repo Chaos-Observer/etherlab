@@ -15,9 +15,9 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "ha"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Tue Jul 24 09:30:38 2018"
+  LastModifiedDate	  "Wed May 15 18:06:20 2019"
   RTWModifiedTimeStamp	  453368596
-  ModelVersionFormat	  "1.%<AutoIncrement:1735>"
+  ModelVersionFormat	  "1.%<AutoIncrement:1738>"
   ConfigurationManager	  "rcs"
   SampleTimeColors	  off
   SampleTimeAnnotations	  off
@@ -585,7 +585,7 @@ Library {
   }
   System {
     Name		    "etherlab_lib"
-    Location		    [118, 202, 552, 410]
+    Location		    [929, 69, 1363, 277]
     Open		    on
     ModelBrowserVisibility  off
     ModelBrowserWidth	    200
@@ -621,7 +621,7 @@ Library {
       MaskIconUnits	      "pixels"
       System {
 	Name			"EtherCAT"
-	Location		[616, 50, 1029, 460]
+	Location		[1507, 630, 1920, 1040]
 	Open			off
 	ModelBrowserVisibility	off
 	ModelBrowserWidth	200
@@ -734,7 +734,7 @@ Library {
 	  MaskIconUnits		  "autoscale"
 	  System {
 	    Name		    "Beckhoff"
-	    Location		    [781, 177, 1543, 869]
+	    Location		    [1154, 348, 1916, 1040]
 	    Open		    off
 	    ModelBrowserVisibility  off
 	    ModelBrowserWidth	    200
@@ -1579,10 +1579,9 @@ Library {
 	      "hift Time Sync0|Factor|Shift Time0 Input|Cycle Time Sync1|Factor|Shift Time Sync1|Factor|Mode 0 Enable Filter ("
 	      "#x8000:01)|Mode 1 Enable Filter (#x8000:02)|Mode 0 Enable Averager (#x8000:03)|Mode 1 Enable Averager (#x8000:0"
 	      "4)|Symmetric Reference Potential (#x8000:05)|Mode 0 Filter (#x8000:11)|Mode 1 Filter (#x8000:12)|Dynamic filter"
-	      " change time [0.01s] (#x8000:13)|Dynamic filter delta (#x8000:14) (binary value)|Steady state window (#x8000:29"
-	      ")|Steady state tolerance (#x8000:2a)|Calibration interval [100ms] (#x8000:31)|Test interval (#x8000:32)|Enable "
-	      "ch. 1 filter (#x8010:06)|Ch.1 filter settings (#x8010:15)|Enable ch.2 filter (#x8020:06)|Ch.2 filter settings ("
-	      "#x8020:15)"
+	      " change time [0.01s] (#x8000:13)|Dynamic filter delta (#x8000:14)|Steady state window (#x8000:29)|Steady state "
+	      "tolerance (#x8000:2a)|Calibration interval [100ms] (#x8000:31)|Test interval (#x8000:32)|Enable ch. 1 filter (#"
+	      "x8010:06)|Ch.1 filter settings (#x8010:15)|Enable ch.2 filter (#x8020:06)|Ch.2 filter settings (#x8020:15)"
 	      MaskStyleString	      "edit,edit,popup(EL3356|EL3356-0010),edit,checkbox,edit,edit,edit,edit,edit,edit,edit,pop"
 	      "up(SM-Synchron|DC-Synchron|DC-Synchron (input based)|Custom),edit,min,max,min,max,checkbox,min,max,min,max,chec"
 	      "kbox,checkbox,checkbox,checkbox,checkbox,popup(FIR 50 Hz|FIR 60 Hz|IIR 1|IIR 2|IIR 3|IIR 4|IIR 5|IIR 6|IIR 7|II"
@@ -1621,7 +1620,7 @@ Library {
 	      MaskPortRotate	      "default"
 	      MaskIconUnits	      "normalized"
 	      MaskValueString	      "0|1|EL3356||off|[]|[]|[]|[]|-1|0||SM-Synchron|hex2dec('320')|0|1|0|0|off|0|1|0|0|off|off"
-	      "|on|on|off|FIR 50 Hz|FIR 50 Hz|10|hex2dec(num2hex(single(20)))|1000|5|1800|10|off|50 Hz FIR|off|50 Hz FIR"
+	      "|on|on|off|FIR 50 Hz|FIR 50 Hz|10|20|1000|5|1800|10|off|50 Hz FIR|off|50 Hz FIR"
 	      MaskTabNameString	      "Main,Main,Main,Main,Main,Main,Main,Main,Main,Main,Main,Main,Distributed Clocks,Distrib"
 	      "uted Clocks,Distributed Clocks,Distributed Clocks,Distributed Clocks,Distributed Clocks,Distributed Clocks,Dist"
 	      "ributed Clocks,Distributed Clocks,Distributed Clocks,Distributed Clocks,CoE #x8000,CoE #x8000,CoE #x8000,CoE #x"
@@ -1877,7 +1876,7 @@ Library {
 	      "_15=@33;sdo_16=@34;sdo_17=@35;sdo_18=@36;sdo_19=@37;sdo_20=@38;sdo_21=@39;"
 	      MaskInitialization      "Address = EtherCATSlave.formatAddress(master,index,tsample);\n\nrv = el500x(model).con"
 	      "figure(pdo_x1A02, ...\n    [  sdo_01,   sdo_02, sdo_03,   sdo_04,   sdo_05, sdo_06-1,...\n     sdo_07-1, sdo_08"
-	      "-1, sdo_09,   sdo_10,   sdo_11,   sdo_12,...\n     sdo_13-1,   sdo_14, sdo_15, sdo_16-1, sdo_17-1, sdo_18-1,..."
+	      "-1, sdo_09,   sdo_10,   sdo_11,   sdo_12,...\n       sdo_13,   sdo_14, sdo_15, sdo_16-1, sdo_17-1, sdo_18-1,..."
 	      "\n       sdo_19,   sdo_20, sdo_21],...\n    [dc_mode, dc_assign_activate, ...\n     dc_cycle0, dc_cycle0_factor"
 	      ",...\n     dc_shift0, dc_shift0_factor, dc_shift0_input,...\n     dc_cycle1, dc_cycle1_factor,...\n     dc_shif"
 	      "t1, dc_shift1_factor]);\n\nif numel(rv.PortConfig.output) > 2\n    EtherCATSlave.setPortNames({},...\n        {"

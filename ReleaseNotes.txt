@@ -1,0 +1,2 @@
+Incompatible changes:
+  - EL3356: Check SDO #x8000:14. This is now a float(32) value
