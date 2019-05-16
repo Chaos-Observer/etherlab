@@ -667,13 +667,13 @@
                 SPRINTF("%s\\x%02x", data_array, sdo.ByteArray[j])
         %endforeach
         %%
-        { 1008U, %<SPRINTF("0x%04X", sdo.Index)>, -1, %<count>, 
-          "%<data_array>" }, /* */ \
+        { 1008U, %<SPRINTF("0x%04X", sdo.Index)>, %<sdo.SubIndex>, %<count>, 
+          "%<data_array>" }, /* %<i> */ \
       %else
         %% Normal SDO
         %%
         { %<sdo.DataTypeId>, %<SPRINTF("0x%04X", sdo.Index)>, \
-          %<sdo.SubIndex>, %<sdo.Value>, NULL }, /* */ \
+          %<sdo.SubIndex>, %<sdo.Value>, NULL }, /* %<i> */ \
       %endif
     %endforeach
   };

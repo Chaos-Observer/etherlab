@@ -128,8 +128,8 @@ TxPDO2 = {hex2dec('1a01') Entries_1a01}</pre>
         required configuration options are set using the synchronous data
         objects cell array <tt>slave.SlaveConfig.sdo</tt>.
 
-        <p/>This cell array has 4 columns and as many rows as there are
-        options to be configured. The rows can be specified to configure
+        <p/>This cell or numeric array has 4 columns and as many rows as there
+        are options to be configured. The rows can be specified to configure
         either a single value or the whole SDO at once.
 
         <p/> Specify a single SDO value: This mode directly configures a
@@ -144,20 +144,32 @@ TxPDO2 = {hex2dec('1a01') Entries_1a01}</pre>
             <li> Value
         </ol>
 
-        Complete SDO specification: This mode configures all elements of a
-        SDO. In this case columns 2 and 3 are ignored and should be 0:
+        To specify a value array of uint8, DataType must be 0 and value
+        is a numeric array or a string.
         <ol>
             <li>SDO Index
-            <li>Ignored
-            <li>Ignored
+            <li>SDO SubIndex
+            <li>0
+            <li>Either a string, or an array of values interpreted as uint8
+        </ol>
+
+        Complete SDO access: This is the same as value array above,
+        except that SubIndex is -1 as well:
+        <ol>
+            <li>SDO Index
+            <li>-1
+            <li>0
             <li>Either a string, or an array of values interpreted as uint8
         </ol>
 
         For example:
         <pre>slave.SlaveConfig.sdo = { hex2dec('8000'),6,8,1;
                           hex2dec('8001'),0,0,'save';
-                          hex2dec('8002'),0,0,[64,65,66,67] };</pre>
+                          hex2dec('8002'),-1,0,[64,65,66,67];
+                          hex2dec('8003'),3,0,[64,65,66,67] };</pre>
 
+        When there are no special values (like arrays, string, compete access,
+        etc), the cell array can be replace by a Nx4 numeric array.
 
         <h3>Distributed Clocks configuration</h3>
         Distributed Clocks allows the slaves to be synchronized in the range

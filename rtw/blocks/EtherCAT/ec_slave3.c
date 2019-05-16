@@ -25,13 +25,15 @@
  *      product: Product Code
  *      description: (optional) Description string
  *
- *      sdo: SDO configuration; OPTIONAL; CellArray{n,4}
+ *      sdo: SDO configuration; OPTIONAL; CellArray{n,4} or Real(n,4)
  *          { Index, SubIndex, BitLen, Value;
  *            Index, SubIndex,      0, [Byte, Byte, ...];
+ *            Index, SubIndex,      0, 'string';
  *            Index,       -1,      0, [Byte, Byte, ...] }
  *
  *          Value and Byte must be double-typed.
  *
+ *          Whenever arrays are specified, BitLen must be 0
  *          Example:
  *          Row 1 configures a single value
  *                BitLen = one of  8,  16,  32,  64: uintX_t
@@ -39,7 +41,12 @@
  *                                             0.32: single
  *                                             0.64: double
  *          Row 2 configures a variable array intepreted as uint8
- *          Row 3 configures a variable array using complete access
+ *          Row 3 configures a variable array intepreted as string
+ *          Row 4 configures a variable array using complete access
+ *
+ *
+ *          If SDO is an nx4 matrix of reals, only values of type
+ *          as in Row 1 can be specified.
  *
  *      soe: SOE configuration; OPTIONAL; CellArray of vectors
  *          { Index, [Value, Value, ...];...
@@ -207,34 +214,35 @@
 static const struct datatype_info {
     uint_T id;
     char *name;
+    uint_T is_generic;
     int_T mant_bits;
     DTypeId sl_type;
 } datatype_info[] = {
-    { 1001, "Boolean",    1,  SS_BOOLEAN }, /*  0 */
-    { 1002, "Bit2",       2,  SS_UINT8   }, /*  1 */
-    { 1003, "Bit3",       3,  SS_UINT8   }, /*  2 */
-    { 1004, "Bit4",       4,  SS_UINT8   }, /*  3 */
-    { 1005, "Bit5",       5,  SS_UINT8   }, /*  4 */
-    { 1006, "Bit6",       6,  SS_UINT8   }, /*  5 */
-    { 1007, "Bit7",       7,  SS_UINT8   }, /*  6 */
-    { 1008, "Unsigned8",  8,  SS_UINT8   }, /*  7 */
-    { 1016, "Unsigned16", 16, SS_UINT16  }, /*  8 */
-    { 1024, "Unsigned24", 24, SS_UINT32  }, /*  9 */
-    { 1032, "Unsigned32", 32, SS_UINT32  }, /* 10 */
-    { 1040, "Unsigned40", 40, SS_DOUBLE  }, /* 11 */
-    { 1048, "Unsigned48", 48, SS_DOUBLE  }, /* 12 */
-    { 1056, "Unsigned56", 56, SS_DOUBLE  }, /* 13 */
-    { 1064, "Unsigned64", 64, SS_DOUBLE  }, /* 14 */
+    { 1001, "Boolean",    0, 1,  SS_BOOLEAN }, /*  0 */
+    { 1002, "Bit2",       0, 2,  SS_UINT8   }, /*  1 */
+    { 1003, "Bit3",       0, 3,  SS_UINT8   }, /*  2 */
+    { 1004, "Bit4",       0, 4,  SS_UINT8   }, /*  3 */
+    { 1005, "Bit5",       0, 5,  SS_UINT8   }, /*  4 */
+    { 1006, "Bit6",       0, 6,  SS_UINT8   }, /*  5 */
+    { 1007, "Bit7",       0, 7,  SS_UINT8   }, /*  6 */
+    { 1008, "Unsigned8",  1, 8,  SS_UINT8   }, /*  7 */
+    { 1016, "Unsigned16", 1, 16, SS_UINT16  }, /*  8 */
+    { 1024, "Unsigned24", 0, 24, SS_UINT32  }, /*  9 */
+    { 1032, "Unsigned32", 1, 32, SS_UINT32  }, /* 10 */
+    { 1040, "Unsigned40", 0, 40, SS_DOUBLE  }, /* 11 */
+    { 1048, "Unsigned48", 0, 48, SS_DOUBLE  }, /* 12 */
+    { 1056, "Unsigned56", 0, 56, SS_DOUBLE  }, /* 13 */
+    { 1064, "Unsigned64", 1, 64, SS_DOUBLE  }, /* 14 */
 
-    { 2008, "Integer8",   8,  SS_INT8    }, /* 15 */
-    { 2016, "Integer16",  16, SS_INT16   }, /* 16 */
-    { 2032, "Integer32",  32, SS_INT32   }, /* 17 */
-    { 2064, "Integer64",  64, SS_DOUBLE  }, /* 18 */
+    { 2008, "Integer8",   1, 8,  SS_INT8    }, /* 15 */
+    { 2016, "Integer16",  1, 16, SS_INT16   }, /* 16 */
+    { 2032, "Integer32",  1, 32, SS_INT32   }, /* 17 */
+    { 2064, "Integer64",  1, 64, SS_DOUBLE  }, /* 18 */
 
-    { 3032, "Real32",     32, SS_SINGLE  }, /* 19 */
-    { 3064, "Real64",     64, SS_DOUBLE  }, /* 20 */
+    { 3032, "Real32",     1, 32, SS_SINGLE  }, /* 19 */
+    { 3064, "Real64",     1, 64, SS_DOUBLE  }, /* 20 */
 
-    {    0,                              },
+    {    0,                                 },
 };
 
 static const struct datatype_info *type_bool   = &datatype_info[0];
@@ -797,39 +805,255 @@ get_sync_manager(struct ecat_slave *slave, struct sync_manager *sm,
     return 0;
 }
 
+/****************************************************************************/
+static const struct datatype_info *
+get_data_type_from_real(real_T type_id)
+{
+    const struct datatype_info *dt;
+    uint_T dt_id = type_id;
+
+    for (dt = datatype_info; dt->id; ++dt) {
+        if (dt->id == dt_id)
+            return dt;
+    }
+
+    dt_id = type_id*100;
+    switch (dt_id) {
+        case    32: return type_single;
+        case    64: return type_double;
+        case   100:
+        case   200:
+        case   300:
+        case   400:
+        case   500:
+        case   600:
+        case   700:
+        case   800: return &datatype_info[dt_id/100 - 1];
+        case  1600: return type_uint16;
+        case  2400: return &datatype_info[9];
+        case  3200: return type_uint32;
+        case  4000: return &datatype_info[11];
+        case  4800: return &datatype_info[12];
+        case  5600: return &datatype_info[13];
+        case  6400: return type_uint64;
+        case  -800: return type_sint8;
+        case -1600: return type_sint16;
+        case -3200: return type_sint32;
+        case -6400: return type_sint64;
+    }
+
+    return NULL;
+}
+
+/****************************************************************************/
+static const struct datatype_info *
+get_data_type(struct ecat_slave *slave,
+        const char_T *p_ctxt, const char_T *ctxt, int_T line,
+        const mxArray *spec)
+{
+    const struct datatype_info *dt = NULL;
+
+    if (!spec || !mxGetNumberOfElements(spec))
+        return NULL;
+
+    if (mxIsDouble(spec)) {
+        real_T dt_spec = *mxGetPr(spec);
+
+        if (!dt_spec)
+            return NULL;
+
+        dt = get_data_type_from_real(dt_spec);
+        if (!dt)
+            pr_error(slave, p_ctxt, ctxt, line,
+                    "Invalid data type %g", dt_spec);
+    }
+    else if (mxIsChar(spec)) {
+        char_T name[20];
+
+        if (mxGetString(spec, name, sizeof(name))) {
+            pr_error(slave, p_ctxt, ctxt, line, "Invalid string data type");
+            return NULL;
+        }
+
+        for (dt = datatype_info; dt->id; ++dt) {
+            if (!strcmp(name, dt->name))
+                return dt;
+        }
+        dt = NULL;
+
+        pr_error(slave, p_ctxt, ctxt, line, "Invalid data type %s", name);
+    }
+    else if (mxIsStruct(spec)) {
+        const mxArray *class = mxGetField(spec, 0, "Class");
+        char_T class_name[20];
+
+        if (!class || !mxIsChar(class) || !mxGetNumberOfElements(class)
+                || mxGetString(class, class_name, sizeof(class_name))) {
+            pr_error(slave, p_ctxt, ctxt, line,
+                    "Invalid class name in data type!");
+            return NULL;
+        }
+
+        if (!strcmp(class_name, "DOUBLE"))
+            return type_double;
+        else if (!strcmp(class_name, "SINGLE"))
+            return type_single;
+        else if (!strcmp(class_name, "INT")) {
+            const mxArray *is_signed = mxGetField(spec, 0, "IsSigned");
+            const mxArray *mant_bits = mxGetField(spec, 0, "MantBits");
+            const real_T *val;
+            real_T dt_id;
+
+            if (!is_signed || !mxIsDouble(is_signed)
+                    || !mxGetNumberOfElements(is_signed)
+                    || !(val = mxGetPr(is_signed))) {
+                pr_error(slave, p_ctxt, ctxt, line,
+                        "Invalid field 'IsSigned' in data type!");
+                return NULL;
+            }
+
+            dt_id = *val ? 2000.0 : 1000.0;
+
+            if (!mant_bits || !mxIsDouble(mant_bits)
+                    || !mxGetNumberOfElements(mant_bits)
+                    || !(val = mxGetPr(mant_bits))) {
+                pr_error(slave, p_ctxt, ctxt, line,
+                        "Invalid field 'MantBits' in data type!");
+                return NULL;
+            }
+            dt_id += *val;
+
+            dt = get_data_type_from_real(dt_id);
+            if (!dt)
+                pr_error(slave, p_ctxt, ctxt, line,
+                        "Invalid MantBits=%i in INT", (int_T)*val);
+        }
+    }
+    else if (mxIsClass(spec, "Simulink.NumericType")) {
+        const mxArray *dtMode = mxGetProperty(spec, 0, "DataTypeMode");
+        char_T className[64];
+
+        if (!dtMode || !mxIsChar(dtMode) || !mxGetNumberOfElements(dtMode)
+                || mxGetNumberOfElements(dtMode) >= sizeof(className)
+                || mxGetString(dtMode, className, sizeof(className))) {
+            pr_error(slave, p_ctxt, ctxt, line,
+                    "Invalid field 'DataTypeMode' in data type!");
+            return NULL;
+        }
+
+        if (!strcmp(className, "Double")) {
+            return type_double;
+        }
+        else if (!strcmp(className, "Single")) {
+            return type_single;
+        }
+        else if (!strcmp(className, "Fixed-point: binary point scaling")) {
+            const mxArray *signedness = mxGetProperty(spec, 0, "Signedness");
+            const mxArray *wordLength = mxGetProperty(spec, 0, "WordLength");
+            const real_T *bitLength;
+            char_T sign[20];
+            real_T dtId;
+
+            if (!signedness || !mxIsChar(signedness)
+                    || !mxGetNumberOfElements(signedness)
+                    || mxGetNumberOfElements(signedness) >= sizeof(sign)
+                    || mxGetString(signedness, sign, sizeof(sign))) {
+                pr_error(slave, p_ctxt, ctxt, line,
+                        "Invalid field 'Signedness' in data type!");
+                return NULL;
+            }
+
+            if (!strcmp(sign, "Unsigned")) {
+                dtId = 1000.0;
+            }
+            else if (!strcmp(sign, "Signed")) {
+                dtId = 2000.0;
+            }
+            else {
+                pr_error(slave, p_ctxt, ctxt, line,
+                        "Invalid value '%s' for 'Signedness' in data type!",
+                        sign);
+                return NULL;
+            }
+
+            if (!wordLength || !mxIsDouble(wordLength)
+                    || !mxGetNumberOfElements(wordLength)
+                    || !(bitLength = mxGetPr(wordLength))) {
+                pr_error(slave, p_ctxt, ctxt, line,
+                        "Invalid field 'WordLength' in data type!");
+                return NULL;
+            }
+
+            dtId += *bitLength;
+
+            dt = get_data_type_from_real(dtId);
+            if (!dt)
+                pr_error(slave, p_ctxt, ctxt, line,
+                        "Word length '%lf' not supported in data type!",
+                        *bitLength);
+        }
+    }
+
+    return dt;
+}
 
 /****************************************************************************/
 static int_T
-get_slave_sdo(struct ecat_slave *slave, const mxArray* array,
-        const char_T *context)
+get_slave_sdo_array(struct ecat_slave *slave, const real_T* pval,
+        const char_T *context, size_t rows)
 {
-    const mxArray *valueCell;
-    size_t rows, i, j;
-    real_T val;
-
-    if (!array || !(rows = mxGetM(array)))
-        return 0;
-
-    if (!mxIsCell(array) || mxGetN(array) != 4) {
-        pr_error(slave, context, "sdo", __LINE__,
-                "SDO configuration is not a Mx4 cell array");
-        return -1;
-    }
-
-    CHECK_CALLOC(slave->S, rows,
-            sizeof(struct sdo_config), slave->sdo_config);
-    slave->sdo_config_end = slave->sdo_config;
+    size_t i;
 
     for (i = 0; i < rows; i++) {
         struct sdo_config *sdo_config = slave->sdo_config_end;
-        char_T value_ctxt[20];
+        char_T ctxt[50];
+
+        snprintf(ctxt, sizeof(ctxt), "sdo{Row=%zu}", i+1);
+
+        /* Index */
+        sdo_config->index = pval[i];
+
+        /* SubIndex */
+        sdo_config->subindex = pval[i + rows];
+        if (sdo_config->subindex < 0 || sdo_config->subindex > 255) {
+            pr_error(slave, context, ctxt, __LINE__,
+                    "SDO SubIndex is out of range [0..255]");
+            return -1;
+        }
+
+        /* BitLen */
+        sdo_config->datatype = get_data_type_from_real(pval[i + 2*rows]);
+        if (!sdo_config->datatype || !sdo_config->datatype->is_generic) {
+            pr_error(slave, context, ctxt, __LINE__,
+                    "Unknown data type %i", (int_T)pval[i + 2*rows]);
+            return -1;
+        }
+
+        /* Value */
+        sdo_config->value = pval[i + 3*rows];
+
+        slave->sdo_config_end++;
+    }
+
+    return 0;
+}
+
+/****************************************************************************/
+static int_T
+get_slave_sdo_cell(struct ecat_slave *slave, const mxArray* array,
+        const char_T *context, size_t rows)
+{
+    size_t i, j;
+    real_T val;
+
+    for (i = 0; i < rows; i++) {
+        struct sdo_config *sdo_config = slave->sdo_config_end;
+        const mxArray *valueCell;
         char_T ctxt[50];
         real_T *pval;
         size_t nelem;
-        int bitlen;
 
         snprintf(ctxt, sizeof(ctxt), "%s.sdo{Row=%zu}", context, i+1);
-        snprintf(value_ctxt, sizeof(value_ctxt), "sdo{%zu,4}", i+1);
 
         /* Index */
         RETURN_ON_ERROR (get_numeric_scalar(slave, ctxt, __LINE__,
@@ -841,131 +1065,130 @@ get_slave_sdo(struct ecat_slave *slave, const mxArray* array,
                     i + rows, array, &val));
         sdo_config->subindex = val;
         if (sdo_config->subindex < -1 || sdo_config->subindex > 255) {
-            pr_error(slave, context, NULL, __LINE__,
+            pr_error(slave, ctxt, NULL, __LINE__,
                     "SDO SubIndex is out of range [-1..255]");
             return -1;
         }
 
         /* BitLen */
-        RETURN_ON_ERROR (get_numeric_scalar(slave, ctxt, __LINE__,
-                    i + 2*rows, array, &val));
-        bitlen = round(val*100);
+        sdo_config->datatype = get_data_type(slave,
+                ctxt, NULL, __LINE__, mxGetCell(array, i + 2*rows));
+        if (ssGetErrorStatus(slave->S))
+            return -1;
+
+        if (sdo_config->datatype && !sdo_config->datatype->is_generic) {
+            pr_error(slave, ctxt, NULL, __LINE__,
+                    "Only generic data types are allowed");
+            return -1;
+        }
 
         /* Value */
         valueCell = mxGetCell(array, i + 3*rows);
-        if (!valueCell
-                || !mxIsDouble(valueCell)
-                || !(pval = mxGetPr(valueCell))
-                || !(nelem = mxGetNumberOfElements(valueCell))) {
-            pr_error(slave, context, value_ctxt, __LINE__,
+        if (!valueCell || !(nelem = mxGetNumberOfElements(valueCell))) {
+            pr_error(slave, ctxt, NULL, __LINE__,
                     "SDO value is corrupt, not double or empty");
             return -1;
         }
 
-        if (bitlen) {
-            int warn = 0;
+        pval = mxIsDouble(valueCell) ? mxGetPr(valueCell) : NULL;
+
+        if (sdo_config->datatype
+                && (sdo_config->datatype != type_uint8
+                    || (pval && nelem == 1))) {
 
             /* Single value */
             if (nelem > 1) {
-                pr_error(slave, context, value_ctxt, __LINE__,
+                pr_error(slave, ctxt, NULL, __LINE__,
                         "SDO BitLen must be zero when using value array");
                 return -1;
             }
 
-            switch (bitlen) {
-                case 800:
-                case 100800:
-                    sdo_config->datatype = type_uint8;
-                    warn = 1;
-                    break;
+            if (sdo_config->subindex < 0) {
+                pr_error(slave, ctxt, NULL, __LINE__,
+                        "SDO SubIndex must be >= 0");
+                return -1;
+            }
 
-                case 1600:
-                case 101600:
-                    sdo_config->datatype = type_uint16;
-                    warn = 1;
-                    break;
-
-                case 3200:
-                case 103200:
-                    sdo_config->datatype = type_uint32;
-                    warn = 1;
-                    break;
-
-                case 6400:
-                case 106400:
-                    sdo_config->datatype = type_uint64;
-                    warn = 1;
-                    break;
-
-                case -800:
-                case 200800:
-                    sdo_config->datatype = type_sint8;
-                    break;
-
-                case -1600:
-                case 201600:
-                    sdo_config->datatype = type_sint16;
-                    break;
-
-                case -3200:
-                case 203200:
-                    sdo_config->datatype = type_sint32;
-                    break;
-
-                case -6400:
-                case 206400:
-                    sdo_config->datatype = type_sint64;
-                    break;
-
-                case 32:
-                case 303200:
-                    sdo_config->datatype = type_single;
-                    break;
-
-                case 64:
-                case 306400:
-                    sdo_config->datatype = type_double;
-                    break;
-
-                default:
-                    {
-                        char_T sdo_ctxt[50];
-
-                        snprintf(sdo_ctxt, sizeof(sdo_ctxt),
-                                "sdo{%zu,3} = %i", i+1, (int)val);
-                        pr_error(slave, context, sdo_ctxt, __LINE__,
-                                "Invalid SDO BitLen specified");
-                    }
-                    return -1;
+            if (!pval) {
+                pr_error(slave, ctxt, NULL, __LINE__,
+                        "SDO value is corrupt, not double nor empty");
+                return -1;
             }
 
             sdo_config->value = *pval;
 
-            if (warn && sdo_config->value < 0.0) {
-                char_T sdo_ctxt[50];
-
-                snprintf(sdo_ctxt, sizeof(sdo_ctxt),
-                        "sdo{%zu,3} = %g (#x%04X:%02x)",
-                        i+1, sdo_config->value,
-                        sdo_config->index, sdo_config->subindex);
-                pr_warn(slave, context, sdo_ctxt, __LINE__,
-                        "Negative value for unsigned integer\n");
+            if ((sdo_config->datatype == type_uint8
+                        || sdo_config->datatype == type_uint16
+                        || sdo_config->datatype == type_uint32
+                        || sdo_config->datatype == type_uint64)
+                    && sdo_config->value < 0.0) {
+                pr_warn(slave, ctxt, NULL, __LINE__,
+                        "Negative value %i for unsigned integer\n",
+                        (int_T)sdo_config->value);
             }
         }
         else {
+
             /* SDO value is an array */
 
             sdo_config->datatype = type_uint8;
             sdo_config->value = nelem; /* Value is misused as number of
                                           elements */
 
-            CHECK_CALLOC(slave->S, nelem, 1, sdo_config->byte_array);
+            /* one more than necessary, in case it is a string */
+            CHECK_CALLOC(slave->S, nelem+1, 1, sdo_config->byte_array);
 
-            for (j = 0; j < sdo_config->value; j++)
-                sdo_config->byte_array[j] = *pval++;
+            if (pval) {
+                /* Array of real */
+                for (j = 0; j < nelem; j++)
+                    sdo_config->byte_array[j] = *pval++;
+            } else if (mxIsChar(valueCell)) {
+                /* String */
+                if (mxGetString(valueCell, sdo_config->byte_array, nelem+1)) {
+                    pr_error(slave, ctxt, NULL, __LINE__,
+                            "SDO string is corrupt");
+                    return -1;
+                }
+            } else {
+                pr_error(slave, ctxt, NULL, __LINE__,
+                        "SDO is neither string nor array");
+                return -1;
+            }
         }
 
         slave->sdo_config_end++;
+    }
+
+    return 0;
+}
+
+/****************************************************************************/
+static int_T
+get_slave_sdo(struct ecat_slave *slave, const mxArray* array,
+        const char_T *context)
+{
+    size_t rows, i, j;
+
+    if (!array || !(rows = mxGetM(array)))
+        return 0;
+
+    if (!(mxIsDouble(array) || mxIsCell(array)) || mxGetN(array) != 4) {
+        pr_error(slave, context, "sdo", __LINE__,
+                "SDO configuration is not a Mx4 cell/numeric array");
+        return -1;
+    }
+
+    CHECK_CALLOC(slave->S, rows,
+            sizeof(struct sdo_config), slave->sdo_config);
+    slave->sdo_config_end = slave->sdo_config;
+
+    if (mxIsDouble(array)) {
+        if (get_slave_sdo_array(slave, mxGetPr(array), context, rows))
+            return -1;
+    }
+    else {
+        if (get_slave_sdo_cell(slave, array, context, rows))
+            return -1;
     }
 
     rows = slave->sdo_config_end - slave->sdo_config;
@@ -974,15 +1197,19 @@ get_slave_sdo(struct ecat_slave *slave, const mxArray* array,
     for (i  = 0; i < rows; i++) {
         if (slave->sdo_config[i].byte_array) {
             pr_debug(slave, NULL, "", 2,
-                    "Index=#x%04X ValueArray=", slave->sdo_config[i].index);
+                    (slave->sdo_config[i].subindex < 0
+                     ?  "#x%04X:-1 ["
+                     : "#x%04X:%02x ["),
+                    slave->sdo_config[i].index,
+                    slave->sdo_config[i].subindex);
             for (j = 0; j < slave->sdo_config[i].value; j++)
                 pr_debug(slave, NULL, NULL, 0,
                         "%02x,", slave->sdo_config[i].byte_array[j]);
-            pr_debug(slave, NULL, NULL, 0, "\n");
+            pr_debug(slave, NULL, NULL, 0, "] (Unsigned8)\n");
         }
         else {
             pr_debug(slave, NULL, "", 2,
-                    "Index=#x%04X:%02x=%g (%s)\n",
+                    "#x%04X:%02x %g (%s)\n",
                     slave->sdo_config[i].index,
                     slave->sdo_config[i].subindex,
                     slave->sdo_config[i].value,
@@ -1590,178 +1817,22 @@ get_port_raw_pdo_spec (struct ecat_slave *slave, const char_T *p_ctxt,
 
 
 /****************************************************************************/
-static const struct datatype_info *
-get_data_type(struct ecat_slave *slave, const char_T *p_ctxt,
-        const mxArray *spec)
-{
-    const struct datatype_info *dt = datatype_info;
-
-    if (!spec || !mxGetNumberOfElements(spec)) {
-        pr_error(slave, p_ctxt, "pdo_data_type", __LINE__,
-                "Empty data type!");
-        return NULL;
-    }
-
-    if (mxIsDouble(spec)) {
-        uint_T dt_id = *mxGetPr(spec);
-
-        while (dt->id) {
-            if (dt->id == dt_id)
-                return dt;
-            ++dt;
-        }
-    }
-    else if (mxIsChar(spec)) {
-        char_T name[20];
-
-        if (mxGetString(spec, name, sizeof(name))) {
-            pr_error(slave, p_ctxt, "pdo_data_type", __LINE__,
-                    "Invalid string data type!");
-            return NULL;
-        }
-
-        while (dt->id) {
-            if (!strcmp(name, dt->name))
-                return dt;
-            ++dt;
-        }
-    }
-    else if (mxIsStruct(spec)) {
-        const mxArray *class = mxGetField(spec, 0, "Class");
-        char_T class_name[20];
-
-        if (!class || !mxIsChar(class) || !mxGetNumberOfElements(class)
-                || mxGetString(class, class_name, sizeof(class_name))) {
-            pr_error(slave, p_ctxt, "pdo_data_type", __LINE__,
-                    "Invalid class name in data type!");
-            return NULL;
-        }
-
-        if (!strcmp(class_name, "DOUBLE"))
-            return type_double;
-        else if (!strcmp(class_name, "SINGLE"))
-            return type_single;
-        else if (!strcmp(class_name, "INT")) {
-            const mxArray *is_signed = mxGetField(spec, 0, "IsSigned");
-            const mxArray *mant_bits = mxGetField(spec, 0, "MantBits");
-            const real_T *val;
-            uint_T dt_id;
-
-            if (!is_signed || !mxIsDouble(is_signed)
-                    || !mxGetNumberOfElements(is_signed)
-                    || !(val = mxGetPr(is_signed))) {
-                pr_error(slave, p_ctxt, "pdo_data_type", __LINE__,
-                        "Invalid field 'IsSigned' in data type!");
-                return NULL;
-            }
-
-            dt_id = *val ? 2000 : 1000;
-
-            if (!mant_bits || !mxIsDouble(mant_bits)
-                    || !mxGetNumberOfElements(mant_bits)
-                    || !(val = mxGetPr(mant_bits))) {
-                pr_error(slave, p_ctxt, "pdo_data_type", __LINE__,
-                        "Invalid field 'MantBits' in data type!");
-                return NULL;
-            }
-            dt_id += *val;
-
-            while (dt->id) {
-                if (dt->id == dt_id)
-                    return dt;
-                ++dt;
-            }
-        }
-    }
-    else if (mxIsClass(spec, "Simulink.NumericType")) {
-        const mxArray *dtMode = mxGetProperty(spec, 0, "DataTypeMode");
-        char_T className[64];
-
-        if (!dtMode || !mxIsChar(dtMode) || !mxGetNumberOfElements(dtMode)
-                || mxGetNumberOfElements(dtMode) >= sizeof(className)
-                || mxGetString(dtMode, className, sizeof(className))) {
-            pr_error(slave, p_ctxt, "pdo_data_type", __LINE__,
-                    "Invalid field 'DataTypeMode' in data type!");
-            return NULL;
-        }
-
-        if (!strcmp(className, "Double")) {
-            return type_double;
-        }
-        else if (!strcmp(className, "Single")) {
-            return type_single;
-        }
-        else if (!strcmp(className, "Fixed-point: binary point scaling")) {
-            const mxArray *signedness = mxGetProperty(spec, 0, "Signedness");
-            const mxArray *wordLength = mxGetProperty(spec, 0, "WordLength");
-            const real_T *bitLength;
-            char_T sign[20];
-            uint_T dtId;
-
-            if (!signedness || !mxIsChar(signedness)
-                    || !mxGetNumberOfElements(signedness)
-                    || mxGetNumberOfElements(signedness) >= sizeof(sign)
-                    || mxGetString(signedness, sign, sizeof(sign))) {
-                pr_error(slave, p_ctxt, "pdo_data_type", __LINE__,
-                        "Invalid field 'Signedness' in data type!");
-                return NULL;
-            }
-
-            if (!strcmp(sign, "Unsigned")) {
-                dtId = 1000;
-            }
-            else if (!strcmp(sign, "Signed")) {
-                dtId = 2000;
-            }
-            else {
-                pr_error(slave, p_ctxt, "pdo_data_type", __LINE__,
-                        "Invalid value '%s' for 'Signedness' in data type!",
-                        sign);
-                return NULL;
-            }
-
-            if (!wordLength || !mxIsDouble(wordLength)
-                    || !mxGetNumberOfElements(wordLength)
-                    || !(bitLength = mxGetPr(wordLength))) {
-                pr_error(slave, p_ctxt, "pdo_data_type", __LINE__,
-                        "Invalid field 'WordLength' in data type!");
-                return NULL;
-            }
-
-            dtId += *bitLength;
-
-            while (dt->id) {
-                if (dt->id == dtId) {
-                    return dt;
-                }
-                ++dt;
-            }
-
-            pr_error(slave, p_ctxt, "pdo_data_type", __LINE__,
-                    "Word length '%lf' not supported in data type!",
-                    *bitLength);
-        }
-    }
-
-    pr_error(slave, p_ctxt, "pdo_data_type", __LINE__,
-            "Unknown data type!");
-
-    return NULL;
-}
-
-/****************************************************************************/
 static int
 get_port_pdo_spec (struct ecat_slave *slave, const char_T *p_ctxt,
         const mxArray *port_spec, struct io_port *port, size_t idx,
         real_T *val, int_T rows, enum sm_direction dir)
 {
+    static const char_T* spec_name = "pdo_data_type";
     int_T j;
     real_T real;
 
     /* Read the PDO data type */
-    port->data_type = get_data_type(slave, p_ctxt,
-            mxGetField(port_spec,idx,"pdo_data_type"));
+    port->data_type = get_data_type(slave, p_ctxt, spec_name, __LINE__,
+            mxGetField(port_spec, idx, spec_name));
     if (!port->data_type) {
+        if (!ssGetErrorStatus(slave->S))
+            pr_error(slave, p_ctxt, spec_name, __LINE__,
+                    "Data type unspecified");
         return -1;
     }
 
@@ -2538,7 +2609,7 @@ static void mdlRTW(SimStruct *S)
                     &sdo->subindex, DTINFO(SS_INT16, 0),
 
                     SSWRITE_VALUE_DTYPE_VECT, "ByteArray",
-                    sdo->byte_array, sdo->value, DTINFO(SS_UINT8, 0)))
+                    sdo->byte_array, (uint_T)sdo->value, DTINFO(SS_UINT8, 0)))
                 return;
         }
         else {
