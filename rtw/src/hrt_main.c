@@ -916,7 +916,7 @@ register_signal(
 
     //printf("Reg with dt=%i\n", data_type);
 #ifdef PDSERV3
-    signal = pdserv_signal(task->pdtask, decimation,
+    signal = pdserv_signal_cb(task->pdtask, decimation,
             path, data_type, address, ndim, dim, read_signal, task);
 #else
     signal = pdserv_signal(task->pdtask, decimation,
