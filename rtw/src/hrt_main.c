@@ -700,11 +700,12 @@ int write_parameter(
         pthread_mutex_lock(&(--p_task)->param_lock);
 
     memcpy(dst, src, len);
-    clock_gettime(CLOCK_REALTIME, time);
 
     p_task = task + NUMTASKS;
     while (p_task != task)
         pthread_mutex_unlock(&(--p_task)->param_lock);
+
+    clock_gettime(CLOCK_REALTIME, time);
 
     return 0;
 }
