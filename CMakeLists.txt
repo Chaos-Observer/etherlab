@@ -118,8 +118,6 @@ INSTALL (FILES
     ${CMAKE_SOURCE_DIR}/ReleaseNotes.txt
     DESTINATION "${ETHERLAB_DIR}")
 
-CONFIGURE_FILE("etherlab.spec.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/etherlab.spec")
 CONFIGURE_FILE("rtw/etherlab/Contents.m.in"
     "${CMAKE_CURRENT_BINARY_DIR}/rtw/etherlab/Contents.m")
 CONFIGURE_FILE("rtw/etherlab_hrt.tmf.in"
