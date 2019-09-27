@@ -1,10 +1,901 @@
+2019-08-19  Richard Hacker  <lerichi@gmx.net>
+
+	* CMakeLists.txt, etherlab.spec.in:
+	Forget RPM spec file
+	[922af96eebb7] [tip]
+
+2019-07-26  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/src/hrt_main.c:
+	Moved clock_gettime() outside mutex environment in write_parameter()
+	to reduce gitter
+	[b5a08d497af2]
+
+	* rtw/src/hrt_main.c:
+	Change due to pdserv name change of pdserv_signal() to
+	pdserv_signal_cb()
+	[4fa7f8ae2957]
+
+2019-05-17  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/blocks/EtherCAT/ec_slave3.c, rtw/blocks/EtherCAT/ec_slave3.tlc,
+	rtw/blocks/html/generic.html:
+	SDO may now be numeric or cell array
+	[8d4bc7c0eee2]
+
+2019-05-16  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/blocks/EtherCAT/el320x_1.m:
+	Disable filter for EL3208
+	[16e6a797d0d9]
+
+2019-05-15  Richard Hacker  <lerichi@gmx.net>
+
+	* CMakeLists.txt, ReleaseNotes.txt, rtw/blocks/EtherCAT/el3356.m,
+	rtw/blocks/etherlab_lib.mdl, rtw/blocks/etherlab_lib.slx:
+	Updated EL3356 and EL500x to use new SDO data types
+	[6f7f0f659638]
+
+	* NEWS, rtw/blocks/EtherCAT/ec_slave3.c, rtw/blocks/html/generic.html,
+	rtw/include/ecrt_support.h, rtw/src/ecrt_support.c:
+	SDO now any data type
+	[7169db7e021b]
+
+2019-03-13  Richard Hacker  <lerichi@gmx.net>
+
+	* bin/etherlab_messages.py, bin/extractmessages.m:
+	Added matlab utilities
+	[fe738d1053f2]
+
+2019-02-07  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/blocks/EtherCAT/el331x.m:
+	Fixed bug in EL3314-0010
+	[aba891559a7c]
+
+2019-01-23  Richard Hacker  <lerichi@gmx.net>
+
+	* bin/parse-ethercat-xml-export.py:
+	Parse TwinCAT configuration xml file
+	[f2cfb3b4aec7]
+
+	* .hgignore:
+	Reverted 1175:e3128c65888a
+	[c291a07cbdac]
+
+2019-01-11  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/blocks/EtherCAT/el500x.m:
+	Fixed bug in EL500x
+	[cd564374058f]
+
+2018-11-28  Florian Pose  <fp@igh.de>
+
+	* rtw/src/hrt_main.c:
+	Delay initial start time (and output on task start).
+	[51b3b635136d]
+
+	* rtw/src/ecrt_support.c:
+	Fixed warning if EC_HAVE_SYNC_TO was undefined.
+	[33abfc6ccf0b]
+
+2018-11-27  Florian Pose  <fp@igh.de>
+
+	* rtw/src/ecrt_support.c, rtw/src/hrt_main.c:
+	Use monotonic_time as EtherCAT application time; use
+	ecrt_master_sync_reference_clock_to() to sync clocks.
+	[58dfbc268515]
+
+	* rtw/src/ecrt_support.c:
+	Minor: Removed trailing whitespace.
+	[eeb697be0226]
+
+	* rtw/src/hrt_main.c:
+	Fixed main thread period log message (is output in run_task()).
+	[b4ffb13350b5]
+
+	* .hgignore:
+	Ignore generated files.
+	[e3128c65888a]
+
+2018-10-04  Richard Hacker  <lerichi@gmx.net>
+
+	* CMakeLists.txt, README, rtw/Contents.m.in,
+	rtw/etherlab/Contents.m.in, rtw/etherlab_hrt.tmf.in, rtw/install.sh:
+	Fixed problems occurring with separate rtwbuild and make hosts as
+	well as etherlab installations living outside
+	[7f601e2130e0]
+
+2018-09-27  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/blocks/etl_message.tlc:
+	Event reset uses pdserv_event_reset()
+	[c8f720dd3ec3]
+
+2018-08-14  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/src/hrt_main.c:
+	Moved init_application() further back so that persistent data is
+	initialized prior thereto
+	[3519ba4a60e0]
+
+2018-08-10  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/blocks/world_time.tlc:
+	Added missing include file
+	[76f63f3fc337]
+
+	* TODO:
+	TODO
+	[78e9d12c80b1]
+
+	* rtw/src/hrt_main.c:
+	Fixed problem introduced in 7f87e8728ba0 where vectors were
+	interpreted as arrays certain circumstances. Incompatable change
+	[6bd5c875166f]
+
+2018-07-25  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/blocks/etherlab_lib.mdl, rtw/blocks/etherlab_lib.slx,
+	rtw/blocks/etl_message.c, rtw/blocks/etl_message.tlc,
+	rtw/blocks/message.c, rtw/blocks/message.tlc, rtw/blocks/setup.m:
+	Renamed message.*(c|tlc) to etl_message.*
+	[f70178589e1b]
+
+2018-07-13  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/blocks/EtherCAT/el51xx.m:
+	Fixed buggy EL5152
+	[5ad6a7ea1ddf]
+
+	* rtw/src/hrt_main.c:
+	Fixed timing bug from a6ffbacf4106
+	[943777f6d940]
+
+	* rtw/blocks/EtherCAT/el36x2.m, rtw/blocks/etherlab_lib.mdl,
+	rtw/blocks/etherlab_lib.slx, rtw/blocks/html/el36x2.html:
+	Added EL36x2 24-bit analog input
+	[3794ce13b50c]
+
+	* rtw/src/hrt_main.c:
+	Removed classic call interface requirement for Simulink after ca
+	2013
+	[a6ffbacf4106]
+
+	* rtw/blocks/ETL.tlc:
+	Fixed test for LibIsMajorTimeStep()
+	[d51636596af5]
+
+2018-07-11  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/blocks/ETL.tlc, rtw/blocks/EtherCAT/EtherCAT.tlc,
+	rtw/blocks/EtherCAT/domain_state.tlc,
+	rtw/blocks/EtherCAT/ec_slave3.tlc,
+	rtw/blocks/EtherCAT/master_state.tlc, rtw/include/ecrt_support.h,
+	rtw/src/ecrt_support.c, rtw/src/hrt_main.c:
+	Removed undocumented LibIsSampleHit() (call interface with tid) and
+	replaced with pthread_key's
+	[488f408c19dc]
+
+	* CMakeLists.txt:
+	Ignore backup files during install
+	[a2a321eb98aa]
+
+	* rtw/src/hrt_main.c:
+	Added new time dilation option -D
+	[0e1e7091e061]
+
+	* rtw/src/hrt_main.c:
+	Fixed priority bug introduced in 67c5527b7c67
+	[e159b69f7b3c]
+
+2018-07-07  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/blocks/EtherCAT/ec_slave3.tlc:
+	Fixed ethercat send condition bug introduced in 32eca547bcc5
+	[ab720fcb93d9]
+
+	* CMakeLists.txt:
+	Ignore backup files when installing
+	[b608f148f7ab]
+
+	* rtw/blocks/EtherCAT/el4xxx.m:
+	SubIndex for EL4038
+	[92c12a362a00]
+
+	* rtw/blocks/EtherCAT/EtherCATInfo.m:
+	Robustness of testing
+	[d8baa97f8dfa]
+
+	* rtw/blocks/EtherCAT/el320x_1.m:
+	Do not set SDO's when no filter is chosen
+	[adf4ce22d26d]
+
+2018-07-05  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/blocks/message.c, rtw/blocks/message.tlc:
+	Allow string messages
+	[f9371a837834]
+
+2018-06-29  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/blocks/ETL.tlc, rtw/blocks/EtherCAT/EtherCAT.tlc,
+	rtw/blocks/EtherCAT/ec_slave3.tlc, rtw/blocks/EtherLAB_IO.tlc,
+	rtw/blocks/RtIPC.tlc, rtw/blocks/message.tlc,
+	rtw/blocks/rtipc_rx.tlc, rtw/blocks/rtipc_tx.tlc,
+	rtw/blocks/world_time.tlc:
+	Cleaned up and consolidated different methods of detecting
+	continuous/discrete sample times for blocks
+	[32eca547bcc5]
+
+	* rtw/blocks/etherlab_lib.mdl, rtw/blocks/etherlab_lib.slx,
+	rtw/blocks/message.c, rtw/blocks/message.tlc:
+	Updated message block
+	[6b0565da056f]
+
+2018-02-28  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/etherlab.tlc:
+	Pulled certain rtwoptions to R2013a
+	[8109047af663]
+
+2018-02-27  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/etherlab_hrt.tmf.in:
+	Added SOLVER to sources list for compile
+	[536108158e93]
+
+2018-02-27  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/etherlab.tlc, rtw/etherlab_genfiles.tlc:
+	Version script callback
+	[7691196f3a8a]
+
+2018-02-08  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/switch_etherlab.m:
+	Updated switch_etherlab.m to reflect new directory layout; this may
+	be incompatible when switching back using an old version
+	[5c209c1b898a]
+
+	* rtw/blocks/EtherCAT/ecrt_support.c, rtw/blocks/EtherCAT/setup.m,
+	rtw/blocks/etherlab_lib.slx, rtw/blocks/setup.m,
+	rtw/setup_etherlab.m:
+	Support for 2017b
+	[d911a55a3b31]
+
+2018-02-07  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/install.sh:
+	Install into any directory possible
+	[5eccbd42e4d6]
+
+2018-01-19  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/blocks/etherlab_lib.mdl, rtw/blocks/event.c,
+	rtw/blocks/event.tlc:
+	Fixed compile time warnings in event.tlc
+	[034cd72ddb74]
+
+2018-01-18  Richard Hacker  <lerichi@gmx.net>
+
+	* README, rtw/blocks/slblocks.m, rtw/etherlab.tlc,
+	rtw/etherlab_hrt.tmf.in:
+	Merged TMF with grt_unix.tmf of ML2017
+	[36411e6f6ed3]
+
+	* rtw/blocks/EtherCAT/ec_slave3.tlc, rtw/src/ecrt_support.c,
+	rtw/src/hrt_main.c:
+	Cleaned up warnings
+	[67c5527b7c67]
+
+2018-01-15  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/blocks/EtherCAT/ec_slave3.c, rtw/blocks/EtherCAT/ec_slave3.tlc,
+	rtw/blocks/etherlab_lib.mdl, rtw/blocks/html/generic.html:
+	Added Block/Model wide parameters to ec_slave3.c
+	[4dcfe2b6f555]
+
+2018-01-05  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/etherlab_hrt.tmf.in:
+	Additional -I. for new gcc's
+	[ce1f17d72920]
+
+2017-12-31  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/etherlab.tlc, rtw/etherlab_hrt.tmf.in, rtw/src/hrt_main.c:
+	Global model parameters available
+	[7f87e8728ba0]
+
+2017-12-05  Richard Hacker  <lerichi@gmx.net>
+
+	* CMakeLists.txt:
+	merge
+	[821f5bf827be]
+
+2017-11-15  Richard Hacker  <ha@igh-essen.com>
+
+	* CMakeLists.txt:
+	Test cmake >= 3.0 when using STRING TIMESTAMP function
+	[70c9d5ffe05a]
+
+2017-12-05  Richard Hacker  <lerichi@gmx.net>
+
+	* CMakeLists.txt, README:
+	Installation instructions
+	[a846ca7905aa]
+
+2017-10-31  Richard Hacker  <lerichi@gmx.net>
+
+	* CMakeLists.txt, rtw/Contents.m.in, rtw/etherlab.tlc,
+	rtw/etherlab/Contents.m.in, rtw/etherlab/etherlab.tlc,
+	rtw/etherlab/etherlab_config.m, rtw/etherlab/etherlab_genfiles.tlc,
+	rtw/etherlab/etherlab_hrt.tmf.in, rtw/etherlab_config.m,
+	rtw/etherlab_genfiles.tlc, rtw/etherlab_hrt.tmf.in, rtw/install.sh,
+	rtw/setup_etherlab.m:
+	Moved all files from /rtw/c/etherlab/etherlab to /rtw/c/etherlab so
+	that the system target file (etherlab.tlc) is found in the browser
+	again
+	[db492fa74d0a]
+
+2017-09-26  Richard Hacker  <lerichi@gmx.net>
+
+	* README:
+	merge
+	[13baf3fd422c]
+
+2017-08-15  Richard Hacker  <ha@igh-essen.com>
+
+	* README, rtw/setup_etherlab.m:
+	Documentation and minor fixes to matlabpath
+	[07ee56a587ac]
+
+2017-09-26  Richard Hacker  <lerichi@gmx.net>
+
+	* CMakeLists.txt, README:
+	Added README to distribution
+	[8b6857c24de9]
+
+2017-07-27  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/blocks/etherlab_lib.mdl, rtw/blocks/event.c,
+	rtw/blocks/propagate_width.c, rtw/blocks/propagate_width.tlc,
+	rtw/blocks/setup.m:
+	Added input port to Util/Event; Added Util/Width propagation
+	[0c80fd291339]
+
+2017-07-19  Richard Hacker  <ha@igh-essen.com>
+
+	* CMakeLists.txt:
+	Fixed CMAKE_INSTALL_LIBDIR
+	[34382ff2ba43]
+
+2017-07-13  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/blocks/etherlab_lib.mdl:
+	merge
+	[b5f4117c78e4]
+
+2017-05-31  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/blocks/EtherCAT/el3403.m, rtw/blocks/etherlab_lib.mdl:
+	EL3403: removed SDO F800:1 F800:2 F800:3 which cannot be written
+	[3eaa06427693]
+
+2017-07-13  Richard Hacker  <lerichi@gmx.net>
+
+	* README, rtw/etherlab/Contents.m.in:
+	Copyright information
+	[eb05373bbe0b]
+
+	* rtw/blocks/EtherCAT/README:
+	README
+	[8d3c6855aba3]
+
+	* rtw/blocks/EtherCAT/ep1xxx.m:
+	Comments
+	[decf977115d8]
+
+	* rtw/blocks/EtherCAT/el1xxx.m, rtw/blocks/etherlab_lib.mdl:
+	Added EL1702-0020
+	[46df4a1e3bf4]
+
+2017-07-12  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/blocks/EtherCAT/el2xxx.m, rtw/blocks/etherlab_lib.mdl:
+	Added EL2784, EL2788, EL2794, EM2042; Fixed EL2872 to 16 channels
+	[496ae0808faf]
+
+2017-05-16  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/install.sh:
+	Fixed install script to remove destination file first (in case it is
+	a link)
+	[2caa32ef1e06]
+
+	* rtw/blocks/EtherCAT/el3356.m, rtw/blocks/etherlab_lib.mdl,
+	rtw/blocks/html/el3356.html:
+	Added RMB Range mask option for EL3356
+	[5b47328cbcba]
+
+2017-04-15  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/blocks/EtherCAT/ec_slave3.tlc, rtw/blocks/html/general.html,
+	rtw/src/ecrt_support.c:
+	Made DistributedClocks more robust; An incorrect configuration
+	caused ethercat master to crash with divide-by-zero
+	[214556aa5f05]
+
+	* CMakeLists.txt:
+	Fixed deprecated -Wl,-rpath
+	[4f1a9af7bc0c]
+
+	* CMakeLists.txt, rtw/etherlab/Contents.m.in:
+	Fixed /rtw/c/etherlab/etherlab/Contents.m so that Matlab's 'ver'
+	command finds EtherLab's version information
+	[fbe2ff826b04]
+
+2016-11-28  Richard Hacker  <ha@igh-essen.com>
+
+	* .hgtags:
+	Added tag Release 2.2.0 for changeset 292b3c4fb29a
+	[666fa461f582]
+
+	* .hgignore, README, rtw/uninstall.sh:
+	Added uninstall script
+	[292b3c4fb29a] [Release 2.2.0]
+
+	* CMakeLists.txt:
+	Fixed warning in cmake
+	[77c359f0964f]
+
+2016-11-26  Richard Hacker  <lerichi@gmx.net>
+
+	* etherlab.spec.in, rtw/blocks/ETL.tlc,
+	rtw/blocks/EtherCAT/EtherCAT.tlc,
+	rtw/blocks/EtherCAT/domain_state.c, rtw/blocks/EtherCAT/ec_slave3.c,
+	rtw/blocks/EtherCAT/ec_slave3.tlc, rtw/blocks/EtherCAT/ekxxxx.m,
+	rtw/blocks/EtherCAT/el1262.m, rtw/blocks/EtherCAT/el2262.m,
+	rtw/blocks/EtherCAT/el3255.m, rtw/blocks/EtherCAT/el331x.m,
+	rtw/blocks/EtherCAT/el3356.m, rtw/blocks/EtherCAT/el37x2.m,
+	rtw/blocks/EtherCAT/el500x.m, rtw/blocks/EtherCAT/el5021.m,
+	rtw/blocks/EtherCAT/el9xxx.m, rtw/blocks/EtherCAT/master_state.c,
+	rtw/blocks/EtherCAT/murr_dio.m, rtw/blocks/EtherLAB_IO.tlc,
+	rtw/blocks/RaiseCatch.tlc, rtw/blocks/RtIPC.tlc, rtw/blocks/event.c,
+	rtw/blocks/event.tlc, rtw/blocks/findidx.c, rtw/blocks/findidx.tlc,
+	rtw/blocks/get_string.h, rtw/blocks/message.c, rtw/blocks/raise.c,
+	rtw/blocks/rtipc_rx.c, rtw/blocks/rtipc_rx.tlc,
+	rtw/blocks/rtipc_tx.c, rtw/blocks/rtipc_tx.tlc,
+	rtw/blocks/world_time.c, rtw/etherlab/Contents.m.in,
+	rtw/etherlab/etherlab.tlc, rtw/etherlab/etherlab_genfiles.tlc:
+	Updated license to GPLv3+
+	[fde5ec2b55f7]
+
+	* branch-2.1
+	[20df75b84f43] <stable-2.1>
+
+	* CMakeLists.txt, README, etherlab.spec.in, rtw/CMakeLists.txt,
+	rtw/bin/CMakeLists.txt, rtw/blocks/CMakeLists.txt,
+	rtw/blocks/EtherCAT/CMakeLists.txt, rtw/etherlab/CMakeLists.txt,
+	rtw/etherlab/etherlab_hrt.tmf.in, rtw/include/ecrt_support.h,
+	rtw/include/list.h, rtw/include/raise_catch.h, rtw/install.sh,
+	rtw/lib/CMakeLists.txt, rtw/lib/ecrt_support.c,
+	rtw/lib/ecrt_support.h, rtw/lib/list.h, rtw/lib/raise_catch.c,
+	rtw/lib/raise_catch.h, rtw/src/ecrt_support.c,
+	rtw/src/raise_catch.c, rtw/switch_etherlab.m:
+	Start of V2.2; New installation method into DATADIR
+	(/usr/local/share/etherlab)
+	[59c13247209d]
+
+2016-11-24  Richard Hacker  <ha@igh-essen.com>
+
+	* CMakeLists.txt:
+	Prevent searching for C/C++ compiler during configure
+	[dc0f08e61b94]
+
+2016-10-25  Richard Hacker  <lerichi@gmx.net>
+
+	* merge
+	[45163f0e1bb5]
+
+	* rtw/blocks/EtherCAT/el320x_1.m:
+	Fixed bug in el320x; Scaling incorrect
+	[d96067663697]
+
+	* rtw/blocks/EtherCAT/el320x_1.m, rtw/blocks/etherlab_lib.mdl:
+	New models EL3202-0020, EL3204-0200, EL3208, EL3214
+	[361ed2649ef4]
+
+	* rtw/blocks/etherlab_lib.mdl:
+	merge
+	[d215409e1d37]
+
+2016-10-07  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/blocks/EtherCAT/CMakeLists.txt:
+	Added .m files to CMakeLists.txt
+	[4d4263ce7856]
+
+2016-10-06  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/blocks/EtherCAT/ek1914.m, rtw/blocks/EtherCAT/el1904.m,
+	rtw/blocks/EtherCAT/el2904.m, rtw/blocks/etherlab_lib.mdl,
+	rtw/blocks/html/ek1914.html, rtw/blocks/html/el1904.html,
+	rtw/blocks/html/el2904.html:
+	EK1914, EL1904, EL2904
+	[1b4114a9a4b7]
+
+2016-10-05  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/blocks/EtherCAT/el3403.m, rtw/blocks/etherlab_lib.mdl,
+	rtw/blocks/html/el3403.html:
+	EL3403
+	[cfaf8ed432ea]
+
+2016-03-24  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/blocks/message.c:
+	Fixed a bug in Util/message block
+	[231fb65f81cf]
+
+2016-03-23  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/blocks/etherlab_lib.mdl, rtw/blocks/message.c,
+	rtw/blocks/message.tlc:
+	Removed text from process messages
+	[eb1c5e3d8b84]
+
+2016-03-03  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/blocks/message.tlc:
+	Use pdserv #defines for message priority
+	[8b03908dff86]
+
+	* rtw/blocks/EtherCAT/el4xxx.m:
+	Updated PDO's for EL4008,EL4022
+	[06e4124c497f]
+
+2016-01-28  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/blocks/EtherCAT/EtherCATSlave.m, rtw/blocks/EtherCAT/ep2xxx.m,
+	rtw/blocks/etherlab_lib.mdl:
+	Added EP2316-0003 and EP2316-0008
+	[2a781de2635a]
+
+2016-01-21  Richard Hacker  <lerichi@gmx.net>
+
+	* merge
+	[17f84fe9deb4]
+
+2016-01-21  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/blocks/EtherCAT/el2262.m:
+	Fixed EL2262
+	[17b6e7815d54]
+
+	* rtw/blocks/EtherCAT/ec_slave3.c:
+	Fixed a bug where SyncManagers with no PDO's were incorrectly
+	indexed
+	[830f531105df]
+
+	* rtw/lib/ecrt_support.c:
+	Made some structures static const to improve performance
+	[397c910c742e]
+
+	* rtw/lib/ecrt_support.h:
+	Fixed a bug where unsuccessful ecrt_slave_config_reg_pdo_entry()'s
+	went unnoticed and caused a SEGV
+	[555e2b998e3f]
+
+2016-01-15  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/src/hrt_main.c:
+	Moved daemon() call not to close required file descriptors
+	[3f763f05c79b]
+
+	* rtw/src/hrt_main.c:
+	Fine tuning of starting phase
+	[86c258e4df90]
+
+	* merge
+	[951812c0ce41]
+
+	* rtw/src/hrt_main.c:
+	Used wrong rtw/src/hrt_main.c during merge; now using dba54a94306c
+	[658b4829a79e]
+
+2016-01-13  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/blocks/EtherCAT/CMakeLists.txt, rtw/blocks/EtherCAT/el1262.m,
+	rtw/blocks/EtherCAT/el2262.m, rtw/blocks/etherlab_lib.mdl:
+	Added EL1262 EL2262 oversampling slaves
+	[120df6050164]
+
+	* rtw/src/hrt_main.c:
+	merge
+	[a846032f617d]
+
+	* rtw/src/hrt_main.c:
+	hrt_main.c for PdServ2 and PdServ3
+	[dba54a94306c]
+
+2016-01-05  Florian Pose  <fp@igh-essen.com>
+
+	* rtw/src/hrt_main.c:
+	Fixed missing pdserv_get_parameters().
+	[8d31fa0c1f74]
+
+	* rtw/src/hrt_main.c:
+	Removed deprecated defines; fixed uninitialized variable.
+	[93ea72338644]
+
+2015-12-25  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/blocks/CMakeLists.txt, rtw/blocks/blockpath.m,
+	rtw/blocks/etherlab_lib.mdl, rtw/blocks/message.c,
+	rtw/blocks/message.tlc, rtw/blocks/setup.m, rtw/src/hrt_main.c:
+	Added message block etherlab_lib/Util/Message
+	[7528407b3db6]
+
+	* rtw/src/hrt_main.c:
+	PdServ 3
+	[0a8faa1db1d0]
+
+	* rtw/src/hrt_main.c:
+	Added timing phase (--start-phase -f); Reduce priorities for slower
+	tasks
+	[4dd5289955c7]
+
+	* rtw/blocks/EtherCAT/EtherCAT.tlc, rtw/blocks/EtherLAB_IO.tlc,
+	rtw/blocks/RaiseCatch.tlc, rtw/blocks/RtIPC.tlc,
+	rtw/blocks/world_time.tlc:
+	TLC #include correctly formatted with #include <> to search global
+	include paths
+	[349ce8631d97]
+
+2015-12-18  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/blocks/EtherCAT/ec_slave3.tlc:
+	Fixed ecrt_slave_config_complete_sdo()
+	[b6f7228c9380]
+
+2015-10-07  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/src/hrt_main.c:
+	Using world time for parameter mtime
+	[9282b5fb2429]
+
+2015-09-10  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/blocks/EtherCAT/el51xx.m, rtw/blocks/etherlab_lib.mdl:
+	EL51xx fixed and updated
+	[0c068b0e7ead]
+
+2015-09-08  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/blocks/EtherCAT/el31xx_1.m, rtw/blocks/etherlab_lib.mdl:
+	New PDO's for EL31xx_1
+	[7c9edc94f191]
+
+2015-08-24  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/blocks/EtherCAT/el30xx_1.m, rtw/blocks/EtherCAT/el4xxx.m,
+	rtw/blocks/EtherCAT/el51xx.m, rtw/blocks/etherlab_lib.mdl:
+	New slaves for el30xx_1, el4xxx, el51xx
+	[22bf5a9dc807]
+
+	* rtw/blocks/EtherCAT/EtherCATSlave.m:
+	Removed unnecessary warning about deprecated filter use when omega =
+	[]
+	[f4001f7314ec]
+
+	* rtw/blocks/EtherCAT/CMakeLists.txt,
+	rtw/blocks/EtherCAT/EtherCATInfo.m,
+	rtw/blocks/EtherCAT/EtherCATInfoSlave.m,
+	rtw/blocks/EtherCAT/EtherCATSlave.m,
+	rtw/blocks/EtherCAT/EtherCATSlaveBlock.m,
+	rtw/blocks/EtherCAT/baumer_ecatencoder.m,
+	rtw/blocks/EtherCAT/ekxxxx.m, rtw/blocks/EtherCAT/el1xxx.m,
+	rtw/blocks/EtherCAT/el2xxx.m, rtw/blocks/EtherCAT/el30xx_1.m,
+	rtw/blocks/EtherCAT/el31xx_1.m, rtw/blocks/EtherCAT/el320x_1.m,
+	rtw/blocks/EtherCAT/el3255.m, rtw/blocks/EtherCAT/el331x.m,
+	rtw/blocks/EtherCAT/el3356.m, rtw/blocks/EtherCAT/el37x2.m,
+	rtw/blocks/EtherCAT/el4xxx.m, rtw/blocks/EtherCAT/el500x.m,
+	rtw/blocks/EtherCAT/el5021.m, rtw/blocks/EtherCAT/el51xx.m,
+	rtw/blocks/EtherCAT/el9xxx.m, rtw/blocks/EtherCAT/ep1xxx.m,
+	rtw/blocks/EtherCAT/ep2xxx.m, rtw/blocks/EtherCAT/ep31xx_1.m,
+	rtw/blocks/EtherCAT/ep41xx_1.m, rtw/blocks/EtherCAT/ep43xx_1.m,
+	rtw/blocks/EtherCAT/ep8309.m, rtw/blocks/EtherCAT/murr_dio.m,
+	rtw/blocks/etherlab_lib.mdl:
+	Added revision information to blocks
+	[c11938b85b5f]
+
+2015-08-18  Richard Hacker  <lerichi@gmx.net>
+
+	* merge
+	[73229da1e8e1]
+
+	* rtw/blocks/EtherCAT/EtherCATSlaveBlock.m,
+	rtw/blocks/EtherCAT/ec_slave3.tlc, rtw/blocks/EtherCAT/ep8309.m,
+	rtw/blocks/etherlab_lib.mdl, rtw/blocks/html/general.html:
+	Changed LPF frequency to a time constant
+	[fc6f63e3d30b]
+
+2015-08-17  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/blocks/EtherCAT/ec_slave3.c, rtw/blocks/EtherCAT/ec_slave3.tlc:
+	Allow boolean outputs to have any data type
+	[e8ee1dbfd76a]
+
+	* rtw/src/hrt_main.c:
+	Fixed bug where PID file is not written
+	[3d051e12e2b1]
+
+2015-08-04  Florian Pose  <fp@igh-essen.com>
+
+	* merge
+	[0fcbd61b00be]
+
+	* rtw/blocks/EtherCAT/EtherCAT.tlc:
+	Fixed SendCondition (used RtIPC implementation).
+	[4dd916a83ac2]
+
+2015-03-17  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/blocks/EtherCAT/ep43xx_1.m:
+	Updated SDO configuration of 0xF800 for EP43xx_1
+	[28ab3cc03fe7]
+
+2015-03-13  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/blocks/EtherCAT/ep31xx_1.m:
+	Updated SDO configuration of 0xF800 for EP31xx_1
+	[4b68e4bc9159]
+
+2015-03-12  Richard Hacker  <ha@igh-essen.com>
+
+	* .hgignore:
+	hgignore
+	[90fc86f86270]
+
+2015-03-10  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/blocks/EtherCAT/el331x.m:
+	Fixed EL331x to always use mandatory RxPDO
+	[640196315069]
+
+	* rtw/blocks/EtherCAT/ec_slave3.tlc, rtw/blocks/EtherCAT/ep8309.m,
+	rtw/blocks/etherlab_lib.mdl:
+	Removed SDO 8010:6/15 from configuration
+	[cf477356f150]
+
+2015-03-09  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/blocks/EtherCAT/el331x.m, rtw/blocks/EtherCAT/el3356.m:
+	Changed visibility of unused options in el3356 and el331x
+	[9a3b1240c8de]
+
+2015-03-08  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/blocks/CMakeLists.txt, rtw/blocks/EtherCAT/CMakeLists.txt,
+	rtw/blocks/EtherCAT/EtherCATSlave.m,
+	rtw/blocks/EtherCAT/EtherCATSlaveBlock.m,
+	rtw/blocks/EtherCAT/baumer_ecatencoder.m,
+	rtw/blocks/EtherCAT/el2xxx.m, rtw/blocks/EtherCAT/el30xx_1.m,
+	rtw/blocks/EtherCAT/el320x_1.m, rtw/blocks/EtherCAT/el3255.m,
+	rtw/blocks/EtherCAT/el331x.m, rtw/blocks/EtherCAT/el3356.m,
+	rtw/blocks/EtherCAT/el500x.m, rtw/blocks/EtherCAT/el51xx.m,
+	rtw/blocks/EtherCAT/ep31xx_1.m, rtw/blocks/EtherCAT/ep8309.m,
+	rtw/blocks/etherlab_lib.mdl, rtw/blocks/html/el51xx.html,
+	rtw/blocks/html/ep8309.html:
+	Lots of changes:
+	   - added Beckhoff/ep8309
+	   - documentation for el51xx
+	   - CMakeLists.txt: Added missing file el331x.m in (bugfix)
+	   - el500x.m: Status PDO Index was incorrect (bugfix)
+	   - el3255.m: removed unnecessary getSDO()
+	   - el51xx.m: Fixed small bug where block port labels were broken when
+	there were no input ports at all
+	   - EtherCATSlave.m: changed method configureScale() to support a prefix
+	when specifying port labels. Helped to fix a bug in ep43xx_1
+	   - Reworked EtherCATSlaveBlock() which required updates in Simulink
+	blocks as well as corresponding configuration .m scripts:
+	      - el320x_1
+	      - el500x
+	      - el51xx
+	      - baumer_ecatencoder
+	      - el2xxx
+	      - el30xx_1
+	      - el331x
+	      - el3356
+	      - el500x
+	      - el51xx
+	      - ep31xx_1
+	      - el30xx_1
+	[bfec8a7d1d78]
+
+2015-02-23  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/blocks/EtherCAT/EtherCATSlaveBlock.m,
+	rtw/blocks/EtherCAT/el331x.m, rtw/blocks/EtherCAT/el3356.m,
+	rtw/blocks/etherlab_lib.mdl, rtw/blocks/html/el331x.html:
+	Added EL331x
+	[7d5e8adc5648]
+
+	* rtw/blocks/EtherCAT/EtherCATSlave.m:
+	Spelling error
+	[b898af211db2]
+
+2014-11-26  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/blocks/EtherCAT/EtherCATSlave.m, rtw/blocks/EtherCAT/el3255.m,
+	rtw/blocks/EtherCAT/el3356.m, rtw/blocks/etherlab_lib.mdl,
+	rtw/blocks/html/general.html:
+	Changed wording of 'LPF Time Constant (sec)' to 'LPF Frequency
+	(rad/s)' to reflect correct interpretation by the block. No changes
+	required in models
+	[640a53ebdbd0]
+
+2014-11-25  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/blocks/EtherCAT/EtherCAT.tlc:
+	Multitasking test improved for ecs_send()/ecs_receive()
+	[ee5a84b483ab]
+
+2014-11-04  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/blocks/EtherCAT/ep31xx_1.m:
+	Fixed incorrect EP31xx SDO Index
+	[b78eef1bb862]
+
+2014-06-13  Florian Pose  <fp@igh-essen.com>
+
+	* rtw/blocks/EtherCAT/el51xx.m:
+	Richards fix for EL5151 PDO order.
+	[de167352116f]
+
+2014-04-16  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/blocks/EtherCAT/ec_slave3.c:
+	Fixed format bug in pr_error
+	[25a5ac105298]
+
+	* rtw/blocks/EtherCAT/el3255.m:
+	SDO Settings for EL3255
+	[72bf2836ea37]
+
+2014-03-28  Florian Pose  <fp@igh-essen.com>
+
+	* rtw/blocks/EtherCAT/ec_slave3.c:
+	Implemented new data type class Simulink.NumericType.
+	[844165d3be83]
+
+2013-12-10  Florian Pose  <fp@igh-essen.com>
+
+	* CMakeLists.txt:
+	Release 2.1.0.
+	[34b9b74f113d]
+
+	* CMakeLists.txt:
+	Updated doc of main cmake file.
+	[cfe08d157543]
+
+	* NEWS:
+	Updated NEWS fo 2.1.0.
+	[488da229a0cb]
+
+	* ChangeLog:
+	Updated ChangeLog for 2.1.0.
+	[f9849a70806b]
+
 2013-12-09  ab  <ab>
 
 	* rtw/etherlab/etherlab_hrt.tmf.in:
 	Fix Makefilebug for rtipc usage Failure:Line 191 in model.mk:
 	Recursive variable `S_FUNCTIONS' references itself (eventually).
 	Stop
-	[3f63b108d428] [tip]
+	[3f63b108d428]
 
 2013-11-29  Richard Hacker  <ha@igh-essen.com>
 
@@ -129,15 +1020,14 @@
 	rtw/blocks/EtherCAT/update_library.m,
 	rtw/blocks/EtherCAT/update_mask_state.m,
 	rtw/blocks/etherlab_lib.mdl:
-	etherlab_lib.mdl, *.m: updated el1xxx, el2xxx, ep1xxx,
-	ep2xxx, el4xxx, el3356, el3255, el37x2, el500x,
-	el5021, Infrastructure, el9xxx to new use classes
-	instead of functions added el31xx_1, ep31xx_1, ep41xx_1,
-	ep43xx_1, el30xx_1, el320x_1 that replace their
-	predecessors, which are kept for backwards
-	compatability but emit a message on model load that
-	they should be replaced added el51xx which replaces el5101*
-	and el515x, which are also kept for compatability
+	etherlab_lib.mdl, *.m: updated el1xxx, el2xxx, ep1xxx, ep2xxx,
+	el4xxx, el3356, el3255, el37x2, el500x, el5021, Infrastructure,
+	el9xxx to new use classes instead of functions added el31xx_1,
+	ep31xx_1, ep41xx_1, ep43xx_1, el30xx_1, el320x_1 that replace their
+	predecessors, which are kept for backwards compatability but emit a
+	message on model load that they should be replaced added el51xx
+	which replaces el5101* and el515x, which are also kept for
+	compatability
 
 	el515x_2.m, slave_dc.m, update_devices.m, update_library.m,
 	update_mask_state.m: removed obsolete files
@@ -238,6 +1128,23 @@
 	rtw/lib/ecrt_support.c, rtw/lib/ecrt_support.h:
 	Reworked DC completely
 	[0346448a9933]
+
+2013-08-11  hm  <hm@darwin.igh-essen.int>
+
+	* rtw/blocks/EtherCAT/EtherCAT.tlc:
+	avoiding dublicate EtherCat sends or recieves in some circumstances.
+	!not tested in all possible combinations regarding
+	multirate/singlerate/multitasting ...
+	[753ecd508ce5] <stable-1.3>
+
+	* tools/rt_appcore/rt_main.c:
+	increased time tolerance for the time controller of the real time
+	task: If a ntp is running on the machine there might be time steps
+	greater than 1s to adjust the clock. This results in a restart of
+	the dlsd detecting a time interval error if the real time process
+	steps it's time. To avoid this, the tolerance of the time interval
+	is increased from 1s to 10s.
+	[c735d034ed82] <stable-1.3>
 
 2013-07-30  Richard Hacker  <ha@igh-essen.com>
 
@@ -348,6 +1255,12 @@
 	Fixed 2012b library export problems
 	[2a70463585b5]
 
+2013-02-28  hm  <hm@mtm6>
+
+	* tools/buddy/msrio_lib/msr-core/msr_reg.c:
+	fixed: messages generated from the model are always warnings
+	[4961a3355aa6] <stable-1.3>
+
 2013-02-26  Richard Hacker  <lerichi@gmx.net>
 
 	* rtw/blocks/EtherCAT/CMakeLists.txt, rtw/blocks/EtherCAT/el3255.m,
@@ -401,6 +1314,12 @@
 	Updated mask for EL515x
 	[f67f51932722]
 
+2013-01-28  Florian Pose  <fp@igh-essen.com>
+
+	* rtw/blocks/EtherCAT/master_state.c:
+	Keywords.
+	[056995deff35] <stable-1.3>
+
 2013-01-24  Richard Hacker  <lerichi@gmx.net>
 
 	* rtw/blocks/EtherCAT/EtherCAT.tlc,
@@ -428,6 +1347,35 @@
 	* rtw/etherlab/etherlab_hrt.tmf:
 	Removed unnecessary quotes
 	[c68624958e54]
+
+2013-01-23  hm  <hm@picard>
+
+	* merge
+	[77a7dce2965a] <stable-1.3>
+
+2013-01-23  hm  <hm@mtm6>
+
+	* rtw/blocks/EtherCAT/master_state.c,
+	rtw/blocks/EtherCAT/master_state.tlc, rtw/blocks/etherlab_lib.mdl:
+	Added master diagnostics for multiple links (redunancy)
+	[f4bd34a74a96] <stable-1.3>
+
+2012-12-19  ab  <ab@igh-essen.com>
+
+	* rtw/blocks/EtherCAT/beckhoff_el515x.m:
+	Fix missing Sync manager entry for el5152 frequency output
+	[7dfc36c7c801] <stable-1.3>
+
+2012-12-13  Florian Pose  <fp@igh-essen.com>
+
+	* tools/buddy/command_module.c, tools/buddy/msrio_lib/msr-
+	core/msr_interpreter.c, tools/rt_appcore/rt_main.c:
+	Removed set but unused variables.
+	[bc72e71978ca] <stable-1.3>
+
+	* configure.ac, m4/expat.m4:
+	Added AM_PROG_AR necessary for autoconf 1.12.
+	[b33642a10d9c] <stable-1.3>
 
 2012-11-30  Florian Pose  <fp@igh-essen.com>
 
@@ -535,6 +1483,15 @@
 	* rtw/etherlab/etherlab_hrt.tmf:
 	Moved -llib to end of link command
 	[23e8b4b4fb97]
+
+2012-10-31  hm  <hm@darwin.igh-essen.int>
+
+	* tools/buddy/msrio_lib/include/msr_reg.h, tools/buddy/msrio_lib/msr-
+	core/msr_interpreter.c, tools/buddy/msrio_lib/msr-
+	core/msr_messagelist.c:
+	fixed a missing toxml() in <unkown command> tag, fixed a missing
+	msr_error in msr_messagelist.c
+	[03e069cd90c6] <stable-1.3>
 
 2012-10-31  Richard Hacker  <lerichi@gmx.net>
 
@@ -722,6 +1679,46 @@
 	Support NULL port specification
 	[693fa1cbc38b]
 
+2012-09-02  hm  <hm@darwin.igh-essen.int>
+
+	* tools/buddy/msrio_lib/msr-core/msr_interpreter.c:
+	msriolib: reduction*blocksize muß be a divider of the buffer length
+	off the transfered channel, this has not been checked up until now.
+	If the reduction is not a divider the channel does not get
+	transfered any more. If the blocksize is not a divider it get
+	reduced to the next apropriate value.
+	[f536ae5ae4bf] <stable-1.3>
+
+2012-08-15  Andreas Stewering-Bone  <ab@igh-essen.com>
+
+	* NEWS, rtw/blocks/EtherCAT/ec_slave2.c, rtw/blocks/etherlab_lib.mdl:
+	Change Interface for customized DC-Parameter Fix DC-Parameter Bug in
+	Generic Slaves
+	[4974909c8e56] <stable-1.3>
+
+2012-08-14  Florian Pose  <fp@igh-essen.com>
+
+	* tools/buddy/msrio_lib/include/msr_messagelist.h,
+	tools/buddy/msrio_lib/include/msr_reg.h, tools/buddy/msrio_lib/msr-
+	core/msr_messagelist.c, tools/buddy/msrio_lib/msr-core/msr_reg.c:
+	Fixed message types (created enum).
+	[947852b65e27] <stable-1.3>
+
+	* tools/buddy/msrio_lib/msr-core/msr_reg.c:
+	Escape message text and description in XML.
+	[ced63ae6b990] <stable-1.3>
+
+2012-08-13  Florian Pose  <fp@igh-essen.com>
+
+	* configure.ac, m4/expat.m4, tools/buddy/Makefile.am,
+	tools/buddy/buddy_main.c, tools/buddy/msginfo.h,
+	tools/buddy/msrio_lib/include/msr_messagelist.h,
+	tools/buddy/msrio_lib/include/msr_reg.h, tools/buddy/msrio_lib/msr-
+	core/msr_main.c, tools/buddy/msrio_lib/msr-core/msr_messagelist.c,
+	tools/buddy/msrio_lib/msr-core/msr_reg.c, tools/buddy/rtp_module.c:
+	Added messages command-line parameter to buddy.
+	[5f7e19de8489] <stable-1.3>
+
 2012-08-01  Richard Hacker  <lerichi@gmx.net>
 
 	* rtw/blocks/EtherCAT/baumer_ecatencoder.m,
@@ -899,6 +1896,13 @@
 	Added complex data types
 	[e4fe41c8898c]
 
+2012-06-15  Dr.-Ing. Wilhelm Hagemeister  <hm@igh-essen.com>
+
+	* tools/buddy/msrio_lib/include/msr_main.h, tools/buddy/msrio_lib/msr-
+	core/msr_main.c, tools/buddy/rtp_module.c:
+	Added interface in msr_io_lib for message xml files
+	[08d9c312c969] <stable-1.3>
+
 2012-06-14  Florian Pose  <fp@igh-essen.com>
 
 	* rtw/src/hrt_main.c:
@@ -931,6 +1935,12 @@
 	* rtw/src/hrt_main.c:
 	Line breaks.
 	[d84892f78141]
+
+2012-06-05  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/Makefile.am, rtw/switch_etherlab.m:
+	Added switch_etherlab() command
+	[076e5c4968b6] <stable-1.3>
 
 2012-06-05  Richard Hacker  <lerichi@gmx.net>
 
@@ -1030,6 +2040,12 @@
 	Fixed MTS block; added to installation.
 	[a6953a813679]
 
+2012-04-02  Andreas Stewering-Bone  <ab@igh-essen.com>
+
+	* rtw/blocks/EtherCAT/beckhoff_el30xx.m:
+	Fix PdoFullScale of EL30XX from 11 to 15
+	[c1c6266b9176] <stable-1.3>
+
 2012-03-22  Andre Johannsen  <andre.johannsen.external@airbus.com>
 
 	* rtw/blocks/EtherCAT/ep1xxx.m:
@@ -1080,6 +2096,10 @@
 	* rtw/blocks/etherlab_lib.mdl:
 	Added newer revisions of EL5001.
 	[cd899a9ec8df]
+
+	* rtw/blocks/etherlab_lib.mdl:
+	Added newer revisions (3f8, 3f9) of EL5001.
+	[107bfd605e43] <stable-1.3>
 
 2012-03-12  Florian Pose  <fp@igh-essen.com>
 
@@ -1265,6 +2285,10 @@
 	[8feefefb06a1]
 
 2012-02-24  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/src/rtw_data_interface.c, tools/include/etl_data_info.h:
+	Imporoved comments
+	[c652f0403256] <stable-1.3>
 
 	* rtw/CMakeLists.txt, rtw/blocks/CMakeLists.txt,
 	rtw/blocks/EtherCAT/CMakeLists.txt,
@@ -1703,6 +2727,366 @@
 	Switched to first revision of pdserv-matlab repository.
 	[ad4e9d94e2e1]
 
+2012-02-17  hm  <hm@darwin.igh-essen.int>
+
+	* merge
+	[2bd46e0c7c11] <stable-1.3>
+
+	* tools/buddy/msrio_lib/include/msr_reg.h, tools/buddy/msrio_lib/msr-
+	core/msr_reg.c:
+	msr_lib delivers Matrices (Parameter and Channels) as they lay in
+	memory. no reordering occurs (any more)!! Use orientatioin attribute
+	to identify correct order of data.
+	[8a8d015f90a4] <stable-1.3>
+
+2012-02-17  Florian Pose  <fp@igh-essen.com>
+
+	* tools/rt_appcore/app_chardev.c, tools/rt_appcore/rt_app.h,
+	tools/rt_appcore/rt_app_main.c, tools/rt_appcore/rt_main.c,
+	tools/rt_appcore/rt_main.h:
+	Use read-write lock to store new parameters.
+	[5565af49e80c] <stable-1.3>
+
+	* rtw/blocks/EtherCAT/EtherCAT.tlc, rtw/blocks/EtherCAT/bk1120_in.tlc,
+	rtw/blocks/EtherCAT/bk1120_out.tlc,
+	rtw/blocks/EtherCAT/domain_state.tlc,
+	rtw/blocks/EtherCAT/ec_slave2.tlc,
+	rtw/blocks/EtherCAT/ec_slave3.tlc, rtw/blocks/EtherCAT/el10xx.tlc,
+	rtw/blocks/EtherCAT/el20xx.tlc, rtw/blocks/EtherCAT/el31xx.tlc,
+	rtw/blocks/EtherCAT/el41xx.tlc, rtw/blocks/EtherCAT/el5001.tlc,
+	rtw/blocks/EtherCAT/el5101.tlc,
+	rtw/blocks/EtherCAT/master_state.tlc,
+	rtw/blocks/EtherCAT/moog_msd.tlc,
+	rtw/blocks/EtherCAT/old_el5101.tlc:
+	Fixed code generation for multi-rate models (ecs_send(),
+	ecs_receive()).
+	[866529b120c4] <stable-1.3>
+
+	* TODO:
+	TODO.
+	[fa59a20f31dd] <stable-1.3>
+
+2012-02-16  Florian Pose  <fp@igh-essen.com>
+
+	* Makefile.am, rtw/blocks/EtherCAT/ec_slave2.c,
+	rtw/blocks/EtherCAT/mtsrseries_check.m,
+	rtw/blocks/EtherCAT/xml/MTS.xml, rtw/blocks/etherlab_lib.mdl,
+	tools/rt_appcore/rt_main.c:
+	merged.
+	[4ecd384195b3] <stable-1.3>
+
+2011-10-25  Florian Pose  <fp@igh-essen.com>
+
+	* .hgignore:
+	Ignore TAGS.
+	[5a298fa5eb36] <stable-1.3>
+
+	* rtw/blocks/EtherCAT/ec_slave2.c, rtw/blocks/etherlab_lib.mdl,
+	tools/rt_appcore/rt_main.c:
+	merged.
+	[6f7ea0c35ba5] <stable-1.3>
+
+2011-07-25  Florian Pose  <fp@igh-essen.com>
+
+	* tools/rt_appcore/rt_main.c:
+	Minor change.
+	[a1c8087c45ca] <stable-1.3>
+
+2012-02-13  hm  <hm@darwin.igh-essen.int>
+
+	* tools/buddy/msrio_lib/include/msr_reg.h:
+	msr_lib only delivers row_major matrices (even if the come from
+	Simulink in col_major)
+	[9e40147bb7c7] <stable-1.3>
+
+2012-02-07  Florian Pose  <fp@igh-essen.com>
+
+	* rtw/blocks/etherlab_lib.mdl:
+	Added EL3104.
+	[f07b08426fc9] <stable-1.3>
+
+	* rtw/blocks/EtherCAT/ec_slave2.c:
+	Duplicate port assign results in error.
+	[3c70e3ea2c07] <stable-1.3>
+
+	* rtw/lib/ecrt_support.c:
+	Fixed NULL pointer dereference after requesting a non-existent
+	master.
+	[dffa46299e3f] <stable-1.3>
+
+2012-02-06  Florian Pose  <fp@igh-essen.com>
+
+	* configure.ac:
+	Version 1.3-rc3.
+	[50a71894f965] <stable-1.3>
+
+	* TODO:
+	TODO.
+	[3a550f8cf519] <stable-1.3>
+
+	* rtw/lib/ecrt_support.c:
+	Removed whitespace.
+	[6d6f824ade46] <stable-1.3>
+
+	* rtw/blocks/EtherCAT/mts_r.m, rtw/blocks/etherlab_lib.mdl:
+	Improved line breaks and documentation.
+	[1368be615643] <stable-1.3>
+
+	* rtw/blocks/EtherCAT/mts_r.m:
+	Removed whitespace from MTS code.
+	[a77f95a689af] <stable-1.3>
+
+2012-02-05  hm  <hm@darwin.igh-essen.int>
+
+	* tools/buddy/msrio_lib/include/msr_target.h, tools/buddy/msrio_lib
+	/msr-core/msr_interpreter.c, tools/buddy/msrio_lib/msr-
+	core/msr_reg.c:
+	hardend msr_io_lib for evil attribute values in xml-command tags
+	e.g. <wp name="/etldemo/evilname value index/Value/0" value="12">
+	will now succeed having a attribute name (value and/or index) in an
+	attribute value
+	[8417d3f992cf] <stable-1.3>
+
+2012-02-04  hm  <hm@darwin.igh-essen.int>
+
+	* tools/buddy/msrio_lib/include/msr_reg.h, tools/buddy/msrio_lib/msr-
+	core/msr_interpreter.c, tools/buddy/msrio_lib/msr-core/msr_lists.c,
+	tools/buddy/msrio_lib/msr-core/msr_reg.c:
+	avoid a inconsistency in the data tag when unregisting channels via
+	<xsod> while no channels where registered. Hardened msr_lib for some
+	possible NULL-Pointer dereferencing
+	[7af3bec3bd34] <stable-1.3>
+
+2012-02-01  Andreas Stewering-Bone  <ab@igh-essen.com>
+
+	* tools/rt_appcore/Kbuild.in:
+	Fix dash echo behavior @ generating kernel-cflags.c
+	[75f51ed1bfb8] <stable-1.3>
+
+	* Makefile.am, rtw/blocks/EtherCAT/Makefile.am,
+	rtw/blocks/EtherCAT/mts_r.m, rtw/blocks/EtherCAT/mtsrseries_check.m,
+	rtw/blocks/EtherCAT/xml/MTS.xml,
+	rtw/blocks/EtherCAT/xml/MTS_EtherCat.xml,
+	rtw/blocks/EtherCAT/xml/Makefile.am,
+	rtw/blocks/EtherCAT/xml/setup.m, rtw/blocks/etherlab_lib.mdl,
+	tools/scripts/etherlab.in:
+	- Add note for mts sensor block
+	- Replace mts sensor block, new block is based on external m-file
+	- replace mts xml file
+	- Fix init-script for non rc based systems
+	[3ba130551263] <stable-1.3>
+
+2012-01-31  Florian Pose  <fp@igh-essen.com>
+
+	* merge.
+	[e03bd84bdc1e] <stable-1.3>
+
+2012-01-30  Florian Pose  <fp@igh-essen.com>
+
+	* rtw/blocks/EtherCAT/@EtherCATInfo/Makefile.am,
+	rtw/blocks/EtherCAT/@EtherCATInfo/setSm.m,
+	rtw/blocks/etherlab_lib.mdl:
+	Added setSm() method for EtherCAT information class; fixed EL5101
+	frequency/period/window functionality.
+	[0789ec7b1d5b] <stable-1.3>
+
+2012-01-04  Florian Pose  <fp@igh-essen.com>
+
+	* TODO:
+	TODO.
+	[9d5b1c9febab] <stable-1.3>
+
+2012-01-31  Richard Hacker  <ha@igh-essen.com>
+
+	* tools/buddy/msrio_lib/msr-core/msr_reg.c:
+	Removed debugging messages from buddy
+	[3a8fe30826bd] <stable-1.3>
+
+2012-01-25  Florian Pose  <fp@igh-essen.com>
+
+	* tools/rt_appcore/rt_app_main.c:
+	Added includes and new autoconf.h path for 2.6.35.
+	[f68c8fc037d8] <stable-1.3>
+
+	* rtw/lib/ecrt_support.c, tools/rt_appcore/app_chardev.c,
+	tools/rt_appcore/rt_main.c, tools/rt_appcore/rt_vars.c:
+	Added missing slab.h includes on 2.6.35.
+	[5e9a831ca2a6] <stable-1.3>
+
+2011-12-02  Richard Hacker  <ha@igh-essen.com>
+
+	* capi/register.c, rtw/blocks/etherlab_lib.mdl,
+	rtw/src/rtw_data_interface.c, tools/include/etl_data_info.h:
+	Added port attribute for signals
+	[e49acf8aaba0] <stable-1.3>
+
+2011-11-24  Florian Pose  <fp@igh-essen.com>
+
+	* rtw/blocks/etherlab_lib.mdl:
+	Fixed PDO entries for EL3164.
+	[c2e5183092e8] <stable-1.3>
+
+	* merge.
+	[fb1f09bcb6a5] <stable-1.3>
+
+	* rtw/blocks/EtherCAT/beckhoff_el30xx.m, rtw/blocks/Makefile.am,
+	rtw/blocks/etherlab_lib.mdl, rtw/blocks/update_etherlab_lib.m:
+	Removed "Update Library" block, created update_etherlab_lib.m; added
+	EL3164; fixed EL3xxx device names (capital 'L').
+	[a794e0f09e74] <stable-1.3>
+
+2011-11-18  ab  <ab@tanv-ctl.igh-essen.int>
+
+	* merge
+	[f119bfcbb55d] <stable-1.3>
+
+	* tools/buddy/msrio_lib/msr-core/msr_reg.c:
+	Change datatype conversion in msr_reg from int to double for any
+	parameter write
+	[86c9670ed818] <stable-1.3>
+
+2011-11-11  Andreas Stewering-Bone  <ab@igh-essen.com>
+
+	* rtw/blocks/EtherCAT/Makefile.am,
+	rtw/blocks/EtherCAT/beckhoff_ep3xxx.m,
+	rtw/blocks/EtherCAT/beckhoff_ep4374.m, rtw/blocks/etherlab_lib.mdl:
+	Add Block Beckhoff EP4374 Fix Filterbug in ep3xxx M-File
+	[97fa721d0a2e] <stable-1.3>
+
+2011-11-08  Andreas Stewering-Bone  <ab@igh-essen.com>
+
+	* rtw/blocks/etherlab_lib.mdl:
+	Fix default settings for Beckhoff EP4xxx
+	[376a61b81cdb] <stable-1.3>
+
+2011-10-24  Richard Hacker  <ha@igh-essen.com>
+
+	* .hgignore:
+	hgignore
+	[7ad1ab79b608] <stable-1.3>
+
+2011-10-20  hm  <hm@darwin.igh-essen.int>
+
+	* rtw/blocks/EtherCAT/beckhoff_ep4xxx.m:
+	fixed a bug in beckhoff_ep4xxx, this function may need more testing
+	[d9d2358c7b47] <stable-1.3>
+
+	* merge
+	[aadfe2b12ae2] <stable-1.3>
+
+2011-09-26  hm  <hm@darwin.igh-essen.int>
+
+	* tools/buddy/msrio_lib/msr-core/msr_reg.c:
+	hidevectors as tag for vector channels for compatibility with older
+	dlsd-versions
+	[a4ee2326e8d3] <stable-1.3>
+
+2011-09-22  Florian Pose  <fp@igh-essen.com>
+
+	* capi/rt_application.xsd:
+	Fixed port specification.
+	[2156f7495b8d] <stable-1.3>
+
+2011-09-05  Andreas Stewering-Bone  <ab@igh-essen.com>
+
+	* rtw/blocks/EtherCAT/ESD.png, rtw/blocks/EtherCAT/Makefile.am,
+	rtw/blocks/EtherCAT/beckhoff_el73x2.m,
+	rtw/blocks/EtherCAT/esd_cangateway.m, rtw/blocks/EtherCAT/xml/ESD-
+	ethercat-can.xml, rtw/blocks/EtherCAT/xml/Makefile.am,
+	rtw/blocks/EtherCAT/xml/setup.m, rtw/blocks/etherlab_lib.mdl,
+	rtw/blocks/etherlab_lib_exp.mdl:
+	Add Beckhoff EL73x2 and ESD CAN Gateway to lib
+	[1e6622fe048a] <stable-1.3>
+
+2011-08-31  Andreas Stewering-Bone  <ab@igh-essen.com>
+
+	* Merge
+	[c9068a22129a] <stable-1.3>
+
+	* rtw/blocks/EtherCAT/Makefile.am, rtw/blocks/EtherCAT/ec_slave2.c:
+	Fix missing Murr.png in dist files Fix snprintf Bug in Windows code
+	[1aabd0977842] <stable-1.3>
+
+2011-08-30  Richard Hacker  <ha@igh-essen.com>
+
+	* capi/application_defines.h.xsl, capi/my-app.xml, capi/register.c,
+	capi/rt_application.xsd, rtw/etherlab/etherlab.tlc,
+	rtw/etherlab/etherlab_kmod.tmf.in, rtw/src/rtw_app_info.c,
+	tools/buddy/rtp_module.c, tools/include/fio_ioctl.h,
+	tools/rt_appcore/app_chardev.c, tools/rt_appcore/rt_app.h,
+	tools/rt_appcore/rt_app_main.c:
+	Added application option to set port number
+	[d96e5e66e5ec] <stable-1.3>
+
+	* capi/Kbuild.makefile.in, capi/Makefile.am, capi/app_main.c,
+	capi/localinclude.h:
+	Added missing headers
+	[e42b6abb49f8] <stable-1.3>
+
+	* tools/rt_appcore/rt_vars.c:
+	Integer format spec compile warning
+	[dd5deec5b53c] <stable-1.3>
+
+2011-08-29  Andreas Stewering-Bone  <ab@igh-essen.com>
+
+	* rtw/blocks/EtherCAT/Baumer.png, rtw/blocks/EtherCAT/Makefile.am,
+	rtw/blocks/EtherCAT/Murr.png,
+	rtw/blocks/EtherCAT/baumer_ecatencoder.m,
+	rtw/blocks/EtherCAT/beckhoff_el30xx.m,
+	rtw/blocks/EtherCAT/beckhoff_el320x.m,
+	rtw/blocks/EtherCAT/beckhoff_el515x.m,
+	rtw/blocks/EtherCAT/beckhoff_ep3xxx.m,
+	rtw/blocks/EtherCAT/beckhoff_ep4xxx.m,
+	rtw/blocks/EtherCAT/ec_slave2.c,
+	rtw/blocks/EtherCAT/murr_impact67.m, rtw/blocks/EtherCAT/strjoin.m,
+	rtw/blocks/EtherCAT/unknown_skeleton.m, rtw/blocks/EtherCAT/xml/Baum
+	erThalheim_ECAT_Encoders512Bytes_02.05.04.xml,
+	rtw/blocks/EtherCAT/xml/Beckhoff_EtherCAT_XML.zip,
+	rtw/blocks/EtherCAT/xml/Makefile.am,
+	rtw/blocks/EtherCAT/xml/Murrelektronik_IMPACT67-orig.xml,
+	rtw/blocks/EtherCAT/xml/Murrelektronik_IMPACT67.xml,
+	rtw/blocks/EtherCAT/xml/setup.m, rtw/blocks/etherlab_lib.mdl:
+	Add additional blocks
+
+	EP31xx, EP41xx, EL30xx, EL32XX, EL515x
+
+	Add dc selection handling in ec_slave2
+	[2535ac1cae39] <stable-1.3>
+
+2011-08-22  Florian Pose  <fp@igh-essen.com>
+
+	* tools/buddy/msrio_lib/include/msr_main.h, tools/buddy/msrio_lib/msr-
+	core/msr_reg.c, tools/buddy/rtp_module.c,
+	tools/include/app_taskstats.h, tools/rt_appcore/rt_main.c:
+	Fixed distributed clocks initialisation bug: Set monotonic time in
+	first cycle; Added monotonic time to task stats.
+	[b789fe193651] <stable-1.3>
+
+2011-08-19  Florian Pose  <fp@igh-essen.com>
+
+	* merge.
+	[3c81dc87825c] <stable-1.3>
+
+2011-05-25  Florian Pose  <fp@igh-essen.com>
+
+	* configure.ac:
+	Version 1.3-rc2.
+	[808bd8fb9ff8] <stable-1.3>
+
+	* .hgignore:
+	Ignore Module.markers
+	[a4a6ddc27e28] <stable-1.3>
+
+	* rtw/blocks/etherlab_lib.mdl:
+	Closed windows.
+	[98c85a0568dd] <stable-1.3>
+
+2011-08-18  Florian Pose  <fp@igh-essen.com>
+
+	* TODO:
+	TODO
+	[5490d1a42bef] <stable-1.3>
+
 2011-07-29  kt  <kt@zuse.igh-essen.int>
 
 	* tools/scripts/mdl-path-adjust.pl:
@@ -1710,11 +3094,1454 @@
 	mit beruecksichtigung der relevanten aussnahmen .
 	[b20949c15c95]
 
+2011-07-13  Florian Pose  <fp@igh-essen.com>
+
+	* tools/buddy/msrio_lib/msr-core/msr_reg.c:
+	merge.
+	[a90ca1203b8a] <stable-1.3>
+
+2011-07-08  Florian Pose  <fp@igh-essen.com>
+
+	* tools/rt_appcore/rt_app_main.c:
+	Fixed typo.
+	[bbdea0ee3f0d] <stable-1.3>
+
+2011-06-15  Florian Pose  <fp@igh-essen.com>
+
+	* tools/buddy/msrio_lib/include/msr_main.h, tools/buddy/msrio_lib/msr-
+	core/msr_reg.c, tools/buddy/rtp_module.c,
+	tools/include/app_taskstats.h, tools/rt_appcore/rt_main.c:
+	Added TaskInfo/WakeupTime for timing analysis.
+	[ff3e7703d8cd] <stable-1.3>
+
+2011-07-12  hm  <hm@darwin.igh-essen.int>
+
+	* tools/buddy/msrio_lib/msr-core/msr_reg.c:
+	Fixed a bug in trimming the path of channels and parameters
+	[2bd5d0b86a95] <stable-1.3>
+
+	* tools/buddy/msrio_lib/msr-core/msr_reg.c:
+	Parameter and Channelnames get trimmed at end and before and after
+	"/" !!
+	[a1c1f3285bd0] <stable-1.3>
+
+2011-07-07  hm  <hm@darwin.igh-essen.int>
+
+	* tools/buddy/msrio_lib/include/msr_lists.h,
+	tools/buddy/msrio_lib/include/msr_reg.h,
+	tools/buddy/msrio_lib/include/msr_version.h, tools/buddy/msrio_lib
+	/msr-core/msr_interpreter.c, tools/buddy/msrio_lib/msr-
+	core/msr_reg.c:
+	vector channels added to msr-communication library <rk> works now
+	with index for selecting channels
+	[6dd0cdde0354] <stable-1.3>
+
+2011-06-06  hm  <hm@darwin.igh-essen.int>
+
+	* tools/buddy/msrio_lib/msr-core/msr_interpreter.c,
+	tools/buddy/msrio_lib/msr-core/msr_lists.c:
+	added unique connectionId in connectiontag
+	[2bede5922a45] <stable-1.3>
+
+2011-05-23  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/blocks/etherlab_lib.mdl:
+	Help for Generic Slave
+	[361dbc2901ac] <stable-1.3>
+
+2011-05-04  Florian Pose  <fp@igh-essen.com>
+
+	* TODO:
+	TODO.
+	[8186dbbaddbf] <stable-1.3>
+
+2011-04-28  Florian Pose  <fp@igh-essen.com>
+
+	* merge.
+	[27dbcb286495] <stable-1.3>
+
+	* rtw/blocks/EtherCAT/ec_slave2.tlc:
+	Fixed bug. EtherCAT block outputs were not completely updated, if
+	block had inputs and outputs and number of inputs < number of
+	outputs.
+	[4ae2829e7433] <stable-1.3>
+
+2011-03-31  Florian Pose  <fp@igh-essen.com>
+
+	* tools/buddy/msrio_lib/msr-core/msr_interpreter.c:
+	Removed "Adminmode filp: x" log message.
+	[6b9c43c0f74a] <stable-1.3>
+
+2011-03-30  Florian Pose  <fp@igh-essen.com>
+
+	* merge.
+	[469a7cda7667] <stable-1.3>
+
+	* tools/rt_appcore/rt_vars.c:
+	merge.
+	[aa4cfe83310d] <stable-1.3>
+
+	* tools/buddy/rtp_module.c:
+	Reconnect 10 times after forking buddy child to give udevd time to
+	create the device node.
+	[1c5153e0a9c8] <stable-1.3>
+
+2011-03-29  Florian Pose  <fp@igh-essen.com>
+
+	* TODO:
+	TODO.
+	[396a26c60838] <stable-1.3>
+
+	* merge.
+	[9aa3475c4d0c] <stable-1.3>
+
+	* TODO:
+	TODO.
+	[2f66cc0e74dd] <stable-1.3>
+
+	* TODO:
+	TODO 1.3.
+	[9effb5bb7aac] <stable-1.3>
+
+2011-02-02  Torsten Finke  <fi@igh-essen.com>
+
+	* Makefile.am:
+	installation postinstall message adjusted to "setup_etherlab.m"
+	[561aa8d1ae23] <stable-1.3>
+
+2011-01-03  hm  <hm@darwin.igh-essen.int>
+
+	* tools/rt_appcore/rt_main.c, tools/rt_appcore/rt_main.h:
+	fixed system time sychronization
+	[97e4a1c82ff2] <stable-1.3>
+
+2010-12-23  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/blocks/EtherCAT/ec_slave2.c, rtw/blocks/EtherCAT/ec_slave2.tlc,
+	rtw/lib/ecrt_support.c, rtw/lib/ecrt_support.h:
+	Added ByteArry configuration feature for EtherCAT SDO
+	[2c9c9ef4bc8a] <stable-1.3>
+
+2010-12-08  Richard Hacker  <ha@igh-essen.com>
+
+	* Merge
+	[046e6dbd689e] <stable-1.3>
+
+	* rtw/blocks/EtherCAT/xml/setup.m, rtw/blocks/etherlab_lib.mdl:
+	New Beckhoff xml files
+	[b2c759710ce4] <stable-1.3>
+
+	* rtw/blocks/EtherCAT/@EtherCATInfo/private/XML_ParsePdoEntry.m:
+	Added new data type "REAL"
+	[ffced7b7f671] <stable-1.3>
+
+	* rtw/blocks/EtherCAT/@EtherCATInfo/private/Makefile.am:
+	Added missing InvalidDoc.m
+	[6eb005bd6b7c] <stable-1.3>
+
+2010-12-07  Florian Pose  <fp@igh-essen.com>
+
+	* TODO:
+	TODO.
+	[5b846301440e] <stable-1.3>
+
+2010-12-06  Richard Hacker  <ha@igh-essen.com>
+
+	* .hgignore:
+	Small fix of .hgignore
+	[396a800e65aa] <stable-1.3>
+
+	* configure.ac:
+	Release 1.3-rc1
+	[5c9330fad1e2] <stable-1.3>
+
+2010-12-06  ha  <ha@zuse.igh-essen.int>
+
+	* .hgignore:
+	.hgignore
+	[c0f3b03d8252] <stable-1.3>
+
+2010-12-06  Florian Pose  <fp@igh-essen.com>
+
+	* TODO, tools/buddy/msrio_lib/include/msr_attributelist.h,
+	tools/buddy/msrio_lib/include/msr_base64.h,
+	tools/buddy/msrio_lib/include/msr_charbuf.h,
+	tools/buddy/msrio_lib/include/msr_hex_bin.h,
+	tools/buddy/msrio_lib/include/msr_interpreter.h,
+	tools/buddy/msrio_lib/include/msr_main.h,
+	tools/buddy/msrio_lib/include/msr_reg.h, tools/buddy/msrio_lib/msr-
+	core/msr_attributelist.c, tools/buddy/msrio_lib/msr-
+	core/msr_charbuf.c, tools/buddy/msrio_lib/msr-core/msr_messages.c,
+	tools/buddy/msrio_lib/msr-math/msr_base64.c, tools/buddy/msrio_lib
+	/msr-math/msr_hex_bin.c:
+	TODO.
+	[272c9951f797] <stable-1.3>
+
 2010-12-06  convert-repo  <convert-repo>
 
 	* .hgtags:
 	update tags
 	[f2c60e26faa9]
+
+2010-12-02  Richard Hacker  <ha@igh-essen.com>
+
+	* tools/rt_appcore/rt_main.c:
+	Fixed bug in model time
+	[ac8aab9898ab] <stable-1.3>
+
+2010-11-30  Florian Pose  <fp@igh-essen.com>
+
+	* rtw/lib/ecrt_support.c:
+	Fixed Master State block.
+	[1cf50bf3ccc2] <stable-1.3>
+
+2010-11-30  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/blocks/EtherCAT/master_state.c,
+	rtw/blocks/EtherCAT/master_state.tlc, rtw/blocks/etherlab_lib.mdl:
+	Added reset input to Master State
+	[3885375cab21] <stable-1.3>
+
+2010-11-23  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/lib/Makefile.am, rtw/lib/appcore_libc.h, rtw/lib/libc.c,
+	rtw/lib/string_redefine.h:
+	Fixed libc implementation
+	[bf3387714928] <stable-1.3>
+
+	* tools/rt_appcore/rt_app_main.c:
+	Fixed rtB memory allocation size for rt applications
+	[1afee4c102a9] <stable-1.3>
+
+2010-10-29  Richard Hacker  <ha@igh-essen.com>
+
+	* configure.ac, rtw/lib/Makefile.am, rtw/lib/libc.c:
+	Included first version of pico libc
+	[b6f418f6c840] <stable-1.3>
+
+2010-10-19  Wilhelm Hagemeister  <hm@igh-essen.com>
+
+	* tools/buddy/msrio_lib/msr-core/msr_reg.c:
+	die einzelnen Elemente eines Vektorparameters werden jetzt auch
+	aktualisiert, wenn der Vektor in Gaenze beschrieben wird.
+	[32f29c85d746] <stable-1.3>
+
+2010-10-12  Florian Pose  <fp@igh-essen.com>
+
+	* rtw/blocks/etherlab_lib.mdl:
+	Added EL4004.
+	[d1ccfada6baf] <stable-1.3>
+
+2010-09-23  Richard Hacker  <ha@igh-essen.com>
+
+	* configure.ac, rtw/etherlab/Makefile.am,
+	rtw/etherlab/etherlab_kmod.tmf.in, rtw/etherlab/etherlab_tools.mk,
+	rtw/etherlab/etherlab_tools.mk.in:
+	Moved assignment of RTAI_DIR from etherlab_kmod.tmf to
+	etherlab_tools.mk
+	[9cbdb41baf7a] <stable-1.3>
+
+	* rtw/lib/Kbuild.in:
+	Removed warning of circular reference when building
+	[91dfe329889d] <stable-1.3>
+
+2010-09-22  Richard Hacker  <ha@igh-essen.com>
+
+	* tools/rt_appcore/rt_vars.c:
+	Removed debugging
+	[d5832f655c60] <stable-1.3>
+
+	* tools/rt_appcore/rt_vars.c:
+	Fixed crash when module was removed
+	[22f98b13969d] <stable-1.3>
+
+	* tools/rt_appcore/rt_vars.c:
+	Fixed appcore crash when dissimilar variables exist
+	[e7f70f92b590] <stable-1.3>
+
+	* tools/rt_appcore/Kbuild.in, tools/rt_appcore/Makefile.am:
+	Improved remaking of kernel module
+	[51e34afd1947] <stable-1.3>
+
+	* tools/rt_appcore/rt_vars.c:
+	Checking whether sample time id fits with number of tasks
+	[d0c89fa1307a] <stable-1.3>
+
+2010-09-20  Richard Hacker  <ha@igh-essen.com>
+
+	* tools/rt_appcore/rt_vars.c:
+	Quasi multi-threading working with rt_vars
+	[ca4cb520c2e9] <stable-1.3>
+
+2010-09-10  Richard Hacker  <ha@igh-essen.com>
+
+	* tools/rt_appcore/rt_vars.c:
+	Removed a large stack memory user
+	[aa5d8cc3da9f] <stable-1.3>
+
+	* tools/rt_appcore/rt_vars.c:
+	Completely reworked rt_vars
+	[9b3e38d8c863] <stable-1.3>
+
+2010-09-09  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/blocks/Makefile.am, rtw/blocks/setup.m.in:
+	EtherCAT is installed unconditionally.
+	[e370a47546fa] <stable-1.3>
+
+2010-09-01  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/blocks/EtherCAT/ec_slave2.tlc:
+	Fixed bug where slaves with no syncmanagers resulted in compilation
+	failure
+	[bc0a2f799fb6] <stable-1.3>
+
+2010-08-23  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/blocks/EtherCAT/ec_slave3.c:
+	mex working without errors
+	[1b780a191fa0] <stable-1.3>
+
+	* rtw/blocks/EtherCAT/ec_slave3.c, rtw/blocks/EtherCAT/ec_slave3.tlc:
+	Copied ec_slave3 from ec_slave2 and changed struct ec_slave to show
+	new structure
+	[12c384f8a157] <stable-1.3>
+
+2010-08-20  Richard Hacker  <ha@igh-essen.com>
+
+	* tools/rt_appcore/rt_main.c:
+	Fixed calculation bug in exec_time
+	[80c1693b7d75] <stable-1.3>
+
+	* tools/buddy/msrio_lib/msr-core/msr_reg.c:
+	Changed period from us to ns
+	[13eceefbc65e] <stable-1.3>
+
+2010-08-19  Richard Hacker  <ha@igh-essen.com>
+
+	* README, rtw/etherlab/etherlab_kmod.tmf.in,
+	rtw/etherlab/etherlab_tools.mk:
+	Optimized staging build
+	[920f550ae9c5] <stable-1.3>
+
+	* configure.ac:
+	Fixed bug concerning default prefix
+	[720485014c45] <stable-1.3>
+
+	* tools/buddy/msrio_lib/include/msr_reg.h, tools/buddy/msrio_lib/msr-
+	core/msr_reg.c:
+	Corrections of 64<->32bit
+	[ea500599bc9c] <stable-1.3>
+
+	* configure.ac, tools/Makefile.am, tools/rt_appcore/Kbuild.in,
+	tools/rt_appcore/Makefile.am, tools/rt_appcore/rt_main.c:
+	Improved configure.ac
+	[d932e1695387] <stable-1.3>
+
+	* rtw/blocks/EtherCAT/ec_slave2.c, rtw/blocks/EtherCAT/ec_slave2.tlc:
+	Changes for windows lcc
+	[2a86a4666b16] <stable-1.3>
+
+	* rtw/blocks/Makefile.am:
+	Removed ss_analog_in_funcs.c
+	[7542d6508685] <stable-1.3>
+
+	* rtw/blocks/ss_analog_in_funcs.c:
+	Not required any more
+	[5c3ff068820d] <stable-1.3>
+
+	* rtw/blocks/EtherCAT/moog_msd.c, rtw/blocks/findidx.c:
+	Fixed gcc warnings
+	[a2755d99ed42] <stable-1.3>
+
+	* rtw/blocks/ss_analog_in_funcs.c:
+	Changes for lcc
+	[c40ddbc238bc] <stable-1.3>
+
+2010-08-18  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/blocks/etherlab_lib.mdl:
+	Fixed some bugs: EL31xx loads correct EtherCATInfo; MTS has correct
+	number of arguments
+	[ae110602285d] <stable-1.3>
+
+2010-08-16  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/blocks/event.tlc:
+	Fixed bug in event block
+	[4df5fec48942] <stable-1.3>
+
+	* rtw/blocks/event.c:
+	Fixed bug in event block
+	[edb9ace518e8] <stable-1.3>
+
+2010-08-13  Florian Pose  <fp@igh-essen.com>
+
+	* TODO:
+	TODO
+	[25e3c49f57cd] <stable-1.3>
+
+2010-07-30  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/blocks/etherlab_lib.mdl, rtw/blocks/etherlab_lib_exp.mdl:
+	Moved rt_vars to etherlab_lib
+	[4eb62bdf65ed] <stable-1.3>
+
+	* tools/rt_appcore/rt_vars.c:
+	Optimised rt_vars
+	[866707fd9f66] <stable-1.3>
+
+	* tools/rt_appcore/rt_vars.c:
+	Fixed insmod lock bug
+	[c56f13cdeb0a] <stable-1.3>
+
+2010-07-30  Florian Pose  <fp@igh-essen.com>
+
+	* rtw/blocks/etherlab_lib.mdl:
+	Fixed EL31xx block.
+	[a4398353b6a2] <stable-1.3>
+
+2010-07-30  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/blocks/etherlab_in.c, rtw/blocks/etherlab_in.tlc,
+	rtw/blocks/etherlab_lib_exp.mdl, rtw/blocks/etherlab_out.c,
+	rtw/blocks/etherlab_out.tlc, tools/rt_appcore/rt_vars.c,
+	tools/rt_appcore/rt_vars.h:
+	Cleaned up rt_vars
+	[03cf21b21e91] <stable-1.3>
+
+2010-07-28  Florian Pose  <fp@igh-essen.com>
+
+	* rtw/blocks/EtherCAT/xml/Beckhoff_EtherCAT_XML.zip,
+	rtw/blocks/EtherCAT/xml/setup.m, rtw/blocks/etherlab_lib.mdl:
+	Added recent Beckhoff slave descriptions; added EL4134.
+	[37b7d6acaf7f] <stable-1.3>
+
+	* TODO, rtw/blocks/EtherCAT/ec_slave2.c:
+	Output only a warning if the same PDO entry is assigned to multiple
+	ports.
+	[7d5308a967ad] <stable-1.3>
+
+	* tools/rt_appcore/Makefile.am, tools/rt_appcore/rt_main.c:
+	Avoided format string warning.
+	[8215c3fcd32c] <stable-1.3>
+
+	* rtw/lib/ecrt_support.c:
+	Added drive_no parameter of ecrt_slave_config_idn().
+	[ebdbf78f420f] <stable-1.3>
+
+2010-07-27  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/blocks/etherlab_out.tlc, tools/rt_appcore/rt_vars.c:
+	RT Vars fixes
+	[88426f69b3a5] <stable-1.3>
+
+2010-07-12  Florian Pose  <fp@igh-essen.com>
+
+	* rtw/blocks/EtherCAT/EtherCAT.tlc:
+	Back-ported r633 from branch 1.3: Fixed bug concerning
+	rtmIsMajorTimeStep
+	[df110092a0af] <stable-1.2>
+
+2010-06-29  Florian Pose  <fp@igh-essen.com>
+
+	* tools/rt_appcore/rt_main.c:
+	Fixed bug causing main task to run asynchonously.
+	[14a103675986] <stable-1.3>
+
+	* Makefile.am, configure.ac:
+	Fixed DIST_SUBDIRS in Makefile.am.
+	[4773d4c7dc9b] <stable-1.2>
+
+	* Makefile.am, configure.ac, m4/Makefile.am:
+	Added m4 directory to dist.
+	[eba6eb8c65de] <stable-1.2>
+
+	* NEWS, TODO, configure.ac:
+	Version 1.2-rc10.
+	[32853b9a51a6] <stable-1.2>
+
+	* rtw/lib/ecrt_support.c:
+	Always write SoE IDNs in PREOP.
+	[88b7a84275fd] <stable-1.3>
+
+2010-05-30  Florian Pose  <fp@igh-essen.com>
+
+	* Ignore some files.
+	[87d6fe0e31ec] <stable-1.3>
+
+2010-05-25  Florian Pose  <fp@igh-essen.com>
+
+	* rtw/blocks/EtherCAT/ec_slave2.c:
+	Fixed selecting wrong DC OpMode settings if <OpMode> contains no
+	<Sm>.
+	[5c4688d8e89c] <stable-1.3>
+
+2010-05-21  Richard Hacker  <ha@igh-essen.com>
+
+	* NEWS, capi/my-app.xml, capi/register.c, capi/rt_application.xsd,
+	rtw/blocks/EtherCAT/EtherCAT.tlc, rtw/lib/ecrt_support.c,
+	rtw/lib/ecrt_support.h, rtw/src/rtw_app_info.c,
+	rtw/src/rtw_data_interface.c, rtw/src/rtw_wrapper.c,
+	tools/buddy/rtp_module.c, tools/include/fio_ioctl.h,
+	tools/rt_appcore/app_chardev.c, tools/rt_appcore/rt_app.h,
+	tools/rt_appcore/rt_app_main.c, tools/rt_appcore/rt_main.c:
+	Task Period is now in nanoseconds instead of microseconds
+	[b12e0c0687ae] <stable-1.3>
+
+2010-05-21  Andreas Stewering-Bone  <ab@igh-essen.com>
+
+	* Makefile.am, Makefile.windows, capi/Makefile.am, m4/Makefile.am,
+	rtw/Makefile.am, rtw/blocks/AddiData/Makefile.am,
+	rtw/blocks/EtherCAT/@EtherCATInfo/Makefile.am,
+	rtw/blocks/EtherCAT/@EtherCATInfo/private/Makefile.am,
+	rtw/blocks/EtherCAT/EtherCAT.tlc, rtw/blocks/EtherCAT/Makefile.am,
+	rtw/blocks/EtherCAT/xml/Makefile.am, rtw/blocks/Makefile.am,
+	rtw/etherlab/Makefile.am, rtw/etherlab/etherlab_postprocess.m,
+	rtw/lib/Makefile.am, rtw/src/Makefile.am, tools/Makefile.am:
+	Add Support for using etherlab under Windows
+	[e2437a206f35] <stable-1.3>
+
+2010-05-21  Florian Pose  <fp@igh-essen.com>
+
+	* tools/rt_appcore/Kbuild.in:
+	Enable SSE for kernel code.
+	[ac07bdda4e85] <stable-1.3>
+
+2010-05-20  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/blocks/EtherCAT/ec_slave2.c:
+	Removed unused variables
+	[61dc1d7241e5] <stable-1.3>
+
+	* rtw/blocks/EtherCAT/@EtherCATInfo/private/XML_ParsePdo.m,
+	rtw/blocks/EtherCAT/ec_slave2.c:
+	Completely reworked the processing of virtual syncmanagers and pdo's
+	[4e8550a5c6c1] <stable-1.3>
+
+2010-05-20  Florian Pose  <fp@igh-essen.com>
+
+	* rtw/lib/ecrt_support.c, tools/buddy/rtp_module.c,
+	tools/rt_appcore/app_chardev.c, tools/rt_appcore/rt_vars.c:
+	Fixed some format specifiers.
+	[84c893742a30] <stable-1.3>
+
+	* tools/rt_appcore/rt_main.c:
+	Fixed some format specifiers.
+	[fa764117cfaa] <stable-1.3>
+
+2010-05-19  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/blocks/EtherCAT/ec_slave2.c:
+	Readability
+	[3ff748ac9afd] <stable-1.3>
+
+	* rtw/blocks/EtherCAT/@EtherCATInfo/private/XML_ParseDc.m,
+	rtw/blocks/EtherCAT/@EtherCATInfo/private/XML_ParsePdo.m,
+	rtw/blocks/EtherCAT/@EtherCATInfo/private/XML_ParseSlave.m:
+	Improved execution speed for M-file
+	[3c9b035c3f43] <stable-1.3>
+
+	* rtw/blocks/EtherCAT/@EtherCATInfo/private/readBooleanValue.m:
+	Fixed bug where boolean '1' was not recognised
+	[5f48bd8e0dc0] <stable-1.3>
+
+2010-05-18  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/blocks/EtherCAT/ec_slave2.c:
+	Removed debug line
+	[6cd8b5a4e916] <stable-1.3>
+
+	* rtw/blocks/EtherCAT/EtherCAT.tlc:
+	Fixed bug in determinig RTW version code
+	[b099759db88d] <stable-1.3>
+
+2010-05-18  Florian Pose  <fp@igh-essen.com>
+
+	* rtw/blocks/etherlab_lib.mdl:
+	Added EL2034.
+	[baf2d5fc5acf] <stable-1.3>
+
+	* rtw/blocks/etherlab_lib.mdl:
+	Added EL3142.
+	[5408a4ead64b] <stable-1.3>
+
+2010-05-18  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/blocks/EtherCAT/@EtherCATInfo/private/Makefile.am,
+	rtw/blocks/EtherCAT/@EtherCATInfo/private/XML_ParsePdoEntry.m,
+	rtw/blocks/EtherCAT/EtherCAT.tlc, rtw/blocks/EtherCAT/ec_slave2.c,
+	rtw/blocks/EtherCAT/ec_slave2.tlc, rtw/blocks/world_time.c,
+	rtw/blocks/world_time.tlc, rtw/lib/ecrt_support.c,
+	rtw/lib/ecrt_support.h, tools/include/app_taskstats.h,
+	tools/rt_appcore/rt_app.h:
+	Reworked the data types used by EtherCAT
+	[14cee02d57d9] <stable-1.3>
+
+2010-05-17  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/src/rtw_app_info.c:
+	Fixed bug where MULTITASKING was not allways defined
+	[016d6c38c251] <stable-1.3>
+
+	* tools/scripts/Makefile.am:
+	Added a missing file that was not installed
+	[73021a81c59d] <stable-1.3>
+
+2010-05-14  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/src/rtw_app_info.c:
+	Simplified obtaining NUMST
+	[6f6082848658] <stable-1.3>
+
+	* tools/rt_appcore/rt_main.c:
+	Default pll=0
+	[262b09f0bf72] <stable-1.3>
+
+2010-05-12  Richard Hacker  <ha@igh-essen.com>
+
+	* Makefile.am, configure.ac, m4/Makefile.am, rtw/Makefile.am,
+	rtw/blocks/Makefile.am, rtw/etherlab/Makefile.am, rtw/lib/Kbuild,
+	rtw/lib/Kbuild.in, rtw/lib/Makefile.am, tools/buddy/Makefile.am,
+	tools/rt_appcore/Kbuild, tools/rt_appcore/Kbuild.in,
+	tools/rt_appcore/Makefile.am, tools/scripts/Makefile.am:
+	Added capability of out-of-source building Improved installation
+	process
+	[54c2787304d7] <stable-1.3>
+
+2010-05-10  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/blocks/EtherCAT/ec_slave2.c:
+	Made many functions static Removed unused variables
+	[ae4af621e970] <stable-1.3>
+
+	* rtw/blocks/EtherCAT/ec_slave2.c, rtw/blocks/EtherCAT/ec_slave2.tlc:
+	Removed NumInputs and NumOutputs from mdlRTW()
+	[10913e13a17e] <stable-1.3>
+
+	* rtw/blocks/EtherCAT/ec_slave2.tlc:
+	Simplified funtion GetRollVars to use an array instead of a record
+	[b8a2632b0fff] <stable-1.3>
+
+2010-04-30  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/blocks/EtherCAT/ec_slave2.tlc:
+	Removed bug concerning warning when using Dc
+	[f48b475e7aaa] <stable-1.3>
+
+2010-04-28  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/blocks/EtherCAT/@EtherCATInfo/private/InvalidDoc.m,
+	rtw/blocks/EtherCAT/@EtherCATInfo/private/XML_ParsePdoEntry.m:
+	Added test for DataType lengths
+	[52f1c59ae917] <stable-1.3>
+
+2010-04-27  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/blocks/EtherCAT/@EtherCATInfo/private/InvalidDoc.m,
+	rtw/blocks/EtherCAT/@EtherCATInfo/private/ParseXML.m,
+	rtw/blocks/EtherCAT/@EtherCATInfo/private/XML_ParseDc.m,
+	rtw/blocks/EtherCAT/@EtherCATInfo/private/XML_ParsePdo.m,
+	rtw/blocks/EtherCAT/@EtherCATInfo/private/XML_ParsePdoEntry.m,
+	rtw/blocks/EtherCAT/@EtherCATInfo/private/XML_ParseSlave.m,
+	rtw/blocks/EtherCAT/@EtherCATInfo/private/readBooleanValue.m,
+	rtw/blocks/EtherCAT/@EtherCATInfo/private/readHexDecValue.m,
+	rtw/blocks/EtherCAT/@EtherCATInfo/private/readNumericValue.m,
+	rtw/blocks/EtherCAT/ec_slave2.c:
+	Using str2double instead of str2num. str2double returns NaN for
+	empty input, so code has to be modified to cater for NaN
+	[ef0c11148d58] <stable-1.3>
+
+2010-04-26  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/blocks/EtherCAT/@EtherCATInfo/private/InvalidDoc.m,
+	rtw/blocks/EtherCAT/@EtherCATInfo/private/Makefile.am,
+	rtw/blocks/EtherCAT/@EtherCATInfo/private/ParseXML.m,
+	rtw/blocks/EtherCAT/@EtherCATInfo/private/XML_ParseDc.m,
+	rtw/blocks/EtherCAT/@EtherCATInfo/private/XML_ParsePdo.m,
+	rtw/blocks/EtherCAT/@EtherCATInfo/private/XML_ParsePdoEntry.m,
+	rtw/blocks/EtherCAT/@EtherCATInfo/private/XML_ParseSlave.m,
+	rtw/blocks/EtherCAT/Makefile.am,
+	rtw/blocks/EtherCAT/fromHexString.m:
+	Made parsing of EtherCATInfo xml files much more robust. Improved
+	error reporting
+	[1b260e53a815] <stable-1.3>
+
+	* rtw/blocks/EtherCAT/@EtherCATInfo/private/InvalidDoc.m:
+	Started new error reporting and recovery in EtherCATInfo.m
+	[7a226bd21270] <stable-1.3>
+
+2010-04-19  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/blocks/world_time.tlc, rtw/lib/ecrt_support.c,
+	rtw/src/Makefile.am, rtw/src/rtw_app_info.c, rtw/src/rtw_time.h,
+	rtw/src/rtw_wrapper.c, tools/buddy/msrio_lib/include/msr_main.h,
+	tools/buddy/msrio_lib/include/msr_reg.h, tools/buddy/msrio_lib/msr-
+	core/msr_reg.c, tools/include/app_taskstats.h,
+	tools/rt_appcore/rt_main.c, tools/rt_appcore/rt_main.h:
+	New implementation of model timing, especially for Distributed
+	Clocks
+	- Using one clock estimator again instead of two
+	[0d78be5ee448] <stable-1.3>
+
+	* rtw/blocks/Makefile.am, rtw/blocks/setup.m.in,
+	rtw/blocks/taskinfo.c, rtw/blocks/taskinfo.tlc:
+	Removed unused taskinfo.*
+	[5fe538d4bf55] <stable-1.3>
+
+2010-04-16  Richard Hacker  <ha@igh-essen.com>
+
+	* Makefile.am, rtw/Makefile.am:
+	Improved installation when using --disable-simulink
+	[10e8dd94110c] <stable-1.3>
+
+2010-04-14  Richard Hacker  <ha@igh-essen.com>
+
+	* tools/rt_appcore/rt_main.c, tools/rt_appcore/rt_main.h:
+	Reimplemented model_time
+	[15b477b5879b] <stable-1.3>
+
+2010-04-08  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/blocks/EtherCAT/ec_slave2.tlc:
+	Fixed Dc OpMode Bug
+	[2adaba680ec6] <stable-1.3>
+
+	* rtw/blocks/EtherCAT/ec_slave2.tlc:
+	Improved parsing of Dc OpMode
+	[f5e0d976392f] <stable-1.3>
+
+	* rtw/blocks/EtherCAT/ec_slave2.tlc:
+	Fixed bug when determining Dc OpMode timings
+	[7d44ccf6c9a9] <stable-1.3>
+
+	* rtw/blocks/EtherCAT/EtherCAT.tlc:
+	Fixed bug concerning rtmIsMajorTimeStep
+	[ff528ccbac5d] <stable-1.3>
+
+2010-04-07  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/lib/ecrt_support.c:
+	Added missing soe variable declaration
+	[64db913ab8f7] <stable-1.3>
+
+2010-04-06  Richard Hacker  <ha@igh-essen.com>
+
+	* SVN Ignores
+	[33310653b4ae] <stable-1.3>
+
+	* tools/rt_appcore/rt_main.c:
+	Indenting
+	[6ad35523ca27] <stable-1.3>
+
+2010-03-26  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/blocks/EtherCAT/Beckhoff.png, rtw/blocks/EtherCAT/Makefile.am,
+	rtw/blocks/EtherCAT/mts-logo.png, rtw/blocks/Makefile.am,
+	rtw/blocks/ethercat_mini.png, rtw/blocks/etherlab_lib.mdl,
+	rtw/blocks/tools.png:
+	Reworked block organisation, unfortunately this will break old
+	models.
+	[2e82133c3d39] <stable-1.3>
+
+	* rtw/etherlab/etherlab_kmod.tmf.in:
+	Added new Target "version" in generated Matlab makefile
+	[b824c8a45f33] <stable-1.3>
+
+2010-03-25  Richard Hacker  <ha@igh-essen.com>
+
+	* configure.ac, tools/scripts/Makefile.am, tools/scripts/etherlab-
+	config.in:
+	Added script etherlab-config
+	[58dc25ca6cbd] <stable-1.3>
+
+	* configure.ac, rtw/etherlab/Contents.m.in, rtw/etherlab/Makefile.am:
+	Version information when matlab's "ver" command is typed
+	[287c6168fc7b] <stable-1.3>
+
+2010-03-24  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/blocks/EtherCAT/Makefile.am:
+	Install SoeConfig.m
+	[e720bf8c9167] <stable-1.3>
+
+	* rtw/lib/ecrt_support.c, rtw/lib/ecrt_support.h:
+	Added SoE to ecrt_support layer
+	[06bf61c5db03] <stable-1.3>
+
+	* TODO:
+	Modified TODO
+	[8ed7b62dc39b] <stable-1.3>
+
+	* rtw/blocks/EtherCAT/ec_slave2.tlc:
+	Added Soe Config to TLC
+	[341794986b9c] <stable-1.3>
+
+2010-03-22  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/blocks/EtherCAT/SoeConfig.m, rtw/blocks/EtherCAT/ec_slave2.c,
+	rtw/blocks/etherlab_lib.mdl:
+	Added SoE Configuration option up to RTW Generation
+	[87ff1a5f4bac] <stable-1.3>
+
+2010-03-19  Richard Hacker  <ha@igh-essen.com>
+
+	* svn merge -c 619 ../stable-1.2
+	[dab3573cf4ab] <stable-1.3>
+
+	* Added ignores
+	[7ddc254a9350] <stable-1.2>
+
+	* Makefile.am, capi/Makefile.am, configure.ac,
+	rtw/blocks/EtherCAT/Makefile.am,
+	rtw/blocks/EtherCAT/xml/Makefile.am,
+	rtw/etherlab/etherlab_kmod.tmf.in:
+	svn merge -c 609 -c 610 -c 617 ~/wc/rtw/branches/stable-1.2
+	[38b2ee27e419] <stable-1.3>
+
+	* Makefile.am, configure.ac:
+	Repaired IPIPE test in configure.ac that was thrown out due to new
+	autoconf Added additional m4 directory
+	[61aaa59e54f9] <stable-1.2>
+
+	* configure.ac, rtw/blocks/Hilscher/CIF_PB.tlc,
+	rtw/blocks/Hilscher/Makefile.am, rtw/blocks/Hilscher/cif_pd_in.c,
+	rtw/blocks/Hilscher/cif_pd_in.tlc, rtw/blocks/Hilscher/cif_pd_out.c,
+	rtw/blocks/Hilscher/cif_pd_out.tlc, rtw/blocks/Hilscher/setup.m,
+	rtw/blocks/Makefile.am, rtw/blocks/etherlab_lib.mdl,
+	rtw/blocks/etherlab_lib_exp.mdl, rtw/blocks/setup.m.in:
+	Merged r595 and r608 from stable-1.2 by hand
+	[88901dc5e0be] <stable-1.3>
+
+	* rtw/src/rtw_data_interface.c, tools/buddy/rtp_module.c:
+	svn merge -c 601 -c 602 ~/wc/rtw/branches/stable-1.2
+	[2a79f46c252f] <stable-1.3>
+
+	* rtw/etherlab/Makefile.am, rtw/etherlab/etherlab_postprocess.m,
+	rtw/etherlab/get_description.tlc, rtw/etherlab/postprocess_rtw.pl:
+	svn merge -c 599 -c 600 -c 606 -c 607
+	~/wc/rtw/branches/stable-1.2/rtw/etherlab rtw/etherlab
+	[6d289817353a] <stable-1.3>
+
+	* rtw/blocks/EtherCAT/EtherCAT.tlc,
+	rtw/blocks/EtherCAT/domain_state.tlc:
+	svn merge -c 596 -c 597 -c 603
+	~/wc/rtw/branches/stable-1.2/rtw/blocks/EtherCAT .
+	[0114c90fdfb0] <stable-1.3>
+
+	* tools/rt_appcore/Kbuild:
+	svn merge -c 594
+	~/wc/rtw/branches/stable-1.2/tools/rt_appcore/Kbuild Kbuild
+	[1dcdd08dbee6] <stable-1.3>
+
+	* TODO:
+	Updated TODO from stable-1.2
+	[ec88385d75b7] <stable-1.3>
+
+	* capi/Makefile.am, configure.ac, rtw/etherlab/etherlab_kmod.tmf.in:
+	More changes due to libtool
+	[891f5f946fca] <stable-1.2>
+
+	* configure.ac, rtw/blocks/EtherCAT/Makefile.am,
+	rtw/blocks/EtherCAT/xml/Makefile.am:
+	Workaround for libtool warning: /bin/rm: cannot remove `libtoolT':
+	No such file or directory
+	[a111e71e8436] <stable-1.2>
+
+	* ChangeLog, configure.ac, rtw/blocks/Hilscher/CIF_PB.tlc,
+	rtw/blocks/Hilscher/Makefile.am, rtw/blocks/Hilscher/cif_pd_in.c,
+	rtw/blocks/Hilscher/cif_pd_in.tlc, rtw/blocks/Hilscher/cif_pd_out.c,
+	rtw/blocks/Hilscher/cif_pd_out.tlc, rtw/blocks/Hilscher/setup.m,
+	rtw/blocks/Makefile.am, rtw/blocks/etherlab_lib_exp.mdl,
+	rtw/blocks/setup.m.in:
+	Removed obsolete Hilscher library Use cif driver for these instead
+	[f73b648b3ee5] <stable-1.2>
+
+2010-03-18  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/etherlab/postprocess_rtw.pl:
+	Changed formatting
+	[e9f2c2d6171b] <stable-1.2>
+
+	* rtw/etherlab/Makefile.am:
+	Added postprocess_rtw.pl to distribution/install list
+	[473fc102e3b0] <stable-1.2>
+
+	* tools/rt_appcore/rt_main.c:
+	rt_appcore allows tics that are slower than the kernel tics
+	[f9b5d778cce8] <stable-1.2>
+
+	* TODO:
+	Fixed compiler warnings in rtw_data_interface.c
+	[52183cfbf720] <stable-1.2>
+
+	* rtw/blocks/EtherCAT/EtherCATInfo_ekxxxx.mat,
+	rtw/blocks/EtherCAT/EtherCATInfo_el1xxx.mat,
+	rtw/blocks/EtherCAT/EtherCATInfo_el2xxx.mat,
+	rtw/blocks/EtherCAT/EtherCATInfo_el3xxx.mat,
+	rtw/blocks/EtherCAT/EtherCATInfo_el4xxx.mat,
+	rtw/blocks/EtherCAT/EtherCATInfo_el5xxx.mat,
+	rtw/blocks/EtherCAT/EtherCATInfo_el6xxx.mat,
+	rtw/blocks/EtherCAT/EtherCATInfo_el9xxx.mat:
+	Removing genereated files
+	[c27d7850258c] <stable-1.2>
+
+	* tools/buddy/rtp_module.c:
+	etherlab_buddy now ignores unknown parameters and signals instead of
+	exiting
+	[f73645936133] <stable-1.2>
+
+	* rtw/src/rtw_data_interface.c:
+	Removed obsolete code causing compiler warnings
+	[7ee19ebb2b3a] <stable-1.2>
+
+	* rtw/etherlab/etherlab_postprocess.m,
+	rtw/etherlab/postprocess_rtw.pl:
+	Removed sed that was used during the postprocessing
+	[784583f4ac9d] <stable-1.2>
+
+	* rtw/etherlab/get_description.tlc:
+	Fixed bug where MatlabRoot was not found
+	[f1f2669f614c] <stable-1.2>
+
+	* TODO:
+	Not reproducible: Buddy closes connection when RepeatingSequence
+	block is used.
+	[1273dc309b32] <stable-1.2>
+
+2010-03-17  Richard Hacker  <ha@igh-essen.com>
+
+	* TODO, rtw/blocks/EtherCAT/EtherCAT.tlc:
+	Fixed: Fix multiple send operation when using ode3 solver.
+	[bb01929b0fb2] <stable-1.2>
+
+	* TODO, rtw/blocks/EtherCAT/domain_state.tlc:
+	Fixed: Solve problem when DomainState block is executed before slave
+	blocks.
+	[a3f859311868] <stable-1.2>
+
+	* TODO, rtw/blocks/etherlab_lib.mdl:
+	Fixed: Generic EtherCAT slave does not accept multiple SDO
+	configurations.
+	[e44f687d784e] <stable-1.2>
+
+	* TODO, tools/rt_appcore/Kbuild:
+	Fix where echo -n does not work in some shells (debian)
+	[2b9a58c43dea] <stable-1.2>
+
+2010-02-19  Andreas Stewering-Bone  <ab@igh-essen.com>
+
+	* configure.ac, rtw/src/rtw_time.h:
+	Überprüfung auf IPIPE Configuration entfernt Fix in RTW-Time Header
+	(Userspace- oder Kernelkontext)
+	[27ae73b93c7d] <stable-1.3>
+
+2010-02-05  Florian Pose  <fp@igh-essen.com>
+
+	* TODO:
+	TODO for 1.2
+	[706bd0cd9a25] <stable-1.2>
+
+2009-12-17  Florian Pose  <fp@igh-essen.com>
+
+	* TODO:
+	TODO.
+	[8ab8f6d19859] <stable-1.2>
+
+	* TODO:
+	TODOs for release 1.2.
+	[f2fac19d2d55] <stable-1.2>
+
+2009-07-29  Florian Pose  <fp@igh-essen.com>
+
+	* rtw/lib/ecrt_support.c:
+	Adapted new EtherCAT callback interface.
+	[045f92e357d9] <stable-1.3>
+
+	* rtw/lib/Kbuild, rtw/lib/Makefile.am:
+	Added missing STAGING_DIR before ETHERCAT_DIR.
+	[45755191cef1] <stable-1.3>
+
+	* NEWS, capi/register.c:
+	merge -c573 branches/stable-1.2: Fixed C-API variable dimension bug.
+	[bcb566053fd8] <stable-1.3>
+
+	* Makefile.am, NEWS, rtw/blocks/Makefile.am, tools/Makefile.am:
+	merge -c572 branches/stable-1.2: Added DIST_SUBDIRS variables where
+	necessary.
+	[f9ba00a2f071] <stable-1.3>
+
+	* tools/buddy/msrio_lib/include/msr_reg.h:
+	merge -c571 branches/stable-1.2: Fixed compiler error.
+	[eefabb6e7e18] <stable-1.3>
+
+	* rtw/blocks/EtherCAT/Makefile.am:
+	merge -c570 branches/stable-1.2: Removed unused conditional.
+	[d153ae98adce] <stable-1.3>
+
+	* NEWS, tools/buddy/msrio_lib/include/msr_reg.h:
+	merge -c569 branches/stable-1.2: Fixed possible overflow of variable
+	name buffer in MSR protocol handler.
+	[51e501ec6d06] <stable-1.3>
+
+	* rtw/blocks/Makefile.am, rtw/blocks/setup.m.in:
+	merge -c568 branches/stable-1.2: Disabling of ethercat does not
+	install EtherCAT subdir.
+	[e6bc1315fabb] <stable-1.3>
+
+	* rtw/blocks/Makefile.am:
+	merge -c565 branches/stable-1.2: Removed generated file
+	rtw/blocks/setup.m from distribution.
+	[c5521bd66da4] <stable-1.3>
+
+	* TODO, capi/Kbuild.makefile.in, configure.ac:
+	merge -c563 branches/stable-1.2: Added autoconf check for xmllint.
+	[1a07571fcae3] <stable-1.3>
+
+	* TODO, configure.ac, rtw/etherlab/etherlab_kmod.tmf.in,
+	rtw/lib/Makefile.am, tools/rt_appcore/Kbuild,
+	tools/rt_appcore/Makefile.am:
+	merge 562 and 566 branches/stable-1.2: Using KBUILD_EXTRA_SYMBOLS /
+	fixed conditional.
+	[2f3e12938011] <stable-1.3>
+
+	* rtw/blocks/etherlab_lib.mdl:
+	merge -c561 branches/stable-1.2: Added EL4008, EL4028, EL4034.
+	[02309e9d6808] <stable-1.3>
+
+	* tools/rt_appcore/app_chardev.c, tools/rt_appcore/rt_main.h:
+	merge -c560 branches/stable-1.2: Fixed Sysfs device creation for
+	kernels >= 2.6.26.
+	[447ec499d2ae] <stable-1.3>
+
+	* merge -c559 branches/stable-1.2: Ignores for recent kernels.
+	[d10449e4425b] <stable-1.3>
+
+	* tools/buddy/buddy_main.c, tools/buddy/msrio_lib/include/msr_lists.h,
+	tools/buddy/msrio_lib/include/msr_main.h,
+	tools/buddy/msrio_lib/include/msr_reg.h, tools/buddy/msrio_lib/msr-
+	core/msr_interpreter.c, tools/buddy/msrio_lib/msr-core/msr_lists.c,
+	tools/buddy/msrio_lib/msr-core/msr_main.c, tools/buddy/msrio_lib
+	/msr-core/msr_reg.c, tools/buddy/rtp_module.c:
+	merge -r550:552 branches/stable-1.2: Buddy command-line parameters
+	for block- and tag-size.
+	[5a0377b3e040] <stable-1.3>
+
+2009-07-16  Florian Pose  <fp@igh-essen.com>
+
+	* configure.ac:
+	Version 1.2-rc9
+	[d7a32c828c31] <stable-1.2>
+
+	* NEWS, capi/register.c:
+	Fixed C-API variable dimension bug.
+	[ea3bd857a26e] <stable-1.2>
+
+	* Makefile.am, NEWS, rtw/blocks/Makefile.am, tools/Makefile.am:
+	Added DIST_SUBDIRS variables where necessary.
+	[e4a36175929f] <stable-1.2>
+
+	* tools/buddy/msrio_lib/include/msr_reg.h:
+	Fixed compiler error.
+	[a01348dd15df] <stable-1.2>
+
+	* rtw/blocks/EtherCAT/Makefile.am:
+	Removed unused conditional.
+	[14ae8978ca0d] <stable-1.2>
+
+	* NEWS, tools/buddy/msrio_lib/include/msr_reg.h:
+	Fixed possible overflow of variable name buffer in MSR protocol
+	handler.
+	[aa3cdc18d69f] <stable-1.2>
+
+2009-07-14  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/blocks/Makefile.am, rtw/blocks/setup.m.in:
+	Disabling of ethercat does not install EtherCAT subdir
+	[3d3aae483bca] <stable-1.2>
+
+2009-07-13  Richard Hacker  <ha@igh-essen.com>
+
+	* configure.ac:
+	Version 1.2-rc8
+	[9834a3110cd5] <stable-1.2>
+
+	* configure.ac:
+	Moved an AM_CONDITIONAL line out of an if-environment
+	[1a15550efa9f] <stable-1.2>
+
+	* rtw/blocks/Makefile.am:
+	Removed generated file rtw/blocks/setup.m from distribution
+	[565ff83e9890] <stable-1.2>
+
+2009-06-22  Florian Pose  <fp@igh-essen.com>
+
+	* NEWS, TODO, configure.ac:
+	Version 1.2-rc7.
+	[1768c9a5257a] <stable-1.2>
+
+2009-06-19  Richard Hacker  <ha@igh-essen.com>
+
+	* TODO, capi/Kbuild.makefile.in, configure.ac:
+	Added autoconf check for xmllint
+	[9a98d3c504c5] <stable-1.2>
+
+2009-06-19  Florian Pose  <fp@igh-essen.com>
+
+	* TODO, configure.ac, rtw/etherlab/etherlab_kmod.tmf.in,
+	rtw/lib/Makefile.am, tools/rt_appcore/Kbuild,
+	tools/rt_appcore/Makefile.am:
+	Using KBUILD_EXTRA_SYMBOLS.
+	[5780d853e157] <stable-1.2>
+
+	* rtw/blocks/etherlab_lib.mdl:
+	Added EL4008, EL4028, EL4034.
+	[54ac11a91636] <stable-1.2>
+
+	* tools/rt_appcore/app_chardev.c, tools/rt_appcore/rt_main.h:
+	Fixed Sysfs device creation for kernels >= 2.6.26.
+	[bb304aa88015] <stable-1.2>
+
+	* Ignores for recent kernels.
+	[bbc01671e5f3] <stable-1.2>
+
+2009-06-16  Florian Pose  <fp@igh-essen.com>
+
+	* TODO:
+	Added even more TODOs for release 1.2.
+	[4362c167bc19] <stable-1.2>
+
+	* TODO:
+	Added some more TODOs for release 1.2.
+	[67326a57a0d3] <stable-1.2>
+
+	* TODO:
+	Added TODOs for release 1.2.
+	[8a902842f0fd] <stable-1.2>
+
+2009-06-05  Florian Pose  <fp@igh-essen.com>
+
+	* configure.ac:
+	Version 1.2-rc6.
+	[7523a049d0ba] <stable-1.2>
+
+	* TODO, rtw/lib/Kbuild, rtw/lib/Makefile.am:
+	merge -c 545 branches/stable-1.3: EtherCAT dir.
+	[249538b1ae46] <stable-1.2>
+
+2009-06-05  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/blocks/EtherCAT/@EtherCATInfo/private/XML_ParsePdoEntry.m,
+	rtw/blocks/EtherCAT/@EtherCATInfo/subsref.m,
+	rtw/blocks/EtherCAT/xml/Beckhoff_EtherCAT_XML.zip,
+	tools/rt_appcore/app_chardev.c:
+	Merged several checkins from version 1.3:
+
+	svn merge -r 529:530 ~/wc/rtw/branches/stable-1.3 svn merge -c536
+	~/wc/rtw/branches/stable-1.3 svn merge -c537
+	~/wc/rtw/branches/stable-1.3 svn merge -c529
+	~/wc/rtw/branches/stable-1.3 svn merge -c528
+	~/wc/rtw/branches/stable-1.3
+	[17e32053adeb] <stable-1.2>
+
+2009-06-04  Richard Hacker  <ha@igh-essen.com>
+
+	* tools/buddy/buddy_main.c, tools/buddy/msrio_lib/msr-core/msr_main.c,
+	tools/buddy/rtp_module.c:
+	Added command line options for character block size and tag size to
+	buddy
+	[b9ea60b92bff] <stable-1.2>
+
+2009-06-03  Wilhelm Hagemeister  <hm@igh-essen.com>
+
+	* tools/buddy/msrio_lib/include/msr_lists.h,
+	tools/buddy/msrio_lib/include/msr_main.h,
+	tools/buddy/msrio_lib/include/msr_reg.h, tools/buddy/msrio_lib/msr-
+	core/msr_interpreter.c, tools/buddy/msrio_lib/msr-core/msr_lists.c,
+	tools/buddy/msrio_lib/msr-core/msr_main.c, tools/buddy/msrio_lib
+	/msr-core/msr_reg.c:
+	max blocksize of datatag and size of communication buffer can be
+	adjusted during startup of msr_lib (see in msr_main msr_init1()
+	[9fb2d5fc30f1] <stable-1.2>
+
+2009-05-25  Florian Pose  <fp@igh-essen.com>
+
+	* tools/rt_appcore/rtcom_chardev.h:
+	Removed rtcom header again.
+	[5af2ca0b157e] <stable-1.3>
+
+2009-05-15  Florian Pose  <fp@igh-essen.com>
+
+	* TODO:
+	TODO.
+	[222c124096b3] <stable-1.3>
+
+	* rtw/lib/ecrt_support.c:
+	EC_TIMEVAL2NANO uses no pointer any more.
+	[f79a6ddcabeb] <stable-1.3>
+
+2009-05-14  Florian Pose  <fp@igh-essen.com>
+
+	* TODO:
+	TODO.
+	[465163631476] <stable-1.3>
+
+	* rtw/lib/ecrt_support.c:
+	Fixed synchronisation of reference clock; use EC_TIMEVAL2NANO().
+	[e749bcfe5eee] <stable-1.3>
+
+	* rtw/lib/Makefile.am:
+	Use --with-ethercat-dir.
+	[60c78bee28fc] <stable-1.3>
+
+2009-05-13  Florian Pose  <fp@igh-essen.com>
+
+	* tools/rt_appcore/rt_main.c:
+	Removed rtcom- reliques.
+	[641cd1999bb6] <stable-1.3>
+
+2009-05-12  Richard Hacker  <ha@igh-essen.com>
+
+	* tools/rt_appcore/rtcom_chardev.h:
+	Added missing header
+	[d08bafb95cbc] <stable-1.3>
+
+2009-05-08  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/blocks/findidx.c:
+	Repaired bug
+	[f52e817e6901] <stable-1.3>
+
+	* rtw/blocks/findidx.tlc:
+	Removed unnecessary %trace line
+	[5676cf15e228] <stable-1.3>
+
+2009-05-07  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/blocks/findidx.c, rtw/blocks/findidx.tlc:
+	Fixed "Find Index" block's SFunction and TLC Function
+	[fe8aa47b58b7] <stable-1.3>
+
+	* rtw/blocks/EtherCAT/ec_slave2.tlc:
+	Fixed opmode count bug
+	[5e27216e001c] <stable-1.3>
+
+	* rtw/blocks/Makefile.am, rtw/blocks/etherlab_lib.mdl,
+	rtw/blocks/findidx.c, rtw/blocks/findidx.tlc, rtw/blocks/setup.m.in:
+	Added find minimum/maximum with index
+	[06ea2f082b17] <stable-1.3>
+
+	* tools/rt_appcore/app_chardev.c:
+	device_create changed again for 2.6.27
+	[6de3af95eec0] <stable-1.3>
+
+	* tools/rt_appcore/app_chardev.c:
+	class_device_* is deprecated in 2.6.26. Replaced with device_*
+	[32a13955e6d4] <stable-1.3>
+
+2009-05-06  Richard Hacker  <ha@igh-essen.com>
+
+	* tools/rt_appcore/rt_main.c, tools/rt_appcore/rt_main.h:
+	lock_ntp feature
+	[fd95f3ed3129] <stable-1.3>
+
+	* rtw/lib/ecrt_support.c:
+	Bugfix that master time sync was not called
+	[69cbfb29b32a] <stable-1.3>
+
+	* rtw/blocks/etherlab_lib.mdl:
+	Changed velocity scaling for block EtherCAT/MTS_0
+	[1008d28088c0] <stable-1.3>
+
+	* rtw/blocks/EtherCAT/@EtherCATInfo/getDevice.m,
+	rtw/blocks/EtherCAT/@EtherCATInfo/private/Makefile.am,
+	rtw/blocks/EtherCAT/@EtherCATInfo/private/XML_ParseDc.m,
+	rtw/blocks/EtherCAT/@EtherCATInfo/private/XML_ParsePdo.m,
+	rtw/blocks/EtherCAT/@EtherCATInfo/private/XML_ParseSlave.m,
+	rtw/blocks/EtherCAT/EtherCATInfo_ekxxxx.mat,
+	rtw/blocks/EtherCAT/EtherCATInfo_el1xxx.mat,
+	rtw/blocks/EtherCAT/EtherCATInfo_el2xxx.mat,
+	rtw/blocks/EtherCAT/EtherCATInfo_el3xxx.mat,
+	rtw/blocks/EtherCAT/EtherCATInfo_el4xxx.mat,
+	rtw/blocks/EtherCAT/EtherCATInfo_el5xxx.mat,
+	rtw/blocks/EtherCAT/EtherCATInfo_el6xxx.mat,
+	rtw/blocks/EtherCAT/EtherCATInfo_el9xxx.mat,
+	rtw/blocks/EtherCAT/Makefile.am, rtw/blocks/EtherCAT/ec_slave2.c,
+	rtw/blocks/EtherCAT/ec_slave2.tlc,
+	rtw/blocks/EtherCAT/ethercatinfo_check.m,
+	rtw/blocks/EtherCAT/master_state.c,
+	rtw/blocks/EtherCAT/master_state.tlc, rtw/blocks/etherlab_lib.mdl,
+	rtw/lib/Kbuild, rtw/lib/ecrt_support.c, rtw/lib/ecrt_support.h,
+	rtw/src/rtw_time.h, rtw/src/rtw_wrapper.c:
+	Initial support for distributed clocks
+	[77892f6ed1ae] <stable-1.3>
+
+2009-04-30  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/blocks/EtherCAT/@EtherCATInfo/private/XML_ParseDc.m,
+	rtw/blocks/EtherCAT/@EtherCATInfo/private/XML_ParseSlave.m:
+	Added distributed clocks to the EtherCATInfo parser
+	[a4c0ad163172] <stable-1.3>
+
+	* rtw/blocks/EtherCAT/@EtherCATInfo/private/XML_ParsePdoEntry.m:
+	Added another DataType
+	[da2705762af6] <stable-1.3>
+
+	* rtw/blocks/EtherCAT/@EtherCATInfo/subsref.m:
+	Fixed bug where subscripting of an EtherCATInfo object was not
+	possible. i.e. ei = EtherCATInfo('file.xml') ei.Descriptions <=
+	resulted in a failure
+	[6fe056856326] <stable-1.3>
+
+2009-04-29  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/blocks/EtherCAT/xml/Beckhoff_EtherCAT_XML.zip:
+	New Beckhoff slave descriptions
+	[ac43c91dd0c9] <stable-1.3>
+
+	* configure.ac, rtw/lib/ecrt_support.c:
+	Branched off 1.3 Dependency of EtherCAT Master 1.5
+	[d2280e628dac] <stable-1.3>
+
+2009-02-20  Florian Pose  <fp@igh-essen.com>
+
+	* configure.ac:
+	Version 1.2-rc5.
+	[bf77722179ba] <stable-1.2>
+
+	* NEWS, README:
+	Re-worked NEWS and README files.
+	[c1c2251bafc9] <stable-1.2>
+
+2009-02-19  Florian Pose  <fp@igh-essen.com>
+
+	* rtw/blocks/EtherCAT/ec_slave2.c:
+	Fixed missing mdlUpdate code generation for matlab 2007b and newer.
+	[10fb8904c878] <stable-1.2>
+
+	* rtw/blocks/EtherCAT/ec_slave2.c:
+	EtherCAT slave description ProductCode can be zero.
+	[88dd49c22c9b] <stable-1.2>
+
+2009-02-04  Florian Pose  <fp@igh-essen.com>
+
+	* doc/etherlab.tex, doc/images/bk1120-in.png,
+	doc/images/bk1120-out.png, doc/images/blockset.png,
+	doc/images/el10xx.png, doc/images/el20xx.png, doc/images/el31xx.png,
+	doc/images/el41xx.png, doc/images/el5001.png, doc/images/el5101.png,
+	doc/images/master.png, doc/images/moog_msd.png, doc/m-etherlab.tex:
+	Improved doc.
+	[82ab2de3df14] <stable-1.2>
+
+	* rtw/blocks/etherlab_lib.mdl:
+	Cleaned up block documentation.
+	[b4bc51f7c485] <stable-1.2>
+
+2009-02-03  Florian Pose  <fp@igh-essen.com>
+
+	* TODO:
+	TODO.
+	[aac63ded817b] <stable-1.2>
+
+	* rtw/lib/Kbuild:
+	Cleaned up rtw Kbuild file.
+	[7023465d2d53] <stable-1.2>
+
+	* configure.ac:
+	Version 1.2-rc4.
+	[c96deebba3b1] <stable-1.2>
+
+	* configure.ac:
+	Check for python, which is needed for some scripts.
+	[9c6228ebda87] <stable-1.2>
+
+	* tools/rt_appcore/Kbuild:
+	From 2.6.24, CFLAGS are not set by kbuild and KBUILD_CFLAGS contain
+	the kernel cflags.
+	[ba655af386f1] <stable-1.2>
+
+2009-02-02  Florian Pose  <fp@igh-essen.com>
+
+	* tools/buddy/msrio_lib/msr-core/msr_reg.c:
+	Removed deprecated a.out header.
+	[8af80da387c7] <stable-1.2>
+
+	* tools/rt_appcore/app_chardev.c:
+	vmalloc_user() is available from 2.6.18.
+	[7b0f1fa14c01] <stable-1.2>
+
+	* tools/rt_appcore/rt_vars.c:
+	roundup() was introduced in 2.6.18.
+	[29d55dace62a] <stable-1.2>
+
+	* tools/rt_appcore/app_chardev.c:
+	remap_vmalloc_range() is available from 2.6.18.
+	[d8578be6005d] <stable-1.2>
+
+	* rtw/lib/ecrt_support.c, tools/rt_appcore/rt_vars.c:
+	kzalloc() is not available in kernels < 2.6.14.
+	[45f30535e7a0] <stable-1.2>
+
+	* rtw/blocks/Makefile.am, rtw/blocks/etherlab_lib.mdl,
+	rtw/blocks/persist.c, rtw/blocks/persist.tlc, rtw/blocks/setup.m.in:
+	Removed non-functional persistant-storage block from stable branch.
+	[72a4aaa44bfd] <stable-1.2>
+
+2009-01-28  Florian Pose  <fp@igh-essen.com>
+
+	* configure.ac, tools/Makefile.am, tools/buddy-ng/AppCtlTask.cpp,
+	tools/buddy-ng/AppCtlTask.h, tools/buddy-ng/ConfigFile.cpp, tools
+	/buddy-ng/ConfigFile.h, tools/buddy-ng/DebugLayer.cpp, tools/buddy-
+	ng/DebugLayer.h, tools/buddy-ng/Exception.h, tools/buddy-
+	ng/FileDevice.cpp, tools/buddy-ng/FileDevice.h, tools/buddy-
+	ng/HTTPTask.cpp, tools/buddy-ng/HTTPTask.h, tools/buddy-
+	ng/IOBuffer.cpp, tools/buddy-ng/IOBuffer.h, tools/buddy-
+	ng/Layer.cpp, tools/buddy-ng/Layer.h, tools/buddy-ng/Makefile.am,
+	tools/buddy-ng/PacketLayer.cpp, tools/buddy-ng/PacketLayer.h, tools
+	/buddy-ng/ProcessLayer.cpp, tools/buddy-ng/ProcessLayer.h, tools
+	/buddy-ng/README.sasl, tools/buddy-ng/RT-App.cpp, tools/buddy-ng/RT-
+	App.h, tools/buddy-ng/RT-Task.cpp, tools/buddy-ng/RT-Task.h, tools
+	/buddy-ng/RTAppClient.cpp, tools/buddy-ng/RTAppClient.h, tools
+	/buddy-ng/RTComBufTask.cpp, tools/buddy-ng/RTComBufTask.h, tools
+	/buddy-ng/RTComOStream.cpp, tools/buddy-ng/RTComOStream.h, tools
+	/buddy-ng/RTComProtocolServer.cpp, tools/buddy-
+	ng/RTComProtocolServer.h, tools/buddy-ng/RTComServer.cpp, tools
+	/buddy-ng/RTComServer.h, tools/buddy-ng/RTComSocket.cpp, tools
+	/buddy-ng/RTComSocket.h, tools/buddy-ng/RTComTask.cpp, tools/buddy-
+	ng/RTComTask.h, tools/buddy-ng/RTComVocab.h, tools/buddy-
+	ng/RTParameter.cpp, tools/buddy-ng/RTParameter.h, tools/buddy-
+	ng/RTSignal.cpp, tools/buddy-ng/RTSignal.h, tools/buddy-
+	ng/RTVariable.cpp, tools/buddy-ng/RTVariable.h, tools/buddy-
+	ng/SaslServer.cpp, tools/buddy-ng/SaslServer.h, tools/buddy-
+	ng/SocketExcept.h, tools/buddy-ng/SocketLayer.cpp, tools/buddy-
+	ng/SocketLayer.h, tools/buddy-ng/SocketServerTask.cpp, tools/buddy-
+	ng/SocketServerTask.h, tools/buddy-ng/TCPServerTask.cpp, tools
+	/buddy-ng/TCPServerTask.h, tools/buddy-ng/buddy.conf, tools/buddy-
+	ng/dump_capi.c, tools/buddy-ng/etherlab_buddy_data.c, tools/buddy-
+	ng/iniparser-2.17.tar.gz, tools/buddy-ng/main.cpp, tools/buddy-
+	ng/rtw_app_info_init.c, tools/lib/Dispatcher.cpp,
+	tools/lib/Dispatcher.h, tools/lib/Makefile.am, tools/lib/Task.cpp,
+	tools/lib/Task.h, tools/rt_appcore/Makefile.am,
+	tools/rt_appcore/rt_main.c, tools/rt_appcore/rtcom_chardev.c,
+	tools/rt_appcore/rtcom_chardev.h:
+	Remove unstable buddy-ng from this branch. It will be part of a
+	version > 1.2.
+	[244f266d1c34] <stable-1.2>
+
+	* rtw/blocks/EtherCAT/ec_slave2.c:
+	Fixed passing the unique_config flag to RTW.
+	[b0dc8993e3e6] <stable-1.2>
+
+2009-01-09  Florian Pose  <fp@igh-essen.com>
+
+	* tools/buddy/msrio_lib/msr-core/msr_interpreter.c,
+	tools/buddy/msrio_lib/msr-core/msr_reg.c:
+	merge -r502:505 trunk: msriolib Bugfixes.
+	[01dbcf667244] <stable-1.2>
+
+	* tools/buddy/msrio_lib/include/msr_lists.h:
+	Ringbuffer 1000000->100000
+	[20ceaf7406d6] <stable-1.2>
 
 2009-01-08  Wilhelm Hagemeister  <hm@igh-essen.com>
 
@@ -1742,6 +4569,11 @@
 	added newline after <pu/>.
 	[5c03c27f747c]
 
+	* tools/buddy/msrio_lib/include/msr_lists.h, tools/buddy/msrio_lib
+	/msr-core/msr_reg.c:
+	Messages with full variable name; added newline after <pu/>.
+	[90a33d235d55] <stable-1.2>
+
 	* Makefile.am, configure.ac, rtw/blocks/Makefile.am,
 	rtw/blocks/etherlab_in.tlc, rtw/blocks/etherlab_lib.mdl,
 	rtw/blocks/etherlab_out.c, rtw/blocks/etherlab_out.tlc,
@@ -1761,6 +4593,75 @@
 	merge -r482:490 branches/stable-1.2: Merged changes, that were in
 	1.2 branch only.
 	[600170b93352]
+
+	* tools/buddy/msrio_lib-6.0/include/msr_attributelist.h,
+	tools/buddy/msrio_lib-6.0/include/msr_base64.h,
+	tools/buddy/msrio_lib-6.0/include/msr_charbuf.h,
+	tools/buddy/msrio_lib-6.0/include/msr_hex_bin.h,
+	tools/buddy/msrio_lib-6.0/include/msr_interpreter.h,
+	tools/buddy/msrio_lib-6.0/include/msr_lists.h,
+	tools/buddy/msrio_lib-6.0/include/msr_main.h,
+	tools/buddy/msrio_lib-6.0/include/msr_mem.h,
+	tools/buddy/msrio_lib-6.0/include/msr_messages.h,
+	tools/buddy/msrio_lib-6.0/include/msr_rcsinfo.h,
+	tools/buddy/msrio_lib-6.0/include/msr_reg.h,
+	tools/buddy/msrio_lib-6.0/include/msr_target.h,
+	tools/buddy/msrio_lib-6.0/include/msr_taskname.h,
+	tools/buddy/msrio_lib-6.0/include/msr_utils.h,
+	tools/buddy/msrio_lib-6.0/include/msr_version.h,
+	tools/buddy/msrio_lib-6.0/msr-core/msr_attributelist.c,
+	tools/buddy/msrio_lib-6.0/msr-core/msr_charbuf.c,
+	tools/buddy/msrio_lib-6.0/msr-core/msr_interpreter.c,
+	tools/buddy/msrio_lib-6.0/msr-core/msr_lists.c,
+	tools/buddy/msrio_lib-6.0/msr-core/msr_main.c,
+	tools/buddy/msrio_lib-6.0/msr-core/msr_messages.c,
+	tools/buddy/msrio_lib-6.0/msr-core/msr_reg.c,
+	tools/buddy/msrio_lib-6.0/msr-math/msr_base64.c,
+	tools/buddy/msrio_lib-6.0/msr-math/msr_hex_bin.c,
+	tools/buddy/msrio_lib/include/msr_attributelist.h,
+	tools/buddy/msrio_lib/include/msr_base64.h,
+	tools/buddy/msrio_lib/include/msr_charbuf.h,
+	tools/buddy/msrio_lib/include/msr_hex_bin.h,
+	tools/buddy/msrio_lib/include/msr_interpreter.h,
+	tools/buddy/msrio_lib/include/msr_lists.h,
+	tools/buddy/msrio_lib/include/msr_main.h,
+	tools/buddy/msrio_lib/include/msr_mem.h,
+	tools/buddy/msrio_lib/include/msr_messages.h,
+	tools/buddy/msrio_lib/include/msr_rcsinfo.h,
+	tools/buddy/msrio_lib/include/msr_reg.h,
+	tools/buddy/msrio_lib/include/msr_target.h,
+	tools/buddy/msrio_lib/include/msr_taskname.h,
+	tools/buddy/msrio_lib/include/msr_utils.h,
+	tools/buddy/msrio_lib/include/msr_version.h, tools/buddy/msrio_lib
+	/msr-core/msr_attributelist.c, tools/buddy/msrio_lib/msr-
+	core/msr_charbuf.c, tools/buddy/msrio_lib/msr-
+	core/msr_interpreter.c, tools/buddy/msrio_lib/msr-core/msr_lists.c,
+	tools/buddy/msrio_lib/msr-core/msr_main.c, tools/buddy/msrio_lib
+	/msr-core/msr_messages.c, tools/buddy/msrio_lib/msr-core/msr_reg.c,
+	tools/buddy/msrio_lib/msr-math/msr_base64.c, tools/buddy/msrio_lib
+	/msr-math/msr_hex_bin.c:
+	merge -c496 trunk: Removed version number of msrio_lib.
+	[5efbd91420d7] <stable-1.2>
+
+	* tools/buddy/msrio_lib:
+	merge -c495 trunk: Removed link.
+	[e6a97d0633d8] <stable-1.2>
+
+	* rtw/src/rtw_data_interface.c,
+	tools/buddy/msrio_lib-6.0/include/msr_charbuf.h,
+	tools/buddy/msrio_lib-6.0/include/msr_lists.h,
+	tools/buddy/msrio_lib-6.0/include/msr_messages.h,
+	tools/buddy/msrio_lib-6.0/include/msr_reg.h,
+	tools/buddy/msrio_lib-6.0/include/msr_utils.h,
+	tools/buddy/msrio_lib-6.0/include/msr_version.h,
+	tools/buddy/msrio_lib-6.0/msr-core/msr_charbuf.c,
+	tools/buddy/msrio_lib-6.0/msr-core/msr_interpreter.c,
+	tools/buddy/msrio_lib-6.0/msr-core/msr_lists.c,
+	tools/buddy/msrio_lib-6.0/msr-core/msr_main.c,
+	tools/buddy/msrio_lib-6.0/msr-core/msr_reg.c,
+	tools/buddy/rtp_module.c, tools/include/etl_data_info.h:
+	merge -c491 trunk: msrio_lib 6.0.10.
+	[b82e54aaac2b] <stable-1.2>
 
 2009-01-05  Wilhelm Hagemeister  <hm@igh-essen.com>
 
@@ -1953,22 +4854,120 @@
 	- <connected> message to all clients removed
 	[930daf0c1a80]
 
+2008-11-08  Richard Hacker  <ha@igh-essen.com>
+
+	* configure.ac, tools/Makefile.am, tools/buddy-ng/AppCtlTask.h, tools
+	/buddy-ng/Dispatcher.cpp, tools/buddy-ng/Dispatcher.h, tools/buddy-
+	ng/Makefile.am, tools/buddy-ng/RT-Task.h, tools/buddy-
+	ng/SocketServerTask.h, tools/buddy-ng/Task.cpp, tools/buddy-
+	ng/Task.h, tools/buddy-ng/main.cpp, tools/lib/Dispatcher.cpp,
+	tools/lib/Dispatcher.h, tools/lib/Makefile.am, tools/lib/Task.cpp,
+	tools/lib/Task.h:
+	Moved libtask out of buddy-ng because it is needed by pdcom_gate
+	Released -rc3
+	[e6c3717eb140] <stable-1.2>
+
+2008-11-03  Florian Pose  <fp@igh-essen.com>
+
+	* rtw/blocks/Makefile.am:
+	Added persist.c, persist.h to installation; removed duplicate
+	get_string.h.
+	[db8b1e49d0ab] <stable-1.2>
+
+	* Makefile.am:
+	Fixed changes output formatting.
+	[54d22535e4e8] <stable-1.2>
+
+2008-11-01  Richard Hacker  <ha@igh-essen.com>
+
+	* configure.ac, rtw/blocks/etherlab_in.tlc,
+	rtw/blocks/etherlab_lib.mdl, rtw/blocks/etherlab_out.c,
+	rtw/blocks/etherlab_out.tlc, tools/rt_appcore/Kbuild,
+	tools/rt_appcore/Makefile.am, tools/rt_appcore/rt_app.h,
+	tools/rt_appcore/rt_app_main.c, tools/rt_appcore/rt_main.c,
+	tools/rt_appcore/rt_main.h, tools/rt_appcore/rt_vars.c,
+	tools/rt_appcore/rt_vars.h:
+	Got rt_vars working again.
+	*) etherlab_lib_exp blocks In and Out need cleaning up
+	*) etherlab_(in|out).c SFunction needs cleaning
+	*) etherlab_(in|out).tlc needs cleaning
+	*) comment rt_vars.h
+	[57cf9def76f5] <stable-1.2>
+
+2008-10-26  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/blocks/etherlab_lib.mdl:
+	Inserted Id number
+	[c4093d99e31d] <stable-1.2>
+
+2008-10-25  Richard Hacker  <ha@igh-essen.com>
+
+	* tools/rt_appcore/app_chardev.c, tools/rt_appcore/rtcom_chardev.c:
+	Replace usage of deprecated nopage() handler with
+	remap_vmalloc_range()
+	[bf9707c901a1] <stable-1.2>
+
+2008-10-23  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/blocks/etherlab_lib.mdl, rtw/blocks/persist.c,
+	rtw/blocks/persist.tlc, rtw/blocks/setup.m.in:
+	Sneeked in persistent block
+	[438be9b1e4f1] <stable-1.2>
+
+2008-10-16  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/lib/Kbuild, rtw/lib/Makefile.am:
+	Better module compilation
+	[5e0dfdd5fe60] <stable-1.2>
+
+	* tools/buddy/buddy_main.h,
+	tools/buddy/msrio_lib-6.0/include/msr_main.h,
+	tools/buddy/msrio_lib-6.0/msr-core/msr_main.c,
+	tools/buddy/msrio_lib-6.0/msr-core/msr_reg.c,
+	tools/buddy/rtp_module.c:
+	MSR lib now ignores <hide> and <unhide> when started with -d
+	[6e562d5eca3d] <stable-1.2>
+
 2008-10-11  Richard Hacker  <ha@igh-essen.com>
 
 	* rtw/blocks/Makefile.am:
 	svn merge -c480 ../branches/stable-1.2/
 	[dd64e7489b8b]
 
+	* rtw/blocks/Makefile.am:
+	Install event.c|tlc
+	[b69bc406a87f] <stable-1.2>
+
 	* Makefile.am, rtw/blocks/etherlab_lib.mdl, rtw/blocks/event.c,
 	rtw/blocks/event.tlc, rtw/blocks/setup.m.in:
 	svn merge -r475:478 ../branches/stable-1.2/
 	[72c8719350d1]
+
+	* Makefile.am:
+	Fixed unsightly bug at end of install
+	[555124ffc245] <stable-1.2>
+
+	* rtw/blocks/etherlab_lib.mdl, rtw/blocks/event.c,
+	rtw/blocks/event.tlc, rtw/blocks/setup.m.in:
+	Sneeked in event block
+	[fccf035ec09d] <stable-1.2>
 
 2008-09-24  Florian Pose  <fp@igh-essen.com>
 
 	* rtw/blocks/Makefile.am:
 	merge -c475 branches/stable-1.2: Fixed dist.
 	[e7f1b0b38427]
+
+	* rtw/blocks/Makefile.am:
+	Fixed distribution.
+	[325992665857] <stable-1.2>
+
+	* configure.ac:
+	Version 1.2-rc1.
+	[c42457597017] <stable-1.2>
+
+	* Created branch stable-1.2.
+	[07c985e781aa] <stable-1.2>
 
 	* Makefile.am, rtw/blocks/etherlab_lib.mdl:
 	Updated block help; removed degree characters; update install
@@ -2082,6 +5081,18 @@
 	tools/buddy/msrio_lib-6.0/msr-core/msr_reg.c:
 	New versions of msrio_lib
 	[f05a3598a52e]
+
+2008-08-11  Andreas Stewering-Bone  <ab@igh-essen.com>
+
+	* configure.ac:
+	AM_PROG_CC_C_O added
+	[0f153cd52a50] <stable-1.1>
+
+2008-08-11  Florian Pose  <fp@igh-essen.com>
+
+	* blocks/EtherCAT/generic_ethercat.c:
+	Improved handling of zero inputs/outputs.
+	[a97973ed163c] <stable-1.1>
 
 2008-08-08  Florian Pose  <fp@igh-essen.com>
 
@@ -2516,8 +5527,8 @@
 	[529c308eca23]
 
 	* configure.ac, etherlab/etherlab_kmod.tmf.in:
-	r715@schleptop: rich | 2008-07-28 02:09:11 +0200 Removed
-	unnecessary configure checks
+	r715@schleptop: rich | 2008-07-28 02:09:11 +0200 Removed unnecessary
+	configure checks
 	[9bd7ee57f336]
 
 	* tools/buddy-ng/AppCtlTask.cpp, tools/buddy-ng/AppCtlTask.h, tools
@@ -2553,8 +5564,8 @@
 	* tools/buddy-ng/Dispatcher.cpp, tools/buddy-ng/Dispatcher.h, tools
 	/buddy-ng/Makefile.am, tools/buddy-ng/Task.cpp, tools/buddy-
 	ng/Task.h:
-	r704@schleptop: rich | 2008-07-25 02:06:11 +0200 Dispatcher can
-	now do timed tasks
+	r704@schleptop: rich | 2008-07-25 02:06:11 +0200 Dispatcher can now
+	do timed tasks
 	[ae51e6195e23]
 
 	* tools/buddy/Makefile.am:
@@ -2740,9 +5751,9 @@
 	[03b4c955d0af]
 
 	* blocks/EtherCAT/ec_slave2.c, blocks/EtherCAT/ec_slave2.tlc:
-	r657@schleptop: rich | 2008-07-14 16:41:33 +0200 EtherCAT Slave
-	now supports Gain, Offset and Filter without necessarily presenting
-	them as Parameters
+	r657@schleptop: rich | 2008-07-14 16:41:33 +0200 EtherCAT Slave now
+	supports Gain, Offset and Filter without necessarily presenting them
+	as Parameters
 	[cfe1533b722e]
 
 	* blocks/EtherCAT/ec_slave2.c:
@@ -2821,8 +5832,7 @@
 	[9189dd109574]
 
 	* blocks/EtherCAT/@EtherCATInfo/getEntries.m:
-	r637@schleptop: rich | 2008-07-11 11:28:51 +0200 Added missing
-	file
+	r637@schleptop: rich | 2008-07-11 11:28:51 +0200 Added missing file
 	[4b5ac10dad00]
 
 	* blocks/EtherCAT/@EtherCATInfo/Makefile.am,
@@ -2849,8 +5859,8 @@
 	blocks/EtherCAT/@EtherCATInfo/private/ParseXML.m,
 	blocks/EtherCAT/@EtherCATInfo/subsref.m,
 	blocks/EtherCAT/ec_slave2.c, blocks/EtherCAT/ec_slave2.tlc:
-	r631@schleptop: rich | 2008-07-10 14:36:58 +0200 Working my way
-	thru another slave version
+	r631@schleptop: rich | 2008-07-10 14:36:58 +0200 Working my way thru
+	another slave version
 	[6db0d8aaa2ce]
 
 2008-07-08  Richard Hacker  <ha@igh-essen.com>
@@ -2876,8 +5886,8 @@
 	[27423fa82efa]
 
 	* doc/Makefile.am:
-	r621@schleptop: rich | 2008-07-08 10:25:08 +0200 added more
-	missing files
+	r621@schleptop: rich | 2008-07-08 10:25:08 +0200 added more missing
+	files
 	[508c311a4df1]
 
 	* Makefile.am, blocks/etherlab_lib_exp.mdl, configure.ac:
@@ -2889,8 +5899,8 @@
 	blocks/EtherCAT/@EtherCATDevice/generateIO.m,
 	blocks/EtherCAT/@EtherCATInfo/genSlaveConfig.m,
 	blocks/EtherCAT/ec_slave2.c, blocks/etherlab_lib_exp.mdl:
-	r617@schleptop: rich | 2008-07-08 02:02:11 +0200 Library updated
-	to work with new SFunction. Ready for field testing
+	r617@schleptop: rich | 2008-07-08 02:02:11 +0200 Library updated to
+	work with new SFunction. Ready for field testing
 	[80e56a5651cb]
 
 2008-07-07  Richard Hacker  <ha@igh-essen.com>
@@ -2925,15 +5935,15 @@
 	blocks/EtherCAT/@EtherCATDevice/private/XML_ParsePdo.m,
 	blocks/EtherCAT/@EtherCATDevice/subsref.m,
 	blocks/EtherCAT/@EtherCATInfo/subsref.m:
-	r605@schleptop: rich | 2008-07-06 23:24:36 +0200 EtherCATDevice
-	now returns a SlaveConfig
+	r605@schleptop: rich | 2008-07-06 23:24:36 +0200 EtherCATDevice now
+	returns a SlaveConfig
 	[3332bb26e396]
 
 	* blocks/EtherCAT/@EtherCATDevice/private/ParseXML.m,
 	blocks/EtherCAT/@EtherCATDevice/private/XML_ParsePdoEntry.m,
 	blocks/EtherCAT/xml/setup.m.in:
-	r604@schleptop: rich | 2008-07-06 22:44:21 +0200 Refined Parsing
-	of DataTypes
+	r604@schleptop: rich | 2008-07-06 22:44:21 +0200 Refined Parsing of
+	DataTypes
 	[d388058d29ad]
 
 	* blocks/EtherCAT/@EtherCATInfo/Makefile.am,
@@ -2996,14 +6006,13 @@
 2008-07-03  Richard Hacker  <ha@igh-essen.com>
 
 	* blocks/EtherCAT/generateIOs.m, blocks/EtherCAT/getEtherCATInfo.m:
-	r592@schleptop: rich | 2008-07-03 02:55:55 +0200 These two
-	functions work together nicely now. Grouping in generateIOs works
-	as well
+	r592@schleptop: rich | 2008-07-03 02:55:55 +0200 These two functions
+	work together nicely now. Grouping in generateIOs works as well
 	[4f2ec4a026e6]
 
 	* blocks/EtherCAT/ec_slave2.c:
-	r591@schleptop: rich | 2008-07-03 02:55:05 +0200 ec_slave2 does
-	not crash any more when it bails out quietly
+	r591@schleptop: rich | 2008-07-03 02:55:05 +0200 ec_slave2 does not
+	crash any more when it bails out quietly
 	[bf135fb1eb8e]
 
 	* blocks/EtherCAT/findDevice.m, blocks/EtherCAT/getEtherCATInfo.m:
@@ -3032,13 +6041,13 @@
 2008-07-01  Richard Hacker  <ha@igh-essen.com>
 
 	* blocks/EtherCAT/EtherCAT.tlc, blocks/EtherCAT/ec_slave2.tlc:
-	r581@schleptop: rich | 2008-07-01 14:51:37 +0200 Cleaning up of
-	the EtherCAT.tlc and ec_slave2.tlc interface.
+	r581@schleptop: rich | 2008-07-01 14:51:37 +0200 Cleaning up of the
+	EtherCAT.tlc and ec_slave2.tlc interface.
 	[1a386d110d4a]
 
 	* blocks/EtherCAT/ec_slave2.c, blocks/EtherCAT/ec_slave2.tlc:
-	r580@schleptop: rich | 2008-07-01 13:44:24 +0200 Changed both
-	files to use array index definitions instead of numbers
+	r580@schleptop: rich | 2008-07-01 13:44:24 +0200 Changed both files
+	to use array index definitions instead of numbers
 	[17379f840834]
 
 	* blocks/EtherCAT/EtherCAT.tlc:
@@ -3066,8 +6075,8 @@
 
 	* blocks/EtherCAT/ec_slave2.c, blocks/EtherCAT/ec_slave2.tlc,
 	lib/ecrt_support.c, lib/ecrt_support.h:
-	r573@schleptop: rich | 2008-06-30 12:32:00 +0200 Compile now
-	works. Have to finish ecrt_support.c still
+	r573@schleptop: rich | 2008-06-30 12:32:00 +0200 Compile now works.
+	Have to finish ecrt_support.c still
 	[73a857f3b37c]
 
 	* blocks/EtherCAT/setup.m.in:
@@ -3081,14 +6090,14 @@
 
 	* blocks/EtherCAT/ec_slave2.c, blocks/EtherCAT/ec_slave2.tlc,
 	blocks/EtherCAT/generateIOs.m, blocks/EtherCAT/getEtherCATInfo.m:
-	r566@schleptop: rich | 2008-06-30 11:44:56 +0200 Ready for
-	testing. Also changed getEtherCATInfo.m and generateIOs.m to
-	product the new formats
+	r566@schleptop: rich | 2008-06-30 11:44:56 +0200 Ready for testing.
+	Also changed getEtherCATInfo.m and generateIOs.m to product the new
+	formats
 	[6df00136a320]
 
 	* blocks/EtherCAT/ec_slave2.c, blocks/EtherCAT/ec_slave2.tlc:
-	r565@schleptop: rich | 2008-06-29 18:16:00 +0200 ec_slave2 ready
-	for testing
+	r565@schleptop: rich | 2008-06-29 18:16:00 +0200 ec_slave2 ready for
+	testing
 	[df2ffd83e374]
 
 2008-06-29  Richard Hacker  <ha@igh-essen.com>
@@ -3107,8 +6116,8 @@
 2008-06-27  Richard Hacker  <ha@igh-essen.com>
 
 	* blocks/EtherCAT/ec_slave2.c, blocks/EtherCAT/getEtherCATInfo.m:
-	r558@schleptop: rich | 2008-06-27 03:27:47 +0200 Port
-	configuration now working. Still need to do Scaling, Filter
+	r558@schleptop: rich | 2008-06-27 03:27:47 +0200 Port configuration
+	now working. Still need to do Scaling, Filter
 	[7f12262d2a23]
 
 	* blocks/EtherCAT/ec_slave2.c, blocks/EtherCAT/ecrt.h,
@@ -3156,9 +6165,9 @@
 	[40957be80719]
 
 	* blocks/EtherCAT/ec_slave.c, blocks/EtherCAT/ec_slave.tlc:
-	r541@schleptop: rich | 2008-06-24 13:05:41 +0200 Enable
-	registration of slaves with empty pdo_info and pdo_entry_info. Now
-	infrastructure slaves are possible
+	r541@schleptop: rich | 2008-06-24 13:05:41 +0200 Enable registration
+	of slaves with empty pdo_info and pdo_entry_info. Now infrastructure
+	slaves are possible
 	[fdc9081626c7]
 
 	* blocks/EtherCAT/ec_slave.c, blocks/EtherCAT/ec_slave.tlc,
@@ -3183,8 +6192,8 @@
 
 	* blocks/etherlab_lib_exp.mdl:
 	r532@schleptop: rich | 2008-06-19 17:47:05 +0200
-	 * Fixed bug where gain_name was not set for EtherCAT/AOUT_0 when
-	used with separate outputs
+	 * Fixed bug where gain_name was not set for EtherCAT/AOUT_0 when used
+	with separate outputs
 	 * Added new Infrastructure blocks
 	[7905fa394a7d]
 
@@ -3207,8 +6216,8 @@
 	[255b6c865ab6]
 
 	* blocks/EtherCAT/getSlaveDescription.m:
-	r522@schleptop: rich | 2008-06-18 15:53:55 +0200 Better checking
-	of numeric XML-element contents
+	r522@schleptop: rich | 2008-06-18 15:53:55 +0200 Better checking of
+	numeric XML-element contents
 	[da9bc6beee01]
 
 	* blocks/EtherCAT/ec_slave.tlc:
@@ -3225,8 +6234,7 @@
 2008-06-18  Richard Hacker  <ha@igh-essen.com>
 
 	* blocks/EtherCAT/ec_slave.c:
-	r519@schleptop: rich | 2008-06-18 13:56:06 +0200 Fix compile
-	warning
+	r519@schleptop: rich | 2008-06-18 13:56:06 +0200 Fix compile warning
 	[11a8b88ffc8a]
 
 	* tools/buddy/rtp_module.c:
@@ -3293,20 +6301,20 @@
 	* blocks/EtherCAT/Makefile.am, blocks/EtherCAT/el41xx_check.m,
 	blocks/etherlab_lib_exp.mdl:
 	r494@schleptop: rich | 2008-06-16 18:27:49 +0200 Simplified Mask
-	definitions for the slaves to enable adding of new slaves easier
-	and more scalable
+	definitions for the slaves to enable adding of new slaves easier and
+	more scalable
 	[535fe6bd855d]
 
 	* blocks/EtherCAT/getSlaveDescription.m:
-	r493@schleptop: rich | 2008-06-16 18:26:00 +0200 Add possibility
-	of leaving Revision blank in getSlaveDescription()
+	r493@schleptop: rich | 2008-06-16 18:26:00 +0200 Add possibility of
+	leaving Revision blank in getSlaveDescription()
 	[d1d20b508dc1]
 
 2008-06-15  Richard Hacker  <ha@igh-essen.com>
 
 	* lib/ecrt_support.c:
-	r491@schleptop: rich | 2008-06-15 21:11:09 +0200 Report an error
-	if empty domains are registered
+	r491@schleptop: rich | 2008-06-15 21:11:09 +0200 Report an error if
+	empty domains are registered
 	[c497abacba4e]
 
 	* blocks/EtherCAT/Makefile.am, blocks/EtherCAT/domain_state.tlc,
@@ -3330,8 +6338,8 @@
 	[9025e64638fb]
 
 	* blocks/EtherCAT/Makefile.am, blocks/EtherCAT/ecdb_private.h:
-	r482@schleptop: rich | 2008-06-14 18:43:39 +0200 Removed
-	unnecessary header
+	r482@schleptop: rich | 2008-06-14 18:43:39 +0200 Removed unnecessary
+	header
 	[86d6bbfbd9ec]
 
 	* blocks/world_time.c, blocks/world_time.tlc:
@@ -3417,8 +6425,8 @@
 
 	* blocks/EtherCAT/ec_slave.tlc:
 	r452@schleptop: rich | 2008-05-31 01:03:51 +0200 Removed the ugly
-	construction %if RollRegions == [] %% Roll manually with UCV
-	%else %% %roll with LCV %endif
+	construction %if RollRegions == [] %% Roll manually with UCV %else
+	%% %roll with LCV %endif
 	[eb4bcedec3d8]
 
 	* blocks/etherlab_lib_exp.mdl:
@@ -3489,6 +6497,20 @@
 	blocks/etherlab_lib_exp.mdl:
 	merge -c270 branches/stable-1.1: EL1008, EL1018 support.
 	[1d92804c0db1]
+
+	* ChangeLog, configure.ac:
+	Release 1.1.5.
+	[54cba8a98afe] <stable-1.1>
+
+	* blocks/EtherCAT/ecdb_private.h, blocks/etherlab_lib.mdl,
+	blocks/etherlab_lib_exp.mdl:
+	Added EL1008 and EL1018 device support to EL10xx blocks.
+	[fde520ac6bf5] <stable-1.1>
+
+	* blocks/etherlab_lib.mdl, blocks/etherlab_lib_exp.mdl:
+	Removed non-ASCII characters from simulink libraries; the bdclose
+	all ... command is not necessary any more.
+	[ebeb4df9c8de] <stable-1.1>
 
 2008-04-24  Richard Hacker  <ha@igh-essen.com>
 
@@ -3769,8 +6791,8 @@
 	* tools/buddy-ng/RT-Task.cpp, tools/buddy-ng/RT-Task.h, tools/buddy-
 	ng/RTComOStream.cpp, tools/buddy-ng/RTComOStream.h, tools/buddy-
 	ng/RTComTask.cpp, tools/buddy-ng/RTComTask.h:
-	r366@schleptop: rich | 2008-04-08 00:55:22 +0200 Added new model
-	and delete model events to RTCom protocol
+	r366@schleptop: rich | 2008-04-08 00:55:22 +0200 Added new model and
+	delete model events to RTCom protocol
 	[077f74958222]
 
 	* src/C/mdf.c.xsl, src/C/register.c, tools/buddy-ng/FileDevice.cpp,
@@ -3837,8 +6859,8 @@
 	[19cbcfd092f8]
 
 	* tools/include/etl_data_info.h:
-	r355@schleptop: rich | 2008-04-04 18:00:50 +0200 Missed one file
-	in last check-in
+	r355@schleptop: rich | 2008-04-04 18:00:50 +0200 Missed one file in
+	last check-in
 	[89976eb3bc56]
 
 	* src/C/Kbuild.makefile.in, src/C/Makefile.am, src/C/cvt_h.xsl,
@@ -3859,6 +6881,17 @@
 	makes the kernel code much more secure.
 	 ******* Nothing has been tested! *************
 	[201ffcbb2824]
+
+2008-04-03  Florian Pose  <fp@igh-essen.com>
+
+	* blocks/EtherCAT/ecdb_private.h:
+	Added Status Pdo for EL2032; removed unused defines from
+	ecdb_private.h.
+	[621daedba2ab] <stable-1.1>
+
+	* AUTHORS, ChangeLog, NEWS, configure.ac, doc/m-etherlab-rtw.tex:
+	Released version 1.4.
+	[b441bf041555] [release-1.1.4] <stable-1.1>
 
 2008-04-02  Richard Hacker  <ha@igh-essen.com>
 
@@ -3883,23 +6916,22 @@
 	[bcdbc99bbe68]
 
 	* src/C/cvt_h.xsl, src/C/my-model.xml:
-	r338@schleptop: rich | 2008-04-01 17:23:25 +0200 cvt_h.xsl
-	working.
+	r338@schleptop: rich | 2008-04-01 17:23:25 +0200 cvt_h.xsl working.
 	[426dc99bca11]
 
 	* src/C/Makefile.am:
-	r337@schleptop: rich | 2008-04-01 15:38:58 +0200 Added
-	rt_model.xsd to automake
+	r337@schleptop: rich | 2008-04-01 15:38:58 +0200 Added rt_model.xsd
+	to automake
 	[1b8d77007ddf]
 
 	* src/C/Kbuild.makefile:
-	r336@schleptop: rich | 2008-04-01 15:37:04 +0200 Kbuild.makefile
-	is derived from Kbuild.makefile.in, so remove from repository
+	r336@schleptop: rich | 2008-04-01 15:37:04 +0200 Kbuild.makefile is
+	derived from Kbuild.makefile.in, so remove from repository
 	[2837ee8f4b14]
 
 	* src/C/Kbuild.makefile.in:
-	r335@schleptop: rich | 2008-04-01 15:34:59 +0200 Added a new
-	.linted target that uses xmllint to check the <model>.xml
+	r335@schleptop: rich | 2008-04-01 15:34:59 +0200 Added a new .linted
+	target that uses xmllint to check the <model>.xml
 	[03aff46f6d1a]
 
 2008-03-28  Richard Hacker  <ha@igh-essen.com>
@@ -3914,6 +6946,11 @@
 	* blocks/EtherCAT/el20xx.tlc, blocks/EtherCAT/el31xx.tlc:
 	merge -c206 branches/stable-1.1: Fixed some TLC function calls.
 	[883cdedfb2cc]
+
+	* blocks/EtherCAT/el20xx.tlc, blocks/EtherCAT/el31xx.tlc:
+	Fixed RegisterEtherCATSlave() -> RegisterEtherCATSlavePDO() in some
+	tlcs.
+	[c167c16759e5] <stable-1.1>
 
 2008-03-28  Richard Hacker  <ha@igh-essen.com>
 
@@ -3948,8 +6985,8 @@
 	/buddy-ng/RT-Task.cpp, tools/buddy-ng/RTComServer.cpp, tools/buddy-
 	ng/RTComTask.cpp, tools/buddy-ng/SocketServerTask.cpp, tools/buddy-
 	ng/main.cpp:
-	r324@schleptop: rich | 2008-03-25 21:54:00 +0100 Changed the way
-	to interact with ConfigFile
+	r324@schleptop: rich | 2008-03-25 21:54:00 +0100 Changed the way to
+	interact with ConfigFile
 	[8dd9609d241d]
 
 2008-03-25  Richard Hacker  <ha@igh-essen.com>
@@ -3967,14 +7004,14 @@
 	[d50a30f448f5]
 
 	* etherlab/get_description.tlc, etherlab/get_meta_tag.m:
-	r319@schleptop: rich | 2008-03-25 20:30:35 +0100 Removed
-	unnecessary backslash escapes from model_meta.txt
+	r319@schleptop: rich | 2008-03-25 20:30:35 +0100 Removed unnecessary
+	backslash escapes from model_meta.txt
 	[1b7fcdbca7e0]
 
 	* tools/rt_kernel/rt_kernel.h, tools/rt_kernel/rt_main.c,
 	tools/rt_kernel/rt_mdl_main.c:
-	r316@schleptop: rich | 2008-03-25 16:45:31 +0100 Changed calls
-	that start and stop a rt_model
+	r316@schleptop: rich | 2008-03-25 16:45:31 +0100 Changed calls that
+	start and stop a rt_model
 	[0299546e6001]
 
 	* etherlab/etherlab_kmod.tmf.in, tools/rt_kernel/Makefile.am,
@@ -4095,8 +7132,8 @@
 	tools/rt_kernel/rtw_data_info.h, tools/scripts/Makefile.am,
 	tools/scripts/etherlab.in, tools/scripts/gen_msf.py,
 	tools/scripts/gen_payload.py:
-	r301@schleptop: rich | 2008-03-22 15:43:03 +0100 Merged work done
-	on branches/trunk-C from r269 to r296
+	r301@schleptop: rich | 2008-03-22 15:43:03 +0100 Merged work done on
+	branches/trunk-C from r269 to r296
 
 	 Changes summary:
 	  - Introduced notion of a target host directory (aka staged install)
@@ -4107,8 +7144,8 @@
 	files were moved into tools/*
 	  - there is no dynamically loaded file <model>.so any more. Instead the
 	buddy has to get the signals and parameters one by one from the
-	kernel NOTE: the buddy in this revision does not yet work with
-	the new interface!
+	kernel NOTE: the buddy in this revision does not yet work with the
+	new interface!
 	  - world time is passed as struct timeval internally
 	[5295f5ad26c7]
 
@@ -4138,11 +7175,191 @@
 	buddy-ng.
 	[49710e3cc7c6]
 
+2008-03-21  Richard Hacker  <ha@igh-essen.com>
+
+	* configure.ac, src/Makefile.am, src/include/defines.h,
+	src/include/mdl_taskstats.h, src/include/mdl_time.h,
+	src/include/model_meta.h, src/include/rt_kernel.h,
+	src/kernel/mdl_wrapper.c, src/kernel/mdl_wrapper.h,
+	src/kernel/module_payload.h, src/kernel/rtai_reg_mdl.c,
+	src/kernel/rtw_data_info.c, src/kernel/rtw_data_info.h,
+	tools/buddy/Makefile.am, tools/include/Makefile.am,
+	tools/include/defines.h, tools/include/mdl_taskstats.h,
+	tools/include/model_meta.h, tools/rt_kernel/Kbuild.in,
+	tools/rt_kernel/Makefile.am, tools/rt_kernel/mdl_time.h,
+	tools/rt_kernel/mdl_wrapper.c, tools/rt_kernel/mdl_wrapper.h,
+	tools/rt_kernel/module_payload.h, tools/rt_kernel/rt_kernel.h,
+	tools/rt_kernel/rtai_reg_mdl.c, tools/rt_kernel/rtw_data_info.c,
+	tools/rt_kernel/rtw_data_info.h:
+	r295@schleptop: rich | 2008-03-21 14:37:44 +0100 Moved out all files
+	from src/include, src/kernel to tools/rt_kernel and tools/include.
+	This makes compiling and dependency checking a lot easier
+	[246b107f14fa] <trunk-C>
+
+	* etherlab/etherlab.tlc, etherlab/etherlab_kmod.tmf.in,
+	etherlab/etherlab_tools.mk.in, src/include/Makefile.am,
+	src/include/rt_kernel.h, src/kernel/Makefile.am,
+	src/kernel/mdl_wrapper.c, src/kernel/mdl_wrapper.h,
+	src/kernel/module_payload.h, src/kernel/msf.h,
+	src/kernel/rtw_data_info.c, src/kernel/rtw_data_info.h,
+	tools/Makefile.am, tools/buddy/Makefile.am,
+	tools/buddy/etl_data_types.c, tools/buddy/rtp_module.c,
+	tools/include/Makefile.am, tools/include/etl_data_info.h,
+	tools/include/fio_ioctl.h, tools/rt_kernel/rt_fio.c,
+	tools/scripts/Makefile.am, tools/scripts/gen_msf.py,
+	tools/scripts/gen_payload.py:
+	r292@schleptop: rich | 2008-03-21 01:36:33 +0100 Changes to way
+	buddy gets signal and parameter info. There is no compacted shared
+	object any more, instead rtw_capi gets compiled into the kernel and
+	the signals are picked up one by one. Introduced a new option in
+	Simulink EtherLab configuration to append arbitrary files to the
+	kernel module. NOTE: Buddy is not finished nor tested!
+	[f0609722b6ad] <trunk-C>
+
+	* lib/Makefile.rtw.in, lib/ecrt_support.c, lib/ecrt_support.h:
+	r291@schleptop: rich | 2008-03-21 01:29:33 +0100 Started work on
+	changing to new EtherCAT interface
+	[8ee38417ffd5] <trunk-C>
+
+2008-03-18  Richard Hacker  <ha@igh-essen.com>
+
+	* TODO, blocks/taskinfo.tlc, etherlab/etherlab_kmod.tmf.in,
+	etherlab/etherlab_tools.mk.in, src/C/KBuild, src/C/Kbuild.makefile,
+	src/C/Makefile.am, src/C/capi.h, src/C/copyright.txt,
+	src/C/cvt_h.xsl, src/C/data_c.xsl, src/C/etl_datatype.h,
+	src/C/etl_mdf.h, src/C/mdf.xsl, src/C/mdl_data.c, src/C/mdl_main.c,
+	src/C/model.h, src/C/model_defines_h.xsl, src/C/my-model.xml,
+	src/C/param_h.xsl, src/C/register.c, src/C/rtb.h, src/C/rtp.h,
+	src/include/Makefile.am, src/include/mdl_taskinfo.h,
+	src/include/mdl_taskstats.h, src/include/mdl_time.h,
+	src/kernel/mdl_wrapper.c, src/kernel/mdl_wrapper.h,
+	src/kernel/rtai_reg_mdl.c, tools/buddy/rtp_module.c,
+	tools/include/fio_ioctl.h, tools/rt_kernel/Kbuild.in,
+	tools/rt_kernel/Makefile.am, tools/rt_kernel/rt_main.c,
+	tools/rt_kernel/rt_vars.c, tools/scripts/etherlab.in:
+	r285@schleptop: rich | 2008-03-18 15:43:52 +0100 Major changes to
+	real time environment and compile:
+	 * mdl_wrapper.h: struct rtw_model has undergone restructuring:
+	   - there is no base_period and get_sample_time_multiplier any more.
+	Instead, there is a pointer rtw_model->task_period to a static array
+	of size NUMST holding all task periods in microseconds.
+	rtw_model->task_period[0] is the base_period. Note that the field
+	rtw_model->numst does not necessarily equal NUMST; if TID01EQ is
+	set, it is NUMST-1
+	   - A new field rtw_model->task_stats points to a static structure
+	struct task_stats [rtw_model->numst]
+
+	 * mdl_wrapper.c:
+	   - World time is not passed as double parameter to OneStep()any more,
+	but written directly rtw_model->task_stats->time (struct timeval)
+	before calling OneStep()
+
+	 * taskinfo.tlc: not using etl_get_world_time_ptr any more, but
+	global etl_world_time[] defined in mdl_wrapper.c
+	   - includes the file $(prefix)/etherlab/kflags.mk
+
+	 * etherlab_tools.mk.in: defined KERNEL_OPTS as a make variable that
+	holds the CFLAGS that is used when building the kernel
+
+	 * etherlab_kmod.tmf.in: usinge KERNEL_OPTS for compiling modules
+
+	 * mdl_taskstats.h: new file holding defining struct mdl_taskstats
+
+	 * mdl_taskinfo.h: deleted
+
+	 * mdl_wrapper.c:
+	   - some rewriting implementing due to changes in struct rtw_model
+	   - global struct rtw_model is now implemented here, not in
+	rtai_reg_model any more.
+
+	 * rtp_module.c: including new header mdl_taskstats.h
+
+	 * fio_ioctl.h: removed redundant struct task_stats {}
+
+	 * etherlab.in:
+	   - Changed to use new udev
+	   - Ignore if /etc/rc.status is unavailable
+	[909bd4596f38] <trunk-C>
+
+	* tools/rt_kernel/rt_fio.c, tools/rt_kernel/rt_main.h:
+	r284@schleptop: rich | 2008-03-18 15:43:29 +0100 Using kernel
+	classes to support udev if available
+	[89e3b3ecba49] <trunk-C>
+
+	* etherlab/etherlab.tlc:
+	r283@schleptop: rich | 2008-03-17 17:39:33 +0100 Some more staging
+	changes to Simulink RTW Configuration Parameters
+	[057211180004] <trunk-C>
+
+	* tools/rt_kernel/Kbuild.in, tools/rt_kernel/Makefile.am:
+	r282@schleptop: rich | 2008-03-17 14:06:00 +0100 Improved building
+	of kernel-cflags
+	[4e619fc3d2c1] <trunk-C>
+
+	* configure.ac:
+	r281@schleptop: rich | 2008-03-17 13:59:19 +0100 Another staging
+	update
+	[4a3ac5eab12c] <trunk-C>
+
+2008-03-17  Richard Hacker  <ha@igh-essen.com>
+
+	* README:
+	r277@schleptop: rich | 2008-03-17 01:32:22 +0100 Explained the
+	various model building options in README
+	[348c2908ad64] <trunk-C>
+
+	* configure.ac, etherlab/etherlab.tlc, etherlab/etherlab_kmod.tmf.in,
+	etherlab/etherlab_tools.mk.in, tools/rt_kernel/Kbuild.in:
+	r276@schleptop: rich | 2008-03-17 00:33:25 +0100
+	 * Improvement on STAGE install
+	[3d08dec9ef5d] <trunk-C>
+
+	* configure.ac:
+	r275@schleptop: rich | 2008-03-17 00:21:28 +0100
+	 * Added configure option --with-matlab-dir
+	[c721cb7262b7] <trunk-C>
+
+2008-03-16  Richard Hacker  <ha@igh-essen.com>
+
+	* lib/Makefile.am, lib/Makefile.rtw.in, lib/rtwtypes.h:
+	r272@schleptop: rich | 2008-03-17 00:18:11 +0100
+	 * Added possibility of prebuilding the RTW library when --with-matlab-
+	dir is supplied
+	[aa323ca8521b] <trunk-C>
+
+	* tools/rt_kernel/Kbuild.in, tools/rt_kernel/Makefile.am:
+	r271@schleptop: rich | 2008-03-17 00:16:31 +0100
+	 * Created new executable "cflags" that prints the CFLAGS the kernel
+	uses to build
+	[06ef53c77fda] <trunk-C>
+
+2008-03-15  Richard Hacker  <ha@igh-essen.com>
+
+	* configure.ac, lib/Kbuild.in:
+	r267@schleptop: rich | 2008-03-15 15:43:56 +0100 Introduced the
+	notion of a staging dir in configure
+	[d3615c6cc99e] <trunk-C>
+
+	* src/kernel/Makefile.am:
+	r266@schleptop: rich | 2008-03-08 13:40:38 +0100 Moved install
+	directories of mdl_wrapper.h and mdf.h to rtw/include
+	[c75bff89497f] <trunk-C>
+
+	* bootstrap:
+	r265@schleptop: rich | 2008-03-07 17:30:21 +0100 Changed bootstrap
+	to use autoreconf only
+	[787cf522f89e] <trunk-C>
+
+2008-02-26  Richard Hacker  <ha@igh-essen.com>
+
+	* Started a branch to develop a C interface
+	[2a6d8bdb5d82] <trunk-C>
+
 2008-02-25  Richard Hacker  <ha@igh-essen.com>
 
 	* tools/buddy/Makefile.am:
-	r261@schleptop: rich | 2008-02-25 13:18:19 +0100 Added commented
-	out include files for msr_*.h
+	r261@schleptop: rich | 2008-02-25 13:18:19 +0100 Added commented out
+	include files for msr_*.h
 	[af6d4faf0044]
 
 	* blocks/etherlab_lib.mdl, blocks/etherlab_lib_exp.mdl:
@@ -4195,6 +7412,41 @@
 	Using decimation instead of downsample
 	[418c164b352f]
 
+2007-12-13  Florian Pose  <fp@igh-essen.com>
+
+	* etherlab/etherlab_kmod.tmf.in:
+	Fixed template makefile not producing undefines symbols
+	"mdl_start()" etc. any more.
+	[64e209d77fa1] <stable-1.1>
+
+	* blocks/EtherCAT/generic_ethercat.c,
+	blocks/EtherCAT/generic_ethercat.tlc, blocks/EtherCAT/setup.m.in:
+	Generic EtherCAT slave S-Func working with inputs and ouputs.
+	[f1a000a573d2] <stable-1.1>
+
+	* blocks/get_string.h:
+	Added getPermanentString().
+	[0f57a3a81073] <stable-1.1>
+
+2007-12-11  Florian Pose  <fp@igh-essen.com>
+
+	* etherlab/etherlab_kmod.tmf.in:
+	Fixed missing archive dependency.
+	[6264950e5f32] <stable-1.1>
+
+	* blocks/EtherCAT/Makefile.am, blocks/EtherCAT/generic_ethercat.c,
+	blocks/EtherCAT/generic_ethercat.tlc, blocks/etherlab_lib.mdl,
+	blocks/etherlab_lib_exp.mdl:
+	Implemented generic EtherCAT S-function.
+	[1692672206f8] <stable-1.1>
+
+2007-11-30  Richard Hacker  <ha@igh-essen.com>
+
+	* ChangeLog, configure.ac, etherlab/etherlab_kmod.tmf.in:
+	r56@schleptop: rich | 2007-11-30 22:38:00 +0100 Released 1.1.3 Added
+	support for Matlab 2007
+	[bf6aea32dd95] <stable-1.1>
+
 2007-11-11  Richard Hacker  <ha@igh-essen.com>
 
 	* Makefile.am, ReleaseNotes, etherlab/etherlab.tlc,
@@ -4205,8 +7457,8 @@
 	[b387bf95311b]
 
 	* src/include/Makefile.am, src/kernel/Makefile.am:
-	r49@schleptop: rich | 2007-11-11 15:12:06 +0100 Added some src
-	files and headers to TAGS
+	r49@schleptop: rich | 2007-11-11 15:12:06 +0100 Added some src files
+	and headers to TAGS
 	[63ac2509c406]
 
 2007-10-13  Richard Hacker  <ha@igh-essen.com>
@@ -4227,8 +7479,8 @@
 	[058b8eb80cec]
 
 	* tools/buddy/Makefile.am:
-	r39@schleptop: rich | 2007-10-13 02:24:45 +0200 Removed
-	unnecessary installation of msr_ headers
+	r39@schleptop: rich | 2007-10-13 02:24:45 +0200 Removed unnecessary
+	installation of msr_ headers
 	[3c0901efffaa]
 
 	* tools/rt_kernel/rt_main.c:
@@ -4242,14 +7494,50 @@
 	concerning undefined variable "Buffer"
 	[4dd6aacea1fc]
 
+2007-10-08  Florian Pose  <fp@igh-essen.com>
+
+	* ChangeLog, configure.ac, doc/Doxyfile, doc/m-etherlab-rtw.tex:
+	Release 1.1.2.
+	[79fd13b25137] <stable-1.1>
+
+	* doc/etherlab-rtw.tex, doc/images/blockset.png,
+	doc/images/moog_msd.png:
+	Added MOOG MSD to documentation.
+	[cc1d2ba5ff99] <stable-1.1>
+
+	* doc/etherlab-rtw.tex, doc/m-etherlab-rtw.tex:
+	Added SVN Id to LaTeX docs.
+	[813db7530ac6] <stable-1.1>
+
+	* doc/etherlab-rtw.tex, doc/etherlab_rtw.tex, doc/m-etherlab-rtw.tex,
+	doc/m-etherlab_rtw.tex:
+	Removed underscores in tex file names.
+	[438ea38a852b] <stable-1.1>
+
+	* doc/etherlab_rtw.tex, doc/images/bk1120-in.png,
+	doc/images/bk1120-out.png, doc/images/blockset.png,
+	doc/images/config_param.png, doc/images/config_solver.png,
+	doc/images/el10xx.png, doc/images/el20xx.png, doc/images/el31xx.png,
+	doc/images/el41xx.png, doc/images/el5001.png, doc/images/el5101.png,
+	doc/images/etl-arch.fig, doc/images/etl-arch.pdf,
+	doc/images/master.png, doc/m-etherlab_rtw.tex:
+	Added LaTeX documentation 1.1.1.
+	[47440c592737] <stable-1.1>
+
+	* blocks/EtherCAT/Makefile.am, blocks/EtherCAT/moog.png,
+	blocks/EtherCAT/moog_msd_callback.m, blocks/etherlab_lib.mdl,
+	blocks/etherlab_lib_exp.mdl:
+	Added MOOG logo.
+	[68fa98e06e38] <stable-1.1>
+
 2007-10-03  Richard Hacker  <ha@igh-essen.com>
 
 	* etherlab/etherlab_kmod.tmf.in, src/kernel/mdl_wrapper.c,
 	src/kernel/mdl_wrapper.h, src/kernel/msf.h,
 	tools/include/fio_ioctl.h, tools/rt_kernel/rt_fio.c,
 	tools/scripts/gen_msf.py:
-	r35@schleptop: rich | 2007-10-04 00:36:40 +0200 Model symbol file
-	is the .so file again. However, the structure for model symbols has
+	r35@schleptop: rich | 2007-10-04 00:36:40 +0200 Model symbol file is
+	the .so file again. However, the structure for model symbols has
 	been changed so that any data can be stored together with the model
 	[1ac20d426403]
 
@@ -4271,6 +7559,71 @@
 	* Fixec a bug which appeared when rtP is not present
 	[aecd60db8be8]
 
+2007-09-21  Florian Pose  <fp@igh-essen.com>
+
+	* blocks/etherlab_lib.mdl, blocks/etherlab_lib_exp.mdl:
+	Copied Moog Servo Drive block to etherlab_lib.mdl.
+	[ecdad7b8e82f] <stable-1.1>
+
+	* blocks/EtherCAT/moog_msd_callback.m:
+	Renamed port labels.
+	[6ea2d2f4e7e7] <stable-1.1>
+
+	* blocks/EtherCAT/Makefile.am, blocks/EtherCAT/moog_msd.c,
+	blocks/EtherCAT/moog_msd.tlc, blocks/EtherCAT/moog_msd_callback.m,
+	blocks/etherlab_lib_exp.mdl:
+	Added "Input/Output mode" parameter to moog_msd block; Dynamic
+	display of port labels.
+	[19520cadefd4] <stable-1.1>
+
+	* blocks/EtherCAT/Makefile.am, blocks/EtherCAT/moog_msd.c,
+	blocks/EtherCAT/moog_msd.tlc, blocks/EtherCAT/setup.m.in,
+	blocks/etherlab_lib_exp.mdl:
+	Added Moog Servo Drive block (velocity mode only) to experimental
+	library.
+	[7c5c029eb5de] <stable-1.1>
+
+	* Added ignores.
+	[84bb266df1a2] <stable-1.1>
+
+2007-09-13  Florian Pose  <fp@igh-essen.com>
+
+	* blocks/etherlab_lib.mdl, blocks/etherlab_lib_exp.mdl:
+	Corrected title of EL41xx block (was 31xx).
+	[297fdaacba01] <stable-1.1>
+
+2007-09-10  Florian Pose  <fp@igh-essen.com>
+
+	* configure.ac:
+	Release 1.1.1.
+	[3f6a14ffc0ee] <stable-1.1>
+
+	* Updated svn:ignore property.
+	[84ff99b74c20] <stable-1.1>
+
+	* Updated svn:ignore properties.
+	[0dc88b3079ac] <stable-1.1>
+
+	* blocks/EtherCAT/ecdb_private.h, blocks/EtherCAT/el10xx.c,
+	blocks/EtherCAT/el20xx.c, blocks/etherlab_lib.mdl,
+	blocks/etherlab_lib_exp.mdl:
+	Updated list of supported EtherCAT terminals.
+	[e73eb7fd8c86] <stable-1.1>
+
+	* blocks/EtherCAT/EtherCAT.tlc, blocks/EtherCAT/Makefile.am,
+	blocks/EtherCAT/ecdb_private.h, lib/ecrt_support.h:
+	Created ecdb_private.h, a local copy of the EtherCAT master's
+	ecdb.h.
+	[c0b178eb9e07] <stable-1.1>
+
+	* tools/buddy/msrio_lib-6.0/include/msr_version.h:
+	Increased version of msriolib.
+	[a75ad351c9c7] <stable-1.1>
+
+	* tools/buddy/msrio_lib-6.0/msr-core/msr_reg.c:
+	Avoid duplicate "unit" attribute in msr_reg.c.
+	[d252845e9d35] <stable-1.1>
+
 2007-09-09  Richard Hacker  <ha@igh-essen.com>
 
 	* blocks/etherlab_lib_exp.mdl:
@@ -4282,9 +7635,9 @@
 	tools/rt_kernel/test_vars.c:
 	Added a new IO Signal abstraction layer. Signals now use global
 	names so that it is easier to swap whole models. This is still work
-	in progress. TODO: Block copying of output data
-	update() functions etherlab_lib functions data
-	sources (EtherCAT, CIF, etc) have to implement this new layer
+	in progress. TODO: Block copying of output data update() functions
+	etherlab_lib functions data sources (EtherCAT, CIF, etc) have to
+	implement this new layer
 	[5d4c20d9ad6b]
 
 2007-09-06  Richard Hacker  <ha@igh-essen.com>
@@ -4361,7 +7714,445 @@
 	* Copied trunk from stable-1.1
 	[de12d4d7e389]
 
+	* blocks/etherlab_lib.mdl, blocks/etherlab_lib_exp.mdl:
+	Note!!!!!!!!!!!!!!!!!!!!!!! The previous version did not have the
+	latest etherlab_lib.mdl This version is correct! Here is release-1.1
+	[4f861e90756c] <stable-1.1>
+
+	* ChangeLog, Makefile.am, NEWS, TODO, blocks/EtherCAT/EtherCAT.tlc,
+	blocks/EtherCAT/Kbuild.in, blocks/EtherCAT/Makefile.am,
+	blocks/EtherCAT/ecrt_support.c, blocks/EtherCAT/ecrt_support.h,
+	blocks/EtherCAT/el10xx.c, blocks/EtherCAT/el10xx.tlc,
+	blocks/EtherCAT/el20xx.c, blocks/EtherCAT/el20xx.tlc,
+	blocks/EtherCAT/el2xxx_check.m, blocks/EtherCAT/el31xx.c,
+	blocks/EtherCAT/el31xx.tlc, blocks/EtherCAT/el41xx.c,
+	blocks/EtherCAT/el41xx.tlc, blocks/EtherCAT/el5001.tlc,
+	blocks/EtherCAT/el5101.c, blocks/EtherCAT/el5101.tlc,
+	blocks/EtherCAT/el5101_check.m, blocks/EtherCAT/master_stats.c,
+	blocks/EtherCAT/master_stats.tlc, blocks/EtherCAT/old_el5101.c,
+	blocks/EtherCAT/old_el5101.tlc, blocks/EtherCAT/old_el5101_check.m,
+	blocks/EtherCAT/setup.m.in, blocks/Kbuild.in, blocks/Makefile.am,
+	blocks/etherlab_lib.mdl, blocks/get_string.h, blocks/raise_catch.c,
+	blocks/raise_catch.h, configure.ac, etherlab/Makefile.am,
+	etherlab/etherlab_config.m.in, etherlab/etherlab_kmod.tmf.in,
+	etherlab/etherlab_tools.mk.in, etherlab_rtw-1.0.tar.gz,
+	etherlab_rtw-1.1-rc3.tar.gz, lib/Kbuild.in, lib/Makefile.am,
+	lib/ecrt_support.c, lib/ecrt_support.h, lib/raise_catch.c,
+	lib/raise_catch.h, src/include/Makefile.am,
+	src/include/get_string.h, src/kernel/rtai_reg_mdl.c,
+	tools/buddy/Makefile.am, tools/buddy/buddy_main.c,
+	tools/buddy/msrio_lib-6.0/include/msr_main.h,
+	tools/buddy/msrio_lib-6.0/include/msr_reg.h,
+	tools/buddy/msrio_lib-6.0/include/msr_utils.h,
+	tools/buddy/msrio_lib-6.0/include/msr_version.h,
+	tools/buddy/msrio_lib-6.0/msr-core/msr_attributelist.c,
+	tools/buddy/msrio_lib-6.0/msr-core/msr_interpreter.c,
+	tools/buddy/msrio_lib-6.0/msr-core/msr_lists.c,
+	tools/buddy/msrio_lib-6.0/msr-core/msr_main.c,
+	tools/buddy/msrio_lib-6.0/msr-core/msr_reg.c,
+	tools/buddy/msrio_lib-6.0/msr-utils/msr_utils.c,
+	tools/buddy/rtp_module.c, tools/rt_kernel/rt_main.c:
+	branches/stable-1.0 now reflects release-1.0
+	[85ef586c1276] <stable-1.0>
+
+	* configure.ac, etherlab_rtw-1.0.tar.gz, etherlab_rtw-1.1-rc3.tar.gz:
+	Finalized release 1.1
+	[dbff78feaeb6] <stable-1.1>
+
+	* In preparation for release 1.1 Will have to revert
+	branches/stable-1.0 to reflect 1.0 state
+	[9e3eb3c016d4] <stable-1.1>
+
+	* blocks/EtherCAT/el31xx.tlc, blocks/EtherCAT/el41xx.tlc,
+	configure.ac:
+	Corrected scaling error for EtherCAT unipolar analog outputs.
+	Released -rc11.
+	[1a4e9051e96a] <stable-1.0>
+
+	* configure.ac:
+	Released -rc10
+	[9d9e04cd1ed2] <stable-1.0>
+
+	* blocks/EtherCAT/old_el5101.tlc, blocks/EtherCAT/old_el5101_check.m:
+	Revived broken old_el5101
+	[738c3f1ff531] <stable-1.0>
+
+	* blocks/EtherCAT/el10xx.c:
+	Introduced new EL1004v2
+	[2d8980bfa08f] <stable-1.0>
+
+	* blocks/EtherCAT/EtherCAT.tlc:
+	Only define 'struct ecat_slave_block *slave' when required -
+	otherwise compiler complains about unused variable
+	[aa779bd57670] <stable-1.0>
+
+2007-07-24  Richard Hacker  <ha@igh-essen.com>
+
+	* tools/buddy/msrio_lib-6.0/msr-core/msr_lists.c,
+	tools/buddy/msrio_lib-6.0/msr-core/msr_reg.c:
+	Hmmm, reintroduced changes so that xml control characters "'&<> are
+	escaped
+	[3b03ac09c1d3] <stable-1.0>
+
+2007-07-23  Richard Hacker  <ha@igh-essen.com>
+
+	* tools/buddy/msrio_lib-6.0/msr-core/msr_lists.c,
+	tools/buddy/msrio_lib-6.0/msr-core/msr_reg.c:
+	Reversed changes to msr_lib to escape characters. (from -r99)
+	[50c239f19a27] <stable-1.0>
+
+2007-07-19  Richard Hacker  <ha@igh-essen.com>
+
+	* configure.ac:
+	Released test -rc9
+	[1bd21efe13ce] <stable-1.0>
+
+	* tools/buddy/msrio_lib-6.0/msr-core/msr_lists.c,
+	tools/buddy/msrio_lib-6.0/msr-core/msr_reg.c:
+	Changed characters &"'<> to proper xml versions &amp; etc
+	[6e1298548f05] <stable-1.0>
+
+	* tools/rt_kernel/rt_main.c:
+	Removed kernel message "Got new parameter set"
+	[2dfbbc7f14c3] <stable-1.0>
+
+2007-07-18  Richard Hacker  <ha@igh-essen.com>
+
+	* blocks/etherlab_lib.mdl, blocks/etherlab_lib_exp.mdl, configure.ac:
+	Released -rc8
+	* blocks/etherlab_lib*: Change all EtherCAT slave id references from
+	"slave" to "index" to make them consistent
+	[e173cfb58f72] <stable-1.0>
+
+2007-05-31  Richard Hacker  <ha@igh-essen.com>
+
+	* ChangeLog, Makefile.am, blocks/EtherCAT/Makefile.am,
+	blocks/EtherCAT/el31xx.c, blocks/EtherCAT/el31xx.tlc, configure.ac:
+	Released 1.1-rc7
+	* blocks/EtherCAT/el31xx.*: Changed scaling for Analog Inputs
+	* blocks/EtherCAT/Makefile.am: Added old_el5101* to distribution
+	[3e7e4403d90f] <stable-1.0>
+
+2007-05-30  Richard Hacker  <ha@igh-essen.com>
+
+	* configure.ac:
+	Released 1.1-rc6
+	[42f8f261f6bd] <stable-1.0>
+
+	* ChangeLog, configure.ac:
+	* stable-1.0/configure.ac: Fixed a bug when using --with-linux-dir
+	* stable-1.0/ChangeLog: New public ChangeLog
+	[3dd8fc42caac] <stable-1.0>
+
+	* tools/buddy/Makefile.am,
+	tools/buddy/msrio_lib-6.0/include/msr_main.h,
+	tools/buddy/msrio_lib-6.0/include/msr_reg.h,
+	tools/buddy/msrio_lib-6.0/include/msr_utils.h,
+	tools/buddy/msrio_lib-6.0/include/msr_version.h,
+	tools/buddy/msrio_lib-6.0/msr-core/msr_attributelist.c,
+	tools/buddy/msrio_lib-6.0/msr-core/msr_interpreter.c,
+	tools/buddy/msrio_lib-6.0/msr-core/msr_lists.c,
+	tools/buddy/msrio_lib-6.0/msr-core/msr_main.c,
+	tools/buddy/msrio_lib-6.0/msr-core/msr_reg.c,
+	tools/buddy/msrio_lib-6.0/msr-utils/msr_utils.c:
+	New msr_lib-6.0.8
+	[81d208bd6614] <stable-1.0>
+
+	* blocks/EtherCAT/old_el5101.c, blocks/EtherCAT/old_el5101.tlc:
+	Fixed bug that occurred during renaming of el5101.* to old_el5101.*
+	[05e68c031f7a] <stable-1.0>
+
+	* blocks/EtherCAT/old_el5101.c, blocks/EtherCAT/old_el5101.tlc,
+	blocks/EtherCAT/old_el5101_check.m, blocks/EtherCAT/setup.m.in,
+	blocks/etherlab_lib.mdl, blocks/etherlab_lib_exp.mdl:
+	Added old EL5101 to EtherCAT
+	[862928f9a07a] <stable-1.0>
+
+	* src/kernel/rtai_reg_mdl.c:
+	Changed kernel include "config.h" to "autoconf.h"
+	[40a7476b61ec] <stable-1.0>
+
+	* configure.ac:
+	Moved AM_CONDITIONAL out of if-endif scope
+	[c81843653558] <stable-1.0>
+
+2007-04-30  Richard Hacker  <ha@igh-essen.com>
+
+	* configure.ac:
+	released -rc5
+	[57646ae615e5] <stable-1.0>
+
+	* lib/ecrt_support.c:
+	Fixed bug when __free_pages is called twice
+	[cdb535c99ec3] <stable-1.0>
+
+2007-04-29  Richard Hacker  <ha@igh-essen.com>
+
+	* configure.ac:
+	Released 1.1-rc4
+	[8a15a65bd517] <stable-1.0>
+
+	* blocks/EtherCAT/el20xx.tlc, blocks/EtherCAT/el41xx.tlc:
+	Splitted registering PDO's from RegisterSimplePDO() to
+	RegisterSlave() + RegisterPDO(slave)
+	[3a722fbf6b1e] <stable-1.0>
+
+	* blocks/EtherCAT/EtherCAT.tlc:
+	Minor error reporting changes
+	[4c5147c86421] <stable-1.0>
+
+	* lib/ecrt_support.c:
+	Implemented a custom kzalloc that is more efficient Qualified
+	startup code with __init
+	[9f724cdda312] <stable-1.0>
+
+2007-04-23  Richard Hacker  <ha@igh-essen.com>
+
+	* configure.ac, etherlab_rtw-1.1-rc3.tar.gz:
+	Released 1.1-rc3
+	[2fc8b8242963] <stable-1.0>
+
+2007-04-22  Richard Hacker  <ha@igh-essen.com>
+
+	* Makefile.am, TODO, blocks/EtherCAT/EtherCAT.tlc,
+	blocks/EtherCAT/el10xx.c, blocks/EtherCAT/el10xx.tlc,
+	blocks/EtherCAT/el20xx.c, blocks/EtherCAT/el20xx.tlc,
+	blocks/EtherCAT/el2xxx_check.m, blocks/EtherCAT/el31xx.c,
+	blocks/EtherCAT/el31xx.tlc, blocks/EtherCAT/el41xx.c,
+	blocks/EtherCAT/el41xx.tlc, blocks/EtherCAT/el5001.tlc,
+	blocks/EtherCAT/el5101.c, blocks/EtherCAT/el5101.tlc,
+	blocks/EtherCAT/el5101_check.m, blocks/EtherCAT/master_stats.c,
+	blocks/EtherCAT/master_stats.tlc, blocks/etherlab_lib.mdl,
+	blocks/etherlab_lib_exp.mdl, lib/ecrt_support.c, lib/ecrt_support.h,
+	tools/rt_kernel/rt_main.c:
+	* tools/rt_kernel/rt_main.c: Minor debugging changes when reporting
+	overruns
+	* TODO: master_stats implemented
+	* blocks/EtherCAT/EtherCAT.tlc, lib/ecrt_support.h,
+	lib/ecrt_support.c: Major rework of this layer to prepare for
+	complex slave configuration. Also implemented the new EtherCAT
+	Driver interface v1.3. Removed bugs when recovering from errors.
+	* Makefile.am: Documentation changes
+	* blocks/etherlab_lib_exp.mdl:
+	* blocks/etherlab_lib.mdl (DIGIN_0, DIGOUT_0): renamed parameter
+	'device' to 'model' in configuration Mask. Documentation changes.
+	New block for master_stats Started changing parameter for Slave
+	Address to be evaluated in parameters for el5101. Now have to enter
+	address as a string.
+	* blocks/EtherCAT/master_stats.c, blocks/EtherCAT/master_stats.tlc:
+	New block to get statistics from master.
+	* blocks/EtherCAT/el5101.c:
+	* blocks/EtherCAT/el5101.tlc:
+	* blocks/EtherCAT/el5101_check.m: Implemented full functionality of
+	this incremental encoder.
+	* blocks/EtherCAT/el20xx.c, blocks/EtherCAT/el20xx.tlc,
+	blocks/EtherCAT/el2xxx_check.m: Updated due to changes in renaming
+	parameter Updated due to changes in the blocks/EtherCAT/EtherCAT.tlc
+	interface.
+	* blocks/EtherCAT/el5001.tlc:
+	* blocks/EtherCAT/el10xx.c, blocks/EtherCAT/el10xx.tlc: Updated due to
+	changes in renaming parameter Updated due to changes in the
+	blocks/EtherCAT/EtherCAT.tlc interface.
+	* blocks/EtherCAT/el31xx.tlc, blocks/EtherCAT/el31xx.c,
+	blocks/EtherCAT/el41xx.c, blocks/EtherCAT/el41xx.tlc: Updated due to
+	changes in the blocks/EtherCAT/EtherCAT.tlc interface.
+	[5b26225fd2f7] <stable-1.0>
+
+2007-04-19  Richard Hacker  <ha@igh-essen.com>
+
+	* lib/ecrt_support.c:
+	Updated ecrt_support to use the new interface 1.3
+	[111104d99980] <stable-1.0>
+
+	* Makefile.am, TODO:
+	TODO: Some more things to do Makefile.am: Added a comment to the end
+	of install
+	[0e98d4927972] <stable-1.0>
+
+2007-03-28  Richard Hacker  <ha@igh-essen.com>
+
+	* TODO:
+	More things to do
+	[47c8e462dcec] <stable-1.0>
+
+2007-03-21  Richard Hacker  <ha@igh-essen.com>
+
+	* TODO, configure.ac:
+	Released 1.1-rc2
+	[2bb685e671be] <stable-1.0>
+
+	* blocks/etherlab_lib_exp.mdl:
+	Removed Filter option from EtherCAT/EL5101 parameter mask
+	[7bb54e0d508e] <stable-1.0>
+
+	* blocks/EtherCAT/el5101.c:
+	Removed orphaned filter option
+	[594c7c8fddd8] <stable-1.0>
+
+	* tools/buddy/buddy_main.c, tools/buddy/rtp_module.c:
+	Started on making the buddy use syslog
+	[741d361c5e1d] <stable-1.0>
+
+2007-02-14  Richard Hacker  <ha@igh-essen.com>
+
+	* configure.ac, lib/Kbuild.in, lib/Makefile.am:
+	With this patch it is possible to disable ethercat using the
+	configure option
+	--disable-ethercat.
+	[5ae86eef121f] <stable-1.0>
+
+	* TODO:
+	Reworked TODO Version 1.1 is still work in progress
+	[51b3e532a9c8] <stable-1.0>
+
+	* Makefile.am, NEWS, blocks/EtherCAT/Kbuild.in,
+	blocks/EtherCAT/Makefile.am, blocks/EtherCAT/ecrt_support.c,
+	blocks/EtherCAT/ecrt_support.h, blocks/Kbuild.in,
+	blocks/Makefile.am, blocks/get_string.h, blocks/raise_catch.c,
+	blocks/raise_catch.h, configure.ac, etherlab/Makefile.am,
+	etherlab/etherlab_config.m, etherlab/etherlab_config.m.in,
+	lib/Kbuild.in, lib/Makefile.am, lib/ecrt_support.c,
+	lib/ecrt_support.h, lib/raise_catch.c, lib/raise_catch.h,
+	src/include/Makefile.am, src/include/get_string.h:
+	This version is a major rework of the build process to separate the
+	code generation process from the build process cleanly - this was
+	started a few commits ago. A lot of file shuffling was necessary to
+	enable partial installation either part.
+	[a7662e7a453a] <stable-1.0>
+
+2007-02-12  Richard Hacker  <ha@igh-essen.com>
+
+	* etherlab/etherlab_kmod.tmf.in, etherlab/etherlab_tools.mk.in:
+	With this patch it is easier to generate code on one machine and
+	compiling on another. Using MATLAB_ROOT, and copying
+	$MATLAB/extern/include $MATLAB/simulink/include/ $MATLAB/rtw/c/src/
+	to the build machine even allows you to compile without a fully
+	installed matlab
+	[a6071c5164a9] <stable-1.0>
+
+	* configure.ac:
+	Fixed a bug when checking for --with-linux-dir (last checkin)
+	[2d1cc7562453] <stable-1.0>
+
+2007-02-11  Richard Hacker  <ha@igh-essen.com>
+
+	* configure.ac:
+	Added --with-linux-dir option to configure
+	[ea5c3810417e] <stable-1.0>
+
+2007-02-09  Richard Hacker  <ha@igh-essen.com>
+
+	* ChangeLog, configure.ac, etherlab_rtw-1.0.tar.gz:
+	Released version 1.0
+	[425b4601e4d2] <stable-1.0>
+
+	* tools/rt_kernel/rt_module.h:
+	Removed obsolete header
+	[c8c84d9de2ca] <stable-1.0>
+
+	* blocks/EtherCAT/ecrt_support.c:
+	Included version checking of ethercat driver interface.
+	[ef081884bf0e] <stable-1.0>
+
+	* tools/buddy/buddy_main.c, tools/buddy/rtp_module.c,
+	tools/include/fio_ioctl.h, tools/rt_kernel/rt_fio.c,
+	tools/rt_kernel/rt_main.c, tools/rt_kernel/rt_main.h:
+	Fixed various bugs so that now the buddy runs cleanly as a daemon
+	and is also robust against not finding its *.so file
+	[2db9c8b8975b] <stable-1.0>
+
+	* blocks/etherlab_lib.mdl:
+	New etherlab libraries. On etherlab_lib_exp.mdl, work has started on
+	Signal/Slot mechanism
+	[6a9bf3af6945] <stable-1.0>
+
+	* blocks/EtherCAT/ecrt_support.c:
+	Fixed a bug so that ethercat is shut down correctly when model
+	loading is aborted.
+	[f504ab5e3eec] <stable-1.0>
+
+	* tools/buddy/msrio_lib-6.0/include/msr_version.h,
+	tools/buddy/msrio_lib-6.0/msr-core/msr_attributelist.c,
+	tools/buddy/msrio_lib-6.0/msr-core/msr_main.c,
+	tools/buddy/msrio_lib-6.0/msr-core/msr_reg.c:
+	Added new version of msr_lib
+	[2781bc395451] <stable-1.0>
+
+2007-01-12  Richard Hacker  <ha@igh-essen.com>
+
+	* configure.ac:
+	Released -rc4
+	[ef735a04409c] <stable-1.0>
+
+	* blocks/ETL.tlc, blocks/EtherCAT/EtherCAT.tlc,
+	blocks/EtherCAT/ecrt_support.c:
+	blocks/EtherCAT/EtherCAT.tlc: Fixed a printf format string
+	blocks/EtherCAT/ecrt_support.c: Fixed a bug in the error recovery
+	system from EtherCAT error (ecrt_release_master was called twice)
+	blocks/ETL.tlc: Fixed a bug in error reporting system (a local
+	variable was used globally)
+	[0828bf2443ff] <stable-1.0>
+
+	* configure.ac:
+	Released -rc3
+	[44d98d880f9b] <stable-1.0>
+
+	* blocks/EtherCAT/Makefile.am, blocks/EtherCAT/bk1120_check.m,
+	blocks/Makefile.am:
+	blocks/EtherCAT/bk1120_check.m: Added missing file
+	blocks/EtherCAT/Makefile.am: bk1120_check.m installed
+	blocks/Makefile.am: configure switch --enable-experimental now also
+	installs etherlab_lib_exp.mdl
+	[b2338ad6081b] <stable-1.0>
+
+2007-01-10  Richard Hacker  <ha@igh-essen.com>
+
+	* Added setup.m to svn:ignore for blocks/
+	[d6c821466455] <stable-1.0>
+
+	* blocks/setup.m, configure.ac:
+	blocks/setup.m: Deleted since it is a derived file configure.ac:
+	Version now -rc2
+	[a0dc2609b08e] <stable-1.0>
+
+	* blocks/EtherCAT/Makefile.am, blocks/EtherCAT/ecrt_support.c,
+	blocks/EtherCAT/ecrt_support.h, blocks/ss_analog_in_funcs.c,
+	configure.ac:
+	configure.ac: Added more tests for system programs
+	blocks/ss_analog_in_funcs.c: Fixed bug when using filter in input
+	blocks blocks/EtherCAT/ecrt_support.c: Fixed incorrect function name
+	ecs_register_sdo() to ecs_reg_sdo() blocks/EtherCAT/ecrt_support.h:
+	Added function declaration ecs_reg_sdo()
+	blocks/EtherCAT/Makefile.am: Improved install rule for ETL.tlc
+	[e2af5c273155] <stable-1.0>
+
+2007-01-09  Richard Hacker  <ha@igh-essen.com>
+
+	* configure.ac:
+	Release RC1
+	[3688c5c95dea] <stable-1.0>
+
+	* tools/buddy/msrio_lib-6.0/include/msr_lists.h,
+	tools/buddy/msrio_lib-6.0/include/msr_version.h,
+	tools/buddy/msrio_lib-6.0/msr-core/msr_interpreter.c,
+	tools/buddy/msrio_lib-6.0/msr-core/msr_lists.c:
+	Inserted msl_lib patch from Wilhelm
+	[cf95c61922fd] <stable-1.0>
+
+	* blocks/EtherCAT/ecrt_support.c:
+	Finalised EOE interface with ethercat
+	[45d18615dc1a] <stable-1.0>
+
 2007-01-08  Richard Hacker  <ha@igh-essen.com>
+
+	* Added svn:ignore properties to directories
+	[2018b3e044b2] <stable-0.3>
+
+	* Added svn:ignore properties to directories
+	[181a55b09eb2] <stable-1.0>
+
+	* Branching off stable-1.0
+	[455ef26c4eab] <stable-1.0>
 
 	* configure.ac, etherlab_rtw-0.2.1.tar.gz, etherlab_rtw-0.3.1.tar.gz,
 	etherlab_rtw-0.3.2.tar.gz, etherlab_rtw-0.3.3.tar.gz,
@@ -4386,6 +8177,190 @@
 	/trunk is now complete
 	[3d542b9a4c69]
 
+	* tools/buddy/msrio_lib-6.0/include/msr_attributelist.h,
+	tools/buddy/msrio_lib-6.0/msr-core/msr_attributelist.c,
+	tools/include/Makefile.am:
+	Added some more missing files
+	[c706dd4ce29d] <stable-0.3>
+
+	* blocks/Kbuild.in, blocks/setup.m.in, tools/buddy/rtp_io.h,
+	tools/include/Makefile.in, tools/rt_kernel/rt_module.h:
+	Added some files forgotten last time
+	[6327e9e9ede3] <stable-0.3>
+
 	* /branches/stable-0.3 is so good, starting a new /trunk from that
 	[70d1294f4bc8]
+
+	* ChangeLog, TODO, blocks/ETL.tlc, blocks/EtherCAT/EtherCAT.tlc,
+	blocks/EtherCAT/Kbuild.in, blocks/EtherCAT/Makefile.am,
+	blocks/EtherCAT/bk1120_in.c, blocks/EtherCAT/bk1120_in.tlc,
+	blocks/EtherCAT/bk1120_out.tlc, blocks/EtherCAT/ecrt_support.c,
+	blocks/EtherCAT/ecrt_support.h, blocks/EtherCAT/el10xx.c,
+	blocks/EtherCAT/el10xx.tlc, blocks/EtherCAT/el20xx.tlc,
+	blocks/EtherCAT/el31xx.c, blocks/EtherCAT/el31xx.tlc,
+	blocks/EtherCAT/el41xx.c, blocks/EtherCAT/el41xx.tlc,
+	blocks/EtherCAT/el5001.c, blocks/EtherCAT/el5001.tlc,
+	blocks/EtherCAT/el5101.c, blocks/EtherCAT/el5101.tlc,
+	blocks/EtherCAT/master_stats.c, blocks/EtherCAT/master_stats.tlc,
+	blocks/EtherCAT/setup.m.in, blocks/Makefile.am,
+	blocks/RaiseCatch.tlc, blocks/etherlab_lib.mdl,
+	blocks/etherlab_lib_exp.mdl, blocks/raise.c, blocks/raise.tlc,
+	blocks/raise_catch.c, blocks/raise_catch.h, blocks/setup.m,
+	blocks/ss_analog_in_funcs.c, blocks/ss_analog_in_funcs.h,
+	blocks/taskinfo.c, blocks/taskinfo.tlc, blocks/world_time.c,
+	blocks/world_time.tlc, bootstrap, configure.ac,
+	etherlab/etherlab_kmod.tmf.in, etherlab/etherlab_tools.mk.in,
+	lib/Makefile.am, src/buddy/model_reg.c, src/include/Makefile.am,
+	src/include/buddy_main.h, src/include/fifo_defines.h,
+	src/include/fio_ioctl.h, src/include/mdl_time.h,
+	src/include/rt_kernel.h, src/kernel/mdl_wrapper.c,
+	src/kernel/mdl_wrapper.h, src/kernel/rtai_reg_mdl.c,
+	tools/Makefile.am, tools/buddy/Makefile.am,
+	tools/buddy/buddy_main.c, tools/buddy/buddy_main.h,
+	tools/buddy/command_module.c, tools/buddy/modules.h,
+	tools/buddy/msrio_lib,
+	tools/buddy/msrio_lib-6.0/include/msr_lists.h,
+	tools/buddy/msrio_lib-6.0/include/msr_main.h,
+	tools/buddy/msrio_lib-6.0/include/msr_reg.h,
+	tools/buddy/msrio_lib-6.0/include/msr_version.h,
+	tools/buddy/msrio_lib-6.0/msr-core/msr_interpreter.c,
+	tools/buddy/msrio_lib-6.0/msr-core/msr_lists.c,
+	tools/buddy/msrio_lib-6.0/msr-core/msr_main.c,
+	tools/buddy/msrio_lib-6.0/msr-core/msr_reg.c, tools/buddy/net_io.c,
+	tools/buddy/net_io.h, tools/buddy/pipe_io.c,
+	tools/buddy/rtai_main.c, tools/buddy/rtp_io.c,
+	tools/buddy/rtp_module.c, tools/include/fio_ioctl.h,
+	tools/rt_kernel/Kbuild.in, tools/rt_kernel/rt_fio.c,
+	tools/rt_kernel/rt_main.c, tools/rt_kernel/rt_main.h,
+	tools/scripts/etherlab.in:
+	See ChangeLog 2007-01-07
+	[094afec92b35] <stable-0.3>
+
+2006-10-20  Richard Hacker  <ha@igh-essen.com>
+
+	* etherlab_rtw-0.3.3.tar.gz:
+	See ChangeLog 2006-10-19; forgot to add etherlab_rtw-0.3.3.tar.gz
+	[0ee10d8572f0] <stable-0.3>
+
+	* ChangeLog, blocks/EtherCAT/EtherCAT.tlc, blocks/EtherCAT/el5001.tlc,
+	configure.ac:
+	See ChangeLog 2006-10-19
+	[fa3a38107c15] <stable-0.3>
+
+2006-10-18  Richard Hacker  <ha@igh-essen.com>
+
+	* ChangeLog, blocks/EtherCAT/EtherCAT.tlc,
+	blocks/EtherCAT/bk1120_in.tlc, blocks/EtherCAT/bk1120_out.tlc,
+	blocks/etherlab_lib.mdl, blocks/etherlab_lib_exp.mdl, configure.ac,
+	etherlab_rtw-0.3.2.tar.gz:
+	See ChangeLog 2006-10-19
+	[607768f8588f] <stable-0.3>
+
+2006-10-16  Richard Hacker  <ha@igh-essen.com>
+
+	* ChangeLog, blocks/AddiData/xPCI1710.tlc, blocks/Hilscher/CIF_PB.tlc,
+	blocks/Hilscher/cif_pd_in.tlc, blocks/Hilscher/cif_pd_out.tlc:
+	See ChangeLog 2006-10-16
+	[f355d116e22f] <stable-0.3>
+
+2006-10-10  Richard Hacker  <ha@igh-essen.com>
+
+	* etherlab_rtw-0.2.1.tar.gz, etherlab_rtw-0.3.1.tar.gz:
+	Added tar.gz
+	[636c2e98582f] <stable-0.3>
+
+	* ChangeLog, INSTALL, blocks/EtherCAT/EtherCAT.tlc,
+	blocks/EtherCAT/Makefile.am, blocks/EtherCAT/bk1120_in.c,
+	blocks/EtherCAT/bk1120_in.tlc, blocks/EtherCAT/bk1120_out.c,
+	blocks/EtherCAT/bk1120_out.tlc, blocks/EtherCAT/el10xx.tlc,
+	blocks/EtherCAT/el20xx.tlc, blocks/EtherCAT/el31xx.tlc,
+	blocks/EtherCAT/el41xx.tlc, blocks/EtherCAT/el5001.tlc,
+	blocks/EtherCAT/el5101.tlc, blocks/EtherCAT/setup.m.in,
+	blocks/Hilscher/cif_pd_in.tlc, blocks/Hilscher/cif_pd_out.tlc,
+	blocks/etherlab_lib.mdl, configure.ac, tools/rt_kernel/Makefile.am:
+	See ChangeLog 2006-10-10
+	[170ba38e2f12] <stable-0.3>
+
+2006-09-25  Richard Hacker  <ha@igh-essen.com>
+
+	* AUTHORS, ChangeLog, INSTALL, Makefile.am, NEWS, README, TODO,
+	blocks/AddiData/AD1710.tlc, blocks/AddiData/Makefile.am,
+	blocks/AddiData/PCI1710_Chronos.c,
+	blocks/AddiData/PCI1710_Chronos.tlc, blocks/AddiData/ad1710_etm.c,
+	blocks/AddiData/ad1710_etm.tlc, blocks/AddiData/apci1710.diff,
+	blocks/AddiData/apci1710.tar.gz, blocks/AddiData/setup.m.in,
+	blocks/AddiData/xPCI1710.h, blocks/AddiData/xPCI1710.tlc,
+	blocks/AddiData/xPCI1710_digio.c,
+	blocks/AddiData/xPCI1710_digio.tlc, blocks/AddiData/xPCI1710_etm.c,
+	blocks/AddiData/xPCI1710_etm.tlc, blocks/AddiData/xPCI1710_inc.c,
+	blocks/AddiData/xPCI1710_inc.tlc, blocks/EtherCAT/EtherCAT.tlc,
+	blocks/EtherCAT/Kbuild.in, blocks/EtherCAT/Makefile.am,
+	blocks/EtherCAT/bk1120_in.c, blocks/EtherCAT/ecrt_support.c,
+	blocks/EtherCAT/ecrt_support.h, blocks/EtherCAT/el10xx.c,
+	blocks/EtherCAT/el10xx.tlc, blocks/EtherCAT/el20xx.c,
+	blocks/EtherCAT/el20xx.tlc, blocks/EtherCAT/el2xxx_check.m,
+	blocks/EtherCAT/el31xx.c, blocks/EtherCAT/el31xx.tlc,
+	blocks/EtherCAT/el31xx_check.m, blocks/EtherCAT/el41xx.c,
+	blocks/EtherCAT/el41xx.tlc, blocks/EtherCAT/el41xx_check.m,
+	blocks/EtherCAT/el5001.c, blocks/EtherCAT/el5001.tlc,
+	blocks/EtherCAT/el5001_check.m, blocks/EtherCAT/el5101.c,
+	blocks/EtherCAT/el5101.tlc, blocks/EtherCAT/el5101_check.m,
+	blocks/EtherCAT/ethercat_ss_funcs.h, blocks/EtherCAT/setup.m.in,
+	blocks/Hilscher/CIF_PB.tlc, blocks/Hilscher/Makefile.am,
+	blocks/Hilscher/cif_pd_in.c, blocks/Hilscher/cif_pd_in.tlc,
+	blocks/Hilscher/cif_pd_out.c, blocks/Hilscher/cif_pd_out.tlc,
+	blocks/Hilscher/setup.m.in, blocks/Makefile.am,
+	blocks/etherlab_lib.mdl, blocks/etherlab_lib_exp.mdl,
+	blocks/etl_printf.c, blocks/etl_printf.tlc, blocks/setup.m,
+	blocks/ss_analog_in_funcs.h, blocks/taskinfo.c, blocks/taskinfo.tlc,
+	blocks/test_var.m, bootstrap, configure.ac, doc/Doxyfile,
+	etherlab/Makefile.am, etherlab/etherlab.tlc,
+	etherlab/etherlab_config.m, etherlab/etherlab_kmod.tmf.in,
+	etherlab/etherlab_postprocess.m, etherlab/etherlab_tools.mk.in,
+	etherlab/get_description.tlc, etherlab/get_meta_tag.m,
+	etherlab/setup_etherlab.m.in, etherlab_rtw-0.3.tar.gz,
+	lib/Makefile.am, rtai_rtw-0.1.1.tar.gz, rtai_rtw-0.2.1.tar.gz,
+	rtai_rtw-0.2.tar.gz, src/Makefile.am, src/buddy/Makefile.am,
+	src/buddy/etherlab_buddy_data.c, src/buddy/model_reg.c,
+	src/include/Makefile.am, src/include/buddy_main.h,
+	src/include/defines.h, src/include/fifo_defines.h,
+	src/include/fio_ioctl.h, src/include/get_string.h,
+	src/include/mdl_taskinfo.h, src/include/model_meta.h,
+	src/include/rt_kernel.h, src/kernel/Makefile.am,
+	src/kernel/mdl_wrapper.c, src/kernel/mdl_wrapper.h,
+	src/kernel/rtai_reg_mdl.c, tools/Makefile.am,
+	tools/buddy/Makefile.am, tools/buddy/buddy_main.c,
+	tools/buddy/msrio_lib,
+	tools/buddy/msrio_lib-6.0/include/msr_base64.h,
+	tools/buddy/msrio_lib-6.0/include/msr_charbuf.h,
+	tools/buddy/msrio_lib-6.0/include/msr_hex_bin.h,
+	tools/buddy/msrio_lib-6.0/include/msr_interpreter.h,
+	tools/buddy/msrio_lib-6.0/include/msr_lists.h,
+	tools/buddy/msrio_lib-6.0/include/msr_main.h,
+	tools/buddy/msrio_lib-6.0/include/msr_mem.h,
+	tools/buddy/msrio_lib-6.0/include/msr_messages.h,
+	tools/buddy/msrio_lib-6.0/include/msr_rcsinfo.h,
+	tools/buddy/msrio_lib-6.0/include/msr_reg.h,
+	tools/buddy/msrio_lib-6.0/include/msr_target.h,
+	tools/buddy/msrio_lib-6.0/include/msr_taskname.h,
+	tools/buddy/msrio_lib-6.0/include/msr_utils.h,
+	tools/buddy/msrio_lib-6.0/include/msr_version.h,
+	tools/buddy/msrio_lib-6.0/msr-core/msr_charbuf.c,
+	tools/buddy/msrio_lib-6.0/msr-core/msr_interpreter.c,
+	tools/buddy/msrio_lib-6.0/msr-core/msr_lists.c,
+	tools/buddy/msrio_lib-6.0/msr-core/msr_main.c,
+	tools/buddy/msrio_lib-6.0/msr-core/msr_messages.c,
+	tools/buddy/msrio_lib-6.0/msr-core/msr_reg.c,
+	tools/buddy/msrio_lib-6.0/msr-math/msr_base64.c,
+	tools/buddy/msrio_lib-6.0/msr-math/msr_hex_bin.c,
+	tools/buddy/msrio_lib-6.0/msr-utils/msr_utils.c,
+	tools/buddy/net_io.c, tools/buddy/net_io.h, tools/buddy/pipe_io.c,
+	tools/buddy/rtai_main.c, tools/buddy/rtp_io.c, tools/buddy/rtp_io.h,
+	tools/rt_kernel/.runinfo, tools/rt_kernel/Kbuild.in,
+	tools/rt_kernel/Makefile.am, tools/rt_kernel/rt_fio.c,
+	tools/rt_kernel/rt_main.c, tools/rt_kernel/rt_main.h,
+	tools/rt_kernel/rt_module.h, tools/rt_kernel/run,
+	tools/scripts/Makefile.am, tools/scripts/etherlab.in:
+	Eventually got the branches right.
+	[9cdc16e2b17b] <stable-0.3>
 

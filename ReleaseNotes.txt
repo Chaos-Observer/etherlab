@@ -1,2 +1,25 @@
+Here are release notes to check when updating from V2.2.0
+---------------------------------------------------------
+
 Incompatible changes:
-  - EL3356: Check SDO #x8000:14. This is now a float(32) value
+  - EL3356: Check SDO #x8000:14. This is now a float(32) value (6f7f0f659638)
+
+Beckhoff ethercat slaves: bugfixes, new and updates
+      - EL2872 (1123:496ae0808faf)
+      - EL3314-0010 (1184:aba891559a7c)
+      - EL3403 (1128:3eaa06427693)
+      - EL4038 (1156:92c12a362a00)
+      - EL500x (1181:cd564374058f)
+      - EL5152 (1167:5ad6a7ea1ddf)
+
+Updates:
+      - EL3208 (1188:16e6a797d0d9)
+      - EL320x (1154:adf4ce22d26d)
+      - EL3356 (1121:5b47328cbcba)
+      - EL3356 EL500x (1187:6f7f0f659638)
+
+New slaves:
+        - EL1702-0020 (1124:46df4a1e3bf4)
+        - EL2784, EL2788, EL2794, EM2042 (1123:496ae0808faf)
+        - EL36x2 (1165:3794ce13b50c)
+

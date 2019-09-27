@@ -1,9 +1,16 @@
 $Id$
 
+Version 2.2.1:
+-------------
+
+- Beckhoff ethercat slaves: bugfixes, new and updates
 - SDO values can now be any data type, including floats
-  This affects EL3356, see ReleaseNotes.txt
+- new Util/Event block for event logging purposes.
+- global model parameters for >R2017
+- Removed "Classic call interface" requirement for >R2013
 
 Version 2.1:
+------------
 
 - Added support for SDO read/write in source files
 - Complete redesign of most of the Beckhoff library blocks
@@ -17,6 +24,7 @@ Version 2.1:
 - Several bugfixes and improvements
 
 Version 2.0:
+------------
 
 - New EtherLab target for PREEMPT-RT using the pdserv library.
 - Support for complex data types.
