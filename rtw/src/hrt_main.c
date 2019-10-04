@@ -140,8 +140,12 @@
 #include "rt_sim.h"
 
 #ifdef PDSERV_VERSION_CODE
-#    if PDSERV_VERSION_CODE >= PDSERV_VERSION(3,0,0)
-#        define PDSERV3
+#    if PDSERV_VERSION_CODE >= PDSERV_VERSION(3,1,1)
+#        define SYSTEM_LOCKING
+#    elif PDSERV_VERSION_CODE >= PDSERV_VERSION(3,0,0)
+#        define VARIABLE_LOCKING
+#    else
+#        define GET_PARAMETERS
 #    endif
 #endif
 
@@ -522,7 +526,7 @@ void *run_task(void *p)
 
         clock_gettime(CLOCK_REALTIME, &thread->world_time);
 
-#ifndef PDSERV3
+#ifdef GET_PARAMETERS
         if (thread == &task[0]) {
             pdserv_get_parameters(pdserv, thread->pdtask,
                     &thread->world_time);
@@ -685,7 +689,32 @@ int get_etl_data_type (const char *mwName,
 }
 
 /****************************************************************************/
+void write_parameter_lock(int state, void* priv_data)
+{
+    struct thread_task *p_task = task + NUMTASKS;
+    (void)priv_data;
 
+    if (state) {
+        while (p_task != task)
+            pthread_mutex_lock(&(--p_task)->param_lock);
+    }
+    else {
+        while (p_task != task)
+            pthread_mutex_unlock(&(--p_task)->param_lock);
+    }
+}
+
+/****************************************************************************/
+void read_signal_lock(int state, void* priv_data)
+{
+    if (state)
+        pthread_rwlock_rdlock(priv_data);
+    else
+        pthread_rwlock_unlock(priv_data);
+}
+
+/****************************************************************************/
+#ifdef VARIABLE_LOCKING
 int write_parameter(
         const struct pdvariable* param,
         void *dst, const void* src, size_t len,
@@ -694,16 +723,10 @@ int write_parameter(
 {
     (void)param;
     (void)priv_data;
-    struct thread_task *p_task = task + NUMTASKS;
 
-    while (p_task != task)
-        pthread_mutex_lock(&(--p_task)->param_lock);
-
+    write_parameter_lock(1, NULL);
     memcpy(dst, src, len);
-
-    p_task = task + NUMTASKS;
-    while (p_task != task)
-        pthread_mutex_unlock(&(--p_task)->param_lock);
+    write_parameter_lock(0, NULL);
 
     clock_gettime(CLOCK_REALTIME, time);
 
@@ -721,15 +744,15 @@ int read_signal(
     (void)signal;
     struct thread_task* task = priv_data;
 
-    pthread_rwlock_rdlock(&task->signal_lock);
+    read_signal_lock(1, &task->signal_lock);
     memcpy(dst, src, len);
     if (time)
         *time = task->world_time;
-    pthread_rwlock_unlock(&task->signal_lock);
+    read_signal_lock(0, &task->signal_lock);
 
     return 0;
 }
-
+#endif
 
 /****************************************************************************
  * Create dimension array, taking care of Matlab's quirks:
@@ -916,7 +939,7 @@ register_signal(
 #endif
 
     //printf("Reg with dt=%i\n", data_type);
-#ifdef PDSERV3
+#ifdef VARIABLE_LOCKING
     signal = pdserv_signal_cb(task->pdtask, decimation,
             path, data_type, address, ndim, dim, read_signal, task);
 #else
@@ -994,7 +1017,7 @@ register_parameter(
 
     snprintf(path, pathLen, "%s/%s", blockPath, paramName);
 
-#ifdef PDSERV3
+#ifdef VARIABLE_LOCKING
     pdserv_parameter(pdserv, path, 0666, data_type, address, ndim, dim,
             write_parameter, 0);
 #else
@@ -1062,7 +1085,7 @@ register_model_parameter(
 
     snprintf(path, pathLen, "/%s/%s", prefix, paramName);
 
-#ifdef PDSERV3
+#ifdef VARIABLE_LOCKING
     pdserv_parameter(pdserv, path, 0666, data_type, address, ndim, dim,
             write_parameter, 0);
 #else
@@ -1379,6 +1402,10 @@ int main(int argc, char **argv)
         goto out;
     }
 
+#ifdef SYSTEM_LOCKING
+    pdserv_set_parameter_writelock_cb(pdserv, write_parameter_lock, NULL);
+#endif
+
     if (pdserv_config) {
         pdserv_config_file(pdserv, pdserv_config);
     }
@@ -1424,6 +1451,11 @@ int main(int argc, char **argv)
 
         pthread_rwlock_init(&p_task->signal_lock, &rwlock_attr);
         pthread_mutex_init(&p_task->param_lock, NULL);
+
+#ifdef SYSTEM_LOCKING
+        pdserv_set_signal_readlock_cb(
+                p_task->pdtask, read_signal_lock, &p_task->signal_lock);
+#endif
     }
 
     pthread_rwlockattr_destroy(&rwlock_attr);
