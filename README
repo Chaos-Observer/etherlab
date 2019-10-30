@@ -96,6 +96,7 @@ Installation
         $ mkdir build
         $ cd build
         $ cmake ..
+        $ make
         $ sudo make install
 
     This installs the package into /usr/local/share/etherlab
@@ -141,20 +142,21 @@ Configuration
         or (from source install):
         # /usr/local/share/etherlab/install.sh $(MATLAB_ROOT)
 
-        The files are copied to $(MATLAB_ROOT)/rtw/c/etherlab. Make sure this
-        directory is writeable by you.
+        The files are copied to $(MATLAB_ROOT)/rtw/c/etherlab. 
+        !! Make sure this directory is writeable by you !! 
 
     2) Compile the files to be used by MATLAB:
-        Start MATLAB and call:
-        >> run(fullfile(matlabroot, 'rtw/c/etherlab', 'setup_etherlab.m'))
-
-        This configures the package for use with Simulink. As it compiles mex
-        functions, make sure that directories below
-        $(MATLAB_ROOT)/rtw/c/etherlab/ are writeable by the matlab user.
-
         During configuration, paths are added to matlabpath and saved to
         ($(MATLAB_ROOT)/toolbox/local/pathdef.m). Make sure it is writeable.
 
+	Matlab mex functions are generated during configuration, so make sure
+        that directories below $(MATLAB_ROOT)/rtw/c/etherlab/ are writeable
+        by the matlab user (as instruction in the step above).
+
+        Now start MATLAB and call:
+        >> run(fullfile(matlabroot, 'rtw/c/etherlab', 'setup_etherlab.m'))
+
+        This configures the package for use with Simulink.
 
     Power users:
         The default installation directory of the files in MATLAB is:
