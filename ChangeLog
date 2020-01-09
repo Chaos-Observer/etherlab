@@ -1,8 +1,32 @@
+2020-01-09  Richard Hacker  <lerichi@gmx.net>
+
+	* CMakeLists.txt, scripts/release.sh.in:
+	Removed CPack; script file for release; Removed old install PREFIX
+	[aaabc28e4d7d] [tip]
+
+2019-10-04  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/src/hrt_main.c:
+	Changes due to pdserv 3.1.1: signal and parameter locking functions
+	[5a32dfb5ab83]
+
+2019-09-27  Richard Hacker  <lerichi@gmx.net>
+
+	* ChangeLog, NEWS, ReleaseNotes.txt:
+	Documentation
+	[2555075ab2b9]
+
 2019-08-19  Richard Hacker  <lerichi@gmx.net>
 
 	* CMakeLists.txt, etherlab.spec.in:
 	Forget RPM spec file
-	[922af96eebb7] [tip]
+	[b6de9aa4dbe3]
+
+2019-10-30  hm  <hm@igh.de>
+
+	* README:
+	README
+	[b39191a2edc2]
 
 2019-07-26  Richard Hacker  <lerichi@gmx.net>
 
@@ -314,14 +338,6 @@
 	merge
 	[821f5bf827be]
 
-2017-11-15  Richard Hacker  <ha@igh-essen.com>
-
-	* CMakeLists.txt:
-	Test cmake >= 3.0 when using STRING TIMESTAMP function
-	[70c9d5ffe05a]
-
-2017-12-05  Richard Hacker  <lerichi@gmx.net>
-
 	* CMakeLists.txt, README:
 	Installation instructions
 	[a846ca7905aa]
@@ -339,23 +355,27 @@
 	again
 	[db492fa74d0a]
 
+2017-11-15  Richard Hacker  <ha@igh-essen.com>
+
+	* CMakeLists.txt:
+	Test cmake >= 3.0 when using STRING TIMESTAMP function
+	[70c9d5ffe05a]
+
 2017-09-26  Richard Hacker  <lerichi@gmx.net>
 
 	* README:
 	merge
 	[13baf3fd422c]
 
+	* CMakeLists.txt, README:
+	Added README to distribution
+	[8b6857c24de9]
+
 2017-08-15  Richard Hacker  <ha@igh-essen.com>
 
 	* README, rtw/setup_etherlab.m:
 	Documentation and minor fixes to matlabpath
 	[07ee56a587ac]
-
-2017-09-26  Richard Hacker  <lerichi@gmx.net>
-
-	* CMakeLists.txt, README:
-	Added README to distribution
-	[8b6857c24de9]
 
 2017-07-27  Richard Hacker  <lerichi@gmx.net>
 
@@ -376,14 +396,6 @@
 	* rtw/blocks/etherlab_lib.mdl:
 	merge
 	[b5f4117c78e4]
-
-2017-05-31  Richard Hacker  <ha@igh-essen.com>
-
-	* rtw/blocks/EtherCAT/el3403.m, rtw/blocks/etherlab_lib.mdl:
-	EL3403: removed SDO F800:1 F800:2 F800:3 which cannot be written
-	[3eaa06427693]
-
-2017-07-13  Richard Hacker  <lerichi@gmx.net>
 
 	* README, rtw/etherlab/Contents.m.in:
 	Copyright information
@@ -406,6 +418,12 @@
 	* rtw/blocks/EtherCAT/el2xxx.m, rtw/blocks/etherlab_lib.mdl:
 	Added EL2784, EL2788, EL2794, EM2042; Fixed EL2872 to 16 channels
 	[496ae0808faf]
+
+2017-05-31  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/blocks/EtherCAT/el3403.m, rtw/blocks/etherlab_lib.mdl:
+	EL3403: removed SDO F800:1 F800:2 F800:3 which cannot be written
+	[3eaa06427693]
 
 2017-05-16  Richard Hacker  <lerichi@gmx.net>
 
@@ -511,28 +529,6 @@
 	merge
 	[d215409e1d37]
 
-2016-10-07  Richard Hacker  <ha@igh-essen.com>
-
-	* rtw/blocks/EtherCAT/CMakeLists.txt:
-	Added .m files to CMakeLists.txt
-	[4d4263ce7856]
-
-2016-10-06  Richard Hacker  <ha@igh-essen.com>
-
-	* rtw/blocks/EtherCAT/ek1914.m, rtw/blocks/EtherCAT/el1904.m,
-	rtw/blocks/EtherCAT/el2904.m, rtw/blocks/etherlab_lib.mdl,
-	rtw/blocks/html/ek1914.html, rtw/blocks/html/el1904.html,
-	rtw/blocks/html/el2904.html:
-	EK1914, EL1904, EL2904
-	[1b4114a9a4b7]
-
-2016-10-05  Richard Hacker  <ha@igh-essen.com>
-
-	* rtw/blocks/EtherCAT/el3403.m, rtw/blocks/etherlab_lib.mdl,
-	rtw/blocks/html/el3403.html:
-	EL3403
-	[cfaf8ed432ea]
-
 2016-03-24  Richard Hacker  <lerichi@gmx.net>
 
 	* rtw/blocks/message.c:
@@ -556,6 +552,28 @@
 	Updated PDO's for EL4008,EL4022
 	[06e4124c497f]
 
+2016-10-07  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/blocks/EtherCAT/CMakeLists.txt:
+	Added .m files to CMakeLists.txt
+	[4d4263ce7856]
+
+2016-10-06  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/blocks/EtherCAT/ek1914.m, rtw/blocks/EtherCAT/el1904.m,
+	rtw/blocks/EtherCAT/el2904.m, rtw/blocks/etherlab_lib.mdl,
+	rtw/blocks/html/ek1914.html, rtw/blocks/html/el1904.html,
+	rtw/blocks/html/el2904.html:
+	EK1914, EL1904, EL2904
+	[1b4114a9a4b7]
+
+2016-10-05  Richard Hacker  <ha@igh-essen.com>
+
+	* rtw/blocks/EtherCAT/el3403.m, rtw/blocks/etherlab_lib.mdl,
+	rtw/blocks/html/el3403.html:
+	EL3403
+	[cfaf8ed432ea]
+
 2016-01-28  Richard Hacker  <lerichi@gmx.net>
 
 	* rtw/blocks/EtherCAT/EtherCATSlave.m, rtw/blocks/EtherCAT/ep2xxx.m,
@@ -567,6 +585,23 @@
 
 	* merge
 	[17f84fe9deb4]
+
+2016-01-15  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/src/hrt_main.c:
+	Moved daemon() call not to close required file descriptors
+	[3f763f05c79b]
+
+	* rtw/src/hrt_main.c:
+	Fine tuning of starting phase
+	[86c258e4df90]
+
+	* merge
+	[951812c0ce41]
+
+	* rtw/src/hrt_main.c:
+	Used wrong rtw/src/hrt_main.c during merge; now using dba54a94306c
+	[658b4829a79e]
 
 2016-01-21  Richard Hacker  <ha@igh-essen.com>
 
@@ -588,23 +623,6 @@
 	went unnoticed and caused a SEGV
 	[555e2b998e3f]
 
-2016-01-15  Richard Hacker  <lerichi@gmx.net>
-
-	* rtw/src/hrt_main.c:
-	Moved daemon() call not to close required file descriptors
-	[3f763f05c79b]
-
-	* rtw/src/hrt_main.c:
-	Fine tuning of starting phase
-	[86c258e4df90]
-
-	* merge
-	[951812c0ce41]
-
-	* rtw/src/hrt_main.c:
-	Used wrong rtw/src/hrt_main.c during merge; now using dba54a94306c
-	[658b4829a79e]
-
 2016-01-13  Richard Hacker  <lerichi@gmx.net>
 
 	* rtw/blocks/EtherCAT/CMakeLists.txt, rtw/blocks/EtherCAT/el1262.m,
@@ -620,16 +638,6 @@
 	hrt_main.c for PdServ2 and PdServ3
 	[dba54a94306c]
 
-2016-01-05  Florian Pose  <fp@igh-essen.com>
-
-	* rtw/src/hrt_main.c:
-	Fixed missing pdserv_get_parameters().
-	[8d31fa0c1f74]
-
-	* rtw/src/hrt_main.c:
-	Removed deprecated defines; fixed uninitialized variable.
-	[93ea72338644]
-
 2015-12-25  Richard Hacker  <lerichi@gmx.net>
 
 	* rtw/blocks/CMakeLists.txt, rtw/blocks/blockpath.m,
@@ -641,6 +649,18 @@
 	* rtw/src/hrt_main.c:
 	PdServ 3
 	[0a8faa1db1d0]
+
+2016-01-05  Florian Pose  <fp@igh-essen.com>
+
+	* rtw/src/hrt_main.c:
+	Fixed missing pdserv_get_parameters().
+	[8d31fa0c1f74]
+
+	* rtw/src/hrt_main.c:
+	Removed deprecated defines; fixed uninitialized variable.
+	[93ea72338644]
+
+2015-12-25  Richard Hacker  <lerichi@gmx.net>
 
 	* rtw/src/hrt_main.c:
 	Added timing phase (--start-phase -f); Reduce priorities for slower

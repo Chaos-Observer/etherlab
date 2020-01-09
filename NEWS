@@ -1,16 +1,21 @@
 $Id$
 
-Version 2.2.1:
--------------
 
-- Beckhoff ethercat slaves: bugfixes, new and updates
+Version 2.3.0   2020-01-09
+- Requires pdserv-3.2
+- See ReleaseNotes.txt for changes to Simulink models
+- New improved installation mechanism for Simulink. See README!
+- Simulink reference version 2017b
+- Global model parameters
+- Removed classic call interface to support Simulink after 2013
 - SDO values can now be any data type, including floats
-- new Util/Event block for event logging purposes.
-- global model parameters for >R2017
-- Removed "Classic call interface" requirement for >R2013
+  This affects EL3356
+- SDO may be specified as a cell array
+- added parsing utility for TwinCAT generated XML files
+- Incompatable change to PdCom clients is vector interpretation in certain
+  cases
 
 Version 2.1:
-------------
 
 - Added support for SDO read/write in source files
 - Complete redesign of most of the Beckhoff library blocks
@@ -24,8 +29,8 @@ Version 2.1:
 - Several bugfixes and improvements
 
 Version 2.0:
-------------
 
 - New EtherLab target for PREEMPT-RT using the pdserv library.
 - Support for complex data types.
 
+vim: tw=78

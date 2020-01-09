@@ -46,11 +46,11 @@ SET (CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS TRUE)
 # - Update ChangeLog (hg log --branch <branch> --style=changelog > ChangeLog)
 # - Update NEWS file
 # - commit
-# - make dist
+# - run build/release.sh
 # - add tag release-x.x.x
 #
 SET (MAJOR_VERSION 2)
-SET (MINOR_VERSION 2)
+SET (MINOR_VERSION 3)
 SET (PATCH_LEVEL 0)
 SET (VERSION ${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_LEVEL})
 
