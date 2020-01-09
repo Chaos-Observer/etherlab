@@ -61,36 +61,18 @@ INCLUDE (GNUInstallDirs)
 #    - TMF_ROOT:        path for ETHERLAB_DIR in TMF
 #    - INSTALL_PATH:    path relative to ETHERLAB_DIR in TMF where include/
 #                       and src/ are located
-IF (DEFINED PREFIX)
-    MESSAGE (WARNING
-        "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
-        "PREFIX is deprecated and will be removed in future\n"
-        "INSTALL PROCESS HAS CHANGED! See ChangeLog and README\n"
-        "You can continue using PREFIX, but it would be better to update\n"
-        "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n")
+IF (NOT DEFINED TARGETDIR)
+    SET (TARGETDIR ${PROJECT_NAME})
+ENDIF()
 
-    SET (RPATH "-Wl,-rpath=$(ETHERLAB_DIR)/$(PLATFORM_LIBDIR)")
-
-    SET (TARGETDIR "rtw")
-    SET (INSTALL_PATH "${TARGETDIR}")
-    SET (ETHERLAB_DIR "${PREFIX}/${TARGETDIR}")
-    SET (TMF_ROOT "${PREFIX}")
-
-ELSE ()
-
-    IF (NOT DEFINED TARGETDIR)
-        SET (TARGETDIR ${PROJECT_NAME})
-    ENDIF()
-
-    SET (INSTALL_PATH "${CMAKE_INSTALL_DATADIR}/${TARGETDIR}")
-    SET (ETHERLAB_DIR "${CMAKE_INSTALL_FULL_DATADIR}/${TARGETDIR}")
-    SET (TMF_ROOT "${CMAKE_INSTALL_PREFIX}")
-
-ENDIF ()
+SET (INSTALL_PATH "${CMAKE_INSTALL_DATADIR}/${TARGETDIR}")
+SET (ETHERLAB_DIR "${CMAKE_INSTALL_FULL_DATADIR}/${TARGETDIR}")
+SET (TMF_ROOT "${CMAKE_INSTALL_PREFIX}")
 
 # Make sure that the project options are remembered
 SET (TARGETDIR "${TARGETDIR}" CACHE PATH
-    "Subdirectory within ${TARGET_ROOT} as install root (default: ${PROJECT_NAME})" FORCE)
+    "Subdirectory within ${TARGET_ROOT} as install root (default: ${PROJECT_NAME})"
+    FORCE)
 
 # Search for mercurial, used to add ID information to the library
 LIST (APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules/")
@@ -113,40 +95,12 @@ INSTALL (DIRECTORY rtw/
     PATTERN "*.in" EXCLUDE)
 INSTALL (DIRECTORY ${CMAKE_BINARY_DIR}/rtw/
     DESTINATION "${ETHERLAB_DIR}")
-INSTALL (FILES
-    ${CMAKE_SOURCE_DIR}/README
-    ${CMAKE_SOURCE_DIR}/ReleaseNotes.txt
-    DESTINATION "${ETHERLAB_DIR}")
 
 CONFIGURE_FILE("rtw/etherlab/Contents.m.in"
     "${CMAKE_CURRENT_BINARY_DIR}/rtw/etherlab/Contents.m")
 CONFIGURE_FILE("rtw/etherlab_hrt.tmf.in"
     "${CMAKE_CURRENT_BINARY_DIR}/rtw/etherlab_hrt.tmf")
-
-SET (CPACK_PACKAGE_DESCRIPTION_SUMMARY
-    "Simulink Coder target using pdserv library")
-SET (CPACK_PACKAGE_VENDOR "Richard Hacker")
-SET (CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/README")
-SET (CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/COPYING")
-SET (CPACK_PACKAGE_VERSION_MAJOR ${MAJOR_VERSION})
-SET (CPACK_PACKAGE_VERSION_MINOR ${MINOR_VERSION})
-SET (CPACK_PACKAGE_VERSION_PATCH ${PATCH_LEVEL})
-SET (CPACK_PACKAGE_INSTALL_DIRECTORY
-    "CMake ${CMake_VERSION_MAJOR}.${CMake_VERSION_MINOR}")
-SET (CPACK_SOURCE_GENERATOR "TBZ2")
-SET (CPACK_SOURCE_PACKAGE_FILE_NAME
-      "${PROJECT_NAME}-${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
-SET (CPACK_GENERATOR "TGZ")
-SET (CPACK_GENERATOR "DEB")
-SET (CPACK_DEBIAN_PACKAGE_MAINTAINER "Richard Hacker") #required
-LIST (APPEND CPACK_SOURCE_IGNORE_FILES
-    "~$"
-    "/build.*"
-    "\\\\.sw.$"
-    "\\\\.orig$"
-    "/\\\\.hg"
+CONFIGURE_FILE (
+    "${PROJECT_SOURCE_DIR}/scripts/release.sh.in"
+    "${PROJECT_BINARY_DIR}/release.sh"
     )
-
-INCLUDE (CPack)
-ADD_CUSTOM_TARGET (dist COMMAND ${CMAKE_MAKE_PROGRAM} package_source)
-

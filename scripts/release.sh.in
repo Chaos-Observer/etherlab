@@ -1,0 +1,12 @@
+#!/bin/bash
+
+count=$(hg st -u | wc -l)
+if [ $count -ne "0" ]; then
+    echo "This is not a clean repo; exiting..."
+    exit 1
+fi
+
+FILE=@PROJECT_NAME@-@VERSION@.tbz2
+hg archive $FILE
+
+echo "Created archive $FILE"
