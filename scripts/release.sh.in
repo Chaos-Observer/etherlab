@@ -1,12 +1,11 @@
 #!/bin/bash
 
-count=$(hg st -u | wc -l)
-if [ $count -ne "0" ]; then
-    echo "This is not a clean repo; exiting..."
+if [ $(hg st | wc -l) -ne 0 -a "$1" != "--force" ]; then
+    echo "This is not a clean repo (use 'hg purge (--all)' to clean); exiting..."
     exit 1
 fi
 
 FILE=@PROJECT_NAME@-@VERSION@.tbz2
-hg archive $FILE
+hg archive -X "@PROJECT_SOURCE_DIR@/.hg*" -X "@PROJECT_SOURCE_DIR@/scripts" $FILE
 
 echo "Created archive $FILE"

@@ -100,7 +100,12 @@ CONFIGURE_FILE("rtw/etherlab/Contents.m.in"
     "${CMAKE_CURRENT_BINARY_DIR}/rtw/etherlab/Contents.m")
 CONFIGURE_FILE("rtw/etherlab_hrt.tmf.in"
     "${CMAKE_CURRENT_BINARY_DIR}/rtw/etherlab_hrt.tmf")
-CONFIGURE_FILE (
-    "${PROJECT_SOURCE_DIR}/scripts/release.sh.in"
-    "${PROJECT_BINARY_DIR}/release.sh"
-    )
+
+# Custom release make target
+IF (EXISTS "${PROJECT_SOURCE_DIR}/scripts")
+    CONFIGURE_FILE (
+        "${PROJECT_SOURCE_DIR}/scripts/release.sh.in"
+        "${PROJECT_BINARY_DIR}/release.sh"
+        )
+    ADD_CUSTOM_TARGET (dist COMMAND sh ./release.sh)
+ENDIF ()
