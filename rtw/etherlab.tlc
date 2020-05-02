@@ -48,33 +48,22 @@
   rtwoptions(1).closecallback = '';
   rtwoptions(1).makevariable  = '';
 
-  rtwoptions(2).prompt         = 'BIO Buffer time';
-  rtwoptions(2).type           = 'Edit';
-  rtwoptions(2).default        = '2';
-  rtwoptions(2).tlcvariable    = 'BufferTime';
-  rtwoptions(2).makevariable   = 'BUFFER_TIME';
+  rtwoptions(2).prompt       = 'Maximum Task overrun count';
+  rtwoptions(2).type         = 'Edit';
+  rtwoptions(2).default      = '1';
+  rtwoptions(2).tlcvariable  = 'OverrunCount';
+  rtwoptions(2).makevariable = 'OVERRUNMAX';
   rtwoptions(2).modelReferenceParameterCheck = 'off';
-  rtwoptions(2).tooltip        = ...
-    ['Specify how long in seconds Block IO signals must be',sprintf('\n'), ...
-     'saved in the realtime process when the user buddy is',sprintf('\n'), ...
-     'prevented from collecting these'];
-
-  rtwoptions(3).prompt       = 'Maximum Task overrun count';
-  rtwoptions(3).type         = 'Edit';
-  rtwoptions(3).default      = '1';
-  rtwoptions(3).tlcvariable  = 'OverrunCount';
-  rtwoptions(3).makevariable = 'OVERRUNMAX';
-  rtwoptions(3).modelReferenceParameterCheck = 'off';
-  rtwoptions(3).tooltip      = ...
+  rtwoptions(2).tooltip      = ...
     ['Exit realtime model if task overruns exceeds this amount'];
 
-  rtwoptions(4).prompt       = 'Stack Size prefault';
-  rtwoptions(4).type         = 'Edit';
-  rtwoptions(4).default      = '2000';
-  rtwoptions(4).tlcvariable  = 'StackSize';
-  rtwoptions(4).makevariable = 'STACKSIZE';
-  rtwoptions(4).modelReferenceParameterCheck = 'off';
-  rtwoptions(4).tooltip      = ...
+  rtwoptions(3).prompt       = 'Stack Size prefault';
+  rtwoptions(3).type         = 'Edit';
+  rtwoptions(3).default      = '2000';
+  rtwoptions(3).tlcvariable  = 'StackSize';
+  rtwoptions(3).makevariable = 'STACKSIZE';
+  rtwoptions(3).modelReferenceParameterCheck = 'off';
+  rtwoptions(3).tooltip      = ...
     ['This is the stack size reserved for the real time task.', ...
      sprintf('\n'), ...
      '2k is usually enough, but check the kernel logs when the', ...
@@ -83,52 +72,54 @@
      sprintf('\n'), ...
      'Keep ~500 bytes free.' ];
 
-  rtwoptions(5).prompt       = 'Model parameter path prefix';
-  rtwoptions(5).type         = 'Edit';
-  rtwoptions(5).default      = 'ModelParameter';
-  rtwoptions(5).tlcvariable  = 'ParameterPrefix';
-  rtwoptions(5).makevariable = 'PARAMETER_PREFIX';
-  rtwoptions(5).modelReferenceParameterCheck = 'off';
-  rtwoptions(5).tooltip      = ...
+  rtwoptions(4).prompt       = 'Model parameter path prefix';
+  rtwoptions(4).type         = 'Edit';
+  rtwoptions(4).default      = 'ModelParameter';
+  rtwoptions(4).tlcvariable  = 'ParameterPrefix';
+  rtwoptions(4).makevariable = 'PARAMETER_PREFIX';
+  rtwoptions(4).modelReferenceParameterCheck = 'off';
+  rtwoptions(4).tooltip      = ...
     ['This prefix is prepended to global model parameters', ...
      sprintf('\n'), ...
      'defined in the model explorer.'];
 
-  rtwoptions(6).prompt       = 'Version script';
-  rtwoptions(6).type         = 'Edit';
-  rtwoptions(6).default      = 'ModelVersion';
-  rtwoptions(6).tlcvariable  = 'VersionScript';
-  rtwoptions(6).modelReferenceParameterCheck = 'off';
-  rtwoptions(6).tooltip      = ...
+  rtwoptions(5).prompt       = 'Version script';
+  rtwoptions(5).type         = 'Edit';
+  rtwoptions(5).default      = 'ModelVersion';
+  rtwoptions(5).tlcvariable  = 'VersionScript';
+  rtwoptions(5).modelReferenceParameterCheck = 'off';
+  rtwoptions(5).tooltip      = ...
     ['This function script is executed during TLC to generate a version string.', ...
      sprintf('\n'), ...
      'This must be a valid matlab function returning a string.'];
 
   if verLessThan('simulink', '8.1')     % 2013a
+    % Define variables for older versions of Simulink to suppress warnings
+
+    rtwoptions(6).type = 'NonUI';
+    rtwoptions(6).makevariable = 'MAT_FILE';
+
     rtwoptions(7).type = 'NonUI';
-    rtwoptions(7).makevariable = 'MAT_FILE';
+    rtwoptions(7).makevariable = 'DEFINES_CUSTOM';
 
     rtwoptions(8).type = 'NonUI';
-    rtwoptions(8).makevariable = 'DEFINES_CUSTOM';
+    rtwoptions(8).makevariable = 'SYSTEM_LIBS';
 
     rtwoptions(9).type = 'NonUI';
-    rtwoptions(9).makevariable = 'SYSTEM_LIBS';
+    rtwoptions(9).makevariable = 'CODE_INTERFACE_PACKAGING';
 
     rtwoptions(10).type = 'NonUI';
-    rtwoptions(10).makevariable = 'CODE_INTERFACE_PACKAGING';
+    rtwoptions(10).default      = '1';
+    rtwoptions(10).makevariable = 'CLASSIC_INTERFACE';
 
     rtwoptions(11).type = 'NonUI';
-    rtwoptions(11).default      = '1';
-    rtwoptions(11).makevariable = 'CLASSIC_INTERFACE';
+    rtwoptions(11).makevariable = 'GENERATE_ALLOC_FCN';
 
     rtwoptions(12).type = 'NonUI';
-    rtwoptions(12).makevariable = 'GENERATE_ALLOC_FCN';
+    rtwoptions(12).makevariable = 'COMBINE_OUTPUT_UPDATE_FCNS';
 
     rtwoptions(13).type = 'NonUI';
-    rtwoptions(13).makevariable = 'COMBINE_OUTPUT_UPDATE_FCNS';
-
-    rtwoptions(14).type = 'NonUI';
-    rtwoptions(14).makevariable = 'MULTI_INSTANCE_CODE';
+    rtwoptions(13).makevariable = 'MULTI_INSTANCE_CODE';
   end
 
   %----------------------------------------%
