@@ -1,6 +1,9 @@
 $Id$
 
 
+Version 2.3.1   2020-05-02
+- Update for Matlab starting with 2018b
+
 Version 2.3.0   2020-01-09
 - Requires pdserv-3.2
 - See ReleaseNotes.txt for changes to Simulink models

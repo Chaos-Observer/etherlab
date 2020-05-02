@@ -1,8 +1,40 @@
+2020-05-03  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/etherlab_hrt.tmf.in:
+	Removed redundant lines
+	[c9c4d3fc05a4] [tip]
+
+2020-05-02  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/etherlab.tlc, rtw/etherlab_hrt.tmf.in:
+	Removed redundant BUFFER_TIME parameter
+	[19a8b645476e]
+
+	* rtw/blocks/EtherCAT/ecrt_support.c, rtw/etherlab_hrt.tmf.in,
+	rtw/src/ecrt_support.c:
+	Added support for Matlab 2018b and later
+	[e3c455597f64]
+
+2020-04-30  Richard Hacker  <lerichi@gmx.net>
+
+	* CMakeLists.txt, scripts/release.sh.in:
+	Improved release script, added --force and exclude unwanted files
+	from archive
+	[ce324d2986ae]
+
 2020-01-09  Richard Hacker  <lerichi@gmx.net>
+
+	* .hgtags:
+	Added tag release-2.3.0 for changeset b2095a2a0d92
+	[4d38cecf1184]
+
+	* CMakeLists.txt, ChangeLog, NEWS:
+	Release 2.3.0
+	[b2095a2a0d92] [release-2.3.0]
 
 	* CMakeLists.txt, scripts/release.sh.in:
 	Removed CPack; script file for release; Removed old install PREFIX
-	[aaabc28e4d7d] [tip]
+	[aaabc28e4d7d]
 
 2019-10-04  Richard Hacker  <lerichi@gmx.net>
 
