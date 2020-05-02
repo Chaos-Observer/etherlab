@@ -129,7 +129,6 @@ PARAMETER_PREFIX = |>PARAMETER_PREFIX<|
 #--------------------------- Model and reference models -----------------------
 MODELLIB                  = |>MODELLIB<|
 MODELREF_LINK_LIBS        = |>MODELREF_LINK_LIBS<|
-MODELREF_INC_PATH         = |>START_MDLREFINC_EXPAND_INCLUDES<|-I|>MODELREF_INC_PATH<| |>END_MDLREFINC_EXPAND_INCLUDES<|
 RELATIVE_PATH_TO_ANCHOR   = |>RELATIVE_PATH_TO_ANCHOR<|
 # NONE: standalone, SIM: modelref sim, RTW: modelref coder target
 MODELREF_TARGET_TYPE       = |>MODELREF_TARGET_TYPE<|
@@ -210,15 +209,6 @@ CPPFLAGS = $(CPP_ANSI_OPTS) $(DBG_FLAG) $(CPP_OPTS) $(CC_OPTS) $(DEFINES_CUSTOM)
 
 SYSTEM_LIBS += -L$(ETHERLAB_DIR)/$(PLATFORM_LIBDIR) @RPATH@ -lm -lpdserv -ldl -lrt -pthread
 
-ifneq ($(findstring rtipc.c,$(S_FUNCTIONS)),)
-    SYSTEM_LIBS += -lrtipc
-    S_FUNCTIONS := $(filter-out rtipc.c,$(S_FUNCTIONS))
-endif
-
-ifneq ($(findstring ecrt_support.c,$(S_FUNCTIONS)),)
-    SYSTEM_LIBS += -lethercat
-endif
-
 LIBS =
 |>START_PRECOMP_LIBRARIES<|
 ifeq ($(OPT_OPTS),$(DEFAULT_OPT_OPTS))
@@ -239,6 +229,16 @@ LOCAL_USER_OBJS = $(notdir $(USER_OBJS))
 
 
 SRCS = $(MODULES) $(S_FUNCTIONS)
+
+ifneq ($(findstring rtipc.c,$(SRCS)),)
+    SYSTEM_LIBS += -lrtipc
+    SRCS := $(filter-out rtipc.c,$(SRCS))
+endif
+
+ifneq ($(findstring ecrt_support.c,$(SRCS)),)
+    SYSTEM_LIBS += -lethercat
+endif
+
 
 ifeq ($(MODELREF_TARGET_TYPE), NONE)
     PRODUCT            = $(RELATIVE_PATH_TO_ANCHOR)/$(MODEL)
@@ -332,7 +332,6 @@ endif
 
 |>START_EXPAND_RULES<|%.o : |>EXPAND_DIR_NAME<|/%.c
 	$(cc) -c $(CFLAGS) "$<"
-
 |>END_EXPAND_RULES<|
 
 |>START_EXPAND_RULES<|%.o : |>EXPAND_DIR_NAME<|/%.cpp
