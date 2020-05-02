@@ -245,7 +245,6 @@ ifeq ($(MODELREF_TARGET_TYPE), NONE)
     BIN_SETTING        = $(LD) $(LDFLAGS) -o $(PRODUCT)
     BUILD_PRODUCT_TYPE = "executable"
     ifeq ($(CLASSIC_INTERFACE), 1)
-       MAIN_SRC  = hrt_main_classic.c
        MAIN_SRC  = hrt_main.c
        OTHER_SRC = rt_sim.c
     else
