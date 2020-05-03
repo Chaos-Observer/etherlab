@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 from xml.dom.minidom import parse, getDOMImplementation
 import os
 from pprint import PrettyPrinter
