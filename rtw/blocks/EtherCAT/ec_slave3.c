@@ -1144,7 +1144,8 @@ get_slave_sdo_cell(struct ecat_slave *slave, const mxArray* array,
                     sdo_config->byte_array[j] = *pval++;
             } else if (mxIsChar(valueCell)) {
                 /* String */
-                if (mxGetString(valueCell, sdo_config->byte_array, nelem+1)) {
+                if (mxGetString(valueCell,
+                            (char_T*)sdo_config->byte_array, nelem+1)) {
                     pr_error(slave, ctxt, NULL, __LINE__,
                             "SDO string is corrupt");
                     return -1;

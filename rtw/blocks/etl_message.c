@@ -149,10 +149,8 @@ static void mdlSetWorkWidths(SimStruct *S)
 {
     ssParamRec p; /* Initialize an ssParamRec structure */
     int_T dim;
-    real_T *pr;
     boolean_T *enable;
-    int_T i, dlg;
-    uint32_T *confirm;
+    int_T i;
 
     if (!ssSetNumRunTimeParams(S, 1 + (mxGetNumberOfElements(CONFIRM) > 0)))
         return;

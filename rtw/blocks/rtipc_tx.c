@@ -87,7 +87,6 @@ static void mdlSetWorkWidths(SimStruct *S)
 {
     ssParamRec rtp;
     int_T dimensions[] = {1};
-    uint8_T value[] = {0};
 
     if (!ssGetNumIWork(S))
         return;
