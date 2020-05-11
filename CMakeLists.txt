@@ -83,7 +83,7 @@ ENDIF ()
 
 IF (NOT CMAKE_VERSION VERSION_LESS "3.0")
     # Matlab requires this format
-    STRING (TIMESTAMP DATE "%d-%m-%Y")
+    STRING (TIMESTAMP DATE "%d-%b-%Y")
 ENDIF()
 
 INSTALL (DIRECTORY rtw/
@@ -96,8 +96,8 @@ INSTALL (DIRECTORY rtw/
 INSTALL (DIRECTORY ${CMAKE_BINARY_DIR}/rtw/
     DESTINATION "${ETHERLAB_DIR}")
 
-CONFIGURE_FILE("rtw/etherlab/Contents.m.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/rtw/etherlab/Contents.m")
+CONFIGURE_FILE("rtw/Contents.m.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/rtw/Contents.m")
 CONFIGURE_FILE("rtw/etherlab_hrt.tmf.in"
     "${CMAKE_CURRENT_BINARY_DIR}/rtw/etherlab_hrt.tmf")
 
