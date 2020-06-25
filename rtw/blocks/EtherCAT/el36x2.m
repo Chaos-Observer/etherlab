@@ -127,11 +127,11 @@ methods
         end
 
         % Slave configuration
-        rv.sdo = {hex2dec('8000'), hex2dec('15'), 32, filter};
+        rv.SlaveConfig.sdo = {hex2dec('8000'), hex2dec('15'), 32, filter};
         if obj.slave{4}
-            rv.sdo(end+1,:) = {hex2dec('8000'), hex2dec('19'), 32, range(1)};
+            rv.SlaveConfig.sdo(end+1,:) = {hex2dec('8000'), hex2dec('19'), 32, range(1)};
             if ~one_ch
-                rv.sdo(end+1,:) = {hex2dec('8010'), hex2dec('19'), 32, range(2)};
+                rv.SlaveConfig.sdo(end+1,:) = {hex2dec('8010'), hex2dec('19'), 32, range(2)};
             end
         end
     end
