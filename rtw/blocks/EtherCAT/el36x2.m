@@ -127,11 +127,12 @@ methods
         end
 
         % Slave configuration
-        rv.SlaveConfig.sdo = {hex2dec('8000'), hex2dec('15'), 32, filter};
+        % Documentation is incorrect. The SDO is uint16 and not uint32!!
+        rv.SlaveConfig.sdo = {hex2dec('8000'), hex2dec('15'), 16, filter};
         if obj.slave{4}
-            rv.SlaveConfig.sdo(end+1,:) = {hex2dec('8000'), hex2dec('19'), 32, range(1)};
+            rv.SlaveConfig.sdo(end+1,:) = {hex2dec('8000'), hex2dec('19'), 16, range(1)};
             if ~one_ch
-                rv.SlaveConfig.sdo(end+1,:) = {hex2dec('8010'), hex2dec('19'), 32, range(2)};
+                rv.SlaveConfig.sdo(end+1,:) = {hex2dec('8010'), hex2dec('19'), 16, range(2)};
             end
         end
     end
