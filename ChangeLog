@@ -1,8 +1,44 @@
+2020-07-17  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/blocks/EtherCAT/el36x2.m:
+	Fixed another bug in el36x2 due to incorrect documentation
+	[935c049591bb] [tip]
+
+2020-06-25  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/blocks/EtherCAT/el36x2.m:
+	Fixed bug in el36x2; SDO's were not configured
+	[b41880eabf88]
+
+2020-05-11  Richard Hacker  <lerichi@gmx.net>
+
+	* CMakeLists.txt, rtw/Contents.m.in, rtw/etherlab/Contents.m.in,
+	rtw/install.sh:
+	Cleaned up version information in Contents.m
+	[d1f34953a485]
+
+	* rtw/blocks/EtherCAT/ec_slave3.c, rtw/blocks/etl_message.c,
+	rtw/blocks/rtipc_rx.c, rtw/blocks/rtipc_tx.c:
+	Fixed compile warnings in mex files
+	[aef908a528ba]
+
 2020-05-03  Richard Hacker  <lerichi@gmx.net>
+
+	* bin/parse-ethercat-xml-export.py, rtw/bin/gen_payload.py:
+	Fixed shebang in python scripts
+	[18117b2e17d0]
+
+	* .hgtags:
+	Added tag release-2.3.1 for changeset 692b6a3943e7
+	[916cb0fe24ef]
+
+	* CMakeLists.txt, ChangeLog, NEWS, README:
+	Release 2.3.1
+	[692b6a3943e7] [release-2.3.1]
 
 	* rtw/etherlab_hrt.tmf.in:
 	Removed redundant lines
-	[c9c4d3fc05a4] [tip]
+	[c9c4d3fc05a4]
 
 2020-05-02  Richard Hacker  <lerichi@gmx.net>
 

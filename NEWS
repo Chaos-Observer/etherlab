@@ -1,6 +1,9 @@
 $Id$
 
 
+Version 2.3.2   2021-01-06
+- Fixed bugs in el36x2
+
 Version 2.3.1   2020-05-02
 - Update for Matlab starting with 2018b
 
