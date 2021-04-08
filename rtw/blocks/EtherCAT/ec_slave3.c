@@ -1740,11 +1740,14 @@ get_port_parameter(struct ecat_slave *slave, const char_T *p_ctxt,
     /* Debugging */
     pr_debug(slave, NULL, "", 3, "%s parameter: '%s'=", name,
             param->ptr->name ?  param->ptr->name : "(const)");
-    for (i = 0;
-            i < port_width && (param->element_idx < 0 || !i);
-            ++i)
+    if (param->element_idx < 0) {
+        for (i = 0; i < param->ptr->count; ++i)
+            pr_debug(slave, NULL, NULL, 0, "%f,",
+                    param->ptr->value[i]);
+    } else {
         pr_debug(slave, NULL, NULL, 0, "%f,",
-                param->ptr->value[i + param->element_idx]);
+                param->ptr->value[param->element_idx]);
+    }
     pr_debug(slave, NULL, NULL, 0, "\n");
 
     return 0;
