@@ -1,8 +1,24 @@
+2021-04-08  Richard Hacker  <lerichi@gmx.net>
+
+	* rtw/blocks/EtherCAT/ec_slave3.c:
+	Fixed debug bug that caused Simulink to crash on occations
+	[3efbf88ceab5] [tip]
+
+2021-01-06  Richard Hacker  <lerichi@gmx.net>
+
+	* .hgtags:
+	Added tag release-2.3.2 for changeset 354219ec7b53
+	[fca57e0dbcc5]
+
+	* CMakeLists.txt, ChangeLog, NEWS:
+	Release 2.3.2
+	[354219ec7b53] [release-2.3.2]
+
 2020-07-17  Richard Hacker  <lerichi@gmx.net>
 
 	* rtw/blocks/EtherCAT/el36x2.m:
 	Fixed another bug in el36x2 due to incorrect documentation
-	[935c049591bb] [tip]
+	[935c049591bb]
 
 2020-06-25  Richard Hacker  <lerichi@gmx.net>
 
