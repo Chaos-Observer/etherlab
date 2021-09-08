@@ -139,8 +139,7 @@ endif
 
 #--------------------------- Tool Specifications -------------------------------
 
-ETHERLAB_DIR = @TMF_ROOT@
-PLATFORM_LIBDIR = @CMAKE_INSTALL_LIBDIR@
+ETHERLAB_DIR = @ETHERLAB_DIR@
 
 WARN_ON_GLNX = 1
 include $(MATLAB_ROOT)/rtw/c/tools/unixtools.mk
@@ -164,7 +163,7 @@ endif
 
 INCLUDES = -I. -I$(RELATIVE_PATH_TO_ANCHOR) $(MATLAB_INCLUDES) $(ADD_INCLUDES) $(USER_INCLUDES) \
 	$(INSTRUMENT_INCLUDES)  $(MODELREF_INC_PATH) $(SHARED_INCLUDES) \
-        -I$(ETHERLAB_DIR)/@INSTALL_PATH@/include -I$(ETHERLAB_DIR)/include
+        -I$(ETHERLAB_DIR)/include -I@CMAKE_INSTALL_FULL_INCLUDEDIR@
 RTM_CC_OPTS = -DUSE_RTMODEL
 
 #-------------------------------- C Flags --------------------------------------
@@ -206,7 +205,7 @@ CFLAGS   = $(DBG_FLAG) $(CC_OPTS) $(DEFINES_CUSTOM) $(CPP_REQ_DEFINES) $(INCLUDE
 CPPFLAGS = $(CPP_ANSI_OPTS) $(DBG_FLAG) $(CPP_OPTS) $(CC_OPTS) $(DEFINES_CUSTOM) $(CPP_REQ_DEFINES) $(INCLUDES) $(EXTRA_CFLAGS)
 #-------------------------- Additional Libraries ------------------------------
 
-SYSTEM_LIBS += -L$(ETHERLAB_DIR)/$(PLATFORM_LIBDIR) @RPATH@ -lm -lpdserv -ldl -lrt -pthread
+SYSTEM_LIBS += -L@CMAKE_INSTALL_FULL_LIBDIR@ -lm -lpdserv -ldl -lrt -pthread
 
 LIBS =
 |>START_PRECOMP_LIBRARIES<|
@@ -325,7 +324,14 @@ endif
 %.o : $(RELATIVE_PATH_TO_ANCHOR)/%.cpp
 	$(cpp) -c $(CPPFLAGS) $(GCC_WALL_FLAG_MAX) "$<"
 
-%.o : $(ETHERLAB_DIR)/@INSTALL_PATH@/src/%.c
+# Find etherlab sources in the original location, not in the files copied
+# to Simulink. They're just there so that Simulink does not complain.
+# This enables separate code generation and target compilation steps.
+%.o : $(ETHERLAB_DIR)/src/%.c
+	$(cc) -c $(CFLAGS) $(GCC_WALL_FLAG) "$<"
+%.o : $(ETHERLAB_DIR)/blocks/EtherCAT/%.c
+	$(cc) -c $(CFLAGS) $(GCC_WALL_FLAG) "$<"
+%.o : $(ETHERLAB_DIR)/blocks/%.c
 	$(cc) -c $(CFLAGS) $(GCC_WALL_FLAG) "$<"
 
 |>START_EXPAND_RULES<|%.o : |>EXPAND_DIR_NAME<|/%.c
