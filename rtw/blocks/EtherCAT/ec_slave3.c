@@ -1893,16 +1893,6 @@ get_port_pdo_spec (struct ecat_slave *slave, const char_T *p_ctxt,
             return -1;
         }
 
-        if (port->pdo[j].entry->bitlen % port->data_type->mant_bits) {
-            snprintf(element, sizeof(element), "pdo(%i,3)", j+1);
-            pr_error(slave, p_ctxt, element, __LINE__,
-                    "Data type specified for port (%s) does not "
-                    "match the pdo's bit length (%u)",
-                    port->data_type->name,
-                    port->pdo[j].entry->bitlen);
-            return -1;
-        }
-
         port->pdo[j].element_idx = val[j + 3*rows];
         if (port->data_type->mant_bits * (port->pdo[j].element_idx + 1)
                 > port->pdo[j].entry->bitlen) {
