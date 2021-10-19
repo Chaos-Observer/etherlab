@@ -58,7 +58,6 @@ INCLUDE (GNUInstallDirs)
 
 # In this section, define
 #    - ETHERLAB_DIR:    Directory where all the files are copied
-#    - TMF_ROOT:        path for ETHERLAB_DIR in TMF
 #    - INSTALL_PATH:    path relative to ETHERLAB_DIR in TMF where include/
 #                       and src/ are located
 IF (NOT DEFINED TARGETDIR)
@@ -67,7 +66,6 @@ ENDIF()
 
 SET (INSTALL_PATH "${CMAKE_INSTALL_DATADIR}/${TARGETDIR}")
 SET (ETHERLAB_DIR "${CMAKE_INSTALL_FULL_DATADIR}/${TARGETDIR}")
-SET (TMF_ROOT "${CMAKE_INSTALL_PREFIX}")
 
 # Make sure that the project options are remembered
 SET (TARGETDIR "${TARGETDIR}" CACHE PATH
