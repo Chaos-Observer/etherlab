@@ -1466,6 +1466,12 @@ int main(int argc, char **argv)
         goto out;
     }
 
+    /* Initialize model */
+    if ((err = init_application())) {
+        pdserv_exit(pdserv);
+        goto out;
+    }
+
     /* Prepare process-data interface, create threads, etc. */
     pdserv_prepare(pdserv);
 
@@ -1492,12 +1498,6 @@ int main(int argc, char **argv)
 
     /* Provoke the first stack fault before cyclic operation. */
     stack_prefault();
-
-    /* Initialize model */
-    if ((err = init_application())) {
-        pdserv_exit(pdserv);
-        goto out;
-    }
 
     if (pidPath[0])
         create_pid_file();
