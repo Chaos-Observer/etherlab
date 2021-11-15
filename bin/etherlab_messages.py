@@ -1,12 +1,10 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 #-----------------------------------------------------------------------------
 #
 # $Id$
 #
 #-----------------------------------------------------------------------------
-
-from __future__ import print_function
 
 from lxml import etree
 import codecs
@@ -58,7 +56,8 @@ class EtherLabMessages:
             if os.path.isfile(filename):
                 raise
 
-            ans = raw_input("{0} does not exist. Create it? ".format(filename))
+            #ans = raw_input("{0} does not exist. Create it? ".format(filename))
+            ans = 'y'
             if ans.lower() == 'y':
                 self.__filename = filename
             else:
@@ -83,8 +82,11 @@ class EtherLabMessages:
 
         leaves = set(EtherLabMessages.__findLeaves(self.__root))
 
-        for line in open(filename).xreadlines():
-            path, level, width = line.split('\t')
+        for line in open(filename).readlines():
+            elements = line.strip().split('\t')
+            if len(elements) < 3:
+                elements.append('1')
+            path, level, width = elements #line.split('\t')
             path = path.strip('/')
 
             width = int(width)
@@ -457,7 +459,7 @@ class ExportPlain:
                     for x in (messages.getDescription(group, lang) or "").split('\n')]
                 if len(x)])
 
-        for i in xrange(width):
+        for i in range(width):
             msgElem = etree.SubElement(self.__root, 'Message')
             msgElem.set('type', group.get('type'))
             msgElem.set('variable', fmt.format(path, i))
@@ -536,7 +538,7 @@ end
         textNode = messages.getText(group, self.lang)
         text = []
 
-        for i in xrange(width):
+        for i in range(width):
             s = messages.expand(textNode, self.lang, i)
             s = " ".join([s.strip() for s in s.split('\n')])
             text.append("'{}'".format(s.strip()))
@@ -581,7 +583,7 @@ class ExportLaTeX:
                 array = messages.findMap(group, n)
                 message += ('\\textit{'
                         + ', '.join([messages.getMapText(array, self.lang, i)
-                            for i in xrange(width)])
+                            for i in range(width)])
                         + '}')
             elif n.tag == 'Index':
                 # Replace <Index> with a range first...last
@@ -629,7 +631,7 @@ class ExportQtHeader:
         else:
             fmt = u'QT_TRANSLATE_NOOP("{0}","{1}")\n'
 
-        for i in xrange(width):
+        for i in range(width):
             self.file.write(fmt.format(self.namespace, path, i))
 
 ######################################################################
@@ -703,7 +705,7 @@ class TS:
         else:
             fmt = '{0}'
 
-        for i in xrange(width):
+        for i in range(width):
             p = fmt.format(path, i)
 
             if self.__message.has_key(p):
