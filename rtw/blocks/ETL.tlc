@@ -65,7 +65,7 @@
     const char __attribute__((unused)) *%<ETL.ErrStr>;
 
     /* Zero terminated list of sample times for EtherCAT */
-    unsigned int etl_st[] = {
+    unsigned int __attribute__((unused)) etl_st[] = {
     %foreach tid = ETL.NumSt
         %assign Ts = LibGetClockTickStepSize(tid + LibGetTID01EQ())
         %<CAST("Unsigned", Ts*1000000000 + 0.5)>,

@@ -1,11 +1,12 @@
 #!/bin/bash
 
-if [ $(hg st | wc -l) -ne 0 -a "$1" != "--force" ]; then
-    echo "This is not a clean repo (use 'hg purge (--all)' to clean); exiting..."
+if [ "$1" != "--force" -a $(git status --porcelain | grep '^ M' | wc -l) -ne 0 ]; then
+    echo "This is not a clean repo (use --force); exiting..."
     exit 1
 fi
 
-FILE=@PROJECT_NAME@-@VERSION@.tbz2
-hg archive -X "@PROJECT_SOURCE_DIR@/.hg*" -X "@PROJECT_SOURCE_DIR@/scripts" $FILE
+NAME=@PROJECT_NAME@-@VERSION@
+FILE=$(dirname $0)/$NAME.tar.gz
+git archive --format=tar.gz --prefix=$NAME/ --worktree-attributes -o $FILE HEAD
 
 echo "Created archive $FILE"
