@@ -1,7 +1,12 @@
 $Id$
 
+Version 2.3.4   2021-11-18
+- Move to gitlab
+- Ignore PDO data type checking on ports
+- Bugfix: Move init_application() before pdserv_prepare(). Required for pdserv_event*()
+- Find .c and .h files in ETHERLAB_DIR during compile
 
-Version 2.3.2   2021-04-08
+Version 2.3.3   2021-04-08
 - Fixed bugs in ec_slave3.c
 
 Version 2.3.2   2021-01-06

@@ -43,15 +43,15 @@ SET (CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS TRUE)
 # Release Instructions
 #
 # - Update version numbers below
-# - Update ChangeLog (hg log --branch <branch> --style=changelog > ChangeLog)
+# - Update ChangeLog (git log --name-only > ChangeLog)
 # - Update NEWS file
 # - commit
 # - run build/release.sh
-# - add tag release-x.x.x
+# - add tag "major.minor.patch"
 #
 SET (MAJOR_VERSION 2)
 SET (MINOR_VERSION 3)
-SET (PATCH_LEVEL 3)
+SET (PATCH_LEVEL 4)
 SET (VERSION ${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_LEVEL})
 
 INCLUDE (GNUInstallDirs)
