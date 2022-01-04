@@ -122,6 +122,27 @@
     rtwoptions(13).makevariable = 'MULTI_INSTANCE_CODE';
   end
 
+  rtwoptions(17).prompt       = 'Addon include path';
+  rtwoptions(17).type         = 'Edit';
+  rtwoptions(17).default      = '';
+  rtwoptions(17).tlcvariable  = 'AddonIncludes';
+  rtwoptions(17).makevariable = 'ADDON_INCLUDES';
+  rtwoptions(17).tooltip      = ...
+    ['Add addition include path to the Makefile', ...
+     sprintf('\n'), ...
+     ' Add a path like this -I AddPath1 -I AddPath2' ];
+
+  rtwoptions(18).prompt       = 'Addon library path';
+  rtwoptions(18).type         = 'Edit';
+  rtwoptions(18).default      = '';
+  rtwoptions(18).tlcvariable  = 'AddonLibs';
+  rtwoptions(18).makevariable = 'ADDON_LIBS';
+  rtwoptions(18).tooltip      = ...
+    ['Add addition library path to the Makefile', ...
+     sprintf('\n'), ...
+     ' Add a path like this -laddon1 -L/PathToAddon2 -laddon2' ];
+
+
   %----------------------------------------%
   % Configure RTW code generation settings %
   %----------------------------------------%
