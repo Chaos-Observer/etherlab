@@ -8,6 +8,12 @@
 %% with the EtherCAT Driver enabling the usage of a analog input
 %% terminal.
 %%
+%% Uses following functions:
+%%  LibMdlStartCustomCode()
+%%  LibMdlTerminateCustomCode()
+%%  LibSystemOutputCustomCode()
+%%  LibSystemUpdateCustomCode()
+%%
 %% Copyright (C) 2012
 %% Richard Hacker
 %% IgH Essen GmbH
