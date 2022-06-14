@@ -290,7 +290,6 @@ int get_etl_data_type (const char *mwName,
 struct thread_task {
     unsigned int tid;
     unsigned int sl_tid;
-    pthread_key_t *key;
     unsigned int *running;
     const char *err;
     double sample_time;
@@ -481,7 +480,6 @@ rt_OneStepTid(uint_T tid)
 #endif
 
     return rtmGetErrorStatus(RTM);
-
 }
 
 /****************************************************************************/
@@ -832,7 +830,7 @@ create_dim(
  */
     const char *
 register_signal(
-        struct thread_task *task,
+        struct thread_task *m_task,
         const rtwCAPI_Signals* signals,
         size_t idx,
         rtwCAPI_ModelMappingInfo* mmi,
@@ -930,20 +928,20 @@ register_signal(
 
 #if !MT
     decimation =
-        tid >= 0 && *sampleTime ? *sampleTime/task[0].sample_time + 0.5 : 1;
+        tid >= 0 && *sampleTime ? *sampleTime/m_task[0].sample_time + 0.5 : 1;
 #else
     decimation = 1;
     if (tid >= 0) {
-        task += tid - (tid && TID01EQ);
+        m_task += tid - (tid && TID01EQ);
     }
 #endif
 
     //printf("Reg with dt=%i\n", data_type);
 #ifdef VARIABLE_LOCKING
-    signal = pdserv_signal_cb(task->pdtask, decimation,
-            path, data_type, address, ndim, dim, read_signal, task);
+    signal = pdserv_signal_cb(m_task->pdtask, decimation,
+            path, data_type, address, ndim, dim, read_signal, m_task);
 #else
-    signal = pdserv_signal(task->pdtask, decimation,
+    signal = pdserv_signal(m_task->pdtask, decimation,
             path, data_type, address, ndim, dim);
 #endif
 
@@ -966,7 +964,7 @@ out:
  */
     const char *
 register_parameter(
-        struct pdserv *pdserv,
+        struct pdserv *m_pdserv,
         const rtwCAPI_BlockParameters* params,
         size_t idx,
         rtwCAPI_ModelMappingInfo* mmi,
@@ -1018,10 +1016,10 @@ register_parameter(
     snprintf(path, pathLen, "%s/%s", blockPath, paramName);
 
 #ifdef VARIABLE_LOCKING
-    pdserv_parameter(pdserv, path, 0666, data_type, address, ndim, dim,
+    pdserv_parameter(m_pdserv, path, 0666, data_type, address, ndim, dim,
             write_parameter, 0);
 #else
-    pdserv_parameter(pdserv, path, 0666, data_type, address, ndim, dim, 0, 0);
+    pdserv_parameter(m_pdserv, path, 0666, data_type, address, ndim, dim, 0, 0);
 #endif
 
 out:
@@ -1040,7 +1038,7 @@ out:
  */
     const char *
 register_model_parameter(
-        struct pdserv *pdserv,
+        struct pdserv *m_pdserv,
         const rtwCAPI_ModelParameters* params,
         size_t idx,
         rtwCAPI_ModelMappingInfo* mmi,
@@ -1086,10 +1084,10 @@ register_model_parameter(
     snprintf(path, pathLen, "/%s/%s", prefix, paramName);
 
 #ifdef VARIABLE_LOCKING
-    pdserv_parameter(pdserv, path, 0666, data_type, address, ndim, dim,
+    pdserv_parameter(m_pdserv, path, 0666, data_type, address, ndim, dim,
             write_parameter, 0);
 #else
-    pdserv_parameter(pdserv, path, 0666, data_type, address, ndim, dim, 0, 0);
+    pdserv_parameter(m_pdserv, path, 0666, data_type, address, ndim, dim, 0, 0);
 #endif
 
 out:
@@ -1107,7 +1105,7 @@ out:
 /** Initialize all model variables.
  */
     const char *
-rtw_capi_init(struct pdserv *pdserv, struct thread_task *task)
+rtw_capi_init(struct pdserv *m_pdserv, struct thread_task *m_task)
 {
     rtwCAPI_ModelMappingInfo* mmi = &(rtmGetDataMapInfo(RTM).mmi);
     const rtwCAPI_DimensionMap* dimMap = rtwCAPI_GetDimensionMap(mmi);
@@ -1121,15 +1119,15 @@ rtw_capi_init(struct pdserv *pdserv, struct thread_task *task)
     size_t i;
 
     for (i = 0; i < rtwCAPI_GetNumSignals(mmi); ++i)
-        register_signal(task, signals, i,
+        register_signal(m_task, signals, i,
                 mmi, dimMap, dTypeMap, dimArray, sampleTimeMap, dataAddressMap);
 
     for (i = 0; i < rtwCAPI_GetNumBlockParameters(mmi); ++i)
-        register_parameter(pdserv, params, i,
+        register_parameter(m_pdserv, params, i,
                 mmi, dimMap, dTypeMap, dimArray, dataAddressMap);
 
     for (i = 0; i < rtwCAPI_GetNumModelParameters(mmi); ++i)
-        register_model_parameter(pdserv, model_params, i,
+        register_model_parameter(m_pdserv, model_params, i,
                 mmi, dimMap, dTypeMap, dimArray, dataAddressMap);
 
     return NULL;
@@ -1423,7 +1421,7 @@ int main(int argc, char **argv)
     pthread_key_create(&tid_key, 0);
 #endif
 
-    /* Create necessary pdserv tasks */
+    /* Initialize task descriptor */
     for (p_task = task; p_task != task + NUMTASKS; ++p_task) {
         double ts = 0.0;
 
@@ -1535,7 +1533,7 @@ int main(int argc, char **argv)
                     1.0e9 * p_task->sample_time * phase / 100);
         }
 
-        if (p_task == task)
+        if (p_task == task) /* First task */
             p_task->rt_OneStep = rt_OneStepMain;
 #if MT
         else {
