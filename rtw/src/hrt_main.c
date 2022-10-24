@@ -1475,7 +1475,11 @@ int main(int argc, char **argv)
     }
 
     /* Prepare process-data interface, create threads, etc. */
-    pdserv_prepare(pdserv);
+    if (pdserv_prepare(pdserv)) {
+        err = "Failed to start pdserv.";
+        pdserv_exit(pdserv);
+        goto out;
+    }
 
     /* Lock all memory forever. */
     if (mlockall(MCL_CURRENT | MCL_FUTURE))
