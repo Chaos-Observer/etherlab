@@ -78,7 +78,7 @@
     if (%<invert>%<u> && %<LibBlockParameter(Enable,"",lcv,sigIdx)>) {
       if (!%<y>) {
         %if EXISTS(delay)
-          %<delay> += %<LibBlockSampleTime(block)>;
+          %<delay> += %<ETLBlockSampleTime()>;
           if (%<delay> > %<LibBlockParameter(Confirm,"",lcv,sigIdx)>) {
         %endif
         %%
