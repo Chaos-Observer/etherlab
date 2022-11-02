@@ -848,7 +848,7 @@ register_signal(
     uint16_T portNumber      = rtwCAPI_GetSignalPortNumber(signals, idx);
     uint16_T dataTypeIndex   = rtwCAPI_GetSignalDataTypeIdx(signals, idx);
     uint16_T dimIndex        = rtwCAPI_GetSignalDimensionIdx(signals, idx);
-    uint8_T  sTimeIndex      = rtwCAPI_GetSignalSampleTimeIdx(signals, idx);
+    uint_T   sTimeIndex      = rtwCAPI_GetSignalSampleTimeIdx(signals, idx);
 
     uint8_T ndim;
     size_t *dim = create_dim(dimMap, dimIndex, dimArray, &ndim);
