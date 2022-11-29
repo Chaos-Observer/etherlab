@@ -162,6 +162,9 @@
 #define EXPAND_CONCAT(name1, name2) name1 ## name2
 #define CONCAT(name1, name2) EXPAND_CONCAT(name1, name2)
 #define MODEL_VERSION        CONCAT(MODEL, _version)
+#define MODEL_GENERATOR      CONCAT(MODEL, _generator)
+#define MODEL_DATE           CONCAT(MODEL, _date)
+#define ETL_VERSION          etherlab_version
 
 #ifndef max
 #define max(x1, x2) ((x1) > (x2) ? (x1) : (x2))
@@ -236,6 +239,9 @@ extern void MdlInitializeDataMapInfo(void);
 #endif  // CLASSIC_INTERFACE
 
 extern const char *MODEL_VERSION;
+extern const char *MODEL_GENERATOR;
+extern const char *MODEL_DATE;
+extern const char *ETL_VERSION;
 
 #if NCSTATES > 0
 extern void rt_ODECreateIntegrationData(RTWSolverInfo *si);
@@ -1275,8 +1281,20 @@ void usage(FILE *f)
             "  --time-dilation  -D <fact>  Cyclic time dilation factor.\n"
             "       No other timings are affected. This is useful for very\n"
             "       fast running simulation tasks causing overruns.\n"
-            "  --help           -h         Show this help.\n",
-            base_name);
+            "  --help           -h         Show this help.\n"
+            "\n"
+            "Model information:\n"
+            "\tName: %s\n"
+            "\tModel version: %s\n"
+            "\tMatlab version: %s\n"
+            "\tDate: %s\n"
+            "\tEtherLab version: %s\n",
+            base_name,
+            QUOTE(MODEL),
+            MODEL_VERSION,
+            MODEL_GENERATOR,
+            MODEL_DATE,
+            ETL_VERSION);
 }
 
 /****************************************************************************/

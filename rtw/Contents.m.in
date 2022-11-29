@@ -1,9 +1,11 @@
-% EtherLab (License GPLv3+)
-% Version @VERSION@ (@Package_HG_ID@) @DATE@
+% EtherLab
+% Version @VERSION@ (@Package_ID@) @DATE@
+%
+% License: GPLv3+
 %
 % Generated from Contents.m.in
 
 disp('EtherLab Version @VERSION@')
 disp('')
-disp('Copyright (C) 2012-2017 Richard Hacker, IgH GmbH')
+disp('Copyright (C) 2012-2022 Richard Hacker, IgH GmbH')
 disp('License: GPLv3+')
