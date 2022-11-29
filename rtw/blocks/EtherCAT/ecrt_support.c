@@ -20,6 +20,7 @@
 #include <stddef.h>
 #include <time.h>
 #include <endian.h>
+#include <string.h>
 #include <pthread.h>
 #include "ecrt_support.h"
 
@@ -55,7 +56,7 @@ extern int ETL_is_major_step(void);
  * @member:     the name of the member within the struct.
  *
  */
-#define container_of(ptr, type) (type *)((char *)ptr - offsetof(type,list))
+#define container_of(ptr, type) (type *)(void*)((char *)ptr - offsetof(type,list))
 
 /*
  * Simple doubly linked list implementation.
@@ -119,7 +120,7 @@ struct list_head ec_slave_sdo_head = {&ec_slave_sdo_head, &ec_slave_sdo_head};
 struct endian_convert_t {
     void (*copy)(const struct endian_convert_t*);
     void *dst;
-    const uint8_t *src;
+    const void *src;
     size_t index;
 };
 
@@ -235,7 +236,7 @@ ecs_write_uint1(const struct endian_convert_t *c)
     uint8_t mask = 1U << c->index;
     uint8_t *val = c->dst;
 
-    *val = (*val & ~mask) | ((*c->src & 1U) << c->index);
+    *val = (*val & ~mask) | ((*(const uint8_t*)c->src & 1U) << c->index);
 }
 
 /*****************************************************************/
@@ -246,7 +247,7 @@ ecs_write_uint2(const struct endian_convert_t *c)
     uint8_t mask = 3U << c->index;
     uint8_t *val = c->dst;
 
-    *val = (*val & ~mask) | ((*c->src & 3U) << c->index);
+    *val = (*val & ~mask) | ((*(const uint8_t*)c->src & 3U) << c->index);
 }
 
 /*****************************************************************/
@@ -257,7 +258,7 @@ ecs_write_uint3(const struct endian_convert_t *c)
     uint8_t mask = 7U << c->index;
     uint8_t *val = c->dst;
 
-    *val = (*val & ~mask) | ((*c->src & 7U) << c->index);
+    *val = (*val & ~mask) | ((*(const uint8_t*)c->src & 7U) << c->index);
 }
 
 /*****************************************************************/
@@ -268,7 +269,7 @@ ecs_write_uint4(const struct endian_convert_t *c)
     uint8_t mask = 15U << c->index;
     uint8_t *val = c->dst;
 
-    *val = (*val & ~mask) | ((*c->src & 15U) << c->index);
+    *val = (*val & ~mask) | ((*(const uint8_t*)c->src & 15U) << c->index);
 }
 
 /*****************************************************************/
@@ -279,7 +280,7 @@ ecs_write_uint5(const struct endian_convert_t *c)
     uint8_t mask = 31U << c->index;
     uint8_t *val = c->dst;
 
-    *val = (*val & ~mask) | ((*c->src & 31U) << c->index);
+    *val = (*val & ~mask) | ((*(const uint8_t*)c->src & 31U) << c->index);
 }
 
 /*****************************************************************/
@@ -290,7 +291,7 @@ ecs_write_uint6(const struct endian_convert_t *c)
     uint8_t mask = 63U << c->index;
     uint8_t *val = c->dst;
 
-    *val = (*val & ~mask) | ((*c->src & 63U) << c->index);
+    *val = (*val & ~mask) | ((*(const uint8_t*)c->src & 63U) << c->index);
 }
 
 /*****************************************************************/
@@ -301,7 +302,7 @@ ecs_write_uint7(const struct endian_convert_t *c)
     uint8_t mask = 127U << c->index;
     uint8_t *val = c->dst;
 
-    *val = (*val & ~mask) | ((*c->src & 127U) << c->index);
+    *val = (*val & ~mask) | ((*(const uint8_t*)c->src & 127U) << c->index);
 }
 
 /*****************************************************************/
@@ -319,8 +320,7 @@ ecs_write_le_uint24(const struct endian_convert_t *c)
 {
     uint32_t value = htole32(*(const uint32_t*)c->src);
 
-    *(uint16_t*)c->dst = value >> 8;
-    ((uint8_t*)c->dst)[2] = value;
+    memcpy(c->dst, &value, 3);
 }
 
 /*****************************************************************/
@@ -338,8 +338,7 @@ ecs_write_le_uint40(const struct endian_convert_t *c)
 {
     uint64_t value = htole64(*(const uint64_t*)c->src);
 
-    *(uint32_t*)c->dst = value >> 8;
-    ((uint8_t*)c->dst)[4] = value;
+    memcpy(c->dst, &value, 5);
 }
 
 /*****************************************************************/
@@ -349,8 +348,7 @@ ecs_write_le_uint48(const struct endian_convert_t *c)
 {
     uint64_t value = htole64(*(const uint64_t*)c->src);
 
-    *(uint32_t*)c->dst = value >> 16;
-    ((uint16_t*)c->dst)[2] = value;
+    memcpy(c->dst, &value, 6);
 }
 
 /*****************************************************************/
@@ -360,9 +358,7 @@ ecs_write_le_uint56(const struct endian_convert_t *c)
 {
     uint64_t value = htole64(*(const uint64_t*)c->src);
 
-    *(uint32_t*)c->dst = value >> 24;
-    ((uint16_t*)c->dst)[2] = value >> 8;
-    ((uint8_t*)c->dst)[7] = value;
+    memcpy(c->dst, &value, 7);
 }
 
 /*****************************************************************/
@@ -402,10 +398,9 @@ ecs_write_be_uint16(const struct endian_convert_t *c)
 static void
 ecs_write_be_uint24(const struct endian_convert_t *c)
 {
-    uint32_t value = htobe32(*(const uint32_t*)c->src);
+    uint32_t value = htobe32(*(const uint32_t*)c->src) >> 8;
 
-    *(uint16_t*)c->dst = value >> 8;
-    ((uint8_t*)c->dst)[2] = value;
+    memcpy(c->dst, &value, 3);
 }
 
 /*****************************************************************/
@@ -421,10 +416,9 @@ ecs_write_be_uint32(const struct endian_convert_t *c)
 static void
 ecs_write_be_uint40(const struct endian_convert_t *c)
 {
-    uint64_t value = htobe64(*(const uint64_t*)c->src);
+    uint64_t value = htobe64(*(const uint64_t*)c->src) >> 24;
 
-    *(uint32_t*)c->dst = value >> 8;
-    ((uint8_t*)c->dst)[4] = value;
+    memcpy(c->dst, &value, 5);
 }
 
 /*****************************************************************/
@@ -432,10 +426,9 @@ ecs_write_be_uint40(const struct endian_convert_t *c)
 static void
 ecs_write_be_uint48(const struct endian_convert_t *c)
 {
-    uint64_t value = htobe64(*(const uint64_t*)c->src);
+    uint64_t value = htobe64(*(const uint64_t*)c->src) >> 16;
 
-    *(uint32_t*)c->dst = value >> 16;
-    ((uint16_t*)c->dst)[2] = value;
+    memcpy(c->dst, &value, 6);
 }
 
 /*****************************************************************/
@@ -443,11 +436,9 @@ ecs_write_be_uint48(const struct endian_convert_t *c)
 static void
 ecs_write_be_uint56(const struct endian_convert_t *c)
 {
-    uint64_t value = htobe64(*(const uint64_t*)c->src);
+    uint64_t value = htobe64(*(const uint64_t*)c->src) >> 8;
 
-    *(uint32_t*)c->dst = value >> 24;
-    ((uint16_t*)c->dst)[2] = value >> 8;
-    ((uint8_t*)c->dst)[7] = value;
+    memcpy(c->dst, &value, 7);
 }
 
 /*****************************************************************/
@@ -480,7 +471,7 @@ ecs_write_be_double(const struct endian_convert_t *c)
 static void
 ecs_read_uint1(const struct endian_convert_t *c)
 {
-    *(uint8_t*)c->dst = (*c->src >> c->index) & 0x01;
+    *(uint8_t*)c->dst = (*(const uint8_t*)c->src >> c->index) & 0x01;
 }
 
 /*****************************************************************/
@@ -488,7 +479,7 @@ ecs_read_uint1(const struct endian_convert_t *c)
 static void
 ecs_read_uint2(const struct endian_convert_t *c)
 {
-    *(uint8_t*)c->dst = (*c->src >> c->index) & 0x03;
+    *(uint8_t*)c->dst = (*(const uint8_t*)c->src >> c->index) & 0x03;
 }
 
 /*****************************************************************/
@@ -496,7 +487,7 @@ ecs_read_uint2(const struct endian_convert_t *c)
 static void
 ecs_read_uint3(const struct endian_convert_t *c)
 {
-    *(uint8_t*)c->dst = (*c->src >> c->index) & 0x07;
+    *(uint8_t*)c->dst = (*(const uint8_t*)c->src >> c->index) & 0x07;
 }
 
 /*****************************************************************/
@@ -504,7 +495,7 @@ ecs_read_uint3(const struct endian_convert_t *c)
 static void
 ecs_read_uint4(const struct endian_convert_t *c)
 {
-    *(uint8_t*)c->dst = (*c->src >> c->index) & 0x0F;
+    *(uint8_t*)c->dst = (*(const uint8_t*)c->src >> c->index) & 0x0F;
 }
 
 /*****************************************************************/
@@ -512,7 +503,7 @@ ecs_read_uint4(const struct endian_convert_t *c)
 static void
 ecs_read_uint5(const struct endian_convert_t *c)
 {
-    *(uint8_t*)c->dst = (*c->src >> c->index) & 0x1F;
+    *(uint8_t*)c->dst = (*(const uint8_t*)c->src >> c->index) & 0x1F;
 }
 
 /*****************************************************************/
@@ -520,7 +511,7 @@ ecs_read_uint5(const struct endian_convert_t *c)
 static void
 ecs_read_uint6(const struct endian_convert_t *c)
 {
-    *(uint8_t*)c->dst = (*c->src >> c->index) & 0x3F;
+    *(uint8_t*)c->dst = (*(const uint8_t*)c->src >> c->index) & 0x3F;
 }
 
 /*****************************************************************/
@@ -528,7 +519,7 @@ ecs_read_uint6(const struct endian_convert_t *c)
 static void
 ecs_read_uint7(const struct endian_convert_t *c)
 {
-    *(uint8_t*)c->dst = (*c->src >> c->index) & 0x7F;
+    *(uint8_t*)c->dst = (*(const uint8_t*)c->src >> c->index) & 0x7F;
 }
 
 /*****************************************************************/
@@ -544,9 +535,9 @@ ecs_read_le_uint16(const struct endian_convert_t *c)
 static void
 ecs_read_le_uint24(const struct endian_convert_t *c)
 {
-    *(uint32_t*)c->dst =
-        ((uint32_t) le16toh(*(const uint16_t*)(c->src + 1)) << 8)
-        + *c->src;
+    uint32_t val = 0;
+    memcpy(&val, c->src, 3);
+    *(uint32_t*)c->dst = le32toh(val);
 }
 
 /*****************************************************************/
@@ -562,9 +553,9 @@ ecs_read_le_uint32(const struct endian_convert_t *c)
 static void
 ecs_read_le_uint40(const struct endian_convert_t *c)
 {
-    *(uint64_t*)c->dst =
-        ((uint64_t) le32toh(*(const uint32_t*)(c->src + 1)) << 8)
-        + *c->src;
+    uint64_t val = 0;
+    memcpy(&val, c->src, 5);
+    *(uint64_t*)c->dst = le64toh(val);
 }
 
 /*****************************************************************/
@@ -572,9 +563,9 @@ ecs_read_le_uint40(const struct endian_convert_t *c)
 static void
 ecs_read_le_uint48(const struct endian_convert_t *c)
 {
-    *(uint64_t*)c->dst =
-        ((uint64_t)le32toh(*(const uint32_t*)(c->src+2)) << 16)
-        + le16toh(*(const uint16_t*)c->src);
+    uint64_t val = 0;
+    memcpy(&val, c->src, 6);
+    *(uint64_t*)c->dst = le64toh(val);
 }
 
 /*****************************************************************/
@@ -582,10 +573,9 @@ ecs_read_le_uint48(const struct endian_convert_t *c)
 static void
 ecs_read_le_uint56(const struct endian_convert_t *c)
 {
-    *(uint64_t*)c->dst =
-        ((uint64_t)le32toh(*(const uint32_t*)(c->src+3)) << 24)
-        + ((uint64_t)le16toh(*(const uint16_t*)(c->src+1)) <<  8)
-        + *c->src;
+    uint64_t val = 0;
+    memcpy(&val, c->src, 7);
+    *(uint64_t*)c->dst = le64toh(val);
 }
 
 /*****************************************************************/
@@ -625,8 +615,9 @@ ecs_read_be_uint16(const struct endian_convert_t *c)
 static void
 ecs_read_be_uint24(const struct endian_convert_t *c)
 {
-    *(uint32_t*)c->dst = ((uint32_t)*c->src << 16)
-        + be16toh(*(const uint16_t*)(c->src + 1));
+    uint32_t val = 0;
+    memcpy(&val, c->src, 3);
+    *(uint64_t*)c->dst = be32toh(val) >> 8;
 }
 
 /*****************************************************************/
@@ -642,8 +633,9 @@ ecs_read_be_uint32(const struct endian_convert_t *c)
 static void
 ecs_read_be_uint40(const struct endian_convert_t *c)
 {
-    *(uint64_t*)c->dst = ((uint64_t)*c->src << 32)
-        + be32toh(*(const uint32_t*)(c->src+1));
+    uint64_t val = 0;
+    memcpy(&val, c->src, 5);
+    *(uint64_t*)c->dst = be64toh(val) >> 24;
 }
 
 /*****************************************************************/
@@ -651,9 +643,9 @@ ecs_read_be_uint40(const struct endian_convert_t *c)
 static void
 ecs_read_be_uint48(const struct endian_convert_t *c)
 {
-    *(uint64_t*)c->dst =
-        ((uint64_t)be16toh(*(const uint16_t*)c->src) << 32)
-        + be32toh(*(const uint32_t*)(c->src+2));
+    uint64_t val = 0;
+    memcpy(&val, c->src, 6);
+    *(uint64_t*)c->dst = be64toh(val) >> 16;
 }
 
 /*****************************************************************/
@@ -661,10 +653,9 @@ ecs_read_be_uint48(const struct endian_convert_t *c)
 static void
 ecs_read_be_uint56(const struct endian_convert_t *c)
 {
-    *(uint64_t*)c->dst =
-        ((uint64_t)*c->src << 48)
-        + ((uint64_t)be16toh(*(const uint16_t*)(c->src+1)) << 32)
-        + be32toh(*(const uint32_t*)(c->src+3));
+    uint64_t val = 0;
+    memcpy(&val, c->src, 7);
+    *(uint64_t*)c->dst = be64toh(val) >> 8;
 }
 
 /*****************************************************************/
@@ -1489,3 +1480,185 @@ ecs_get_domain_ptr(unsigned int master_id, unsigned int domain_id,
 }
 
 /***************************************************************************/
+
+#if TESTDTYPES
+/* Compile with
+ * gcc -DTESTDTYPES=1 -I../../include -o ecrt ecrt_support.c -lethercat -pthread
+ */
+
+#include <assert.h>
+
+pthread_key_t monotonic_time_key;
+
+int ETL_is_major_step(void)
+{
+    return 0;
+}
+
+int main(int argc, char** argv)
+{
+    uint8_t raw[] = {0x12, 0x34, 0x56, 0x78, 0xde, 0xad, 0xbe, 0xef};
+
+    {
+        uint8_t val = 0;
+        struct endian_convert_t table = {
+            .dst = &val,
+            .src = raw+7,
+            .index = 0,
+        };
+
+        ecs_read_uint1(&table); assert(val == 0x01);
+        ecs_read_uint2(&table); assert(val == 0x03);
+        ecs_read_uint3(&table); assert(val == 0x07);
+        ecs_read_uint4(&table); assert(val == 0x0f);
+        ecs_read_uint5(&table); assert(val == 0x0f);
+        ecs_read_uint6(&table); assert(val == 0x2f);
+        ecs_read_uint7(&table); assert(val == 0x6f);
+        ecs_copy_uint8(&table); assert(val == 0xef);
+    }
+
+    {
+        uint8_t val = 0;
+        struct endian_convert_t table = {
+            .dst = &val,
+            .src = raw+7,
+            .index = 0,
+        };
+
+        ecs_write_uint1(&table); assert(val == 0x01);
+        ecs_write_uint2(&table); assert(val == 0x03);
+        ecs_write_uint3(&table); assert(val == 0x07);
+        ecs_write_uint4(&table); assert(val == 0x0f);
+        ecs_write_uint5(&table); assert(val == 0x0f);
+        ecs_write_uint6(&table); assert(val == 0x2f);
+        ecs_write_uint7(&table); assert(val == 0x6f);
+    }
+
+    {
+        uint8_t val = 0xff;
+        struct endian_convert_t table = {
+            .dst = &val,
+            .src = raw,
+            .index = 0,
+        };
+
+        ecs_write_uint1(&table); assert(val == 0xfe);
+        ecs_write_uint2(&table); assert(val == 0xfe);
+        ecs_write_uint3(&table); assert(val == 0xfa);
+        ecs_write_uint4(&table); assert(val == 0xf2);
+        ecs_write_uint5(&table); assert(val == 0xf2);
+        ecs_write_uint6(&table); assert(val == 0xd2);
+        ecs_write_uint7(&table); assert(val == 0x92);
+    }
+
+    {
+        uint16_t val = 0;
+        struct endian_convert_t table = {
+            .dst = &val,
+            .src = raw,
+        };
+
+        ecs_write_le_uint16(&table); assert(val == 0x3412);
+        ecs_write_be_uint16(&table); assert(val == 0x1234);
+
+        ecs_read_le_uint16(&table); assert(val == 0x3412);
+        ecs_read_be_uint16(&table); assert(val == 0x1234);
+    }
+
+    {
+        uint32_t val = ~0U;
+        struct endian_convert_t table = {
+            .dst = &val,
+            .src = raw,
+        };
+
+        ecs_write_le_uint24(&table); assert(val == 0xff563412);
+        ecs_write_be_uint24(&table); assert(val == 0xff123456);
+
+        ecs_write_le_uint32(&table); assert(val == 0x78563412);
+        ecs_write_be_uint32(&table); assert(val == 0x12345678);
+
+        ecs_read_le_uint24(&table); assert(val  ==   0x563412);
+        ecs_read_be_uint24(&table); assert(val  ==   0x123456);
+
+        ecs_read_le_uint32(&table); assert(val  == 0x78563412);
+        ecs_read_be_uint32(&table); assert(val  == 0x12345678);
+    }
+
+    {
+        uint64_t val = ~0ULL;
+        struct endian_convert_t table = {
+            .dst = &val,
+            .src = raw,
+        };
+
+        ecs_write_le_uint40(&table); assert(val == 0xffffffde78563412);
+        ecs_write_be_uint40(&table); assert(val == 0xffffff12345678de);
+
+        ecs_write_le_uint48(&table); assert(val == 0xffffadde78563412);
+        ecs_write_be_uint48(&table); assert(val == 0xffff12345678dead);
+
+        ecs_write_le_uint56(&table); assert(val == 0xffbeadde78563412);
+        ecs_write_be_uint56(&table); assert(val == 0xff12345678deadbe);
+
+        ecs_write_le_uint64(&table); assert(val == 0xefbeadde78563412);
+        ecs_write_be_uint64(&table); assert(val == 0x12345678deadbeef);
+
+        ecs_read_le_uint40(&table); assert(val  ==       0xde78563412);
+        ecs_read_be_uint40(&table); assert(val  ==       0x12345678de);
+
+        ecs_read_le_uint48(&table); assert(val  ==     0xadde78563412);
+        ecs_read_be_uint48(&table); assert(val  ==     0x12345678dead);
+
+        ecs_read_le_uint56(&table); assert(val  ==   0xbeadde78563412);
+        ecs_read_be_uint56(&table); assert(val  ==   0x12345678deadbe);
+
+        ecs_read_le_uint64(&table); assert(val  == 0xefbeadde78563412);
+        ecs_read_be_uint64(&table); assert(val  == 0x12345678deadbeef);
+    }
+
+
+    {
+        float val = 0.330, src, dst;
+
+        struct endian_convert_t table = {
+            .dst = &dst,
+            .src = &src,
+        };
+
+        *(uint32_t*)&src = htole32(*(uint32_t*)&val);
+        ecs_read_le_single(&table); assert(dst == val);
+        ecs_write_le_single(&table); assert(dst == val);
+        ecs_read_be_single(&table); assert(dst != val);
+        ecs_write_be_single(&table); assert(dst != val);
+
+        *(uint32_t*)&src = htobe32(*(uint32_t*)&val);
+        ecs_read_be_single(&table); assert(dst == val);
+        ecs_write_be_single(&table); assert(dst == val);
+        ecs_read_le_single(&table); assert(dst != val);
+        ecs_write_le_single(&table); assert(dst != val);
+    }
+
+    {
+        double val = 0.330, src, dst;
+
+        struct endian_convert_t table = {
+            .dst = &dst,
+            .src = &src,
+        };
+
+        *(uint64_t*)&src = htole64(*(uint64_t*)&val);
+        ecs_read_le_double(&table); assert(dst == val);
+        ecs_write_le_double(&table); assert(dst == val);
+        ecs_read_be_double(&table); assert(dst != val);
+        ecs_write_be_double(&table); assert(dst != val);
+
+        *(uint64_t*)&src = htobe64(*(uint64_t*)&val);
+        ecs_read_be_double(&table); assert(dst == val);
+        ecs_write_be_double(&table); assert(dst == val);
+        ecs_read_le_double(&table); assert(dst != val);
+        ecs_write_le_double(&table); assert(dst != val);
+    }
+
+}
+#endif

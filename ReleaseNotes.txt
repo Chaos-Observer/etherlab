@@ -1,3 +1,7 @@
+Release 2.3.5:
+- Fixed broken non-standard data type conversion (uint24, uint40, uint48,
+  uint56) between simulink and ethercat. This fix is not backwards compatible
+
 Here are release notes to check when updating from V2.2.0
 ---------------------------------------------------------
 
