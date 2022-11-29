@@ -517,6 +517,8 @@ messages = {...
 """};
 
 try
+    %% spaces in path get line breaks
+    path = strrep(path, char(10), ' ');
     str = messages{strcmp(messages(:,1), path), 2};
 catch
     disp([path ' does not have a message'])

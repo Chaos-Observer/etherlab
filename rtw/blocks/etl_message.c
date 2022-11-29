@@ -81,7 +81,6 @@ static void mdlInitializeSizes(SimStruct *S)
     ssSetOutputPortDataType(S, 0, SS_DOUBLE);
 
     ssSetNumSampleTimes(S, 1);
-    ssSetNumPWork(S, 1);
 
     ssSetOptions(S,
             SS_OPTION_WORKS_WITH_CODE_REUSE
@@ -282,9 +281,6 @@ static void mdlRTW(SimStruct *S)
     uint32_T priority = PRIORITY;
     int_T count;
     char* message = createStringList(MESSAGELIST, &count);
-
-    if (!ssWriteRTWWorkVect(S, "PWork", 1, "EventPtr", 1))
-        return;
 
     if (ssGetNumRWork(S)
             && !ssWriteRTWWorkVect(S, "RWork", 1,

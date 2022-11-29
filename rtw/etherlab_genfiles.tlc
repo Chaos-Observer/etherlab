@@ -23,5 +23,9 @@
     const char *%<Name>_date = "%<GeneratedOn>";
     const char *etherlab_version = "%<FEVAL("etherlab_version")>";
   %closefile header
+
 %endwith
 
+%if ISFIELD(CompiledModel, "EtlMessageList")
+  %<GENERATE_TYPE(CompiledModel, "FcnWriteSetup", "etl_message")>
+%endif

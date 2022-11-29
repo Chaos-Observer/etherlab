@@ -209,6 +209,9 @@ struct pdserv *get_pdserv_ptr(void)
 }
 
 #define RTM             CONCAT(MODEL, _M)
+#define MdlRegisterMessages      CONCAT(MODEL, _register_messages)
+
+extern int MdlRegisterMessages(void);
 
 #if CLASSIC_INTERFACE
 
@@ -1486,8 +1489,7 @@ int main(int argc, char **argv)
         goto out;
     }
 
-    /* Initialize model */
-    if ((err = init_application())) {
+    if (MdlRegisterMessages()) {
         pdserv_exit(pdserv);
         goto out;
     }
@@ -1495,6 +1497,12 @@ int main(int argc, char **argv)
     /* Prepare process-data interface, create threads, etc. */
     if (pdserv_prepare(pdserv)) {
         err = "Failed to start pdserv.";
+        pdserv_exit(pdserv);
+        goto out;
+    }
+
+    /* Initialize model */
+    if ((err = init_application())) {
         pdserv_exit(pdserv);
         goto out;
     }
@@ -1624,3 +1632,8 @@ out:
 }
 
 /****************************************************************************/
+
+int __attribute__((weak)) MdlRegisterMessages()
+{
+    return 0;
+}

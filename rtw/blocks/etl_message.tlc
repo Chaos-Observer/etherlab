@@ -3,21 +3,51 @@
 %include "ETL.tlc"
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function FcnWriteSetup(Model) void
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  %openfile buf = "%<LibGetModelName()>_messages.c"
+  /* Register pdserv_event()s */
+
+  #include "%<LibGetMdlPubHdrBaseName()>.h"
+  #include "%<LibGetMdlPrvHdrBaseName()>.h"
+
+  struct pdevent *etl_message[%<SIZE(EtlMessageList,1)>];
+
+  int %<LibGetModelName()>_register_messages()
+  {
+    %foreach i = SIZE(EtlMessageList,1)
+      %<EtlMessageList[i]>
+    %endforeach
+    return 0;
+  }
+  %closefile buf
+
+%endfunction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %function BlockTypeSetup( block, system) void
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  %<InitETL()>
-
   %<LibAddToCommonIncludes("<time.h>")>
   %<LibAddToCommonIncludes("<pdserv.h>")>
 
+  %<LibCacheFunctionPrototype("int %<LibGetModelName()>_register_messages(void);")>
   %<LibCacheFunctionPrototype("struct pdserv* get_pdserv_ptr(void);")>
   %<LibCacheFunctionPrototype( ...
         "const struct timespec *get_etl_world_time(size_t tid);")>
+
+  %<LibCacheExtern("extern struct pdevent *etl_message[];")>
+
+  %addtorecord CompiledModel EtlMessageList []
 %endfunction
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %function BlockInstanceSetup( block, system) void
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  %assign idx = SIZE(CompiledModel.EtlMessageList, 1)
+  %addtorecord block EtlMessagePtr "etl_message[%<idx>]"
+
   %openfile buf
   {
      %if SIZE(SFcnParamSettings.MessageList,1)
@@ -31,18 +61,18 @@
        %assign message_list_ident = "NULL"
      %endif
 
-     %<LibBlockPWork(EventPtr,"","",0)> = \
+     %<EtlMessagePtr> = \
        pdserv_event(get_pdserv_ptr(), \
          "%<FEVAL("blockpath", LibGetFormattedBlockPath(block))>", \
          %<LibBlockInputSignalWidth(0)>);
+     if (!%<EtlMessagePtr>)
+       return -1;
 
-     pdserv_event_set_text(
-        (struct pdevent*)%<LibBlockPWork(EventPtr,"","",0)>,
-        %<message_list_ident>);
+     pdserv_event_set_text(%<EtlMessagePtr>, %<message_list_ident>);
   }
   %closefile buf
 
-  %<LibMdlRegCustomCode(buf, "execution")>
+  %assign CompiledModel.EtlMessageList = EtlMessageList + buf
 %endfunction
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -85,7 +115,7 @@
             const struct timespec *time = get_etl_world_time(%<tid>);
 
             %<y> = 1.0e-9 * time->tv_nsec + time->tv_sec;
-            pdserv_event_set(%<LibBlockPWork(EventPtr,"","",0)>, \
+            pdserv_event_set(%<EtlMessagePtr>, \
                     %<SignalIdx>, %<prio[SFcnParamSettings.Priority-1]>, time);
         %%
         %if EXISTS(delay)
@@ -100,7 +130,7 @@
       %endif
           if (%<ResetTest>) {
             %<y> = 0.0;
-            pdserv_event_reset(%<LibBlockPWork(EventPtr,"","",0)>, \
+            pdserv_event_reset(%<EtlMessagePtr>, \
                     %<SignalIdx>, get_etl_world_time(%<tid>));
           }
       %if EXISTS(delay)
