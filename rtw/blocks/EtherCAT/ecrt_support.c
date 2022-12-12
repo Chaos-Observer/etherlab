@@ -1051,7 +1051,7 @@ init_slave(const struct ec_slave *slave)
     ecrt_slave_config_watchdog(slave_config,
             0, /* basic watchdog intervals (default is 2498 cycles of 40 ns,
                   zero means leave default setting) */
-            30000, /* number of base intervals
+            30000 /* number of base intervals
                       FIXME make this configurable! */
         );
 
