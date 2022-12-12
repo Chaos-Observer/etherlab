@@ -1047,6 +1047,14 @@ init_slave(const struct ec_slave *slave)
         goto out_slave_failed;
     }
 
+    /* Configure sync manager timeout settings */
+    ecrt_slave_config_watchdog(slave_config,
+            0, /* basic watchdog intervals (default is 2498 cycles of 40 ns,
+                  zero means leave default setting) */
+            30000, /* number of base intervals
+                      FIXME make this configurable! */
+        );
+
     /* Send SDO configuration to the slave */
     for (sdo = slave->sdo_config;
             sdo != &slave->sdo_config[slave->sdo_config_count]; sdo++) {
