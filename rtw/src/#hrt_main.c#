@@ -155,10 +155,6 @@
                                     guranteed safe to access without faulting.
                                    */
 
-/** storing exectime and period in a ring buffer
- */
-#define OVERRUN_BUFFER_SIZE 5
-
 /* To quote a string */
 #define _STR(x) #x
 #define QUOTE(x) _STR(x)
@@ -166,9 +162,6 @@
 #define EXPAND_CONCAT(name1, name2) name1 ## name2
 #define CONCAT(name1, name2) EXPAND_CONCAT(name1, name2)
 #define MODEL_VERSION        CONCAT(MODEL, _version)
-#define MODEL_GENERATOR      CONCAT(MODEL, _generator)
-#define MODEL_DATE           CONCAT(MODEL, _date)
-#define ETL_VERSION          etherlab_version
 
 #ifndef max
 #define max(x1, x2) ((x1) > (x2) ? (x1) : (x2))
@@ -213,9 +206,6 @@ struct pdserv *get_pdserv_ptr(void)
 }
 
 #define RTM             CONCAT(MODEL, _M)
-#define MdlRegisterMessages      CONCAT(MODEL, _register_messages)
-
-extern int MdlRegisterMessages(void);
 
 #if CLASSIC_INTERFACE
 
@@ -246,9 +236,6 @@ extern void MdlInitializeDataMapInfo(void);
 #endif  // CLASSIC_INTERFACE
 
 extern const char *MODEL_VERSION;
-extern const char *MODEL_GENERATOR;
-extern const char *MODEL_DATE;
-extern const char *ETL_VERSION;
 
 #if NCSTATES > 0
 extern void rt_ODECreateIntegrationData(RTWSolverInfo *si);
@@ -318,12 +305,11 @@ struct thread_task {
 pthread_key_t monotonic_time_key;
 
 #define NSEC_PER_SEC (1000000000)
-#define NSEC_PER_MSEC (1000000)
 
 #undef timeradd
 inline void timeradd(struct timespec *t, unsigned int dt)
 {
-    t->tv_nsec += dt; 
+    t->tv_nsec += dt;
     while (t->tv_nsec >= NSEC_PER_SEC) {
         t->tv_nsec -= NSEC_PER_SEC;
         t->tv_sec++;
@@ -336,21 +322,6 @@ inline void timeradd(struct timespec *t, unsigned int dt)
 #define TIMESPEC_TO_NS(TS) (NSEC_PER_SEC * (TS).tv_sec + (TS).tv_nsec)
 
 #define ABS(X) ((X) >= 0 ? (X) : -(X))
-
-#define MEASURE_EXEC_TIME(code,limit_ns,id_string)                                     \
-do {                                                                                   \
-    struct timespec start_time;							       \
-    struct timespec end_time;							       \
-    clock_gettime(CLOCK_REALTIME, &start_time);					       \
-    code;									       \
-    clock_gettime(CLOCK_REALTIME, &end_time);                                          \
-    int64_t diff_ns = DIFF_NS(start_time,end_time);				\
-    if(diff_ns > limit_ns) {                                                           \
-	syslog(LOG_ERR,                                                                \
-	       "exectime took to long (%s) limit: %d / ns, duration: %" PRId64 " / ns",\
-	       id_string,limit_ns,diff_ns);                                            \
-    }                                                                                  \
- } while(0)                         
 
 /****************************************************************************/
 
@@ -526,14 +497,6 @@ void *run_task(void *p)
                     last_start_time = thread->monotonic_time,
                     end_time = thread->monotonic_time;
 
-    /* DBG, Hm */
-    int32_t ob_wp = 0; /* write pointer */
-    int32_t ob_count = 0; /* count */
-    uint32_t exec_ns_buffer[OVERRUN_BUFFER_SIZE];
-    uint32_t period_ns_buffer[OVERRUN_BUFFER_SIZE];
-    uint64_t monotonic_time_buffer[OVERRUN_BUFFER_SIZE];
-    uint64_t world_time_buffer[OVERRUN_BUFFER_SIZE];
-    
     syslog(LOG_INFO, "Starting task with dt = %u ns.", dt);
 
     pthread_setspecific(monotonic_time_key, &thread->monotonic_time);
@@ -557,7 +520,7 @@ void *run_task(void *p)
 
         clock_gettime(CLOCK_MONOTONIC, &start_time);
 
-	MEASURE_EXEC_TIME(pthread_rwlock_wrlock(&thread->signal_lock),NSEC_PER_MSEC,"Signal lock");
+        pthread_rwlock_wrlock(&thread->signal_lock);
 
         clock_gettime(CLOCK_REALTIME, &thread->world_time);
 
@@ -569,18 +532,17 @@ void *run_task(void *p)
 #endif
 
         /* Lock parameters and execute task */
-        MEASURE_EXEC_TIME(pthread_mutex_lock(&thread->param_lock),NSEC_PER_MSEC,"Param lock");
-        MEASURE_EXEC_TIME(thread->err = thread->rt_OneStep(thread->sl_tid),(NSEC_PER_MSEC*2),"One step");
+        pthread_mutex_lock(&thread->param_lock);
+        thread->err = thread->rt_OneStep(thread->sl_tid);
         pthread_mutex_unlock(&thread->param_lock);
-        MEASURE_EXEC_TIME(pdserv_update(thread->pdtask, &thread->world_time),(NSEC_PER_MSEC*2),"Pdserv update");
+        pdserv_update(thread->pdtask, &thread->world_time);
 
         /* Calculate timing statistics */
         period_ns = DIFF_NS(last_start_time, start_time);
-        exec_ns = DIFF_NS(last_start_time, end_time); /* this is from last cycle! */
+        exec_ns = DIFF_NS(last_start_time, end_time);
         last_start_time = start_time;
-	
-        MEASURE_EXEC_TIME(pdserv_update_statistics(thread->pdtask,
-						   1.0e-9 * exec_ns, 1.0e-9 * period_ns, overruns),NSEC_PER_MSEC,"Pdserv update statistics");
+        pdserv_update_statistics(thread->pdtask,
+                1.0e-9 * exec_ns, 1.0e-9 * period_ns, overruns);
 
         pthread_rwlock_unlock(&thread->signal_lock);
 
@@ -588,35 +550,8 @@ void *run_task(void *p)
 
         clock_gettime(CLOCK_MONOTONIC, &end_time);
 
-        if (DIFF_NS(end_time, thread->monotonic_time) < 0) {
+        if (DIFF_NS(end_time, thread->monotonic_time) < 0)
             overruns++;
-	    /* flush pre_overruns_buffer */
-	    for(int i = min(ob_count,OVERRUN_BUFFER_SIZE) - 1; i>=0; i--) {
-		int j = (ob_wp - 1 - i + OVERRUN_BUFFER_SIZE) % OVERRUN_BUFFER_SIZE;
-		syslog(LOG_ERR, "Pre overrun: %u, exec: %u / ns, period: %u / ns, monotonic: %" PRIu64 " / ns, worldtime: %" PRIu64 " / ns",
-		       overruns, exec_ns_buffer[j], period_ns_buffer[j],
-		       monotonic_time_buffer[j],world_time_buffer[j]);
-	    }
-	    ob_count = 0; /* to avoid flushing the buffer at sucessive overruns */
-	    syslog(LOG_ERR, "Overrun: %u, exec: %u / ns, period: %u / ns, monotonic: %" PRIu64 " / ns, worldtime: %" PRIu64 " / ns",
-		   overruns,exec_ns,period_ns,
-		   TIMESPEC_TO_NS(thread->monotonic_time),TIMESPEC_TO_NS(thread->world_time));
-	} else {
-	    /* report also after overruns (runs also at program start once!) */
-	    if(ob_count > 0 && ob_count < OVERRUN_BUFFER_SIZE) {
-		syslog(LOG_ERR, "Post overrun: %u, exec: %u / ns, period: %u / ns, monotonic: %" PRIu64 " / ns, worldtime: %" PRIu64 " / ns",
-		       overruns,exec_ns,period_ns,
-		       TIMESPEC_TO_NS(thread->monotonic_time),TIMESPEC_TO_NS(thread->world_time));
-	    }
-	    /* debugging overruns */
-	    exec_ns_buffer[ob_wp] = exec_ns;
-	    period_ns_buffer[ob_wp] = period_ns;
-	    monotonic_time_buffer[ob_wp] = TIMESPEC_TO_NS(thread->monotonic_time);
-	    world_time_buffer[ob_wp] = TIMESPEC_TO_NS(thread->world_time);
-	    
-	    ob_wp = (ob_wp+1) % OVERRUN_BUFFER_SIZE;
-	    ob_count++;
-	}
     }
 
     *thread->running = 0;
@@ -913,7 +848,7 @@ register_signal(
     uint16_T portNumber      = rtwCAPI_GetSignalPortNumber(signals, idx);
     uint16_T dataTypeIndex   = rtwCAPI_GetSignalDataTypeIdx(signals, idx);
     uint16_T dimIndex        = rtwCAPI_GetSignalDimensionIdx(signals, idx);
-    uint_T   sTimeIndex      = rtwCAPI_GetSignalSampleTimeIdx(signals, idx);
+    uint8_T  sTimeIndex      = rtwCAPI_GetSignalSampleTimeIdx(signals, idx);
 
     uint8_T ndim;
     size_t *dim = create_dim(dimMap, dimIndex, dimArray, &ndim);
@@ -1340,20 +1275,8 @@ void usage(FILE *f)
             "  --time-dilation  -D <fact>  Cyclic time dilation factor.\n"
             "       No other timings are affected. This is useful for very\n"
             "       fast running simulation tasks causing overruns.\n"
-            "  --help           -h         Show this help.\n"
-            "\n"
-            "Model information:\n"
-            "\tName: %s\n"
-            "\tModel version: %s\n"
-            "\tMatlab version: %s\n"
-            "\tDate: %s\n"
-            "\tEtherLab version: %s\n",
-            base_name,
-            QUOTE(MODEL),
-            MODEL_VERSION,
-            MODEL_GENERATOR,
-            MODEL_DATE,
-            ETL_VERSION);
+            "  --help           -h         Show this help.\n",
+            base_name);
 }
 
 /****************************************************************************/
@@ -1545,7 +1468,8 @@ int main(int argc, char **argv)
         goto out;
     }
 
-    if (MdlRegisterMessages()) {
+    /* Initialize model */
+    if ((err = init_application())) {
         pdserv_exit(pdserv);
         goto out;
     }
@@ -1553,12 +1477,6 @@ int main(int argc, char **argv)
     /* Prepare process-data interface, create threads, etc. */
     if (pdserv_prepare(pdserv)) {
         err = "Failed to start pdserv.";
-        pdserv_exit(pdserv);
-        goto out;
-    }
-
-    /* Initialize model */
-    if ((err = init_application())) {
         pdserv_exit(pdserv);
         goto out;
     }
@@ -1688,8 +1606,3 @@ out:
 }
 
 /****************************************************************************/
-
-int __attribute__((weak)) MdlRegisterMessages()
-{
-    return 0;
-}
