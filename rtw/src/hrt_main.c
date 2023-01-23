@@ -1494,8 +1494,17 @@ int main(int argc, char **argv)
         goto out;
     }
 
+    if (priority < 0)
+            priority = sched_get_priority_max(SCHED_FIFO);
+
     /* Prepare process-data interface, create threads, etc. */
-    if (pdserv_prepare(pdserv)) {
+    if (
+#if PDSERV_VERSION_CODE >= PDSERV_VERSION(3,3,0)
+            pdserv_prepare2(pdserv, priority)
+#else
+            pdserv_prepare(pdserv)
+#endif
+            ) {
         err = "Failed to start pdserv.";
         pdserv_exit(pdserv);
         goto out;
@@ -1513,11 +1522,10 @@ int main(int argc, char **argv)
 
     /* Set task priority. */
     {
-        struct sched_param param;
-        if (priority == -1)
-            priority = sched_get_priority_max(SCHED_FIFO);
+        struct sched_param param = {
+            .sched_priority = priority,
+        };
 
-        param.sched_priority = priority;
         if (sched_setscheduler(0, SCHED_FIFO, &param) == -1) {
             fprintf(stderr,
                     "Setting SCHED_FIFO with priority %i failed: %s\n",
